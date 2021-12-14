@@ -1,0 +1,38 @@
+.dayOfWeekLabels {
+  text-transform: uppercase;
+  font-size: 12px;
+  color: darkgray;
+  border-bottom: 1px solid lightgray;
+}
+
+.dayOfWeekLabels div {
+  height: 18px;
+  line-height: 18px;
+  display: inline-block;
+  width: calc(100%/7);
+  padding-left: 4px;
+}
+
+.CalendarBody {
+  overflow: hidden;
+  position: relative;
+}
+
+.CalendarWeek {
+  display: flex;
+  border-bottom: 1px solid lightgrey;
+}
+
+.Scrolled {
+  /*position: relative;*/
+  /*transition: margin .5s*/
+  position: relative;
+
+}
+
+.ScrolledTransition {
+  /*position: relative;*/
+  transition: margin .5s;
+  position: relative;
+
+}

@@ -1,0 +1,31 @@
+.CalendarDay {
+  /*display: inline-block;*/
+  width: calc(100%/7);
+  border-right:  1px solid lightgray;
+  vertical-align: top;
+}
+.CalendarDay:last-child {
+  border-right:  0;
+}
+
+.CalendarDayHeader {
+  color: gray;
+  font-size: 12px;
+  padding: 1px 4px;
+}
+
+.DayTaskInput {
+  width: 100%;
+  padding: 2px 4px;
+}
+
+.DayTaskInput textarea {
+  width: 100%;
+  font-size: 9px;
+  resize: none;
+  /*outline-color: lightgray;*/
+  border-style: none;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
+}
