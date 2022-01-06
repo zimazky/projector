@@ -12,31 +12,28 @@ const projects = [
 ]
 
 export const actualTasks = [
-  {name: 'НО +30000', type: 'initial', value: 30000, comment: 'начальный остаток', date: new Date('2021-11-15 10:00')/1000, balance: 30000},
-  {name: 'Дорога на дачу', category: 'дача', value: 450+2000, date: new Date('2021-11-05 09:00')/1000, duration: 2.5*60, balance: 29000 }
+  {name: 'НО +30000', value: 30000, comment: 'начальный остаток', start: new Date('2021-11-15 10:00')/1000, balance: 30000},
+  {name: 'Дорога на дачу', value: 450+2000, start: new Date('2021-11-05 09:00')/1000, duration: 2.5*60, balance: 29000 }
 ]
-//          min hrs   day  Month weekday year holyday
-// repeat: '0   10   10,25  *       *      *     !'  каждый месяц 10-ого и 25-ого в 10:00
-//
 // используется упрощенный cron синтаксис
 // предполагаемый диапазон значений и допустимые операторы
-//  min       0-59    
-//  hrs       0-23    
 //  day       1-31    *,-/
 //  month     0-11    *,-/
 //  weekday   0-6     *,-/
 //
-//  */n - каждые n интервалов, начиная с repeatStart
+//  */n - каждые n интервалов, начиная с start
 //  m/n - каждые n интервалов, начиная с m
 
 export const plannedTasks = [
-  {name: 'ЗП +40020', income: 40020, repeat: '10,25 * *', repeatStart: new Date('2021-11-01')/1000, duration: 0},
-  {name: 'заправка', repeat: '/6 * *', repeatStart: new Date('2021-11-01 00:00')/1000, duration: 0},
-  {name: 'работа', cost: 0, repeat: '* * 1-5', repeatStart: new Date('2021-11-01 00:00')/1000, duration: 9*60},
-  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', repeatStart: new Date('2021-11-01')/1000, duration: 60},
+  {name: 'ЗП +40020', income: 40020, repeat: '10,25 * *', start: new Date('2021-11-01 10:00')/1000, duration: 0},
+  {name: 'заправка', repeat: '/6', start: new Date('2021-11-01 15:00')/1000, duration: 0},
+  {name: 'четные', repeat: '2/2', start: new Date('2021-11-01 01:00')/1000, duration: 0},
+  {name: 'комплексные', repeat: '1/3,20-25', start: new Date('2021-11-01 01:00')/1000, duration: 0},
+  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 08:00')/1000, duration: 60},
+  {name: 'работа', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 09:00')/1000, duration: 9*60},
   {name: 'праздники', cost: 0, start: new Date('2021-12-31 00:00')/1000, end: new Date('2022-01-26 23:59')/1000},
-  {name: 'test', cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 24*60-1},
-  {name: 'отпуск', cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 12*24*60-1},
+  {name: 'test', cost: 0, start: new Date('2022-01-14 14:00')/1000, duration: 24*60-1},
+  {name: 'отпуск', cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 14*24*60-1},
 
 ]
 
@@ -52,19 +49,19 @@ function daysDifference(ts1, ts2, duration = 86400) {
 // повторяемые задачи размещаются ниже всех остальных 
 export function sortPlannedTasks() {
   plannedTasks.sort((a,b)=>{
-    if(a.start) {
-      if(!b.start) return -1
-      const d = a.start-b.start
-      if(d != 0) return d
-      return daysDifference(b.start,b.end,b.duration*60)-daysDifference(a.start,a.end,a.duration*60)
+    if(a.repeat) {
+      if(b.repeat) return DateTime.getTime(a.start)-DateTime.getTime(b.start)
+      else return 1
     }
-    if(b.start) return 1
-    return 0
+    if(b.repeat) return -1
+    const d = DateTime.getBeginDayTimestamp(a.start)-DateTime.getBeginDayTimestamp(b.start)
+    if(d != 0) return d
+    return daysDifference(b.start,b.end,b.duration*60)-daysDifference(a.start,a.end,a.duration*60)
   })
 }
 
 export function actualBalance(timestamp) {
-  const prevTasks = actualTasks.filter(a=>a.date<timestamp)
+  const prevTasks = actualTasks.filter(a=>a.start<timestamp)
   if(prevTasks.length == 0) return 0
   return prevTasks.slice(-1)[0].balance
 }
@@ -86,11 +83,11 @@ export function dayPlannedTasks(list, timestamp, stack = [], cutTimestamp = time
   stack.forEach(v=>{list.push({id: -1})})
   // проход по планируемым задачам
   const tasks = plannedTasks.reduce( (a,t,id)=>{
-    if(t.repeatStart && timestamp>=t.repeatStart) {
+    if(t.repeat && timestamp>=t.start) {
       // Повторяемые задачи
       if(!t.repeatEnd || timestamp<t.repeatEnd) {
-        if(ZCron.isMatch(t.repeat, t.repeatStart, timestamp)) {
-          a.push({id, name: t.name, days: 1, income: t.income || 0, cost: t.cost || 0})
+        if(ZCron.isMatch(t.repeat, t.start, timestamp)) {
+          a.push({id, name: t.name, time: DateTime.getTime(t.start), days: 1, income: t.income || 0, cost: t.cost || 0})
         }
       }
     }
@@ -104,7 +101,7 @@ export function dayPlannedTasks(list, timestamp, stack = [], cutTimestamp = time
             if(stack.filter(v=>id==v.id).length>0) return a
               stack.push({id,end})
           }
-          a.push({id, name: t.name, days: daysDifference(timestamp,Math.min(end,cutTimestamp))+1, hours:0, minutes:0, income: t.income || 0, cost: t.cost || 0})
+          a.push({id, name: t.name, time: DateTime.getTime(t.start), days: daysDifference(timestamp,Math.min(end,cutTimestamp))+1, income: t.income || 0, cost: t.cost || 0})
         }
       }
     }
@@ -112,8 +109,8 @@ export function dayPlannedTasks(list, timestamp, stack = [], cutTimestamp = time
   }, list)
   // проход по завершенным задачам
   actualTasks.reduce( (a,t,id) => {
-    if(t.date && t.date<=timestamp && (t.date+86400)>timestamp) {
-      a.push({id, name: 'ВЫП '+t.name, days: 1, hours:0, minutes:0, income: t.income || 0, cost: t.cost || 0})
+    if(t.start && DateTime.getBeginDayTimestamp(t.start)<=timestamp && DateTime.getEndDayTimestamp(t.start)>timestamp) {
+      a.push({id, name: 'ВЫП '+t.name, time: DateTime.getTime(t.start), days: 1, income: t.income || 0, cost: t.cost || 0})
     }
     return a
   }, tasks)

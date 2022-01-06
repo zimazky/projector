@@ -2,7 +2,7 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
-import { actualTasks, dayPlannedTasks, actualBalance, sortPlannedTasks} from '../utils/schedule'
+import { actualTasks, dayPlannedTasks, actualBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule'
 
 const dayHeight = 150
 const dayScrollSteps = 10
@@ -13,8 +13,9 @@ export default function Calendar({children = null}) {
   const [scrollHeight,setScrollHeight] = React.useState(0)
   const CalendarBodyElement = React.useRef(null)
   // перед рендером сортировка фактических событий
-  actualTasks.sort((a,b)=>a.date-b.date)
+  actualTasks.sort((a,b)=>a.start-b.start)
   sortPlannedTasks()
+  plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
 
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -78,7 +79,7 @@ export default function Calendar({children = null}) {
               <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} balance={d.balance} key={d.timestamp}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name + ' ' + t.hours + ':' + t.minutes} days={t.days}/>
+                  return <EventItem key={i} name={t.name} time={t.time} days={t.days}/>
                 })}
               </CalendarDay>
             ))}

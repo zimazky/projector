@@ -48,6 +48,11 @@ export default class DateTime {
     return d.setHours(0,0,0,0)/1000+86399
   }
 
+  // Функция выделяет время из timestamp
+  static getTime(timestamp) {
+    return (timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
+  }
+
   static getTimeString(timestamp) {
     const d = new Date(timestamp*1000)
     const h = d.getHours()
