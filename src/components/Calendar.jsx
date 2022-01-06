@@ -1,8 +1,8 @@
 import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
-import { WEEKDAYS, getStartWeekTimestamp, getTimeString } from '../daytime'
-import { actualTasks, dayPlannedTasks, actualBalance, sortPlannedTasks} from '../schedule'
+import DateTime from '../utils/datetime.js'
+import { actualTasks, dayPlannedTasks, actualBalance, sortPlannedTasks} from '../utils/schedule'
 
 const dayHeight = 150
 const dayScrollSteps = 10
@@ -17,7 +17,7 @@ export default function Calendar({children = null}) {
   sortPlannedTasks()
 
 
-  let currentTimestamp = getStartWeekTimestamp(Date.now()/1000)
+  let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
   
   console.log('scrollHeight',scrollHeight)
   let shiftWeek = ~~(scrollHeight/dayHeight) - 1
@@ -68,7 +68,7 @@ export default function Calendar({children = null}) {
   return (
     <>
     <div className={styles.dayOfWeekLabels}>
-      { WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
+      { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
     <div className={styles.CalendarBody}>
       <div className={styles.Scrolled} style={{top: -dayHeight}} /*onWheel={onWheel}*/ ref={CalendarBodyElement}> {

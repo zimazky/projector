@@ -1,4 +1,5 @@
-import { beginDayTS, daysDifference, endDayTS, isScheduledDay } from './daytime'
+import DateTime from './datetime.js'
+import ZCron from './zcron.js'
 
 
 // ASANA svg format
@@ -23,20 +24,26 @@ export const actualTasks = [
 //  hrs       0-23    
 //  day       1-31    *,-/
 //  month     0-11    *,-/
-//  weekday   1-7     *,-/
+//  weekday   0-6     *,-/
 //
 //  */n - каждые n интервалов, начиная с repeatStart
 //  m/n - каждые n интервалов, начиная с m
 
 export const plannedTasks = [
-  {name: 'ЗП +40020', category: 'earnings', income: 40020, repeat: '0 10 10,25 * *', repeatStart: new Date('2021-11-01')/1000, duration: 0},
-  {name: 'работа', category: 'routine', cost: 0, repeat: '0 9 * * 1-5', repeatStart: new Date('2021-11-01 00:00')/1000, duration: 9*60},
-  {name: 'дорога на работу', category: 'routine', cost: 0, repeat: '30 8,18 * * 1-5', repeatStart: new Date('2021-11-01')/1000, duration: 60},
-  {name: 'праздники', category: 'holydays', priority: 0, cost: 0, start: new Date('2021-12-31 00:00')/1000, end: new Date('2022-01-26 23:59')/1000},
-  {name: 'test', category: 'vacation', priority: 0, cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 24*60-1},
-  {name: 'отпуск', category: 'vacation', priority: 0, cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 12*24*60-1},
+  {name: 'ЗП +40020', income: 40020, repeat: '10,25 * *', repeatStart: new Date('2021-11-01')/1000, duration: 0},
+  {name: 'заправка', repeat: '/6 * *', repeatStart: new Date('2021-11-01 00:00')/1000, duration: 0},
+  {name: 'работа', cost: 0, repeat: '* * 1-5', repeatStart: new Date('2021-11-01 00:00')/1000, duration: 9*60},
+  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', repeatStart: new Date('2021-11-01')/1000, duration: 60},
+  {name: 'праздники', cost: 0, start: new Date('2021-12-31 00:00')/1000, end: new Date('2022-01-26 23:59')/1000},
+  {name: 'test', cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 24*60-1},
+  {name: 'отпуск', cost: 0, start: new Date('2022-01-14 00:00')/1000, duration: 12*24*60-1},
 
 ]
+
+function daysDifference(ts1, ts2, duration = 86400) {
+  const end = ts2 ?? ts1+duration
+  return (DateTime.getBeginDayTimestamp(end)-DateTime.getBeginDayTimestamp(ts1))/86400
+}
 
 // Функция сортировки массива планируемых задач
 // подготавливает данные для корректной отрисовки задач
@@ -73,7 +80,7 @@ export function actualBalance(timestamp) {
 export function dayPlannedTasks(list, timestamp, stack = [], cutTimestamp = timestamp+86399) {
   // очистка стека и добавление плейсхолдеров
   while(stack.length>0) {
-    if(timestamp < endDayTS(stack[stack.length-1].end)) break
+    if(timestamp < DateTime.getEndDayTimestamp(stack[stack.length-1].end)) break
     stack.pop()
   } 
   stack.forEach(v=>{list.push({id: -1})})
@@ -82,16 +89,15 @@ export function dayPlannedTasks(list, timestamp, stack = [], cutTimestamp = time
     if(t.repeatStart && timestamp>=t.repeatStart) {
       // Повторяемые задачи
       if(!t.repeatEnd || timestamp<t.repeatEnd) {
-        if(isScheduledDay(timestamp,t.repeat)) {
-          const [minutes, hours] = t.repeat.split(' ')
-          a.push({id, name: t.name, days: 1, hours, minutes, income: t.income || 0, cost: t.cost || 0})
+        if(ZCron.isMatch(t.repeat, t.repeatStart, timestamp)) {
+          a.push({id, name: t.name, days: 1, income: t.income || 0, cost: t.cost || 0})
         }
       }
     }
     else {
       // Одиночные задачи
-      if(t.start && timestamp >= beginDayTS(t.start)) {
-        const end = endDayTS(t.end ?? (t.duration?t.start+t.duration*60:t.start))
+      if(t.start && timestamp >= DateTime.getBeginDayTimestamp(t.start)) {
+        const end = DateTime.getEndDayTimestamp(t.end ?? (t.duration?t.start+t.duration*60:t.start))
         if(timestamp < end) {
           const days = daysDifference(t.start,end)
           if(days>0) {
