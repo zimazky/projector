@@ -69,8 +69,6 @@ export const plannedTasks = [
 
 ]
 
-const min = (a,b)=>a<b?a:b
-
 // Функция сортировки массива планируемых задач
 // подготавливает данные для корректной отрисовки задач
 // в начало массива поднимаются задачи с самой ранней датой начала start
@@ -135,12 +133,6 @@ export function dayPlannedTasks(list, timestamp, stack = [], addActualTasks = fa
     return a
   }, tasks)
   return tasks
-}
-
-
-// Формирование списка плнируемых событий за период с ts1 по ts2
-function getPlannedTasks(ts1,ts2) {
-
 }
 
 export function actualBalance(timestamp) {

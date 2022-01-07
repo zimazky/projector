@@ -16,7 +16,7 @@ export default function Calendar({children = null}) {
   // перед рендером сортировка фактических событий
   actualTasks.sort((a,b)=>a.start-b.start)
   sortPlannedTasks()
-  plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
+  //plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
   currentTimestamp -= shift*7*86400
@@ -28,7 +28,7 @@ export default function Calendar({children = null}) {
   }, [])
 
   const arrayOfDays = []
-  for(let i=0;i<=12;i++) {
+  for(let i=0;i<=10;i++) {
     arrayOfDays.push([])
     let stack = []
     for(let j=0;j<=6;j++) {
@@ -42,7 +42,7 @@ export default function Calendar({children = null}) {
 
   const onAddEventHandle = React.useCallback((timestamp, name) => {
     if(name==='') return
-    console.log('Add Event',timestamp,name)
+    //console.log('Add Event',timestamp,name)
     setModal(true)
   })
   const onScrollHandle = (e)=>{
@@ -51,7 +51,7 @@ export default function Calendar({children = null}) {
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
     if(t<300) setShift(s=>s+2)
     else if(b<300) setShift(s=>s-2)
-    console.log(t,b)
+    //console.log(t,b)
   }
 
   console.log('draw calendar')
