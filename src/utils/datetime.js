@@ -38,26 +38,17 @@ export default class DateTime {
     return d.setDate(currentDay - ws)/1000
   }
 
-  static getBeginDayTimestamp(timestamp) {
-    const d = new Date(timestamp*1000)
-    return d.setHours(0,0,0,0)/1000
-  }
-
-  static getEndDayTimestamp(timestamp) {
-    const d = new Date(timestamp*1000)
-    return d.setHours(0,0,0,0)/1000+86399
-  }
-
-  // Функция выделяет время из timestamp
-  static getTime(timestamp) {
-    return (timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
-  }
+  static getBeginDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600
+  static getEndDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600+86400
+  static getTime = timestamp =>  (timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
+  static getTimeToEndDay = timestamp => 86400-DateTime.getTime(timestamp)
+  static getDifferenceInDays = (ts1,ts2) => (DateTime.getBeginDayTimestamp(ts2)-DateTime.getBeginDayTimestamp(ts1))/86400
 
   static getTimeString(timestamp) {
     const d = new Date(timestamp*1000)
     const h = d.getHours()
     const m = d.getMinutes()
-    return (h>9?'':'0') + h + (m>9?':':':0') + m
+    return h + (m>9?':':':0') + m
   }
     
 }

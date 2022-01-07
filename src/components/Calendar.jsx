@@ -2,7 +2,7 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
-import { actualTasks, dayPlannedTasks, actualBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule'
+import { actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule'
 
 const dayHeight = 150
 const dayScrollSteps = 10
@@ -28,10 +28,10 @@ export default function Calendar({children = null}) {
   for(let i=0;i<=5;i++) {
     arrayOfDays.push([])
     let stack = []
-    let cutTimestamp = currentTimestamp+7*86400-1
     for(let j=0;j<=6;j++) {
       arrayOfDays[i].push([])
-      arrayOfDays[i][j] = {timestamp: currentTimestamp, tasks: dayPlannedTasks([], currentTimestamp, stack, cutTimestamp), balance: actualBalance(currentTimestamp)}
+      arrayOfDays[i][j] = {timestamp: currentTimestamp, tasks: dayPlannedTasks([], currentTimestamp, stack, true), 
+        actualBalance: actualBalance(currentTimestamp), plannedBalance:plannedBalance(currentTimestamp)}
       currentTimestamp += 86400
     }
   }
@@ -64,6 +64,8 @@ export default function Calendar({children = null}) {
       CalendarBodyElement.current.removeEventListener('wheel', onWheel)
       }
   },[])
+  
+  const min = (a,b)=>a<b?a:b
 
   console.log('draw calendar')
   return (
@@ -75,11 +77,12 @@ export default function Calendar({children = null}) {
       <div className={styles.Scrolled} style={{top: -dayHeight}} /*onWheel={onWheel}*/ ref={CalendarBodyElement}> {
         arrayOfDays.map( week => (
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
-            week.map( d => (
-              <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} balance={d.balance} key={d.timestamp}>
+            week.map( (d,j) => (
+              <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
+              actualBalance={d.actualBalance} plannedBalance={d.plannedBalance}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name} time={t.time} days={t.days}/>
+                  return <EventItem key={i} name={t.name} time={t.time} days={console.log('min',t.days,7-j),min(t.days,7-j)}/>
                 })}
               </CalendarDay>
             ))}
