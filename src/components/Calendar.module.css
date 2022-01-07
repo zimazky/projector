@@ -1,7 +1,9 @@
 .wrapper {
   width: 100%;
+  min-width: 800px;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: auto;
 }
 
 .dayOfWeekLabels {
@@ -34,9 +36,6 @@
 }
 
 .Scrolled {
-  /*position: relative;*/
-  /*transition: margin .5s*/
   position: relative;
-
 }
 

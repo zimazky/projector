@@ -10,5 +10,5 @@ body {
 	height: 100vh;
 	font-size: 10px;
 	font-family: 'Roboto',sans-serif;
-	/*overflow: hidden;*/
+	overflow-y: hidden;
 }

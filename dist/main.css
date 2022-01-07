@@ -1,7 +1,9 @@
 .wrapper_af90f78 {
   width: 100%;
+  min-width: 800px;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: hidden;
+  overflow-x: auto;
 }
 
 .dayOfWeekLabels_cf63ad3 {
@@ -34,10 +36,7 @@
 }
 
 .Scrolled_ce022ef {
-  /*position: relative;*/
-  /*transition: margin .5s*/
   position: relative;
-
 }
 
 
@@ -203,6 +202,6 @@ body {
 	height: 100vh;
 	font-size: 10px;
 	font-family: 'Roboto',sans-serif;
-	/*overflow: hidden;*/
+	overflow-y: hidden;
 }
 
