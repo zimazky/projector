@@ -2,32 +2,33 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
-import { actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule'
+import { actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 
 const dayHeight = 150
-const dayScrollSteps = 10
-const scrollStep = dayHeight/dayScrollSteps
+const dayBuffer = 2
 
 export default function Calendar({children = null}) {
 
-  const [scrollHeight,setScrollHeight] = React.useState(0)
   const [isModal,setModal] = React.useState(false)
-  const CalendarBodyElement = React.useRef(null)
+  const [shift,setShift] = React.useState(2)
+  const scrollElement = React.useRef(null)
   // перед рендером сортировка фактических событий
   actualTasks.sort((a,b)=>a.start-b.start)
   sortPlannedTasks()
   plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
 
-
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
-  
-  console.log('scrollHeight',scrollHeight)
-  let shiftWeek = ~~(scrollHeight/dayHeight) - 1
-  currentTimestamp += 7*86400*shiftWeek
+  currentTimestamp -= shift*7*86400
+  const scrollTop = shift*150
+
+  React.useEffect(()=>{
+    setShift(2)
+    scrollElement.current.scrollTop = 303
+  }, [])
 
   const arrayOfDays = []
-  for(let i=0;i<=5;i++) {
+  for(let i=0;i<=12;i++) {
     arrayOfDays.push([])
     let stack = []
     for(let j=0;j<=6;j++) {
@@ -37,36 +38,6 @@ export default function Calendar({children = null}) {
       currentTimestamp += 86400
     }
   }
-  
-  function onWheel(e) {
-    e.preventDefault()
-    let d = e.wheelDelta>0 ? 1 : -1
-    console.log(this.style.top)
-    let top = parseInt(this.style.top) + d*scrollStep
-    //this.className = styles.ScrolledTransition
-    if(top>=0) {
-      console.log(top)
-      setScrollHeight(v=>v-dayHeight)
-      top -= dayHeight
-    }
-    else if(top<-dayHeight) {
-      console.log(top)
-      setScrollHeight(v=>v+dayHeight)
-      top += dayHeight
-    }
-    this.style.top = top + 'px'
-
-  }
-
-  React.useEffect(()=>{
-    console.log('Calendar AddEventListener Mouse')
-    CalendarBodyElement.current.addEventListener('wheel', onWheel)
-    return ()=>{
-      console.log('Calendar RemoveEventListener Mouse')
-      CalendarBodyElement.current.removeEventListener('wheel', onWheel)
-      }
-  },[])
-  
   const min = (a,b)=>a<b?a:b
 
   const onAddEventHandle = React.useCallback((timestamp, name) => {
@@ -74,15 +45,23 @@ export default function Calendar({children = null}) {
     console.log('Add Event',timestamp,name)
     setModal(true)
   })
+  const onScrollHandle = (e)=>{
+    const el=e.target
+    const t = el.scrollTop
+    const b = el.scrollHeight-el.scrollTop-el.clientHeight
+    if(t<300) setShift(s=>s+2)
+    else if(b<300) setShift(s=>s-2)
+    console.log(t,b)
+  }
 
   console.log('draw calendar')
   return (
-    <>
+    <div className={styles.wrapper}>
     <div className={styles.dayOfWeekLabels}>
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
-    <div className={styles.CalendarBody}>
-      <div className={styles.Scrolled} style={{top: -dayHeight}} /*onWheel={onWheel}*/ ref={CalendarBodyElement}> {
+    <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
+      <div className={styles.Scrolled}> {
         arrayOfDays.map( week => (
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
             week.map( (d,j) => (
@@ -102,6 +81,6 @@ export default function Calendar({children = null}) {
     <Modal title='Add event' isOpen={isModal} onCancel={()=>setModal(false)}>
 
     </Modal>
-    </>
+    </div>
   )
 }
