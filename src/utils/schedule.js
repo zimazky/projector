@@ -51,7 +51,9 @@ export const actualTasks = [
 //  m/n - каждые n интервалов, начиная с m
 
 export const plannedTasks = [
-  {name: 'ЗП +40020', credit:40020, repeat: '10,25 * *', start: new Date('2021-11-01 10:00')/1000, duration: 20},
+  {name: 'ЗП +40020', credit:40020, repeat: '10,25 * *', start: new Date('2021-12-01 10:00')/1000, duration: 20},
+  {name: 'пенсия мамы', credit:31000, repeat: '17', start: new Date('2021-12-01 09:00')/1000, duration: 20},
+
   {name: 'заправка', debit:2500, repeat: '/6', start: new Date('2022-01-12 15:00')/1000, duration: 30},
   {name: 'купить продукты', debit:8000, repeat: '* * 0', start: new Date('2022-01-04 15:00')/1000, duration: 80},
   {name: 'маму на укол', debit:40000, start: new Date('2022-02-05 10:00')/1000, duration: 80},
@@ -106,28 +108,23 @@ export function dayPlannedTasks(list, timestamp, stack = [], addActualTasks = fa
   stack.forEach(v=>{list.push({id: -1})})
   // проход по планируемым задачам
   const tasks = plannedTasks.reduce( (a,t,id)=>{
-    if(t.repeat && timestamp>=t.start) {
+    if(t.repeat) {
       // Повторяемые задачи
-      if(t.repeatEnd) {
-        const d = timestamp + DateTime.getTime(t.start) - t.repeatEnd
-        if(d>0) return a
-      }
-      if(ZCron.isMatch(t.repeat, t.start, timestamp)) {
-        a.push(Event.toPlannedEventItem(id, t, 1))
-      }
+      if(timestamp<t.start) return a
+      if(t.repeatEnd && (timestamp+DateTime.getTime(t.start)>t.repeatEnd)) return a
+      if(ZCron.isMatch(t.repeat, t.start, timestamp)) a.push(Event.toPlannedEventItem(id, t, 1))
+      return a
     }
-    else {
-      // Одиночные задачи
-      if(timestamp < Event.getStartDay(t)) return a
-      const end = Event.getEndDayOfEnd(t)
-      if(timestamp >= end) return a
-      const days = Event.getDurationInDays(t)
-      if(days>1) {
-        if(stack.filter(v=>id==v.id).length>0) return a
-        stack.push({id,end})
-      }
-      a.push(Event.toPlannedEventItem(id, t, DateTime.getDifferenceInDays(timestamp,end)))
+    // Одиночные задачи
+    if(timestamp < Event.getStartDay(t)) return a
+    const end = Event.getEndDayOfEnd(t)
+    if(timestamp >= end) return a
+    const days = Event.getDurationInDays(t)
+    if(days>1) {
+      if(stack.filter(v=>id==v.id).length>0) return a
+      stack.push({id,end})
     }
+    a.push(Event.toPlannedEventItem(id, t, DateTime.getDifferenceInDays(timestamp,end)))
     return a
   }, list)
   // проход по завершенным задачам

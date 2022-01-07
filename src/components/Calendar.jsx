@@ -3,6 +3,7 @@ import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
 import { actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule'
+import Modal from './Modal.jsx'
 
 const dayHeight = 150
 const dayScrollSteps = 10
@@ -11,6 +12,7 @@ const scrollStep = dayHeight/dayScrollSteps
 export default function Calendar({children = null}) {
 
   const [scrollHeight,setScrollHeight] = React.useState(0)
+  const [isModal,setModal] = React.useState(false)
   const CalendarBodyElement = React.useRef(null)
   // перед рендером сортировка фактических событий
   actualTasks.sort((a,b)=>a.start-b.start)
@@ -67,6 +69,12 @@ export default function Calendar({children = null}) {
   
   const min = (a,b)=>a<b?a:b
 
+  const onAddEventHandle = React.useCallback((timestamp, name) => {
+    if(name==='') return
+    console.log('Add Event',timestamp,name)
+    setModal(true)
+  })
+
   console.log('draw calendar')
   return (
     <>
@@ -79,10 +87,11 @@ export default function Calendar({children = null}) {
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
             week.map( (d,j) => (
               <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
-              actualBalance={d.actualBalance} plannedBalance={d.plannedBalance}>
+              actualBalance={d.actualBalance} plannedBalance={d.plannedBalance}
+              onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name} time={t.time} days={console.log('min',t.days,7-j),min(t.days,7-j)}/>
+                  return <EventItem key={i} name={t.name} time={t.time} days={/*console.log('min',t.days,7-j),*/min(t.days,7-j)}/>
                 })}
               </CalendarDay>
             ))}
@@ -90,6 +99,9 @@ export default function Calendar({children = null}) {
         ))}
       </div>
     </div>
+    <Modal title='Add event' isOpen={isModal} onCancel={()=>setModal(false)}>
+
+    </Modal>
     </>
   )
 }

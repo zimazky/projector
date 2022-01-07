@@ -19,9 +19,9 @@
   padding: 2px 4px;
 }
 
-.DayTaskInput textarea {
+.DayTaskInput input {
   width: 100%;
-  font-size: 9px;
+  font-size: 11px;
   resize: none;
   /*outline-color: lightgray;*/
   border-style: none;
