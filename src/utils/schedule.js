@@ -28,13 +28,13 @@ const plannedTasks = [
 
   {name: 'заправка', debit:2500, repeat: '/6', start: new Date('2022-01-12 15:00')/1000, duration: 30},
   {name: 'купить продукты', debit:8000, repeat: '* * 0', start: new Date('2022-01-04 15:00')/1000, duration: 80},
-  {name: 'маму на укол', debit:40000, start: new Date('2022-02-05 10:00')/1000, duration: 80},
+  {name: 'маму на укол', debit:40000, start: new Date('2022-02-05 18:00')/1000, duration: 80},
 
 
-  //{name: 'четные', repeat: '2/2', repeatEnd:new Date('2022-01-16 1:30')/1000, start:new Date('2021-11-01 01:00')/1000, duration: 0},
-  //{name: 'комплексные', repeat: '1/3,20-25', start: new Date('2021-11-01 01:00')/1000, duration: 0},
-  //{name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 08:00')/1000, duration: 60},
-  //{name: 'работа', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 09:00')/1000, duration: 9*60},
+  {name: 'четные', repeat: '2/2', repeatEnd:new Date('2022-01-16 1:30')/1000, start:new Date('2021-11-01 01:00')/1000, duration: 0},
+  {name: 'комплексные', repeat: '1/3,20-25', start: new Date('2021-11-01 01:00')/1000, duration: 0},
+  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 08:00')/1000, duration: 60},
+  {name: 'работа', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 09:00')/1000, duration: 9*60},
   {name: 'праздники', cost: 0, start: new Date('2021-12-31 00:00')/1000, end: new Date('2022-01-09 23:59')/1000},
   {name: 'test', cost: 0, start: new Date('2022-01-14 14:00')/1000, duration: 34*60-1},
   {name: 'отпуск', cost: 0, start: new Date('2022-01-07 00:00')/1000, duration: 14*24*60-1},

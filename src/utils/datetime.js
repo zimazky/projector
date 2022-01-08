@@ -43,12 +43,12 @@ export default class DateTime {
     return d.setHours(0,0,0,0)/1000
     //(~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600
   }
-  static getEndDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600+86400
+  static getEndDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600+86399
   static getTime = timestamp =>  {
     return timestamp - DateTime.getBeginDayTimestamp(timestamp)
     //(timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
   }
-  static getTimeToEndDay = timestamp => 86400-DateTime.getTime(timestamp)
+  static getTimeToEndDay = timestamp => DateTime.getBeginDayTimestamp(timestamp)+86399-timestamp
   static getDifferenceInDays = (ts1,ts2) => (DateTime.getBeginDayTimestamp(ts2)-DateTime.getBeginDayTimestamp(ts1))/86400
 
   static getTimeString(timestamp) {
