@@ -11,7 +11,7 @@ const dayBuffer = 2
 export default function Calendar({children = null}) {
 
   const [isModal,setModal] = React.useState(false)
-  const [shift,setShift] = React.useState(2)
+  const [shift,setShift] = React.useState(4)
   const scrollElement = React.useRef(null)
 
 
@@ -25,12 +25,12 @@ export default function Calendar({children = null}) {
   const scrollTop = shift*150
 
   React.useEffect(()=>{
-    setShift(2)
-    scrollElement.current.scrollTop = 303
+    setShift(4)
+    scrollElement.current.scrollTop = 606
   }, [])
 
   const arrayOfDays = []
-  for(let i=0;i<=10;i++) {
+  for(let i=0;i<=20;i++) {
     arrayOfDays.push([])
     let stack = []
     for(let j=0;j<=6;j++) {
@@ -57,8 +57,8 @@ export default function Calendar({children = null}) {
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
-    if(t<300) setShift(s=>s+2)
-    else if(b<300) setShift(s=>s-2)
+    if(t<600) setShift(s=>s+4)
+    else if(b<600) setShift(s=>s-4)
     //console.log(t,b)
   }
 
