@@ -29,3 +29,10 @@
   overflow: hidden;
   padding: 0;
 }
+
+.balance {
+  margin: 0 4px;
+}
+.actualBalance {
+  float: right;
+}

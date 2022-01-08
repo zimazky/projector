@@ -155,7 +155,7 @@ export default class EventList {
     }, [])
     this.plannedRepeatable.reduce( (a,e)=>{
       if(timestamp<e.repeatStartDay) return a
-      if(e.repeatEnd && timestamp+e.time > e.repeatEnd) return a
+      if(e.repeatEnd && timestamp+e.time >= e.repeatEnd) return a
       if(ZCron.isMatch(e.repeat, e.repeatStartDay, timestamp)) a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp))
       return a
     }, events)
@@ -167,7 +167,7 @@ export default class EventList {
   // Список выполненных событий, используется кэширование
   getCompletedEvents(timestamp) {
     if(this.cachedCompletedEvents[timestamp] !== undefined) return this.cachedCompletedEvents[timestamp]
-    const events = this.completed.reduce( (a,e,id) => {
+    const events = this.completed.reduce( (a,e) => {
       if(timestamp >= e.startDay && timestamp < DateTime.getEndDayTimestamp(e.start)) a.push(eventToCompact(e,timestamp))
       return a
     }, [])

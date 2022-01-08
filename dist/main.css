@@ -71,6 +71,13 @@
   overflow: hidden;
   padding: 0;
 }
+
+.balance_c271232 {
+  margin: 0 4px;
+}
+.actualBalance_c28974d {
+  float: right;
+}
 .EventItem_b1f2ae7 {
   position: relative;
   width: 100%;

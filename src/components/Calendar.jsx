@@ -2,31 +2,27 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
-import { eventList, actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks} from '../utils/schedule.js'
+import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 
 const dayHeight = 150
-const dayBuffer = 2
+const weekBuffer = 4
 
 export default function Calendar({children = null}) {
 
   const [isModal,setModal] = React.useState(false)
-  const [shift,setShift] = React.useState(4)
+  const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
-
-
-  // перед рендером сортировка фактических событий
-  //actualTasks.sort((a,b)=>a.start-b.start)
-  //sortPlannedTasks()
-  //plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
+  const divElement = React.useRef(null)
+  
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
+  const zeroPoint = currentTimestamp
   currentTimestamp -= shift*7*86400
-  const scrollTop = shift*150
 
   React.useEffect(()=>{
-    setShift(4)
-    scrollElement.current.scrollTop = 606
+    setShift(weekBuffer)
+    scrollElement.current.scrollTop = weekBuffer*(dayHeight+1)//606
   }, [])
 
   const arrayOfDays = []
@@ -36,12 +32,10 @@ export default function Calendar({children = null}) {
     for(let j=0;j<=6;j++) {
       arrayOfDays[i].push([])
       arrayOfDays[i][j] = {
-        timestamp: currentTimestamp, tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack)
-        /*dayPlannedTasks([], currentTimestamp, stack, true)*/, 
-        actualBalance: eventList.getActualBalance(currentTimestamp)
-        /*actualBalance(currentTimestamp)*/, 
-        plannedBalance: eventList.getPlannedBalance(currentTimestamp)
-        /*plannedBalance(currentTimestamp)*/
+        timestamp: currentTimestamp, 
+        tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
+        actualBalance: eventList.getActualBalance(currentTimestamp),
+        plannedBalance: eventList.getPlannedBalance(currentTimestamp),
       }
       currentTimestamp += 86400
     }
@@ -57,14 +51,16 @@ export default function Calendar({children = null}) {
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
-    if(t<600) setShift(s=>s+4)
-    else if(b<600) setShift(s=>s-4)
-    //console.log(t,b)
+    const w = ~~(t/(dayHeight+1)-shift)
+    divElement.current.innerText =new Date((zeroPoint+w*7*86400)*1000).toLocaleDateString() + ' ('+w+')'
+    if(t<weekBuffer*dayHeight) setShift(s=>s+weekBuffer)
+    else if(b<weekBuffer*dayHeight) setShift(s=>s-weekBuffer)
   }
 
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
+    <div ref={divElement}></div>
     <div className={styles.dayOfWeekLabels}>
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
