@@ -2,7 +2,7 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
-import { actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks, plannedTasks} from '../utils/schedule.js'
+import { eventList, actualTasks, dayPlannedTasks, actualBalance, plannedBalance, sortPlannedTasks} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 
 const dayHeight = 150
@@ -13,9 +13,11 @@ export default function Calendar({children = null}) {
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(2)
   const scrollElement = React.useRef(null)
+
+
   // перед рендером сортировка фактических событий
-  actualTasks.sort((a,b)=>a.start-b.start)
-  sortPlannedTasks()
+  //actualTasks.sort((a,b)=>a.start-b.start)
+  //sortPlannedTasks()
   //plannedTasks.forEach(d=>console.log(d.name,DateTime.getTime(d.start)))
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -33,8 +35,14 @@ export default function Calendar({children = null}) {
     let stack = []
     for(let j=0;j<=6;j++) {
       arrayOfDays[i].push([])
-      arrayOfDays[i][j] = {timestamp: currentTimestamp, tasks: dayPlannedTasks([], currentTimestamp, stack, true), 
-        actualBalance: actualBalance(currentTimestamp), plannedBalance:plannedBalance(currentTimestamp)}
+      arrayOfDays[i][j] = {
+        timestamp: currentTimestamp, tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack)
+        /*dayPlannedTasks([], currentTimestamp, stack, true)*/, 
+        actualBalance: eventList.getActualBalance(currentTimestamp)
+        /*actualBalance(currentTimestamp)*/, 
+        plannedBalance: eventList.getPlannedBalance(currentTimestamp)
+        /*plannedBalance(currentTimestamp)*/
+      }
       currentTimestamp += 86400
     }
   }
@@ -70,7 +78,7 @@ export default function Calendar({children = null}) {
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name} time={t.time} days={/*console.log('min',t.days,7-j),*/min(t.days,7-j)}/>
+                  return <EventItem key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)}/>
                 })}
               </CalendarDay>
             ))}

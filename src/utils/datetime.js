@@ -2,7 +2,7 @@
 //Библиотека методов для работы с timestamp
 export default class DateTime {
 
-  static WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+  static WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
   static MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
   static startWeek = 1
   static timezone = 3
@@ -38,16 +38,23 @@ export default class DateTime {
     return d.setDate(currentDay - ws)/1000
   }
 
-  static getBeginDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600
+  static getBeginDayTimestamp = timestamp => {
+    const d = new Date(timestamp*1000)
+    return d.setHours(0,0,0,0)/1000
+    //(~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600
+  }
   static getEndDayTimestamp = timestamp => (~~((timestamp+DateTime.timezone*3600)/86400))*86400-DateTime.timezone*3600+86400
-  static getTime = timestamp =>  (timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
+  static getTime = timestamp =>  {
+    return timestamp - DateTime.getBeginDayTimestamp(timestamp)
+    //(timestamp+DateTime.timezone*3600)%86400-DateTime.timezone*3600
+  }
   static getTimeToEndDay = timestamp => 86400-DateTime.getTime(timestamp)
   static getDifferenceInDays = (ts1,ts2) => (DateTime.getBeginDayTimestamp(ts2)-DateTime.getBeginDayTimestamp(ts1))/86400
 
   static getTimeString(timestamp) {
     const d = new Date(timestamp*1000)
-    const h = d.getHours()
-    const m = d.getMinutes()
+    const h = d.getUTCHours()
+    const m = d.getUTCMinutes()
     return h + (m>9?':':':0') + m
   }
     
