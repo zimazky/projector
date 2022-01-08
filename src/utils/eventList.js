@@ -154,13 +154,13 @@ export default class EventList {
       return a.push(eventToCompact(e,timestamp)), a
     }, [])
     this.plannedRepeatable.reduce( (a,e)=>{
-      if(timestamp<e.repeatStart) return a
+      if(timestamp<e.repeatStartDay) return a
       if(e.repeatEnd && timestamp+e.time > e.repeatEnd) return a
-      if(ZCron.isMatch(e.repeat, e.start, timestamp)) console.log('rep',e),a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp))
+      if(ZCron.isMatch(e.repeat, e.repeatStartDay, timestamp)) a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp))
       return a
     }, events)
     this.cachedPlannedEvents[timestamp] = events
-    console.log(events)
+    //console.log(events)
     return events
   }
 
