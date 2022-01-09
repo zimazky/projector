@@ -4,6 +4,7 @@ import EventItem, { EventPlaceholder } from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
 import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
+import Button from './Button.jsx'
 
 const dayHeight = 150
 const weekBuffer = 4
@@ -21,8 +22,8 @@ export default function Calendar({children = null}) {
   currentTimestamp -= shift*7*86400
 
   React.useEffect(()=>{
-    setShift(weekBuffer)
-    scrollElement.current.scrollTop = weekBuffer*(dayHeight+1)//606
+    setShift(2+weekBuffer)
+    scrollElement.current.scrollTop = (weekBuffer)*(dayHeight+1)//606
   }, [])
 
   const arrayOfDays = []
@@ -36,6 +37,7 @@ export default function Calendar({children = null}) {
         tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
         actualBalance: eventList.getActualBalance(currentTimestamp),
         plannedBalance: eventList.getPlannedBalance(currentTimestamp),
+        plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp)
       }
       currentTimestamp += 86400
     }
@@ -51,16 +53,25 @@ export default function Calendar({children = null}) {
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
-    const w = ~~(t/(dayHeight+1)-shift)
-    divElement.current.innerText =new Date((zeroPoint+w*7*86400)*1000).toLocaleDateString() + ' ('+w+')'
+    const w = Math.ceil(t/(dayHeight+1)-shift)
+    const d = new Date((zeroPoint+w*7*86400)*1000)
+    divElement.current.innerText =d.getFullYear() + ' ' + DateTime.MONTHS_FULL[d.getMonth()] + ' '+w+' week'
     if(t<weekBuffer*dayHeight) setShift(s=>s+weekBuffer)
     else if(b<weekBuffer*dayHeight) setShift(s=>s-weekBuffer)
+  }
+
+  const onSaveClickHandle = (e)=>{
+    console.log(JSON.stringify(eventList.prepareToStorage()))
   }
 
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
-    <div ref={divElement}></div>
+    <div className={styles.header}>
+      <Button onClick={onSaveClickHandle}>Save to LocalStorage</Button>
+      <Button>Today</Button>
+      <span ref={divElement} className={styles.monthTitle}></span>
+    </div>
     <div className={styles.dayOfWeekLabels}>
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
@@ -70,7 +81,9 @@ export default function Calendar({children = null}) {
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
             week.map( (d,j) => (
               <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
-              actualBalance={d.actualBalance} plannedBalance={d.plannedBalance}
+              actualBalance={d.actualBalance} 
+              plannedBalance={d.plannedBalance} 
+              plannedBalanceChange={d.plannedBalanceChange}
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>

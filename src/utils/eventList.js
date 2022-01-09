@@ -26,6 +26,7 @@ class Event {
 
 }
 
+const dateToString = d => new Date(d*1000).toLocaleString() 
 
 // Преобразование повторяемого события в одиночное
 const repeatableToSingle = (id,e,timestamp) => {
@@ -78,7 +79,6 @@ export default class EventList {
         days: Event.getDurationInDays(e),
         credit: e.credit?? 0,
         debit: e.debit?? 0,
-        balance: null
       }
     })
     this.planned = []
@@ -139,11 +139,6 @@ export default class EventList {
   // Вычисление фактического баланса на момент последнего выполненного события
   calculateActualBalance() {
     return this.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
-  }
-
-  // Подготовка для сохранения в хранилище
-  prepareToStorage() {
-    return {completedList: [], plannedList: []}
   }
 
   // Список планируемых событий, используется кэширование
@@ -250,6 +245,51 @@ export default class EventList {
     this.cachedPlannedBalance[timestamp] = balance
     return balance
   }
+
+  getPlannedBalanceChange(timestamp) {
+    return this.getPlannedEvents(timestamp).reduce((a,e)=> a += e.credit-e.debit, 0)
+  }
+
+  // Подготовка для сохранения в хранилище
+  prepareToStorage() {
+    const completedList = this.completed.map(e=>{
+      const out = {}
+      out.name = e.name
+      if(e.comment) out.comment = e.comment
+      out.start = dateToString(e.start)
+      out.end = dateToString(e.end)
+      if(e.credit) out.credit = e.credit
+      if(e.debit) out.debit = e.debit
+      return out
+    })
+
+    const plannedList = this.plannedRepeatable.reduce((a,e) => {
+      const out = {}
+      out.name = e.name
+      if(e.comment) out.comment = e.comment
+      out.repeat = e.repeat
+      out.start = dateToString(e.repeatStart)
+      out.duration = e.duration
+      if(e.repeatEnd) out.repeatEnd = dateToString(e.repeatEnd)
+      if(e.credit) out.credit = e.credit
+      if(e.debit) out.debit = e.debit
+      return a.push(out), a
+    }, [])
+
+    this.planned.reduce((a,e) => {
+      const out = {}
+      out.name = e.name
+      if(e.comment) out.comment = e.comment
+      out.start = dateToString(e.start)
+      out.end = dateToString(e.end)
+      if(e.credit) out.credit = e.credit
+      if(e.debit) out.debit = e.debit
+      return a.push(out), a
+    }, plannedList)
+
+    return {completedList, plannedList}
+  }
+
 
 }
 

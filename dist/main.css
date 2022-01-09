@@ -6,9 +6,22 @@
   overflow-x: auto;
 }
 
+.header_e3daf93 {
+  height: 30px;
+}
+
+.monthTitle_a8c3ab6 {
+  display: inline-block;
+  font-size: 20px;
+  color: #a0a0a0;
+	margin: 2px;
+  vertical-align: middle;
+
+}
+
 .dayOfWeekLabels_cf63ad3 {
   width: 100%;
-  height: 25px;
+  height: 20px;
   text-transform: uppercase;
   font-size: 12px;
   color: darkgray;
@@ -73,7 +86,13 @@
 }
 
 .balance_c271232 {
-  margin: 0 4px;
+  margin: 0 1px;
+  height: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.plannedBalance_dee8e33 {
+  white-space: nowrap;
 }
 .actualBalance_c28974d {
   float: right;
@@ -192,6 +211,31 @@
   background-color: #FFF;
   color: #000;
 }
+.button_c0afaa2 {
+	display: inline-block;
+	border: 1px solid lightgray;
+	border-radius: 3px;
+	white-space: nowrap;
+	padding: 3px 6px;
+	margin: 2px;
+	cursor: pointer;
+	vertical-align:middle;
+}
+.button_c0afaa2:active, .button_c0afaa2.active_b40adfc, .button_c0afaa2.active_b40adfc:hover {
+	background-color: #F49B25;
+	text-shadow: none;
+	color: #fff;
+}
+.button_c0afaa2:hover {
+	background-color: #fff;
+	text-shadow: none;
+	color: #000;
+}
+.button_c0afaa2[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .wrapper_d808929 {
   width: 80vw;
   height: 80vh;

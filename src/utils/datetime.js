@@ -4,6 +4,7 @@ export default class DateTime {
 
   static WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
   static MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+  static MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
   static startWeek = 1
   static timezone = 3
 

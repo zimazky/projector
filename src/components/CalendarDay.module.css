@@ -31,7 +31,13 @@
 }
 
 .balance {
-  margin: 0 4px;
+  margin: 0 1px;
+  height: 14px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.plannedBalance {
+  white-space: nowrap;
 }
 .actualBalance {
   float: right;
