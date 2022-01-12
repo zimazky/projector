@@ -1,25 +1,24 @@
 .CalendarDay {
-  /*display: inline-block;*/
-  width: calc(100%/7);
-  border-right:  1px solid lightgray;
-  vertical-align: top;
-}
-.CalendarDay:last-child {
-  border-right:  0;
+  display: flex;
+  flex-direction: column;
+  /*flex: 1;*/
+  background-color: #fff;
 }
 
 .CalendarDayHeader {
   color: gray;
   font-size: 12px;
   padding: 1px 4px;
+  height: 14px;
 }
 
-.DayTaskInput {
-  width: 100%;
+.task_input {
+  flex-shrink: 0;
   padding: 2px 4px;
+  height: 14px;
 }
 
-.DayTaskInput input {
+.task_input input {
   width: 100%;
   font-size: 11px;
   resize: none;
@@ -28,6 +27,10 @@
   outline: none;
   overflow: hidden;
   padding: 0;
+}
+.tasks {
+  display: flex;
+  flex-direction: column;
 }
 
 .balance {

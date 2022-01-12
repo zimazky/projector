@@ -24,14 +24,15 @@ export default function CalendarDay({timestamp, dayHeight, actualBalance, planne
   const plus = d => d>0?'+'+d.toFixed(1):d.toFixed(1)
 
   return (
-    <div className={styles.CalendarDay} style={{height: dayHeight}} onClick={onClickHandle}>
+    <div className={styles.CalendarDay} onClick={onClickHandle}>
       <div className={styles.CalendarDayHeader}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
-      <div className={styles.balance}><span className={styles.plannedBalance}>
-        {minimize(plannedBalance) + 
-        (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k')}
-        </span> <span className={styles.actualBalance}>{minimize(actualBalance)}</span></div>
-      <div className="CalendarDayTasks"> {children} </div>
-      <div className={styles.DayTaskInput}>
+      <div className={styles.balance}>
+        <span className={styles.plannedBalance}>
+          {minimize(plannedBalance) + (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k')}
+        </span>
+        <span className={styles.actualBalance}>{minimize(actualBalance)}</span></div>
+      <div className={styles.tasks}> {children} </div>
+      <div className={styles.task_input}>
         <input ref={inputElementRef} rows={1} wrap='off' onBlur={onBlurHandle} onKeyDown={onKeyDownHandle}></input>
       </div>
 
