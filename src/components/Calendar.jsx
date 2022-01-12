@@ -87,7 +87,7 @@ export default function Calendar({children = null}) {
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)}/>
+                  return <EventItem key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)} completed={t.completed}/>
                 })}
               </CalendarDay>
             ))}

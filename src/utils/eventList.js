@@ -40,7 +40,8 @@ const repeatableToSingle = (id,e,timestamp) => {
     end: start + e.duration,
     days: 1,
     credit: e.credit,
-    debit: e.debit
+    debit: e.debit,
+    completed: e.completed
   })
 }
 
@@ -52,7 +53,8 @@ const eventToCompact = (e,timestamp) => ({
   end: e.end,
   days: DateTime.getDifferenceInDays(timestamp,e.end)+1,
   credit: e.credit,
-  debit: e.debit
+  debit: e.debit,
+  completed: e.completed
 })
 
 
@@ -79,6 +81,7 @@ export default class EventList {
         days: Event.getDurationInDays(e),
         credit: e.credit?? 0,
         debit: e.debit?? 0,
+        completed: true
       }
     })
     this.planned = []
@@ -97,7 +100,8 @@ export default class EventList {
           repeatEnd: e.repeatEnd?? null,
           days: 1,
           credit: e.credit?? 0,
-          debit: e.debit?? 0
+          debit: e.debit?? 0,
+          completed: false
         })
         return
       }
@@ -110,7 +114,8 @@ export default class EventList {
         end: Event.getEnd(e),
         days: Event.getDurationInDays(e),
         credit: e.credit?? 0,
-        debit: e.debit?? 0
+        debit: e.debit?? 0,
+        completed: false
       })
     })
     this.sort()

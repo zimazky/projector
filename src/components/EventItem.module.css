@@ -11,6 +11,35 @@
   font-size: 10px;
   border: 1px solid gray;
   margin-top: -1px;
+  /*
+  background: linear-gradient(-45deg, transparent 50%, green 50%, green 70%,  transparent 70%) fixed,
+              linear-gradient(-45deg, green 20%, transparent 20%) fixed;
+  background-size: 0.3em 0.3em;
+  */
+}
+
+.event_item_completed {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  backdrop-filter: grayscale(60%);
+  pointer-events: none;
+}
+
+.event_row {
+  margin-left: -12px;
+  transition: margin-left 200ms;
+}
+.event_row:hover {
+  margin-left: 0;
+}
+.complete_button {
+  display: inline-block;
+  width: 12px;
+  cursor: pointer;
 }
 
 .EventPlaceholder {
