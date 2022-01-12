@@ -40,15 +40,17 @@
   width: 100%;
   height: calc(100% - 25px);
   overflow-y: scroll;
-  overflow-x: hidden;
+  /*overflow-x: hidden;*/
 }
 
 .CalendarWeek {
-  display: flex;
   border-bottom: 1px solid lightgrey;
+  height: 150px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .Scrolled {
-  position: relative;
+  /*position: relative;*/
 }
 

@@ -1,11 +1,8 @@
 .CalendarDay {
-  /*display: inline-block;*/
+  display: inline-block;
   width: calc(100%/7);
   border-right:  1px solid lightgray;
   vertical-align: top;
-}
-.CalendarDay:last-child {
-  border-right:  0;
 }
 
 .CalendarDayHeader {

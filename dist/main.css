@@ -40,27 +40,29 @@
   width: 100%;
   height: calc(100% - 25px);
   overflow-y: scroll;
-  overflow-x: hidden;
+  /*overflow-x: hidden;*/
 }
 
 .CalendarWeek_ef509bf {
-  display: flex;
   border-bottom: 1px solid lightgrey;
+  height: 150px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .Scrolled_ce022ef {
-  position: relative;
+  /*position: relative;*/
 }
 
 
 .CalendarDay_afb7130 {
-  /*display: inline-block;*/
+  display: inline-block;
   width: calc(100%/7);
   border-right:  1px solid lightgray;
   vertical-align: top;
 }
 .CalendarDay_afb7130:last-child {
-  border-right:  0;
+  /*border-right:  0;*/
 }
 
 .CalendarDayHeader_ce37fdc {
@@ -107,7 +109,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   margin-left: -1px;
-  /*margin-right: -1px;*/
   padding: 2px 2px;
   font-size: 10px;
   border: 1px solid gray;
@@ -115,7 +116,7 @@
 }
 
 .EventItem_b1f2ae7:first-child {
-  margin-top: 0;
+  /*margin-top: 0;*/
 }
 
 .EventPlaceholder_b109d15 {
@@ -124,7 +125,7 @@
 }
 
 .EventPlaceholder_b109d15:first-child {
-  margin-top: 0;
+  /*margin-top: 0;*/
 }
 
 .EventTime_f0aa565 {
