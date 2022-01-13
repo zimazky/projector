@@ -59,5 +59,15 @@ export default class DateTime {
     return h + (m>9?':':':0') + m
   }
     
+  static getYYYYMMDDTHHMM(timestamp) {
+    const d = new Date(timestamp*1000)
+    const Y = d.getFullYear()
+    const M = d.getMonth()+1
+    const D = d.getDate()
+    const h = d.getHours()
+    const m = d.getMinutes()
+    return Y + (M>9?'-':'-0') + M + (D>9?'-':'-0') + D + (h>9?'T':'T0') + h + (m>9?':':':0') + m
+
+  }
 }
 

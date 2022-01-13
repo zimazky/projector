@@ -5,6 +5,7 @@ import DateTime from '../utils/datetime.js'
 import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
+import EventForm from './EventForm.jsx'
 
 const dayHeight = 150
 const weekBuffer = 4
@@ -15,6 +16,7 @@ export default function Calendar({children = null}) {
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
   const divElement = React.useRef(null)
+  const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
   
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -44,11 +46,6 @@ export default function Calendar({children = null}) {
   }
   const min = (a,b)=>a<b?a:b
 
-  const onAddEventHandle = React.useCallback((timestamp, name) => {
-    if(name==='') return
-    //console.log('Add Event',timestamp,name)
-    setModal(true)
-  })
   const onScrollHandle = (e)=>{
     const el=e.target
     const t = el.scrollTop
@@ -63,6 +60,21 @@ export default function Calendar({children = null}) {
   const onSaveClickHandle = (e)=>{
     console.log(JSON.stringify(eventList.prepareToStorage()))
   }
+
+  const onAddEventHandle = React.useCallback((timestamp, name) => {
+    if(name==='') return
+    //console.log('Add Event',timestamp,name)
+    setModalState({title: 'Add new event', name, start:timestamp})
+    setModal(true)
+  })
+
+  const onEventClickHandle = React.useCallback((id,completed) => {
+    const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
+      eventList.plannedRepeatable.find(e=>e.id===id)
+    setModalState({...s, title: 'Event'})
+    setModal(true)
+
+  })
 
   console.log('draw calendar')
   return (
@@ -87,7 +99,7 @@ export default function Calendar({children = null}) {
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)} completed={t.completed}/>
+                  return <EventItem id={t.id} key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)} completed={t.completed} onClick={onEventClickHandle}/>
                 })}
               </CalendarDay>
             ))}
@@ -95,8 +107,8 @@ export default function Calendar({children = null}) {
         ))}
       </div>
     </div>
-    <Modal title='Add event' isOpen={isModal} onCancel={()=>setModal(false)}>
-
+    <Modal title={modalState.title} isOpen={isModal} onCancel={()=>setModal(false)}>
+      <EventForm event={modalState}/>
     </Modal>
     </div>
   )
