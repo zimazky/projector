@@ -1,0 +1,29 @@
+.event_form {
+  text-align: left;
+}
+
+.name {
+  font-size: 20px;
+  outline-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.comment {
+  font-size: 20px;
+  outline-width: 0;
+  border: 1px solid lightgray;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.datetime {
+  font-size: 20px;
+}
+
+.parameter {
+  display: inline-block;
+  text-align: left;
+}
+.row {
+  text-align: justify;
+  text-align-last: justify;
+}
