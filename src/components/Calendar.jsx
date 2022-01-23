@@ -63,18 +63,21 @@ export default function Calendar({children = null}) {
 
   const onAddEventHandle = React.useCallback((timestamp, name) => {
     if(name==='') return
-    //console.log('Add Event',timestamp,name)
-    setModalState({title: 'Add new event', name, start:timestamp})
+    setModalState({name, start:timestamp})
     setModal(true)
   })
 
   const onEventClickHandle = React.useCallback((id,completed) => {
     const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
       eventList.plannedRepeatable.find(e=>e.id===id)
-    setModalState({...s, title: 'Event'})
+    s.completed = completed
+    setModalState(s)
     setModal(true)
-
   })
+
+  const onCompleteEvent = id => {
+    
+  }
 
   console.log('draw calendar')
   return (
@@ -99,8 +102,8 @@ export default function Calendar({children = null}) {
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem id={t.id} key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)}
-                  background={t.background} color={t.color} completed={t.completed} onClick={onEventClickHandle}/>
+                  return <EventItem key={i} event={t} days={min(t.days,7-j)}
+                  onClick={onEventClickHandle}/>
                 })}
               </CalendarDay>
             ))}
@@ -108,7 +111,7 @@ export default function Calendar({children = null}) {
         ))}
       </div>
     </div>
-    <Modal title={modalState.title} isOpen={isModal} onCancel={()=>setModal(false)}>
+    <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
       <EventForm event={modalState}/>
     </Modal>
     </div>

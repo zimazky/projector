@@ -14,8 +14,7 @@ const projects = [
 ]
 
 const actualTasks = [
-  {name: 'НО +30000', project:'Доход', credit:52683, comment: 'начальный остаток', start: new Date('2022-01-01 00:00')/1000},
-  //{name: 'Дорога на дачу', debit:{account:1,amount:400+2500}, start: new Date('2021-11-05 09:00')/1000, duration: 2.5*60, balance: 29000 }
+  {name: 'НО +30000', project:'Доход', credit:52683, comment: 'начальный остаток', start: '2022-01-01'},
 ]
 // используется упрощенный cron синтаксис
 // предполагаемый диапазон значений и допустимые операторы
@@ -27,22 +26,22 @@ const actualTasks = [
 //  m/n - каждые n интервалов, начиная с m
 
 const plannedTasks = [
-  {name: 'ЗП +40020', project: 'Доход', credit:40020, repeat: '10,25 * *', start: new Date('2021-12-01 10:00')/1000, duration: 20},
-  {name: 'пенсия мамы', project: 'Доход', credit:31000, repeat: '17', start: new Date('2021-12-01 09:00')/1000, duration: 20},
+  {name: 'ЗП +40020', project: 'Доход', credit:40020, repeat: '10,25 * *', start: '2021-12-01', time: '10:00', duration: '0:20'},
+  {name: 'пенсия мамы', project: 'Доход', credit:31000, repeat: '17', start: '2021-12-01', time: '9:00', duration: '0:20'},
 
-  {name: 'заправка', project: 'Машина', debit:2500, repeat: '/6', start: new Date('2022-01-12 15:00')/1000, duration: 30},
-  {name: 'купить продукты', project: 'Общий', debit:8000, repeat: '* * 0', start: new Date('2022-01-04 15:00')/1000, duration: 80},
-  {name: 'маму на укол', debit:40000, start: new Date('2022-02-05 18:00')/1000, duration: 80},
-  {name: 'тест2', debit:0, start: new Date('2022-02-05 20:00')/1000, duration: 80},
+  {name: 'заправка', project: 'Машина', debit:2500, repeat: '/6', start: '2022-01-12', time: '8:00', duration: '0:30'},
+  {name: 'купить продукты', project: 'Общий', debit:8000, repeat: '* * 0', start: '2022-01-04', time: '19:00', duration: '0:80'},
+  {name: 'маму на укол', debit:40000, start: '2022-02-05', time: '10:00', duration: '1:20'},
+  {name: 'тест2', start: '2022-02-05', duration: '0:80'},
 
 
-  {name: 'четные', repeat: '2/2', repeatEnd:new Date('2022-01-16 1:30')/1000, start:new Date('2021-11-01 01:00')/1000, duration: 0},
-  {name: 'комплексные', repeat: '1/3,20-25', start: new Date('2021-11-01 01:00')/1000, duration: 0},
-  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 08:00')/1000, duration: 60},
-  {name: 'работа', project: 'Рутина', cost: 0, repeat: '* * 1-5', start: new Date('2021-11-01 09:00')/1000, duration: 9*60},
-  {name: 'праздники', cost: 0, start: new Date('2021-12-31 00:00')/1000, end: new Date('2022-01-19 23:59')/1000},
-  {name: 'test', cost: 0, start: new Date('2022-01-14 14:00')/1000, duration: 34*60-1},
-  {name: 'отпуск', cost: 0, start: new Date('2022-01-07 00:00')/1000, duration: 14*24*60-1},
+  {name: 'четные', repeat: '2/2', repeatEnd:'2022-01-16', start:'2021-11-01'},
+  {name: 'комплексные', repeat: '1/3,20-25', start: '2021-11-01'},
+  {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: '2021-11-01', time: '8:00', duration: '1:00'},
+  {name: 'работа', project: 'Рутина', cost: 0, repeat: '* * 1-5', start: '2021-11-01', time: '9:00', duration: '9:00'},
+  {name: 'праздники', cost: 0, start: '2021-12-31', end: '2022-01-19'},
+  {name: 'test', cost: 0, start: '2022-01-14', duration: '34:00'},
+  {name: 'отпуск', cost: 0, start:'2022-01-07', duration: '14d'},
 
 ]
 

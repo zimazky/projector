@@ -5,9 +5,15 @@ import styles from "./EventForm.module.css"
 
 export default function EventForm({event}) {
   const [repeatCheck, setRepeatCheck] = React.useState(event.repeat && event.repeat!='')
-  //const [repeat, setRepeat] = React.useState(event.repeat ?? '')
+  const isNew = event.id?false:true
+  if(isNew) {
+    event.repeatStart = event.start
+    event.credit = 0
+    event.debit = 0
+  }
 
   const onChangeRepeatCheckbox = e => {
+    if(!isNew) return
     setRepeatCheck(s=>!s)
     if(!event.repeat) event.repeat='* * *'
   }
@@ -15,7 +21,7 @@ export default function EventForm({event}) {
   console.log('event',event)
   return (
     <form className={styles.event_form}>
-      <Button>Mark complete</Button>
+      <Button>{event.completed?'Completed':'Mark complete'}</Button>
       <div className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
         {event.name ?? ''}
       </div>

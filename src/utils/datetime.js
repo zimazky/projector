@@ -74,7 +74,6 @@ export default class DateTime {
     return (h>9?'':'0') + h + (m>9?':':':0') + m
   }
 
-
   static getYYYYMMDDTHHMM(timestamp) {
     const d = new Date(timestamp*1000)
     const Y = d.getFullYear()
@@ -84,5 +83,34 @@ export default class DateTime {
     const m = d.getMinutes()
     return Y + (M>9?'-':'-0') + M + (D>9?'-':'-0') + D + (h>9?'T':'T0') + h + (m>9?':':':0') + m
   }
+
+  static HHMMToSeconds(s) {
+    if(!s) return 0
+    const [h, m] = s.split(':',2)
+    console.log('hhmm',h,m)
+    return (h*60 + (+m)) * 60
+  }
+  // DDd HH:MM
+  static DDHHMMToSeconds(s) {
+    const [d, t] = s.split('d',2)
+    console.log(s,d,t)
+    if(t === undefined) return DateTime.HHMMToSeconds(d)
+    return d*86400 + DateTime.HHMMToSeconds(t)
+  }
+
+  static HHMMFromSeconds(s) {
+    if(s===null) return ''
+    const h = ~~(s/3600)
+    const m = ~~((s%3600)/60)
+    return h + (m>9?':':':0') + m
+  }
+
+  static DDHHMMFromSeconds(s) {
+    if(s<0) return ''
+    const d = ~~(s/86400)
+    const t = DateTime.HHMMFromSeconds(s%86400)
+    return (d<1?'':d+'d ') + t
+  }
+
 }
 
