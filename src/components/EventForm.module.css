@@ -15,15 +15,39 @@
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
-.datetime {
+.date {
+  width: 170px;
+  font-size: 20px;
+}
+.time {
+  width: 100px;
   font-size: 20px;
 }
 
 .parameter {
   display: inline-block;
   text-align: left;
+  padding: 2px 0;
 }
+
+.block_parameter {
+  padding: 2px 0;
+}
+
 .row {
   text-align: justify;
   text-align-last: justify;
+}
+
+.repeat_row {
+  margin: 4px 0;
+  font-size: 20px;
+  vertical-align: text-bottom;
+}
+
+.repeat_string {
+  font-size: 20px;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  padding: 2px;
 }

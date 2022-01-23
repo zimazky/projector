@@ -88,7 +88,7 @@ export default function Calendar({children = null}) {
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
-      <div className={styles.Scrolled}> {
+      <div> {
         arrayOfDays.map( week => (
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
             week.map( (d,j) => (
@@ -99,7 +99,8 @@ export default function Calendar({children = null}) {
               onAddEvent={onAddEventHandle}>
                 { d.tasks.map((t,i)=>{
                   if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem id={t.id} key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)} completed={t.completed} onClick={onEventClickHandle}/>
+                  return <EventItem id={t.id} key={i} name={t.name} time={DateTime.getTime(t.start)} days={min(t.days,7-j)}
+                  background={t.background} color={t.color} completed={t.completed} onClick={onEventClickHandle}/>
                 })}
               </CalendarDay>
             ))}

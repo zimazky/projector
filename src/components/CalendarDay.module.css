@@ -1,7 +1,7 @@
 .CalendarDay {
   display: inline-block;
   width: calc(100%/7);
-  border-right:  1px solid lightgray;
+  border-left:  1px solid lightgray;
   vertical-align: top;
 }
 

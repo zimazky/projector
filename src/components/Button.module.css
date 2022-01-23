@@ -4,9 +4,12 @@
 	border-radius: 3px;
 	white-space: nowrap;
 	padding: 3px 6px;
-	margin: 2px;
+	margin: 2px 2px 2px 0;
 	cursor: pointer;
 	vertical-align:middle;
+}
+.button:last-child {
+	margin-right: 0;
 }
 .button:active, .button.active, .button.active:hover {
 	background-color: #F49B25;

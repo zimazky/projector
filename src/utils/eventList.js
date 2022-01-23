@@ -35,6 +35,9 @@ const repeatableToSingle = (id,e,timestamp) => {
     id: id,
     name: e.name,
     comment: e.comment,
+    project: e.project,
+    background: e.background,
+    color: e.color,
     start: start,
     startDay: DateTime.getBeginDayTimestamp(start),
     end: start + e.duration,
@@ -49,6 +52,8 @@ const repeatableToSingle = (id,e,timestamp) => {
 const eventToCompact = (e,timestamp) => ({
   id: e.id,
   name: e.name,
+  background: e.background,
+  color: e.color,
   start: e.start,
   end: e.end,
   days: DateTime.getDifferenceInDays(timestamp,e.end)+1,
@@ -60,9 +65,65 @@ const eventToCompact = (e,timestamp) => ({
 
 // Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме
 // Также подготавливает и оптимизирует данные для сохранения в хранилище (уменьшает размер)
-// Создает новые события, удаляет и изменяет существующие, переводит планируемые в выполненные 
+// Создает новые события, удаляет и изменяет существующие, переводит планируемые в выполненные
+//
+// формат записей в списках rowCompletedList и rowPlannedList:
+// {                                          default   
+//    name:string,                mandatory   
+//    comment:string,             optional    ''
+//    project:string,             optional    ''
+//    timezone:int,               optional    local timezone
+//    start:string 'YYYY.MM.DD',  mandatory
+//    repeat:string 'D M W',      optional    ''
+//    time:string 'HH:MI',        optional    
+//    duration:string 'DD HH:MI', optional    
+//    end:string 'YYYY.MM.DD',    optional
+//    credit:float,               optional    0
+//    debit:float                 optional    0
+// }
+//
+// формат записей в списках completed и planned:
+// {
+//    id:int,             идентификатор
+//    name:string,        наименование
+//    comment:string,     описание
+//    project:string,     наименование проекта
+//    background:string,  цвет фона, из проекта
+//    color:string,       цвет текста, из проекта
+//    start:timestamp,    дата события, указывает на начало дня по местному времени
+//    time:sec,           время начала события, количество секунд с начала дня, (-1)-неопределен
+//    duration:sec,       длительность в секундах, 0-неопределен, если определен задает дату завершения
+//    days:int,           длительность в днях, минимум 1
+//  ??end:timestamp,      дата завершения, 0-неопределен, если определен и duration==0 задает дату завершения
+//    credit:float,       поступление средств
+//    debit:float,        списание средств
+//    completed:boolean   true/false
+// }
+// формат записей в списке plannedRepeatable:
+// {
+//    id:int,             идентификатор
+//    name:string,        наименование
+//    comment:string,     описание
+//    project:string,     наименование проекта
+//    background:string,  цвет фона, из проекта
+//    color:string,       цвет текста, из проекта
+//    repeat:string,      шаблон расписания
+//    start:timestamp,    дата начала расписания, указывает на начало дня по местному времени
+//    time:sec,           время начала события, количество секунд с начала дня, (-1)-неопределен
+//    duration:sec,       длительность события в секундах, 0-неопределен
+//    days:int,           длительность в днях
+//    end:timestamp,      конец действия расписания, 0-неопределен
+//    credit:float,       поступление средств
+//    debit:float,        списание средств
+//    completed:boolean   false
+// }
+
+
 export default class EventList {
-  constructor(rowCompletedList, rowPlannedList) {
+  static default_background = 'lightgray'
+  static default_color = 'black'
+
+  constructor(rowCompletedList, rowPlannedList, rowProjects) {
 
     this.cachedPlannedEvents = []
     this.cachedCompletedEvents = []
@@ -70,11 +131,19 @@ export default class EventList {
     this.cachedPlannedBalance = []
 
     this.lastId = 1
+    this.projects = [...rowProjects]
+    console.log(this.projects)
     this.completed = rowCompletedList.map(e=>{
+      const project = e.project?
+        this.projects.find(p=>p.name===e.project):
+        {name: '', background: EventList.default_background, color: EventList.default_color}
       return {
         id: this.lastId++,
         name: e.name,
         comment: e.comment?? '',
+        project: project.name,
+        background: project.background,
+        color: project.color,
         start: e.start,
         startDay: DateTime.getBeginDayTimestamp(e.start),
         end: Event.getEnd(e),
@@ -87,11 +156,17 @@ export default class EventList {
     this.planned = []
     this.plannedRepeatable = []
     rowPlannedList.forEach(e=>{
+      const project = e.project?
+        this.projects.find(p=>p.name===e.project):
+        {name: '', background: EventList.default_background, color: EventList.default_color}
       if(e.repeat) {
         this.plannedRepeatable.push({
           id: this.lastId++,
           name: e.name,
           comment: e.comment?? '',
+          project: project.name,
+          background: project.background,
+          color: project.color,
           repeat: e.repeat,
           repeatStart: e.start, //?????? может не нужен
           repeatStartDay: DateTime.getBeginDayTimestamp(e.start),
@@ -109,6 +184,9 @@ export default class EventList {
         id: this.lastId++,
         name: e.name,
         comment: e.comment?? '',
+        project: project.name,
+        background: project.background,
+        color: project.color,
         start: e.start,
         startDay: DateTime.getBeginDayTimestamp(e.start),
         end: Event.getEnd(e),
