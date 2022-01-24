@@ -3,20 +3,24 @@ import ZCron from './zcron.js'
 
 
 // Преобразование повторяемого события в одиночное
-const repeatableToSingle = (id, e, timestamp) => ({
-  id: id,
-  name: e.name,
-  comment: e.comment,
-  project: e.project,
-  background: e.background,
-  color: e.color,
-  start: timestamp,
-  time: e.time,
-  end: timestamp + 86400,
-  days: 1,
-  credit: e.credit,
-  debit: e.debit,
-})
+const repeatableToSingle = (id, e, timestamp) => {
+  //const startdatetime = timestamp + (e.time===null?0:e.time)
+  //const end = startdatetime + (e.duration?e.duration:86400)
+  return {
+    id: id,
+    name: e.name,
+    comment: e.comment,
+    project: e.project,
+    background: e.background,
+    color: e.color,
+    start: timestamp,
+    time: e.time,
+    end: timestamp+86400,
+    days: 1,
+    credit: e.credit,
+    debit: e.debit,
+  }
+}
 
 // Преобразование события в компактное представление для кэша и для отображения
 const eventToCompact = (e, timestamp, completed) => ({
@@ -24,7 +28,6 @@ const eventToCompact = (e, timestamp, completed) => ({
   name: e.name,
   background: e.background,
   color: e.color,
-  start: e.start,
   time: e.time,
   end: e.end,
   days: Math.ceil((e.end-timestamp)/86400),
@@ -45,10 +48,10 @@ const eventToCompact = (e, timestamp, completed) => ({
 //    project:string,                 optional    ''
 //  ??timezone:int,                   optional    local timezone
 //    repeat:string 'D M W',          optional    ''
-//    start:string 'YYYY.MM.DD',      mandatory
-//    end:string 'YYYY.MM.DD',        optional
-//    time:string 'HH:MI',            optional    
-//    duration:string 'DD HH:MI',     optional  
+//    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
+//    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
+//    time:string 'HH:MI',            optional    null
+//    duration:string 'DDd HH:MI',    optional    0
 //    credit:float,                   optional    0
 //    debit:float                     optional    0
 // }
@@ -68,7 +71,7 @@ const rawToEvent = e => {
       project: e.project ?? '',
       repeat: e.repeat,
       start, time, duration,
-      repeatEnd: e.repeatEnd? DateTime.getBeginDayTimestamp(new Date(e.repeatEnd)/1000) : 0,
+      end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
       credit: e.credit ?? 0, debit: e.debit ?? 0
     }
   }
@@ -95,10 +98,9 @@ const rawToEvent = e => {
 //    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
 //    duration:sec,       длительность в секундах, 0-неопределен, если определен задает дату завершения
 //    days:int,           длительность в днях, минимум 1
-//  ??end:timestamp,      дата завершения, 0-неопределен, если определен и duration==0 задает дату завершения
+//    end:timestamp,      дата завершения, 0-неопределен, если определен и duration==0 задает дату завершения
 //    credit:float,       поступление средств
 //    debit:float,        списание средств
-//    completed:boolean   true/false
 // }
 // формат записей в списке plannedRepeatable:
 // {
@@ -110,13 +112,12 @@ const rawToEvent = e => {
 //    color:string,       цвет текста, из проекта
 //    repeat:string,      шаблон расписания
 //    start:timestamp,    дата начала расписания, указывает на начало дня по местному времени
-//    time:sec,           время начала события, количество секунд с начала дня, (-1)-неопределен
+//    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
 //    duration:sec,       длительность события в секундах, 0-неопределен
-//    days:int,           длительность в днях
+//    days:1,             длительность в днях, для повторяемых всегда 1
 //    end:timestamp,      конец действия расписания, 0-неопределен
 //    credit:float,       поступление средств
 //    debit:float,        списание средств
-//    completed:boolean   false
 // }
 
 
@@ -170,10 +171,10 @@ export default class EventList {
           background: project.background,
           color: project.color,
           repeat: e.repeat,
-          repeatStart: e.start,
+          start: e.start,
           time: e.time,
           duration: e.duration,
-          repeatEnd: e.repeatEnd,
+          end: e.end,
           days: 1,
           credit: e.credit,
           debit: e.debit,
@@ -198,8 +199,41 @@ export default class EventList {
     })
     this.sort()
     this.lastActualBalance = this.calculateActualBalance()
-    this.lastActualBalanceDate = this.completed[this.completed.length-1].start
-    this.firstActualBalanceDate = this.completed[0].start
+    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+
+  deleteEvent(id) {
+    this.completed = this.completed.filter(e=>e.id!==id)
+    this.planned = this.planned.filter(e=>e.id!==id)
+    this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+    this.cachedPlannedEvents = []
+    this.cachedCompletedEvents = []
+    this.cachedActualBalance = []
+    this.cachedPlannedBalance = []
+    this.lastActualBalance = this.calculateActualBalance()
+    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+
+  completeEvent(id, timestamp) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const newevent = {...event, id: this.lastId++}
+      this.planned.push(newevent)
+      this.deleteEvent(event.id)
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const newevent = {...event, id: this.lastId++}
+      this.completed.push(newevent)
+      this.deleteEvent(event.id)
+      return
+    }
+
+    //this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+
   }
 
   // Функция сортировки событий
@@ -232,9 +266,9 @@ export default class EventList {
       return a.push(eventToCompact(e,timestamp,false)), a
     }, [])
     this.plannedRepeatable.reduce( (a,e)=>{
-      if(timestamp<e.repeatStart) return a
-      if(e.repeatEnd && timestamp+e.time >= e.repeatEnd) return a
-      if(ZCron.isMatch(e.repeat, e.repeatStart, timestamp)) 
+      if(timestamp<e.start) return a
+      if(e.end && timestamp+e.time >= e.end) return a
+      if(ZCron.isMatch(e.repeat, e.start, timestamp)) 
         a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp,false))
       return a
     }, events)
@@ -340,10 +374,11 @@ export default class EventList {
       const out = {}
       out.name = e.name
       if(e.comment) out.comment = e.comment
+      if(e.project) out.project = e.project
       out.start = DateTime.getYYYYMMDD(e.start)
       if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
       if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else out.end = DateTime.getYYYYMMDD(e.end)
+      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
       if(e.credit) out.credit = e.credit
       if(e.debit) out.debit = e.debit
       return out
@@ -353,11 +388,12 @@ export default class EventList {
       const out = {}
       out.name = e.name
       if(e.comment) out.comment = e.comment
+      if(e.project) out.project = e.project
       out.repeat = e.repeat
-      out.start = DateTime.getYYYYMMDD(e.repeatStart)
+      out.start = DateTime.getYYYYMMDD(e.start)
       if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
       if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      if(e.repeatEnd) out.repeatEnd = DateTime.getYYYYMMDD(e.repeatEnd)
+      if(e.end) out.end = DateTime.getYYYYMMDD(e.end)
       if(e.credit) out.credit = e.credit
       if(e.debit) out.debit = e.debit
       return a.push(out), a
@@ -367,16 +403,17 @@ export default class EventList {
       const out = {}
       out.name = e.name
       if(e.comment) out.comment = e.comment
+      if(e.project) out.project = e.project
       out.start = DateTime.getYYYYMMDD(e.start)
       if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
       if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else out.end = DateTime.getYYYYMMDD(e.end)
+      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
       if(e.credit) out.credit = e.credit
       if(e.debit) out.debit = e.debit
       return a.push(out), a
     }, plannedList)
 
-    return {completedList, plannedList}
+    return {projectsList: this.projects, completedList, plannedList}
   }
 
 

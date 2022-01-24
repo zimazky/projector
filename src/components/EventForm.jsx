@@ -3,11 +3,10 @@ import { eventList } from "../utils/schedule"
 import Button from "./Button.jsx"
 import styles from "./EventForm.module.css"
 
-export default function EventForm({event}) {
+export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,timestamp)=>{}}) {
   const [repeatCheck, setRepeatCheck] = React.useState(event.repeat && event.repeat!='')
   const isNew = event.id?false:true
   if(isNew) {
-    event.repeatStart = event.start
     event.credit = 0
     event.debit = 0
   }
@@ -21,7 +20,9 @@ export default function EventForm({event}) {
   console.log('event',event)
   return (
     <form className={styles.event_form}>
-      <Button>{event.completed?'Completed':'Mark complete'}</Button>
+      <Button onClick={()=>onComplete(event.id, event.start)}>{event.completed?'Mark uncompleted':'Complete'}</Button>
+      {!isNew && <Button onClick={()=>onDelete(event.id)}>Delete</Button>}
+
       <div className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
         {event.name ?? ''}
       </div>
@@ -55,23 +56,23 @@ export default function EventForm({event}) {
 
       <div>start date:</div>
       <input type='date' className={styles.date}
-        defaultValue={DateTime.getYYYYMMDD(event.repeat?event.repeatStart:event.start ?? 0)}></input>
+        defaultValue={DateTime.getYYYYMMDD(event.start ?? 0)}></input>
       <div className={styles.row}>
         <div className={styles.parameter}>
           <div>time:</div>
-          <input type='time' className={styles.time}
-            defaultValue={DateTime.getHHMM(event.repeat?event.repeatStart:event.start ?? 0)}></input>
+          <input type='text' className={styles.time}
+            defaultValue={DateTime.HHMMFromSeconds(event.time)}></input>
         </div>
         {' '}
         <div className={styles.parameter}>
           <div>duration:</div>
-          <input type='time' className={styles.time}
-            defaultValue=''></input>
+          <input type='text' className={styles.time}
+            defaultValue={DateTime.DDHHMMFromSeconds(event.duration ?? 0)}></input>
         </div>
       </div>
       <div>end date:</div>
       <input type='date' className={styles.date}
-        defaultValue={DateTime.getYYYYMMDD(event.repeat?event.repeatStart:event.start ?? 0)}></input>
+        defaultValue={DateTime.getYYYYMMDD(event.end ?? 0)}></input>
       <div>credit:</div>
         <div className={styles.comment} contentEditable='true' suppressContentEditableWarning={true}>{event.credit}</div>
       <div>debit:</div>

@@ -6,12 +6,14 @@ import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
+import useUpdate from '../hooks/useUpdate.js'
 
 const dayHeight = 150
 const weekBuffer = 4
 
 export default function Calendar({children = null}) {
 
+  const forceUpdate = useUpdate()
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
@@ -75,8 +77,16 @@ export default function Calendar({children = null}) {
     setModal(true)
   })
 
-  const onCompleteEvent = id => {
-    
+  const onCompleteEvent = (id, timestamp) => {
+    eventList.completeEvent(id, timestamp)
+    setModal(false)
+    forceUpdate()
+  }
+
+  const onDeleteEvent = id => {
+    eventList.deleteEvent(id)
+    setModal(false)
+    forceUpdate()
   }
 
   console.log('draw calendar')
@@ -112,7 +122,7 @@ export default function Calendar({children = null}) {
       </div>
     </div>
     <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
-      <EventForm event={modalState}/>
+      <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent}/>
     </Modal>
     </div>
   )

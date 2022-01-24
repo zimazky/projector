@@ -35,7 +35,7 @@ const plannedTasks = [
   {name: 'тест2', start: '2022-02-05', duration: '0:80'},
 
 
-  {name: 'четные', repeat: '2/2', repeatEnd:'2022-01-16', start:'2021-11-01'},
+  {name: 'четные', repeat: '2/2', end:'2022-01-16', start:'2021-11-01'},
   {name: 'комплексные', repeat: '1/3,20-25', start: '2021-11-01'},
   {name: 'дорога на работу', cost: 0, repeat: '* * 1-5', start: '2021-11-01', time: '8:00', duration: '1:00'},
   {name: 'работа', project: 'Рутина', cost: 0, repeat: '* * 1-5', start: '2021-11-01', time: '9:00', duration: '9:00'},
@@ -45,7 +45,12 @@ const plannedTasks = [
 
 ]
 
-export const eventList = new EventList(actualTasks,plannedTasks,projects)
+const json = '{"projectsList":[{"name":"Общий","background":"blue","color":"white"},{"name":"Доход","background":"red","color":"white"},{"name":"Машина","background":"violet","color":"white"},{"name":"Дача","background":"yellow","color":"black"},{"name":"Рутина","background":"gray","color":"white"}],"completedList":[{"name":"НО +30000","comment":"начальный остаток","project":"Доход","start":"2022-01-01","credit":52683}],"plannedList":[{"name":"четные","repeat":"2/2","start":"2021-11-01","end":"2022-01-16"},{"name":"комплексные","repeat":"1/3,20-25","start":"2021-11-01"},{"name":"заправка","project":"Машина","repeat":"/6","start":"2022-01-12","time":"8:00","duration":"0:30","debit":2500},{"name":"дорога на работу","repeat":"* * 1-5","start":"2021-11-01","time":"8:00","duration":"1:00"},{"name":"пенсия мамы","project":"Доход","repeat":"17","start":"2021-12-01","time":"9:00","duration":"0:20","credit":31000},{"name":"работа","project":"Рутина","repeat":"* * 1-5","start":"2021-11-01","time":"9:00","duration":"9:00"},{"name":"ЗП +40020","project":"Доход","repeat":"10,25 * *","start":"2021-12-01","time":"10:00","duration":"0:20","credit":40020},{"name":"купить продукты","project":"Общий","repeat":"* * 0","start":"2022-01-04","time":"19:00","duration":"1:20","debit":8000},{"name":"праздники","start":"2021-12-31","end":"2022-01-19"},{"name":"отпуск","start":"2022-01-07","duration":"14d 0:00"},{"name":"test","start":"2022-01-14","duration":"1d 10:00"},{"name":"маму на укол","start":"2022-02-05","time":"10:00","duration":"1:20","debit":40000},{"name":"тест2","start":"2022-02-05","duration":"1:20"}]}'
+
+const obj = JSON.parse(json)
+export const eventList = new EventList(obj.completedList,obj.plannedList,obj.projectsList)
+
+//export const eventList = new EventList(actualTasks,plannedTasks,projects)
 
 
 
