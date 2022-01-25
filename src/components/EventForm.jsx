@@ -20,7 +20,7 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
   console.log('event',event)
   return (
     <form className={styles.event_form}>
-      <Button onClick={()=>onComplete(event.id, event.start)}>{event.completed?'Mark uncompleted':'Complete'}</Button>
+      <Button onClick={()=>onComplete(event.id, event.timestamp)}>{event.completed?'Mark uncompleted':'Complete'}</Button>
       {!isNew && <Button onClick={()=>onDelete(event.id)}>Delete</Button>}
 
       <div className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>

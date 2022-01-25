@@ -69,11 +69,14 @@ export default function Calendar({children = null}) {
     setModal(true)
   })
 
-  const onEventClickHandle = React.useCallback((id,completed) => {
+  const onEventClickHandle = React.useCallback(compactEvent => {
+    const id = compactEvent.id
+    const completed = compactEvent.completed
     const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
       eventList.plannedRepeatable.find(e=>e.id===id)
-    s.completed = completed
-    setModalState(s)
+    const timestamp = compactEvent.start
+    console.log('compactEvent',compactEvent)
+    setModalState({...s, completed, timestamp})
     setModal(true)
   })
 

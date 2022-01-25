@@ -1,8 +1,8 @@
 import DateTime from '../utils/datetime.js'
 import styles from './EventItem.module.css'
 
-export default function EventItem({event, days, onClick=(id,completed)=>{} }) {
-  const {id,name,completed,background,color} = event
+export default function EventItem({event, days, onClick=(compactEvent)=>{} }) {
+  const {name,completed,background,color} = event
   return (
   <div className={styles.item} 
     style={{
@@ -10,7 +10,7 @@ export default function EventItem({event, days, onClick=(id,completed)=>{} }) {
       backgroundColor: background,
       color: color
     }} 
-    onClick={e=>{e.stopPropagation(); onClick(id, completed)}}>
+    onClick={e=>{e.stopPropagation(); onClick(event)}}>
     {completed && <div className={styles.completed}></div>}
     <div className={styles.event_row}>
       <div className={styles.complete_button}>{completed?'✔':'☐'}</div>

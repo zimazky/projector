@@ -28,6 +28,7 @@ const eventToCompact = (e, timestamp, completed) => ({
   name: e.name,
   background: e.background,
   color: e.color,
+  start: e.start, // для идентификации конкретного повторяемого события
   time: e.time,
   end: e.end,
   days: Math.ceil((e.end-timestamp)/86400),
@@ -157,50 +158,52 @@ export default class EventList {
     })
     this.planned = []
     this.plannedRepeatable = []
-    rawPlannedList.forEach(raw=>{
-      const e = rawToEvent(raw)
-      const project = e.project?
-        this.projects.find(p=>p.name===e.project):
-        {name: '', background: EventList.default_background, color: EventList.default_color}
-      if(e.repeat) {
-        this.plannedRepeatable.push({
-          id: this.lastId++,
-          name: e.name,
-          comment: e.comment,
-          project: project.name,
-          background: project.background,
-          color: project.color,
-          repeat: e.repeat,
-          start: e.start,
-          time: e.time,
-          duration: e.duration,
-          end: e.end,
-          days: 1,
-          credit: e.credit,
-          debit: e.debit,
-        })
-        return
-      }
-      this.planned.push({
+    rawPlannedList.forEach(raw=>this.addPlannedEvent(raw))
+    this.sort()
+    this.lastActualBalance = this.calculateActualBalance()
+    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+
+  addPlannedEvent(raw) {
+    const e = rawToEvent(raw)
+    const project = e.project?
+      this.projects.find(p=>p.name===e.project):
+      {name: '', background: EventList.default_background, color: EventList.default_color}
+    if(e.repeat) {
+      this.plannedRepeatable.push({
         id: this.lastId++,
         name: e.name,
         comment: e.comment,
         project: project.name,
         background: project.background,
         color: project.color,
+        repeat: e.repeat,
         start: e.start,
         time: e.time,
         duration: e.duration,
         end: e.end,
-        days: Math.ceil((e.end-e.start)/86400),
+        days: 1,
         credit: e.credit,
         debit: e.debit,
       })
+      return
+    }
+    this.planned.push({
+      id: this.lastId++,
+      name: e.name,
+      comment: e.comment,
+      project: project.name,
+      background: project.background,
+      color: project.color,
+      start: e.start,
+      time: e.time,
+      duration: e.duration,
+      end: e.end,
+      days: Math.ceil((e.end-e.start)/86400),
+      credit: e.credit,
+      debit: e.debit,
     })
-    this.sort()
-    this.lastActualBalance = this.calculateActualBalance()
-    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
-    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
 
   deleteEvent(id) {
@@ -221,6 +224,7 @@ export default class EventList {
     if(event !== undefined) {
       const newevent = {...event, id: this.lastId++}
       this.planned.push(newevent)
+      this.sort()
       this.deleteEvent(event.id)
       return
     }
@@ -228,12 +232,38 @@ export default class EventList {
     if(event !== undefined) {
       const newevent = {...event, id: this.lastId++}
       this.completed.push(newevent)
+      this.sort()
       this.deleteEvent(event.id)
       return
     }
-
-    //this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
-
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      const newevent = repeatableToSingle(this.lastId++, event, timestamp)
+      this.completed.push(newevent)
+      // Добавляем только если есть события в предшествующем интервале
+      if(ZCron.ariseInInterval(event.repeat,event.start,event.start,timestamp)) {
+        const first = {...event, end: timestamp, id: this.lastId++}
+        this.plannedRepeatable.push(first)
+      }
+      if(event.repeat[0]=='/') { // Для повторяемых в днях относительно начала шаблона пересчитываем начальную дату
+        const d = +event.repeat.substr(1)
+        event.start = timestamp + d*86400
+      }
+      else event.start = timestamp+86400
+      // Удаляем, если в оставшемся интервале нет событий
+      if(event.end && !ZCron.ariseInInterval(event.repeat,event.start,event.start,event.end)) {
+        this.deleteEvent(event.id)
+      }
+      this.sort()
+      this.cachedPlannedEvents = []
+      this.cachedCompletedEvents = []
+      this.cachedActualBalance = []
+      this.cachedPlannedBalance = []
+      this.lastActualBalance = this.calculateActualBalance()
+      this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+      this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+      return
+    }
   }
 
   // Функция сортировки событий
@@ -343,7 +373,7 @@ export default class EventList {
   // Фактический баланс на начало дня
   getActualBalance(timestamp) {
     if(timestamp < this.firstActualBalanceDate) return 0
-    if(timestamp >= this.lastActualBalanceDate) return this.lastActualBalance
+    if(timestamp > this.lastActualBalanceDate) return this.lastActualBalance
     if(this.cachedActualBalance[timestamp] !== undefined) return this.cachedActualBalance[timestamp]
     const balance = this.completed.reduce((a,e)=>{
       if(timestamp > e.start+e.time) a += e.credit - e.debit
@@ -356,7 +386,7 @@ export default class EventList {
   // Планируемый баланс на начало дня
   getPlannedBalance(timestamp) {
     if(timestamp < this.firstActualBalanceDate) return 0
-    if(timestamp < this.lastActualBalanceDate) return this.getActualBalance(timestamp)
+    if(timestamp <= this.lastActualBalanceDate) return this.getActualBalance(timestamp)
     if(this.cachedPlannedBalance[timestamp] !== undefined) return this.cachedPlannedBalance[timestamp]
     const prevEvents = this.getPlannedEventsInInterval(this.lastActualBalanceDate,timestamp)
     const balance = prevEvents.reduce((a,e)=>a += e.credit-e.debit, this.lastActualBalance)

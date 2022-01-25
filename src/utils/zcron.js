@@ -71,4 +71,10 @@ export default class ZCron {
     return false
   }
 
+  static ariseInInterval(scheduleString, startTimestamp, begin, end) {
+    for(var t=begin;t<end;t+=86400) {
+      if(this.isMatch(scheduleString, startTimestamp, t)) return true
+    }
+    return false
+  }
 }
