@@ -23,6 +23,22 @@ const repeatableToSingle = (id, e, timestamp) => {
 }
 
 // Преобразование события в компактное представление для кэша и для отображения
+// повторяемых событий нет, они представляются одиночными
+// многодневные события представлены отдельными событиями на каждый день
+// {
+//    id,                     идентификатор
+//    name,                   наименование
+//    background,             цвет фона
+//    color,                  цвет текста
+//    start, ??               начальная дата события (для повторяемых текущая дата)
+//    date, ??                текущая дата
+//    time,                   время события
+//    end,                    дата завершения события
+//    days,                   длительность в днях, начиная с текущей даты (для повторяемых 1)
+//    credit,                 поступление средств
+//    debit,                  списание средств
+//    completed               признак завершенности
+// }
 const eventToCompact = (e, timestamp, completed) => ({
   id: e.id,
   name: e.name,
@@ -38,16 +54,12 @@ const eventToCompact = (e, timestamp, completed) => ({
 })
 
 
-// Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме
-// Также подготавливает и оптимизирует данные для сохранения в хранилище (уменьшает размер)
-// Создает новые события, удаляет и изменяет существующие, переводит планируемые в выполненные
-//
+// Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
 // формат записей в списках rawCompletedList и rowPlannedList:
 // {                                          default   
 //    name:string,                    mandatory   
 //    comment:string,                 optional    ''
 //    project:string,                 optional    ''
-//  ??timezone:int,                   optional    local timezone
 //    repeat:string 'D M W',          optional    ''
 //    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
 //    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
@@ -62,8 +74,6 @@ const rawToEvent = e => {
   const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
   const time = e.time? DateTime.HHMMToSeconds(e.time) : null
   const duration = e.duration? DateTime.DDHHMMToSeconds(e.duration) : 0
-  console.log(duration)
-
 
   if(e.repeat) {
     return {
@@ -87,7 +97,10 @@ const rawToEvent = e => {
   }
 }
 
-// формат записей в списках completed и planned:
+// Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме
+// Также подготавливает и оптимизирует данные для сохранения в хранилище (уменьшает размер)
+// Создает новые события, удаляет и изменяет существующие, переводит планируемые в выполненные
+// формат записей Event в списках completed и planned:
 // {
 //    id:int,             идентификатор
 //    name:string,        наименование
@@ -128,8 +141,7 @@ export default class EventList {
 
   constructor(rawCompletedList, rawPlannedList, rawProjects) {
 
-    this.cachedPlannedEvents = []
-    this.cachedCompletedEvents = []
+    this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
 
@@ -210,8 +222,7 @@ export default class EventList {
     this.completed = this.completed.filter(e=>e.id!==id)
     this.planned = this.planned.filter(e=>e.id!==id)
     this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
-    this.cachedPlannedEvents = []
-    this.cachedCompletedEvents = []
+    this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
@@ -219,6 +230,7 @@ export default class EventList {
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
 
+  // Функция завершения события для незавершенных или отмены завершения для завершенных
   completeEvent(id, timestamp) {
     var event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
@@ -255,8 +267,7 @@ export default class EventList {
         this.deleteEvent(event.id)
       }
       this.sort()
-      this.cachedPlannedEvents = []
-      this.cachedCompletedEvents = []
+      this.cachedEvents = []
       this.cachedActualBalance = []
       this.cachedPlannedBalance = []
       this.lastActualBalance = this.calculateActualBalance()
@@ -266,8 +277,8 @@ export default class EventList {
     }
   }
 
-  // Функция сортировки событий
-  // подготавливает данные для корректной отрисовки
+  // Функция предварительной сортировки событий
+  // упорядочивает для более быстрой сортировки в методе getEvents
   sort() {
     // в начало массива поднимаются события с самой ранней датой начала start
     // при одинаковой дате начала первыми идут задачи с наибольшей длительностью в днях days
@@ -283,14 +294,10 @@ export default class EventList {
     this.plannedRepeatable.sort((a,b)=>a.time-b.time)
   }
 
-  // Вычисление фактического баланса на момент последнего выполненного события
-  calculateActualBalance() {
-    return this.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
-  }
-
-  // Список планируемых событий, используется кэширование
-  getPlannedEvents(timestamp) {
-    if(this.cachedPlannedEvents[timestamp] !== undefined) return this.cachedPlannedEvents[timestamp]
+  // список всех событий за день, отсортированных для отрисовки
+  // данные кэшируются
+  getEvents(timestamp) {
+    if(this.cachedEvents[timestamp] !== undefined) return this.cachedEvents[timestamp]
     const events = this.planned.reduce( (a,e)=>{
       if(timestamp < e.start || timestamp >= e.end) return a
       return a.push(eventToCompact(e,timestamp,false)), a
@@ -302,22 +309,24 @@ export default class EventList {
         a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp,false))
       return a
     }, events)
-    this.cachedPlannedEvents[timestamp] = events
-    //console.log(events)
+    this.completed.reduce( (a,e) => {
+      if(timestamp >= e.start && timestamp < e.end) a.push(eventToCompact(e,timestamp,true))
+      return a
+    }, events)
+    events.sort((a,b)=>{
+      // сначала с более ранней датой начала start (многодневные наверху)
+      // при одинаковой дате начала, первыми будут с наибольшей длительностью end-start
+      // при одинаковой длительности, по времени события time
+      var d = a.start-b.start
+      if(d) return d
+      d = (b.end-b.start)-(a.end-a.start)
+      if(d) return d
+      return a.time-b.time
+    })
+    this.cachedEvents[timestamp] = events
     return events
   }
 
-  // Список выполненных событий, используется кэширование
-  getCompletedEvents(timestamp) {
-    if(this.cachedCompletedEvents[timestamp] !== undefined) return this.cachedCompletedEvents[timestamp]
-    const events = this.completed.reduce( (a,e) => {
-      if(timestamp >= e.start && timestamp < e.end) a.push(eventToCompact(e,timestamp,true))
-      return a
-    }, [])
-    this.cachedCompletedEvents[timestamp] = events
-    return events
-  }
-  
   // Список событий за день с плейсхолдерами ({id:-1}), за исключением соответствующих id из стека skip
   // Может использоваться для создания структуры для рендеринга в календаре с многодневными событиями
   // Стек skip обновляется для возможности использования в цепочке обработок
@@ -332,17 +341,12 @@ export default class EventList {
     // добавление плейсхолдеров
     skip.forEach( _=>events.push({id: -1}) )
 
-    this.getPlannedEvents(timestamp).reduce((a,e)=>{
-      //if(e.days>1) {
+    this.getEvents(timestamp).reduce((a,e)=>{
       if(skip.some(s=>e.id===s.id)) return a
       if(e.days>1) skip.push({id:e.id,end:e.end})
-      //}
       return a.push(e), a
     }, events)
 
-    this.getCompletedEvents(timestamp).reduce((a,e)=>{
-      return a.push(e), a
-    }, events)
     return events
   }
 
@@ -354,11 +358,9 @@ export default class EventList {
       if(timestamp < skip[skip.length-1].end) break
       skip.pop()
     }
-    this.getPlannedEvents(timestamp).reduce((a,e)=>{
-      //if(e.days>1) {
-      if(skip.some(s=>e.id===s.id)) return a
+    this.getEvents(timestamp).reduce((a,e)=>{
+      if(skip.some(s=>e.id===s.id) || e.completed) return a
       if(e.days>1) skip.push({id:e.id,end:e.end})
-      //}
       return a.push(e), a
     }, events)
   }
@@ -370,6 +372,11 @@ export default class EventList {
     return events
   }
 
+  // Вычисление фактического баланса на момент последнего выполненного события
+  calculateActualBalance() {
+    return this.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
+  }
+  
   // Фактический баланс на начало дня
   getActualBalance(timestamp) {
     if(timestamp < this.firstActualBalanceDate) return 0
@@ -394,8 +401,9 @@ export default class EventList {
     return balance
   }
 
+  // Планируемое изменение баланса с учетом завершенных событий
   getPlannedBalanceChange(timestamp) {
-    return this.getPlannedEvents(timestamp).reduce((a,e)=> a += e.credit-e.debit, 0)
+    return this.getEvents(timestamp).reduce((a,e)=> a += e.credit-e.debit, 0)
   }
 
   // Подготовка для сохранения в хранилище
