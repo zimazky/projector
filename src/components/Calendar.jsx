@@ -9,7 +9,7 @@ import EventForm from './EventForm.jsx'
 import useUpdate from '../hooks/useUpdate.js'
 
 const dayHeight = 150
-const weekBuffer = 4
+const weekBuffer = 2
 
 export default function Calendar({children = null}) {
 
