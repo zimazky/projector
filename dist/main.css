@@ -50,46 +50,31 @@
   overflow: hidden;
 }
 
-.CalendarDay_afb7130 {
+.day_d84e778 {
   display: inline-block;
   width: calc(100%/7);
+  height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
 }
-
-.CalendarDayHeader_ce37fdc {
+.header_d741756 {
   color: gray;
   font-size: 12px;
   padding: 1px 4px;
 }
-
-.DayTaskInput_c3fce47 {
-  width: 100%;
-  padding: 2px 4px;
-}
-
-.DayTaskInput_c3fce47 input {
-  width: 100%;
-  font-size: 11px;
-  resize: none;
-  /*outline-color: lightgray;*/
-  border-style: none;
-  outline: none;
-  overflow: hidden;
-  padding: 0;
-}
-
 .balance_c271232 {
   margin: 0 1px;
   height: 14px;
   overflow: hidden;
   white-space: nowrap;
+  text-align: justify;
+  text-align-last: justify;
 }
-.plannedBalance_dee8e33 {
-  white-space: nowrap;
-}
-.actualBalance_c28974d {
-  float: right;
+.input_f2f0e78 {
+  outline-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  padding: 2px;
 }
 .item_bb964bd, .completed_b30da5e{
   position: relative;
@@ -114,34 +99,32 @@
 }
 
 .event_row_c1f0c4e {
-  margin-left: -12px;
-  transition: margin-left 200ms;
+  /*margin-left: -12px;*/
+  /*transition: margin-left 200ms;*/
+  text-align: justify;
+  text-align-last: justify;
 }
-.event_row_c1f0c4e:hover {
+/*
+.event_row:hover {
   margin-left: 0;
 }
+*/
 .complete_button_a23d2b0 {
   display: inline-block;
   width: 12px;
   cursor: pointer;
 }
 
-.EventPlaceholder_b109d15 {
+.placeholder_c47b4a3 {
   height: 18px;
   margin-top: -1px;
 }
-/*
-.name {
+.name_ddde4d8 {
   display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-*/
 .time_c10a237 {
-  text-align: right;
-  width: 25px;
-  float: right;
-}
+  display: inline-block;
+} 
 .modalOverlay_faa7164 {
   background-color: rgba(0,0,0,0.5);
   position: fixed;

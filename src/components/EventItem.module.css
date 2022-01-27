@@ -21,31 +21,29 @@
 }
 
 .event_row {
-  margin-left: -12px;
-  transition: margin-left 200ms;
+  /*margin-left: -12px;*/
+  /*transition: margin-left 200ms;*/
+  text-align: justify;
+  text-align-last: justify;
 }
+/*
 .event_row:hover {
   margin-left: 0;
 }
+*/
 .complete_button {
   display: inline-block;
   width: 12px;
   cursor: pointer;
 }
 
-.EventPlaceholder {
+.placeholder {
   height: 18px;
   margin-top: -1px;
 }
-/*
 .name {
   display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
-*/
 .time {
-  text-align: right;
-  width: 25px;
-  float: right;
-}
+  display: inline-block;
+} 

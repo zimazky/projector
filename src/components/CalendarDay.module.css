@@ -1,41 +1,26 @@
-.CalendarDay {
+.day {
   display: inline-block;
   width: calc(100%/7);
+  height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
 }
-
-.CalendarDayHeader {
+.header {
   color: gray;
   font-size: 12px;
   padding: 1px 4px;
 }
-
-.DayTaskInput {
-  width: 100%;
-  padding: 2px 4px;
-}
-
-.DayTaskInput input {
-  width: 100%;
-  font-size: 11px;
-  resize: none;
-  /*outline-color: lightgray;*/
-  border-style: none;
-  outline: none;
-  overflow: hidden;
-  padding: 0;
-}
-
 .balance {
   margin: 0 1px;
   height: 14px;
   overflow: hidden;
   white-space: nowrap;
+  text-align: justify;
+  text-align-last: justify;
 }
-.plannedBalance {
-  white-space: nowrap;
-}
-.actualBalance {
-  float: right;
+.input {
+  outline-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  padding: 2px;
 }

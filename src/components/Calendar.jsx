@@ -1,6 +1,6 @@
 import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
-import EventItem, { EventPlaceholder } from './EventItem.jsx'
+import EventItem from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
 import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
@@ -9,7 +9,7 @@ import EventForm from './EventForm.jsx'
 import useUpdate from '../hooks/useUpdate.js'
 
 const dayHeight = 150
-const weekBuffer = 2
+const weekBuffer = 4
 
 export default function Calendar({children = null}) {
 
@@ -108,16 +108,8 @@ export default function Calendar({children = null}) {
         arrayOfDays.map( week => (
           <div className={styles.CalendarWeek} key={week[0].timestamp}> {
             week.map( (d,j) => (
-              <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
-              actualBalance={d.actualBalance} 
-              plannedBalance={d.plannedBalance} 
-              plannedBalanceChange={d.plannedBalanceChange}
-              onAddEvent={onAddEventHandle}>
-                { d.tasks.map((t,i)=>{
-                  if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} event={t} days={min(t.days,7-j)}
-                  onClick={onEventClickHandle}/>
-                })}
+              <CalendarDay data={d} key={d.timestamp} onAddEvent={onAddEventHandle}>
+                { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={onEventClickHandle}/>))}
               </CalendarDay>
             ))}
           </div>

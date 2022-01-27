@@ -3,7 +3,10 @@ import styles from './EventItem.module.css'
 
 export default function EventItem({event, days, onClick=(compactEvent)=>{} }) {
   const {name,completed,background,color} = event
-  return (
+  return ( 
+  event.id === -1 ?
+  <div className={styles.placeholder} ></div>
+  :
   <div className={completed?styles.completed:styles.item} 
     style={{
       width: days==1?'calc(100% + 2px)':'calc(' +days +' * (100% + 1px) + 1px )',
@@ -12,13 +15,8 @@ export default function EventItem({event, days, onClick=(compactEvent)=>{} }) {
     }} 
     onClick={e=>{e.stopPropagation(); onClick(event)}}>
     <div className={styles.event_row}>
-      <div className={styles.complete_button}>{completed?'✔':'☐'}</div>
-      <span className={styles.name}>{name}</span>
-      <span className={styles.time}>{DateTime.HHMMFromSeconds(event.time)}</span>
+{/*      <div className={styles.complete_button}>{completed?'✔':'☐'}</div>*/}
+      <div className={styles.name}>{name}</div>{' '+DateTime.HHMMFromSeconds(event.time)}
     </div>
   </div>)
-}
-
-export function EventPlaceholder() {
-  return <div className={styles.EventPlaceholder} ></div>
 }
