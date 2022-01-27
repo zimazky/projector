@@ -26,10 +26,9 @@ export default function CalendarDay({timestamp, dayHeight, actualBalance, planne
   return (
     <div className={styles.CalendarDay} style={{height: dayHeight}} onClick={onClickHandle}>
       <div className={styles.CalendarDayHeader}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
-      <div className={styles.balance}><span className={styles.plannedBalance}>
-        {minimize(plannedBalance) + 
-        (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k')}
-        </span> <span className={styles.actualBalance}>{minimize(actualBalance)}</span></div>
+      <div className={styles.balance}>{minimize(plannedBalance) + 
+        (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
+        ' ' + minimize(actualBalance)}</div>
       <div className="CalendarDayTasks"> {children} </div>
       <div className={styles.DayTaskInput}>
         <input ref={inputElementRef} rows={1} wrap='off' onBlur={onBlurHandle} onKeyDown={onKeyDownHandle}></input>

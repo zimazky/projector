@@ -7,9 +7,12 @@ import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
 import useUpdate from '../hooks/useUpdate.js'
+import { Fragment } from 'react'
+import CalendarWeek from './CalendarWeek.jsx'
 
 const dayHeight = 150
-const weekBuffer = 2
+const weekBuffer = 4
+const width = 800
 
 export default function Calendar({children = null}) {
 
@@ -93,6 +96,30 @@ export default function Calendar({children = null}) {
   }
 
   console.log('draw calendar')
+  
+  return (
+    <div className={styles.wrapper}>
+    <div className={styles.header}>
+      <Button onClick={onSaveClickHandle}>Save to LocalStorage</Button>
+      <Button>Today</Button>
+      <span ref={divElement} className={styles.monthTitle}></span>
+    </div>
+    <div className={styles.body} onScroll={onScrollHandle} ref={scrollElement}>
+      <table className={styles.table}>
+        <thead>
+          <tr>{ DateTime.WEEKDAYS.map( (d,i) => <th key={i}>{d}</th> ) }</tr>
+        </thead>
+        <tbody>
+        { arrayOfDays.map( week => <CalendarWeek week={week} key={week[0].timestamp} onEventClick={onEventClickHandle}/> ) }
+        </tbody>
+      </table>
+    </div>
+    <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
+      <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent}/>
+    </Modal>
+    </div>
+  )
+  /*
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
@@ -104,29 +131,28 @@ export default function Calendar({children = null}) {
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
-      <div> {
-        arrayOfDays.map( week => (
-          <div className={styles.CalendarWeek} key={week[0].timestamp}> {
-            week.map( (d,j) => (
-              <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
-              actualBalance={d.actualBalance} 
-              plannedBalance={d.plannedBalance} 
-              plannedBalanceChange={d.plannedBalanceChange}
-              onAddEvent={onAddEventHandle}>
-                { d.tasks.map((t,i)=>{
-                  if(t.id === -1) return <EventPlaceholder key={i}/>
-                  return <EventItem key={i} event={t} days={min(t.days,7-j)}
-                  onClick={onEventClickHandle}/>
-                })}
-              </CalendarDay>
-            ))}
-          </div>
-        ))}
-      </div>
+      { arrayOfDays.map( week => (
+        <div className={styles.CalendarWeek} key={week[0].timestamp}> {
+          week.map( (d,j) => (
+            <CalendarDay timestamp={d.timestamp} dayHeight={dayHeight} key={d.timestamp}
+            actualBalance={d.actualBalance} 
+            plannedBalance={d.plannedBalance} 
+            plannedBalanceChange={d.plannedBalanceChange}
+            onAddEvent={onAddEventHandle}>
+              { d.tasks.map((t,i)=>{
+                if(t.id === -1) return <EventPlaceholder key={i}/>
+                return <EventItem key={i} event={t} days={min(t.days,7-j)}
+                onClick={onEventClickHandle}/>
+              })}
+            </CalendarDay>
+          ))}
+        </div>
+      ))}
     </div>
     <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
       <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent}/>
     </Modal>
     </div>
   )
+  */
 }

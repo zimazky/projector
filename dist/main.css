@@ -36,11 +36,11 @@
   padding-left: 4px;
 }
 
-.CalendarBody_b3637e9 {
+.body_bf98b19 {
   width: 100%;
-  height: calc(100% - 25px);
+  height: 100%;
   overflow-y: scroll;
-  /*overflow-x: hidden;*/
+  overflow-x: hidden;
 }
 
 .CalendarWeek_ef509bf {
@@ -50,6 +50,28 @@
   overflow: hidden;
 }
 
+.table_eb8c7a7 {
+  table-layout: fixed;
+  border-collapse: collapse;
+  width: 100%;
+}
+.table_eb8c7a7 th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  background-image: linear-gradient(to top, lightgray 1px, transparent 1px);
+  z-index: 1;
+  height: 20px;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: normal;
+  color: darkgray;
+  text-align: left;
+  padding-left: 4px;
+}
+.table_eb8c7a7 td {
+  border: 1px solid lightgray;
+}
 .CalendarDay_afb7130 {
   display: inline-block;
   width: calc(100%/7);
@@ -83,14 +105,10 @@
   margin: 0 1px;
   height: 14px;
   overflow: hidden;
-  white-space: nowrap;
+  text-align: justify;
+  text-align-last: justify;
 }
-.plannedBalance_dee8e33 {
-  white-space: nowrap;
-}
-.actualBalance_c28974d {
-  float: right;
-}
+
 .item_bb964bd, .completed_b30da5e{
   position: relative;
   width: 100%;
@@ -305,6 +323,38 @@
   white-space: pre-wrap;
   overflow-wrap: break-word;
   padding: 2px;
+}
+.day_f1bfbb2 {
+  color: gray;
+  font-size: 12px;
+  padding: 1px 4px;
+}
+.balance_e1fb28b {
+  margin: 0 1px;
+  height: 14px;
+  overflow: hidden;
+  text-align: justify;
+  text-align-last: justify;
+}
+.events_ef03e21 {
+  height: 150px;
+  width: 100%;
+  overflow: hidden;
+  vertical-align: top;
+}
+.DayTaskInput_fa04abc {
+  width: 100%;
+  padding: 2px 4px;
+}
+.DayTaskInput_fa04abc input {
+  width: 100%;
+  font-size: 11px;
+  resize: none;
+  /*outline-color: lightgray;*/
+  border-style: none;
+  outline: none;
+  overflow: hidden;
+  padding: 0;
 }
 .wrapper_d808929 {
   width: 80vw;

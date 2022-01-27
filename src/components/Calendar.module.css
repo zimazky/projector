@@ -36,11 +36,11 @@
   padding-left: 4px;
 }
 
-.CalendarBody {
+.body {
   width: 100%;
-  height: calc(100% - 25px);
+  height: 100%;
   overflow-y: scroll;
-  /*overflow-x: hidden;*/
+  overflow-x: hidden;
 }
 
 .CalendarWeek {
@@ -48,4 +48,27 @@
   height: 150px;
   width: 100%;
   overflow: hidden;
+}
+
+.table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  width: 100%;
+}
+.table th {
+  position: sticky;
+  top: 0;
+  background-color: white;
+  background-image: linear-gradient(to top, lightgray 1px, transparent 1px);
+  z-index: 1;
+  height: 20px;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: normal;
+  color: darkgray;
+  text-align: left;
+  padding-left: 4px;
+}
+.table td {
+  border: 1px solid lightgray;
 }
