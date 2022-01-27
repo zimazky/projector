@@ -73,9 +73,7 @@
   border: 1px solid lightgray;
 }
 .CalendarDay_afb7130 {
-  display: inline-block;
-  width: calc(100%/7);
-  border-left:  1px solid lightgray;
+  width: 100%;
   vertical-align: top;
 }
 
@@ -324,6 +322,9 @@
   overflow-wrap: break-word;
   padding: 2px;
 }
+.week_be59717 {
+  height: 150px;
+}
 .day_f1bfbb2 {
   color: gray;
   font-size: 12px;
@@ -342,11 +343,11 @@
   overflow: hidden;
   vertical-align: top;
 }
-.DayTaskInput_fa04abc {
+.input_f8dcf0c {
   width: 100%;
   padding: 2px 4px;
 }
-.DayTaskInput_fa04abc input {
+.input_f8dcf0c input{
   width: 100%;
   font-size: 11px;
   resize: none;

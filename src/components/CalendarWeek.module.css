@@ -1,3 +1,6 @@
+.week {
+  height: 150px;
+}
 .day {
   color: gray;
   font-size: 12px;
@@ -16,11 +19,11 @@
   overflow: hidden;
   vertical-align: top;
 }
-.DayTaskInput {
+.input {
   width: 100%;
   padding: 2px 4px;
 }
-.DayTaskInput input {
+.input input{
   width: 100%;
   font-size: 11px;
   resize: none;
