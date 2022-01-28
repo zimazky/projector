@@ -4,8 +4,6 @@
   height: 18px;
   background-color: lightgreen;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   margin-left: -1px;
   padding: 2px 2px;
   font-size: 10px;
@@ -14,35 +12,19 @@
   border-color: gray;
   margin-top: -1px;
   cursor: pointer;
+  text-align-last: justify;
+  text-align: justify;
 }
-
 .completed {
   background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);
 }
-
-.event_row {
-  /*margin-left: -12px;*/
-  /*transition: margin-left 200ms;*/
-  text-align: justify;
-  text-align-last: justify;
-}
-/*
-.event_row:hover {
-  margin-left: 0;
-}
-*/
-.complete_button {
-  display: inline-block;
-  width: 12px;
-  cursor: pointer;
-}
-
 .placeholder {
   height: 18px;
   margin-top: -1px;
 }
 .name {
   display: inline-block;
+  white-space: nowrap;
 }
 .time {
   display: inline-block;

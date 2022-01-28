@@ -10,7 +10,7 @@ export default function CalendarDay({data, onAddEvent=()=>{}, children = null}) 
     if(inputElementRef) inputElementRef.current.focus()
   }
   function onKeyDownHandle(e) {
-    if (e.keyCode === 13) e.target.blur()
+    if (e.key == 'Enter') e.target.blur()
   }
   function onBlurHandle(e) {
     onAddEvent(timestamp, e.target.innerText)

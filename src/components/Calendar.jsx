@@ -104,17 +104,15 @@ export default function Calendar({children = null}) {
       { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
-      <div> {
-        arrayOfDays.map( week => (
-          <div className={styles.CalendarWeek} key={week[0].timestamp}> {
-            week.map( (d,j) => (
-              <CalendarDay data={d} key={d.timestamp} onAddEvent={onAddEventHandle}>
-                { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={onEventClickHandle}/>))}
-              </CalendarDay>
-            ))}
-          </div>
-        ))}
-      </div>
+      { arrayOfDays.map( week => (
+        <div className={styles.CalendarWeek} key={week[0].timestamp}> {
+          week.map( (d,j) => (
+            <CalendarDay data={d} key={d.timestamp} onAddEvent={onAddEventHandle}>
+              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={onEventClickHandle}/>))}
+            </CalendarDay>
+          ))}
+        </div>
+      ))}
     </div>
     <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
       <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent}/>

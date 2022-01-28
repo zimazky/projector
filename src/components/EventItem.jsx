@@ -14,9 +14,9 @@ export default function EventItem({event, days, onClick=(compactEvent)=>{} }) {
       color: color
     }} 
     onClick={e=>{e.stopPropagation(); onClick(event)}}>
-    <div className={styles.event_row}>
+{/*    <div className={styles.event_row}>*/}
 {/*      <div className={styles.complete_button}>{completed?'✔':'☐'}</div>*/}
       <div className={styles.name}>{name}</div>{' '+DateTime.HHMMFromSeconds(event.time)}
-    </div>
+{/*    </div>*/}
   </div>)
 }
