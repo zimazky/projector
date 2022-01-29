@@ -1,5 +1,13 @@
-.event_form {
+.form {
   text-align: left;
+}
+
+.value {
+  font-size: 20px;
+  outline-width: 0;
+  border: 1px solid lightgray;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 .name {

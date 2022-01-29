@@ -1,9 +1,12 @@
-.day {
+.day, .before_actual_date {
   display: inline-block;
   width: calc(100%/7);
   height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
+}
+.before_actual_date {
+  background-color: rgb(238, 238, 238);
 }
 .header {
   color: gray;
@@ -22,4 +25,5 @@
   white-space: pre-wrap;
   overflow-wrap: break-word;
   padding: 2px;
+  font-size: 12px;
 }

@@ -92,6 +92,14 @@ export default function Calendar({children = null}) {
     forceUpdate()
   }
 
+  const onAddEvent = raw => {
+    eventList.addPlannedEvent(raw)
+    eventList.clearCache()
+    setModal(false)
+    forceUpdate()
+  }
+
+
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
@@ -115,7 +123,7 @@ export default function Calendar({children = null}) {
       ))}
     </div>
     <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
-      <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent}/>
+      <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent} onAdd={onAddEvent}/>
     </Modal>
     </div>
   )

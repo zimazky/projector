@@ -54,48 +54,6 @@ const eventToCompact = (e, timestamp, completed) => ({
 })
 
 
-// Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
-// формат записей в списках rawCompletedList и rowPlannedList:
-// {                                          default   
-//    name:string,                    mandatory   
-//    comment:string,                 optional    ''
-//    project:string,                 optional    ''
-//    repeat:string 'D M W',          optional    ''
-//    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
-//    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
-//    time:string 'HH:MI',            optional    null
-//    duration:string 'DDd HH:MI',    optional    0
-//    credit:float,                   optional    0
-//    debit:float                     optional    0
-// }
-//
-const rawToEvent = e => {
-
-  const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
-  const time = e.time? DateTime.HHMMToSeconds(e.time) : null
-  const duration = e.duration? DateTime.DDHHMMToSeconds(e.duration) : 0
-
-  if(e.repeat) {
-    return {
-      name: e.name,
-      comment: e.comment ?? '',
-      project: e.project ?? '',
-      repeat: e.repeat,
-      start, time, duration,
-      end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
-      credit: e.credit ?? 0, debit: e.debit ?? 0
-    }
-  }
-
-  const startdatetime = time!==null? start + time : start
-  const end = duration? startdatetime + duration : 
-    e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : start+86400
-
-  return { 
-    name: e.name, comment: e.comment ?? '', project: e.project ?? '',
-    start, time, duration, end, credit: e.credit ?? 0, debit: e.debit ?? 0
-  }
-}
 
 // Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме
 // Также подготавливает и оптимизирует данные для сохранения в хранилище (уменьшает размер)
@@ -139,6 +97,71 @@ export default class EventList {
   static default_background = 'lightgray'
   static default_color = 'black'
 
+  // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
+  // формат записей в списках rawCompletedList и rowPlannedList:
+  // {                                          default   
+  //    name:string,                    mandatory   
+  //    comment:string,                 optional    ''
+  //    project:string,                 optional    ''
+  //    repeat:string 'D M W',          optional    ''
+  //    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
+  //    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
+  //    time:string 'HH:MI',            optional    null
+  //    duration:string 'DDd HH:MI',    optional    0
+  //    credit:float,                   optional    0
+  //    debit:float                     optional    0
+  // }
+  //
+  static rawToEvent = e => {
+
+    const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
+    const time = e.time? DateTime.HHMMToSeconds(e.time) : null
+    const duration = e.duration? DateTime.DDHHMMToSeconds(e.duration) : 0
+
+    if(e.repeat) {
+      return {
+        name: e.name,
+        comment: e.comment ?? '',
+        project: e.project ?? '',
+        repeat: e.repeat,
+        start, time, duration,
+        end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
+        credit: e.credit ?? 0, debit: e.debit ?? 0
+      }
+    }
+
+    const startdatetime = time!==null? start + time : start
+    const end = duration? startdatetime + duration : 
+      e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : start+86400
+
+    return { 
+      name: e.name, comment: e.comment ?? '', project: e.project ?? '',
+      start, time, duration, end, credit: e.credit ?? 0, debit: e.debit ?? 0
+    }
+  }
+
+  static eventToRaw = e => {
+    const raw = {}
+    raw.name = e.name
+    if(e.comment) raw.comment = e.comment
+    if(e.project) raw.project = e.project
+
+    raw.start = DateTime.getYYYYMMDD(e.start)
+    if(e.time!==null) raw.time = DateTime.HHMMFromSeconds(e.time)
+    if(e.repeat) {
+      raw.repeat = e.repeat
+      if(e.duration) raw.duration = DateTime.DDHHMMFromSeconds(e.duration)
+      if(e.end) raw.end = DateTime.getYYYYMMDD(e.end)
+    }
+    else {
+      if(e.duration) raw.duration = DateTime.DDHHMMFromSeconds(e.duration)
+      else if(e.end-e.start!==86400) raw.end = DateTime.getYYYYMMDD(e.end)
+    }
+    if(e.credit) raw.credit = e.credit
+    if(e.debit) raw.debit = e.debit
+    return raw
+  }
+
   constructor(rawCompletedList, rawPlannedList, rawProjects) {
 
     this.cachedEvents = []
@@ -148,7 +171,7 @@ export default class EventList {
     this.lastId = 1
     this.projects = [...rawProjects]
     this.completed = rawCompletedList.map(raw=>{
-      const e = rawToEvent(raw)
+      const e = EventList.rawToEvent(raw)
       const project = e.project?
         this.projects.find(p=>p.name===e.project):
         {name: '', background: EventList.default_background, color: EventList.default_color}
@@ -178,7 +201,7 @@ export default class EventList {
   }
 
   addPlannedEvent(raw) {
-    const e = rawToEvent(raw)
+    const e = EventList.rawToEvent(raw)
     const project = e.project?
       this.projects.find(p=>p.name===e.project):
       {name: '', background: EventList.default_background, color: EventList.default_color}
@@ -218,16 +241,20 @@ export default class EventList {
     })
   }
 
-  deleteEvent(id) {
-    this.completed = this.completed.filter(e=>e.id!==id)
-    this.planned = this.planned.filter(e=>e.id!==id)
-    this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+  clearCache() {
     this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+
+  deleteEvent(id) {
+    this.completed = this.completed.filter(e=>e.id!==id)
+    this.planned = this.planned.filter(e=>e.id!==id)
+    this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+    this.clearCache()
   }
 
   // Функция завершения события для незавершенных или отмены завершения для завершенных
@@ -267,12 +294,7 @@ export default class EventList {
         this.deleteEvent(event.id)
       }
       this.sort()
-      this.cachedEvents = []
-      this.cachedActualBalance = []
-      this.cachedPlannedBalance = []
-      this.lastActualBalance = this.calculateActualBalance()
-      this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
-      this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+      this.clearCache()
       return
     }
   }
@@ -408,49 +430,13 @@ export default class EventList {
 
   // Подготовка для сохранения в хранилище
   prepareToStorage() {
-    const completedList = this.completed.map(e=>{
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return out
-    })
-
+    const completedList = this.completed.map(e=>EventList.eventToRaw(e))
     const plannedList = this.plannedRepeatable.reduce((a,e) => {
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.repeat = e.repeat
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      if(e.end) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return a.push(out), a
+      return a.push(EventList.eventToRaw(e)), a
     }, [])
-
     this.planned.reduce((a,e) => {
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return a.push(out), a
+      return a.push(EventList.eventToRaw(e)), a
     }, plannedList)
-
     return {projectsList: this.projects, completedList, plannedList}
   }
 

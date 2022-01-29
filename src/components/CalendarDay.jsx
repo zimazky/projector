@@ -1,5 +1,6 @@
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime.js'
+import { eventList } from '../utils/schedule'
 
 export default function CalendarDay({data, onAddEvent=()=>{}, children = null}) {
   const {timestamp, actualBalance, plannedBalance, plannedBalanceChange} = data
@@ -21,7 +22,7 @@ export default function CalendarDay({data, onAddEvent=()=>{}, children = null}) 
   const plus = d => d>0?'+'+d.toFixed(1):d.toFixed(1)
 
   return (
-    <div className={styles.day} onClick={onClickHandle}>
+    <div className={timestamp>=eventList.lastActualBalanceDate?styles.day:styles.before_actual_date} onClick={onClickHandle}>
       <div className={styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
