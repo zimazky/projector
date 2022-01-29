@@ -2,6 +2,7 @@ import styles from './Calendar.module.css'
 import CalendarDay from './CalendarDay.jsx'
 import EventItem from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
+import EventList from '../utils/eventList'
 import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
@@ -59,29 +60,32 @@ export default function Calendar({children = null}) {
     else if(b<weekBuffer*dayHeight) setShift(s=>s-weekBuffer)
   }
 
-  const onSaveClickHandle = (e)=>{
-    console.log(JSON.stringify(eventList.prepareToStorage()))
+  const SaveToLocalStorage = ()=>{
+    const dataString = JSON.stringify(eventList.prepareToStorage())
+    localStorage.setItem('data',dataString)
+    console.log(dataString)
   }
 
-  const onAddEventHandle = React.useCallback((timestamp, name) => {
+  /////////////////////////////////////////////////////////////////////////////
+  // Методы открывания формы
+  const openNewEventForm = (timestamp, name) => {
     if(name==='') return
-    setModalState({name, start:timestamp})
+    setModalState(EventList.eventToRaw({name, start:timestamp}))
     setModal(true)
-  })
+  }
 
-  const onEventClickHandle = React.useCallback(compactEvent => {
-    const id = compactEvent.id
-    const completed = compactEvent.completed
+  const openEventForm = compactEvent => {
+    const {id, completed, start} = compactEvent
     const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
       eventList.plannedRepeatable.find(e=>e.id===id)
-    const timestamp = compactEvent.start
-    console.log('compactEvent',compactEvent)
-    setModalState({...s, completed, timestamp})
+    setModalState({...EventList.eventToRaw(s), completed, timestamp:start, id:s.id})
     setModal(true)
-  })
+  }
 
-  const onCompleteEvent = (id, timestamp) => {
-    eventList.completeEvent(id, timestamp)
+  /////////////////////////////////////////////////////////////////////////////
+  // Методы изменения событий в форме
+  const onCompleteEvent = (id, timestamp, raw) => {
+    eventList.completeEvent(id, timestamp, raw)
     setModal(false)
     forceUpdate()
   }
@@ -93,18 +97,26 @@ export default function Calendar({children = null}) {
   }
 
   const onAddEvent = raw => {
-    eventList.addPlannedEvent(raw)
+    eventList.addPlannedRawEvent(raw)
     eventList.clearCache()
     setModal(false)
     forceUpdate()
   }
 
+  // Изменение параметров события
+  // domain:
+  // 'all'      для всех событий, если они повторяемые
+  // 'current'  для текущего
+  // 'after'    для текущего и последующих
+  const onChangeEvent = (id, timestamp, raw, domain='all') => {
+
+  }
 
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
-      <Button onClick={onSaveClickHandle}>Save to LocalStorage</Button>
+      <Button onClick={SaveToLocalStorage}>Save to LocalStorage</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
     </div>
@@ -115,8 +127,8 @@ export default function Calendar({children = null}) {
       { arrayOfDays.map( week => (
         <div className={styles.CalendarWeek} key={week[0].timestamp}> {
           week.map( (d,j) => (
-            <CalendarDay data={d} key={d.timestamp} onAddEvent={onAddEventHandle}>
-              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={onEventClickHandle}/>))}
+            <CalendarDay data={d} key={d.timestamp} onAddEvent={openNewEventForm}>
+              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={openEventForm}/>))}
             </CalendarDay>
           ))}
         </div>

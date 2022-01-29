@@ -162,7 +162,7 @@ export default class EventList {
     return raw
   }
 
-  constructor(rawCompletedList, rawPlannedList, rawProjects) {
+  constructor(rawCompletedList=[], rawPlannedList=[], rawProjects=[]) {
 
     this.cachedEvents = []
     this.cachedActualBalance = []
@@ -170,38 +170,46 @@ export default class EventList {
 
     this.lastId = 1
     this.projects = [...rawProjects]
-    this.completed = rawCompletedList.map(raw=>{
+    this.completed = []
+    rawCompletedList.forEach(raw=>{
       const e = EventList.rawToEvent(raw)
-      const project = e.project?
-        this.projects.find(p=>p.name===e.project):
-        {name: '', background: EventList.default_background, color: EventList.default_color}
-      return {
-        id: this.lastId++,
-        name: e.name,
-        comment: e.comment,
-        project: project.name,
-        background: project.background,
-        color: project.color,
-        start: e.start,
-        time: e.time,
-        duration: e.duration,
-        end: e.end,
-        days: Math.ceil((e.end-e.start)/86400),
-        credit: e.credit,
-        debit: e.debit,
-      }
+      this.addCompletedEvent(e)
     })
     this.planned = []
     this.plannedRepeatable = []
-    rawPlannedList.forEach(raw=>this.addPlannedEvent(raw))
+    rawPlannedList.forEach(raw=>this.addPlannedRawEvent(raw))
     this.sort()
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
+  
+  addCompletedEvent(e) {
+    const project = e.project?
+    this.projects.find(p=>p.name===e.project):
+    {name: '', background: EventList.default_background, color: EventList.default_color}
+    this.completed.push({
+      id: this.lastId++,
+      name: e.name,
+      comment: e.comment,
+      project: project.name,
+      background: project.background,
+      color: project.color,
+      start: e.start,
+      time: e.time,
+      duration: e.duration,
+      end: e.end,
+      days: Math.ceil((e.end-e.start)/86400),
+      credit: e.credit,
+      debit: e.debit,
+    })
+  }
 
-  addPlannedEvent(raw) {
-    const e = EventList.rawToEvent(raw)
+  addPlannedRawEvent(raw) {
+    this.addPlannedEvent(EventList.rawToEvent(raw))
+  }  
+
+  addPlannedEvent(e) {
     const project = e.project?
       this.projects.find(p=>p.name===e.project):
       {name: '', background: EventList.default_background, color: EventList.default_color}
@@ -258,26 +266,29 @@ export default class EventList {
   }
 
   // Функция завершения события для незавершенных или отмены завершения для завершенных
-  completeEvent(id, timestamp) {
+  // можно изменить параметры, если переданы в raw
+  completeEvent(id, timestamp, raw={}) {
     var event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = {...event, id: this.lastId++}
-      this.planned.push(newevent)
+      this.addPlannedEvent({...event, ...EventList.rawToEvent(raw)})
+//      const newevent = {...event, ...EventList.rawToEvent(raw), id: this.lastId++}
+//      this.planned.push(newevent)
       this.sort()
       this.deleteEvent(event.id)
       return
     }
     event = this.planned.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = {...event, id: this.lastId++}
-      this.completed.push(newevent)
+      this.addCompletedEvent({...event, ...EventList.rawToEvent(raw)})
+//      const newevent = {...event, ...EventList.rawToEvent(raw), id: this.lastId++}
+//      this.completed.push(newevent)
       this.sort()
       this.deleteEvent(event.id)
       return
     }
     event = this.plannedRepeatable.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = repeatableToSingle(this.lastId++, event, timestamp)
+      const newevent = repeatableToSingle(this.lastId++, {...event, ...EventList.rawToEvent(raw)}, timestamp)
       this.completed.push(newevent)
       // Добавляем только если есть события в предшествующем интервале
       if(ZCron.ariseInInterval(event.repeat,event.start,event.start,timestamp)) {

@@ -18,7 +18,7 @@ function Input({inputRef,children}) {
 }
 
 
-export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,timestamp)=>{}, onAdd=(raw)=>{}}) {
+export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,timestamp,raw)=>{}, onAdd=(raw)=>{}}) {
   const nameRef = React.useRef(null)
   const commentRef = React.useRef(null)
   const projectRef = React.useRef(null)
@@ -38,7 +38,24 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
     setRepeatCheck(s=>!s)
     if(!event.repeat) event.repeat='* * *'
   }
-//    name:string,                    mandatory   
+  const onCompleteHandle = () => {
+    const raw = {
+      name: nameRef.current.innerText,
+      comment: commentRef.current.innerText,
+      project: projectRef.current.value,
+      start: startRef.current.innerText,
+      end: endRef.current.innerText,
+      time: timeRef.current.innerText,
+      duration: durationRef.current.innerText,
+      credit: creditRef.current.innerText,
+      debit: debitRef.current.innerText
+    }
+    onComplete(event.id, event.timestamp, raw)
+  }
+
+
+
+  //    name:string,                    mandatory   
 //    comment:string,                 optional    ''
 //    project:string,                 optional    ''
 //    repeat:string 'D M W',          optional    ''
@@ -49,7 +66,6 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
 //    credit:float,                   optional    0
 //    debit:float                     optional    0
   const onAddHandle = () => {
-    console.log(projectRef)
     const raw = {
       name: nameRef.current.innerText,
       comment: commentRef.current.innerText,
@@ -68,7 +84,7 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
   console.log('event',event)
   return (
     <div className={styles.form}>
-      {!isNew && <Button onClick={()=>onComplete(event.id, event.timestamp)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
+      {!isNew && <Button onClick={onCompleteHandle}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
       {!isNew && <Button onClick={()=>onDelete(event.id)}>Delete</Button>}
       {!isNew && <Button onClick={()=>{}}>Save</Button>}
       {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
@@ -93,16 +109,16 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
       </Parameter>
       <br/>
       <Parameter name='start date' style={{minWidth:110}}>
-        <Input inputRef={startRef}>{event.start?DateTime.getYYYYMMDD(event.start):''}</Input>
+        <Input inputRef={startRef}>{event.start?event.start:''}</Input>
       </Parameter>
       <Parameter name='time' style={{minWidth:60}}>
-        <Input inputRef={timeRef}>{event.time?DateTime.HHMMFromSeconds(event.time):''}</Input>
+        <Input inputRef={timeRef}>{event.time?event.time:''}</Input>
       </Parameter>
       <Parameter name='duration' style={{minWidth:100}}>
-        <Input inputRef={durationRef}>{event.duration?DateTime.HHMMFromSeconds(event.duration):''}</Input>
+        <Input inputRef={durationRef}>{event.duration?event.duration:''}</Input>
       </Parameter>
       <Parameter name='end date' style={{minWidth:110}}>
-        <Input inputRef={endRef}>{event.end?DateTime.getYYYYMMDD(event.end):''}</Input>
+        <Input inputRef={endRef}>{event.end?event.end:''}</Input>
       </Parameter>
       <br/>
       <Parameter name='credit' style={{minWidth:120}}>
