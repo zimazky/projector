@@ -13,7 +13,10 @@
   text-align-last: justify;
 }
 .completed {
-  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);
+/*  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);*/
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.6) 0 100%);
+  color: gray;
+  /*text-decoration: line-through;*/
 }
 .placeholder {
   height: 18px;
@@ -22,4 +25,8 @@
 .name {
   display: inline-block;
   white-space: nowrap;
+}
+.completed .name {
+  text-decoration: line-through;
+  color: gray;
 }

@@ -59,7 +59,7 @@
   vertical-align: top;
 }
 .before_actual_date_fb6a4cf {
-  background-color: rgb(238, 238, 238);
+  background-color: rgb(245, 245, 245);
 }
 .header_d741756 {
   color: gray;
@@ -95,7 +95,10 @@
   text-align-last: justify;
 }
 .completed_b30da5e {
-  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);
+/*  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);*/
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.6) 0 100%);
+  color: gray;
+  /*text-decoration: line-through;*/
 }
 .placeholder_c47b4a3 {
   height: 18px;
@@ -105,7 +108,10 @@
   display: inline-block;
   white-space: nowrap;
 }
-
+.completed_b30da5e .name_ddde4d8 {
+  text-decoration: line-through;
+  color: gray;
+}
 .modalOverlay_faa7164 {
   background-color: rgba(0,0,0,0.5);
   position: fixed;

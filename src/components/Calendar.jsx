@@ -70,7 +70,7 @@ export default function Calendar({children = null}) {
   // Методы открывания формы
   const openNewEventForm = (timestamp, name) => {
     if(name==='') return
-    setModalState(EventList.eventToRaw({name, start:timestamp}))
+    setModalState(EventList.eventToRaw({name, start:timestamp, time:null}))
     setModal(true)
   }
 

@@ -155,7 +155,7 @@ export default class EventList {
     }
     else {
       if(e.duration) raw.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else if(e.end-e.start!==86400) raw.end = DateTime.getYYYYMMDD(e.end)
+      else if(e.end && (e.end-e.start)!==86400) raw.end = DateTime.getYYYYMMDD(e.end)
     }
     if(e.credit) raw.credit = e.credit
     if(e.debit) raw.debit = e.debit
