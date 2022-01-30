@@ -1,4 +1,5 @@
 import DateTime from "../utils/datetime"
+import EventList from "../utils/eventList"
 import { eventList } from "../utils/schedule"
 import Button from "./Button.jsx"
 import styles from "./EventForm.module.css"
@@ -18,7 +19,7 @@ function Input({inputRef,children}) {
 }
 
 
-export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,timestamp,raw)=>{}, onAdd=(raw)=>{}}) {
+export default function EventForm({event, onExit=()=>{}}) {
   const nameRef = React.useRef(null)
   const commentRef = React.useRef(null)
   const projectRef = React.useRef(null)
@@ -38,6 +39,7 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
     setRepeatCheck(s=>!s)
     if(!event.repeat) event.repeat='* * *'
   }
+
   const onCompleteHandle = () => {
     const raw = {
       name: nameRef.current.innerText,
@@ -50,10 +52,62 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
       credit: creditRef.current.innerText,
       debit: debitRef.current.innerText
     }
-    onComplete(event.id, event.timestamp, raw)
+    eventList.completeEvent(event.id, event.timestamp, raw)
+    onExit()
   }
 
+  const onDeleteHandle = id => {
+    eventList.deleteEvent(id)
+    onExit()
+  }
 
+  // Изменение параметров события
+  // domain:
+  // 'all'      для всех событий, если они повторяемые
+  // 'current'  для текущего
+  // 'after'    для текущего и последующих
+  const onChangeEventHandle = (id, timestamp, domain='all') => {
+    const name = nameRef.current.innerText
+    const comment = commentRef.current.innerText
+    const project = projectRef.current.value
+    const repeat = repeatRef.current.innerText
+    const start = startRef.current.innerText
+    const end = endRef.current.innerText
+    const time = timeRef.current.innerText
+    const duration = durationRef.current.innerText
+    const credit = creditRef.current.innerText
+    const debit = debitRef.current.innerText
+
+    var event = eventList.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const e = EventList.rawToEvent({name, comment, project, start, end, time, duration, credit, debit})
+      eventList.addCompletedEvent(e)
+      eventList.sort()
+      eventList.deleteEvent(id)
+      onExit()
+      return
+    }
+    event = eventList.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const e = EventList.rawToEvent({name, comment, project, repeat, start, end, time, duration, credit, debit})
+      eventList.addPlannedEvent(e)
+      eventList.sort()
+      eventList.deleteEvent(id)
+      onExit()
+      return
+    }
+    event = eventList.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      const e = EventList.rawToEvent({name, comment, project, repeat, start, end, time, duration, credit, debit})
+      eventList.addPlannedEvent(e)
+      eventList.sort()
+      eventList.deleteEvent(id)
+      onExit()
+      return
+    }
+    //eventList.addPlannedRawEvent(raw)
+    onExit()
+  }
 
   //    name:string,                    mandatory   
 //    comment:string,                 optional    ''
@@ -78,16 +132,19 @@ export default function EventForm({event, onDelete=(id)=>{}, onComplete=(id,time
       credit: creditRef.current.innerText,
       debit: debitRef.current.innerText
     }
-    onAdd(raw)
+    eventList.addPlannedRawEvent(raw)
+    eventList.clearCache()
+    onExit()
   }
 
   console.log('event',event)
   return (
     <div className={styles.form}>
       {!isNew && <Button onClick={onCompleteHandle}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
-      {!isNew && <Button onClick={()=>onDelete(event.id)}>Delete</Button>}
-      {!isNew && <Button onClick={()=>{}}>Save</Button>}
+      {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
+      {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
       {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
+      <Button onClick={onExit}>Cancel</Button>
 
       <div ref={nameRef} className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
         {event.name ?? ''}

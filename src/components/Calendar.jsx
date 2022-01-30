@@ -7,14 +7,12 @@ import {eventList} from '../utils/schedule.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
-import useUpdate from '../hooks/useUpdate.js'
 
 const dayHeight = 150
 const weekBuffer = 4
 
 export default function Calendar({children = null}) {
 
-  const forceUpdate = useUpdate()
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
@@ -82,37 +80,7 @@ export default function Calendar({children = null}) {
     setModal(true)
   }
 
-  /////////////////////////////////////////////////////////////////////////////
-  // Методы изменения событий в форме
-  const onCompleteEvent = (id, timestamp, raw) => {
-    eventList.completeEvent(id, timestamp, raw)
-    setModal(false)
-    forceUpdate()
-  }
-
-  const onDeleteEvent = id => {
-    eventList.deleteEvent(id)
-    setModal(false)
-    forceUpdate()
-  }
-
-  const onAddEvent = raw => {
-    eventList.addPlannedRawEvent(raw)
-    eventList.clearCache()
-    setModal(false)
-    forceUpdate()
-  }
-
-  // Изменение параметров события
-  // domain:
-  // 'all'      для всех событий, если они повторяемые
-  // 'current'  для текущего
-  // 'after'    для текущего и последующих
-  const onChangeEvent = (id, timestamp, raw, domain='all') => {
-
-  }
-
-  console.log('draw calendar')
+   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
@@ -135,7 +103,7 @@ export default function Calendar({children = null}) {
       ))}
     </div>
     <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
-      <EventForm event={modalState} onDelete={onDeleteEvent} onComplete={onCompleteEvent} onAdd={onAddEvent}/>
+      <EventForm event={modalState} onExit={()=>setModal(false)}/>
     </Modal>
     </div>
   )

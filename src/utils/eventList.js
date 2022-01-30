@@ -100,7 +100,6 @@ export default class EventList {
   static asanaToEvent = str => {
     const asana = str.split('"')
     const str1 = asana.map((s,i)=>i%2==0?s:s.replace(/,/g,'.')).join('"')
-    //console.log(str1)
     const [id,created,completed,modified,name,section,assignee,email,startDate,dueDate,tags,notes,projects,parent,cost] = str1.split(',')
     const e = {name:name.replace(/"/g,''),start:dueDate,comment:notes.replace(/"/g,''),project:projects}
     const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
