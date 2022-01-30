@@ -97,7 +97,22 @@ export default class EventList {
   static default_background = 'lightgray'
   static default_color = 'black'
 
-  // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
+  static asanaToEvent = str => {
+    const asana = str.split('"')
+    const str1 = asana.map((s,i)=>i%2==0?s:s.replace(/,/g,'.')).join('"')
+    //console.log(str1)
+    const [id,created,completed,modified,name,section,assignee,email,startDate,dueDate,tags,notes,projects,parent,cost] = str1.split(',')
+    const e = {name:name.replace(/"/g,''),start:dueDate,comment:notes.replace(/"/g,''),project:projects}
+    const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
+    const time = null
+    const duration = 0
+    const end = start+86400
+    return { 
+      name: e.name===''?'без названия':e.name, comment: e.comment ?? '', project: e.project ?? '',
+      start, time, duration, end, credit: 0, debit: 0, completed: completed===''?false:true
+    }
+  }
+    // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
   // формат записей в списках rawCompletedList и rowPlannedList:
   // {                                          default   
   //    name:string,                    mandatory   
