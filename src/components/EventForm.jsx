@@ -1,4 +1,3 @@
-import DateTime from "../utils/datetime"
 import EventList from "../utils/eventList"
 import { eventList } from "../utils/schedule"
 import Button from "./Button.jsx"
@@ -18,6 +17,18 @@ function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
 
+function BackgroundInput({inputRef, background, color, onChange=()=>{}}) {
+  return <div ref={inputRef} className={styles.color} style={{backgroundColor:background,color}} contentEditable='true' 
+    suppressContentEditableWarning={true} onBlur={onChange} >{background}</div>
+}
+function BackgroundCompleted({background}) {
+  return <div className={styles.completed} style={{backgroundColor:background}}>{background}</div>
+}
+function ColorInput({inputRef, color, onChange=()=>{}}) {
+  return <div ref={inputRef} className={styles.color} style={{backgroundColor:'white',color:'black'}} contentEditable='true' 
+    suppressContentEditableWarning={true} onBlur={onChange} >{color}</div>
+}
+
 
 export default function EventForm({event, onExit=()=>{}}) {
   const nameRef = React.useRef(null)
@@ -30,6 +41,8 @@ export default function EventForm({event, onExit=()=>{}}) {
   const endRef = React.useRef(null)
   const creditRef = React.useRef(null)
   const debitRef = React.useRef(null)
+  const backgroundRef = React.useRef(null)
+  const colorRef = React.useRef(null)
 
   const [repeatCheck, setRepeatCheck] = React.useState(event.repeat && event.repeat!='')
   const isNew = event.id?false:true
@@ -137,6 +150,16 @@ export default function EventForm({event, onExit=()=>{}}) {
     onExit()
   }
 
+  const onChangeColors = () => {
+    const p = eventList.projects.find(p=>p.name===event.project)
+    p.background = backgroundRef.current.innerText
+    p.color = colorRef.current.innerText
+    eventList.clearCache()
+    onExit()
+  }
+
+  var p = eventList.projects.find(p=>p.name===event.project)
+  if(p===undefined) p = {background: EventList.default_background, color: EventList.default_color}
   console.log('event',event)
   return (
     <div className={styles.form}>
@@ -144,6 +167,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
       {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
       {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
+      <Button onClick={onChangeColors}>Save Project Color</Button>
       <Button onClick={onExit}>Cancel</Button>
 
       <div ref={nameRef} className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
@@ -154,27 +178,37 @@ export default function EventForm({event, onExit=()=>{}}) {
         <Input inputRef={commentRef}>{event.comment ?? ''}</Input>
       </Parameter>
       <br/>
-      <Parameter name='project' style={{minWidth:120}}>
-        <select ref={projectRef} defaultValue={event.project}>
+      <Parameter name='project' style={{minWidth:100}}>
+        <select className={styles.select} ref={projectRef} defaultValue={event.project}>
           <option value=''>Default</option>
           {eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
         </select>
       </Parameter>
+      <Parameter name='background' style={{minWidth:60}}>
+        <BackgroundInput inputRef={backgroundRef} background={p.background} color={p.color}/>
+      </Parameter>
+      <Parameter name='completed' style={{minWidth:60}}>
+        <BackgroundCompleted background={p.background}/>
+      </Parameter>
+      <Parameter name='color' style={{minWidth:60}}>
+        <ColorInput inputRef={colorRef} color={p.color}/>
+      </Parameter>
+
       <br/>
       <Parameter name='repeat' style={{minWidth:120}}>
         <Input inputRef={repeatRef}>{event.repeat}</Input>
       </Parameter>
       <br/>
-      <Parameter name='start date' style={{minWidth:110}}>
+      <Parameter name='start date' style={{minWidth:90}}>
         <Input inputRef={startRef}>{event.start?event.start:''}</Input>
       </Parameter>
-      <Parameter name='time' style={{minWidth:60}}>
+      <Parameter name='time' style={{minWidth:50}}>
         <Input inputRef={timeRef}>{event.time?event.time:''}</Input>
       </Parameter>
-      <Parameter name='duration' style={{minWidth:100}}>
+      <Parameter name='duration' style={{minWidth:70}}>
         <Input inputRef={durationRef}>{event.duration?event.duration:''}</Input>
       </Parameter>
-      <Parameter name='end date' style={{minWidth:110}}>
+      <Parameter name='end date' style={{minWidth:90}}>
         <Input inputRef={endRef}>{event.end?event.end:''}</Input>
       </Parameter>
       <br/>
