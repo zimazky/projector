@@ -13,22 +13,27 @@ function Parameter({name, style, children}) {
     </>
   )
 }
+
 function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
 
-function BackgroundInput({inputRef, background, color, onChange=()=>{}}) {
-  return <div ref={inputRef} className={styles.color} style={{backgroundColor:background,color}} contentEditable='true' 
-    suppressContentEditableWarning={true} onBlur={onChange} >{background}</div>
+function BackgroundInput({colorRef}) {
+  const [state,setState] = React.useState(colorRef.current)
+  return (<>
+    <div className={styles.color} style={{backgroundColor:state.background,color:state.color}} contentEditable='true' suppressContentEditableWarning={true} 
+    onBlur={e=>{
+      colorRef.current.background = e.target.innerText
+      setState(s=>({...s,background:e.target.innerText}))
+      }} >{state.background}</div>
+    <div className={styles.completed} style={{backgroundColor:state.background}}>{state.background}</div>
+    <div className={styles.color} style={{backgroundColor:'white',color:'black'}} contentEditable='true' suppressContentEditableWarning={true} 
+    onBlur={e=>{
+      colorRef.current.color = e.target.innerText
+      setState(s=>({...s,color:e.target.innerText}))
+      }} >{state.color}</div>
+  </>)
 }
-function BackgroundCompleted({background}) {
-  return <div className={styles.completed} style={{backgroundColor:background}}>{background}</div>
-}
-function ColorInput({inputRef, color, onChange=()=>{}}) {
-  return <div ref={inputRef} className={styles.color} style={{backgroundColor:'white',color:'black'}} contentEditable='true' 
-    suppressContentEditableWarning={true} onBlur={onChange} >{color}</div>
-}
-
 
 export default function EventForm({event, onExit=()=>{}}) {
   const nameRef = React.useRef(null)
@@ -41,17 +46,12 @@ export default function EventForm({event, onExit=()=>{}}) {
   const endRef = React.useRef(null)
   const creditRef = React.useRef(null)
   const debitRef = React.useRef(null)
-  const backgroundRef = React.useRef(null)
-  const colorRef = React.useRef(null)
 
-  const [repeatCheck, setRepeatCheck] = React.useState(event.repeat && event.repeat!='')
   const isNew = event.id?false:true
 
-  const onChangeRepeatCheckbox = e => {
-    if(!isNew) return
-    setRepeatCheck(s=>!s)
-    if(!event.repeat) event.repeat='* * *'
-  }
+  var p = eventList.projects.find(p=>p.name===event.project)
+  if(p===undefined) p = {background: EventList.default_background, color: EventList.default_color}
+  const colorRef = React.useRef({background: p.background, color: p.color})
 
   const onCompleteHandle = () => {
     const raw = {
@@ -74,12 +74,8 @@ export default function EventForm({event, onExit=()=>{}}) {
     onExit()
   }
 
-  // Изменение параметров события
-  // domain:
-  // 'all'      для всех событий, если они повторяемые
-  // 'current'  для текущего
-  // 'after'    для текущего и последующих
-  const onChangeEventHandle = (id, timestamp, domain='all') => {
+  // Изменение параметров события, для всех если событие повторяемое
+  const onChangeEventHandle = id => {
     const name = nameRef.current.innerText
     const comment = commentRef.current.innerText
     const project = projectRef.current.value
@@ -91,47 +87,21 @@ export default function EventForm({event, onExit=()=>{}}) {
     const credit = creditRef.current.innerText
     const debit = debitRef.current.innerText
 
-    var event = eventList.completed.find(e=>e.id===id)
-    if(event !== undefined) {
-      const e = EventList.rawToEvent({name, comment, project, start, end, time, duration, credit, debit})
-      eventList.addCompletedEvent(e)
-      eventList.sort()
-      eventList.deleteEvent(id)
-      onExit()
-      return
-    }
-    event = eventList.planned.find(e=>e.id===id)
-    if(event !== undefined) {
-      const e = EventList.rawToEvent({name, comment, project, repeat, start, end, time, duration, credit, debit})
-      eventList.addPlannedEvent(e)
-      eventList.sort()
-      eventList.deleteEvent(id)
-      onExit()
-      return
-    }
-    event = eventList.plannedRepeatable.find(e=>e.id===id)
-    if(event !== undefined) {
-      const e = EventList.rawToEvent({name, comment, project, repeat, start, end, time, duration, credit, debit})
-      eventList.addPlannedEvent(e)
-      eventList.sort()
-      eventList.deleteEvent(id)
-      onExit()
-      return
-    }
-    //eventList.addPlannedRawEvent(raw)
+    const raw = {name, comment, project, repeat, start, end, time, duration, credit, debit}
+    eventList.updateEvent(id, raw)
     onExit()
   }
 
   //    name:string,                    mandatory   
-//    comment:string,                 optional    ''
-//    project:string,                 optional    ''
-//    repeat:string 'D M W',          optional    ''
-//    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
-//    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
-//    time:string 'HH:MI',            optional    null
-//    duration:string 'DDd HH:MI',    optional    0
-//    credit:float,                   optional    0
-//    debit:float                     optional    0
+  //    comment:string,                 optional    ''
+  //    project:string,                 optional    ''
+  //    repeat:string 'D M W',          optional    ''
+  //    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
+  //    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
+  //    time:string 'HH:MI',            optional    null
+  //    duration:string 'DDd HH:MI',    optional    0
+  //    credit:float,                   optional    0
+  //    debit:float                     optional    0
   const onAddHandle = () => {
     const raw = {
       name: nameRef.current.innerText,
@@ -158,8 +128,7 @@ export default function EventForm({event, onExit=()=>{}}) {
     onExit()
   }
 
-  var p = eventList.projects.find(p=>p.name===event.project)
-  if(p===undefined) p = {background: EventList.default_background, color: EventList.default_color}
+
   console.log('event',event)
   return (
     <div className={styles.form}>
@@ -184,14 +153,8 @@ export default function EventForm({event, onExit=()=>{}}) {
           {eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
         </select>
       </Parameter>
-      <Parameter name='background' style={{minWidth:60}}>
-        <BackgroundInput inputRef={backgroundRef} background={p.background} color={p.color}/>
-      </Parameter>
-      <Parameter name='completed' style={{minWidth:60}}>
-        <BackgroundCompleted background={p.background}/>
-      </Parameter>
-      <Parameter name='color' style={{minWidth:60}}>
-        <ColorInput inputRef={colorRef} color={p.color}/>
+      <Parameter name='background/color' style={{minWidth:60}}>
+        <BackgroundInput colorRef={colorRef} />
       </Parameter>
 
       <br/>
@@ -199,7 +162,7 @@ export default function EventForm({event, onExit=()=>{}}) {
         <Input inputRef={repeatRef}>{event.repeat}</Input>
       </Parameter>
       <br/>
-      <Parameter name='start date' style={{minWidth:90}}>
+      <Parameter name='start date' style={{minWidth:100}}>
         <Input inputRef={startRef}>{event.start?event.start:''}</Input>
       </Parameter>
       <Parameter name='time' style={{minWidth:50}}>
@@ -208,7 +171,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       <Parameter name='duration' style={{minWidth:70}}>
         <Input inputRef={durationRef}>{event.duration?event.duration:''}</Input>
       </Parameter>
-      <Parameter name='end date' style={{minWidth:90}}>
+      <Parameter name='end date' style={{minWidth:100}}>
         <Input inputRef={endRef}>{event.end?event.end:''}</Input>
       </Parameter>
       <br/>

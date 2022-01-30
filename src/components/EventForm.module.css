@@ -3,16 +3,19 @@
 }
 
 .value {
-  font-size: 16px;
+  font-size: 18px;
   outline-width: 0;
   border: 1px solid lightgray;
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
 .color, .completed {
+  display: inline-block;
+  min-width: 65px;
   height: 18px;
-  font-size: 12px;
+  font-size: 14px;
   border: 1px solid gray;
+  margin-left: -1px;
 }
 .completed {
   background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.6) 0 100%);
@@ -20,10 +23,10 @@
   text-decoration: line-through;
 }
 .select {
-  font-size: 12px;
+  font-size: 14px;
 }
 .name {
-  font-size: 16px;
+  font-size: 18px;
   outline-width: 0;
   white-space: pre-wrap;
   overflow-wrap: break-word;

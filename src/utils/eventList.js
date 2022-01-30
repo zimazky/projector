@@ -324,6 +324,30 @@ export default class EventList {
     }
   }
 
+  updateEvent(id, raw) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addCompletedEvent(EventList.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addPlannedEvent(EventList.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addPlannedEvent(EventList.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+  }
+
   // Функция предварительной сортировки событий
   // упорядочивает для более быстрой сортировки в методе getEvents
   sort() {
