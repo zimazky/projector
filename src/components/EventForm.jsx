@@ -162,16 +162,16 @@ export default function EventForm({event, onExit=()=>{}}) {
         <Input inputRef={repeatRef}>{event.repeat}</Input>
       </Parameter>
       <br/>
-      <Parameter name='start date' style={{minWidth:100}}>
+      <Parameter name='start date' style={{minWidth:110}}>
         <Input inputRef={startRef}>{event.start?event.start:''}</Input>
       </Parameter>
-      <Parameter name='time' style={{minWidth:50}}>
+      <Parameter name='time' style={{minWidth:60}}>
         <Input inputRef={timeRef}>{event.time?event.time:''}</Input>
       </Parameter>
       <Parameter name='duration' style={{minWidth:70}}>
         <Input inputRef={durationRef}>{event.duration?event.duration:''}</Input>
       </Parameter>
-      <Parameter name='end date' style={{minWidth:100}}>
+      <Parameter name='end date' style={{minWidth:110}}>
         <Input inputRef={endRef}>{event.end?event.end:''}</Input>
       </Parameter>
       <br/>

@@ -131,7 +131,7 @@
   transform: translate(-50%, -50%);
   background-color: #FFF;
   min-height: 200px;
-  min-width: 380px;
+  min-width: 400px;
   max-width: 100%;
   display: flex;
   flex-direction: column;
@@ -228,7 +228,7 @@
 }
 
 .value_f50ce86 {
-  font-size: 18px;
+  font-size: 20px;
   outline-width: 0;
   border: 1px solid lightgray;
   white-space: pre-wrap;
@@ -237,8 +237,8 @@
 .color_f674b54, .completed_a56a0e7 {
   display: inline-block;
   min-width: 65px;
-  height: 18px;
-  font-size: 14px;
+  height: 20px;
+  font-size: 16px;
   border: 1px solid gray;
   margin-left: -1px;
 }
@@ -248,10 +248,10 @@
   text-decoration: line-through;
 }
 .select_b60c21c {
-  font-size: 14px;
+  font-size: 16px;
 }
 .name_c4b14a4 {
-  font-size: 18px;
+  font-size: 20px;
   outline-width: 0;
   white-space: pre-wrap;
   overflow-wrap: break-word;

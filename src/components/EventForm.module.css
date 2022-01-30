@@ -3,7 +3,7 @@
 }
 
 .value {
-  font-size: 18px;
+  font-size: 20px;
   outline-width: 0;
   border: 1px solid lightgray;
   white-space: pre-wrap;
@@ -12,8 +12,8 @@
 .color, .completed {
   display: inline-block;
   min-width: 65px;
-  height: 18px;
-  font-size: 14px;
+  height: 20px;
+  font-size: 16px;
   border: 1px solid gray;
   margin-left: -1px;
 }
@@ -23,10 +23,10 @@
   text-decoration: line-through;
 }
 .select {
-  font-size: 14px;
+  font-size: 16px;
 }
 .name {
-  font-size: 18px;
+  font-size: 20px;
   outline-width: 0;
   white-space: pre-wrap;
   overflow-wrap: break-word;
