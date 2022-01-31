@@ -3,21 +3,23 @@ import CalendarDay from './CalendarDay.jsx'
 import EventItem from './EventItem.jsx'
 import DateTime from '../utils/datetime.js'
 import EventList from '../utils/eventList'
-import {eventList} from '../utils/schedule.js'
+import {eventList} from '../model/data.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
+import { loadClient, logIn, logOut, isLoggedIn } from '../utils/gapi'
 
 const dayHeight = 150
 const weekBuffer = 4
 
-export default function Calendar({children = null}) {
+export default function Calendar() {
 
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
   const divElement = React.useRef(null)
   const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
+  const currentWeekRef = React.useRef(null)
   
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -25,8 +27,8 @@ export default function Calendar({children = null}) {
   currentTimestamp -= shift*7*86400
 
   React.useEffect(()=>{
-    setShift(2+weekBuffer)
-    scrollElement.current.scrollTop = (weekBuffer)*(dayHeight+1)//606
+    loadClient()
+    currentWeekRef.current.scrollIntoView(true)
   }, [])
 
   const arrayOfDays = []
@@ -80,10 +82,13 @@ export default function Calendar({children = null}) {
     setModal(true)
   }
 
-   console.log('draw calendar')
+  console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
+      { isLoggedIn()?
+        <Button onClick={logOut}>Logout</Button>
+        :<Button onClick={logIn}>Login</Button>}
       <Button onClick={SaveToLocalStorage}>Save to LocalStorage</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
@@ -93,7 +98,7 @@ export default function Calendar({children = null}) {
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
       { arrayOfDays.map( week => (
-        <div className={styles.CalendarWeek} key={week[0].timestamp}> {
+        <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*14+31+19}}> {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} onAddEvent={openNewEventForm}>
               { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={openEventForm}/>))}

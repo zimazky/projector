@@ -1,5 +1,4 @@
-import EventList from "../utils/eventList"
-import { eventList } from "../utils/schedule"
+import { eventList } from "../model/data.js"
 import Button from "./Button.jsx"
 import styles from "./EventForm.module.css"
 
@@ -49,9 +48,9 @@ export default function EventForm({event, onExit=()=>{}}) {
 
   const isNew = event.id?false:true
 
-  var p = eventList.projects.find(p=>p.name===event.project)
-  if(p===undefined) p = {background: EventList.default_background, color: EventList.default_color}
-  const colorRef = React.useRef({background: p.background, color: p.color})
+  var pi = eventList.projects.findIndex(p=>p.name===event.project)
+  if(pi<0) pi = 0
+  const projectColorRef = React.useRef({...eventList.projects[pi]})
 
   const onCompleteHandle = () => {
     const raw = {
@@ -121,9 +120,8 @@ export default function EventForm({event, onExit=()=>{}}) {
   }
 
   const onChangeColors = () => {
-    const p = eventList.projects.find(p=>p.name===event.project)
-    p.background = backgroundRef.current.innerText
-    p.color = colorRef.current.innerText
+    eventList.projects[pi].background = projectColorRef.current.background
+    eventList.projects[pi].color = projectColorRef.current.color
     eventList.clearCache()
     onExit()
   }
@@ -154,7 +152,7 @@ export default function EventForm({event, onExit=()=>{}}) {
         </select>
       </Parameter>
       <Parameter name='background/color' style={{minWidth:60}}>
-        <BackgroundInput colorRef={colorRef} />
+        <BackgroundInput colorRef={projectColorRef} />
       </Parameter>
 
       <br/>

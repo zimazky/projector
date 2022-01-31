@@ -1,6 +1,6 @@
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime.js'
-import { eventList } from '../utils/schedule'
+import { eventList } from '../model/data.js'
 
 export default function CalendarDay({data, onAddEvent=()=>{}, children = null}) {
   const {timestamp, actualBalance, plannedBalance, plannedBalanceChange} = data

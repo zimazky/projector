@@ -2,12 +2,12 @@ import DateTime from '../utils/datetime.js'
 import styles from './EventItem.module.css'
 
 export default function EventItem({event, days, onClick=(compactEvent)=>{} }) {
-  const {name,completed,background,color} = event
+  const {name,completed,background,color,repeatable} = event
   return ( 
   event.id === -1 ?
   <div className={styles.placeholder} ></div>
   :
-  <div className={completed?styles.completed:styles.item} 
+  <div className={completed?styles.completed:repeatable?styles.repeatable:styles.item} 
     style={{
       width: days==1?'calc(100% + 2px)':'calc(' +days +' * (100% + 1px) + 1px )',
       backgroundColor: background,
