@@ -19,7 +19,9 @@
   /*text-decoration: line-through;*/
 }
 .repeatable {
-  background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);
+  /*background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);*/
+  background-image: repeating-linear-gradient(-45deg, rgb(0,0,0,0.1) 0 4px, rgb(255,255,255,0.1) 6px, rgb(0,0,0,0.1) 7px 10px);
+
 }
 .selected {
   border-width: 2px;
@@ -27,6 +29,15 @@
   margin: -2px 0 0 -1px;
   height: 16px;
   z-index: 1;
+}
+.selected::after {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  display: inline-block;
+  width: 3px;
+  content: '';
+  cursor: w-resize;
 }
 .placeholder {
   height: 15px;
