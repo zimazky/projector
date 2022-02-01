@@ -82,6 +82,17 @@ export default function Calendar() {
     setModal(true)
   }
 
+  const dragStart = (e,id) => {
+    e.dataTransfer.setData('event_item', JSON.stringify(id))
+    console.log('drag start',e,id)
+  }
+  const dragDrop = (e, timestamp) => {
+    e.preventDefault()
+    const c = JSON.parse(e.dataTransfer.getData('event_item'))
+    eventList.shiftToDate(c.id,timestamp)
+    setModalState(s=>({...s}))
+  }
+
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
@@ -100,8 +111,9 @@ export default function Calendar() {
       { arrayOfDays.map( week => (
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*14+31+19}}> {
           week.map( (d,j) => (
-            <CalendarDay data={d} key={d.timestamp} onAddEvent={openNewEventForm}>
-              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} onClick={openEventForm}/>))}
+            <CalendarDay data={d} key={d.timestamp} onAddEvent={openNewEventForm} onDragDrop={e=>dragDrop(e,d.timestamp)}>
+              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} 
+                onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
             </CalendarDay>
           ))}
         </div>

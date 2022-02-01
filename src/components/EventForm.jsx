@@ -147,7 +147,6 @@ export default function EventForm({event, onExit=()=>{}}) {
       <br/>
       <Parameter name='project' style={{minWidth:100}}>
         <select className={styles.select} ref={projectRef} defaultValue={event.project}>
-          <option value=''>Default</option>
           {eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
         </select>
       </Parameter>

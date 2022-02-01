@@ -96,20 +96,29 @@ export default class EventList {
   //    debit,                  списание средств
   //    completed               признак завершенности
   // }
-  eventToCompact = (e, timestamp, completed) => ({
-    id: e.id,
-    name: e.name,
-    background: this.projects[e.projectId].background,
-    color: this.projects[e.projectId].color,
-    start: e.repeat?timestamp:e.start,
-    time: e.time,
-    end: e.repeat?timestamp+86400:e.end,
-    days: e.repeat?1:Math.ceil((e.end-timestamp)/86400),
-    credit: e.credit,
-    debit: e.debit,
-    completed: completed,
-    repeatable: e.repeat?true:false
-  })
+  eventToCompact = (e, timestamp, completed) => {
+    const c = {
+      id: e.id,
+      name: e.name,
+      background: this.projects[e.projectId].background,
+      color: this.projects[e.projectId].color,
+      start: e.start,
+      time: e.time,
+      end: e.end,
+      days: Math.ceil((e.end-timestamp)/86400),
+      credit: e.credit,
+      debit: e.debit,
+      completed: completed,
+      repeatable: false
+    }
+    if(e.repeat) {
+      c.start = timestamp
+      c.end = timestamp+86400
+      c.days = 1
+      c.repeatable = true
+    }
+    return c
+  }
 
   // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
   // формат записей в списках rawCompletedList и rowPlannedList:
@@ -334,6 +343,27 @@ export default class EventList {
       this.addPlannedEvent(this.rawToEvent(raw))
       this.sort()
       this.deleteEvent(id)
+      return
+    }
+  }
+
+  shiftToDate(id, timestamp) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      event.start = timestamp
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      event.start = timestamp
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
       return
     }
   }
