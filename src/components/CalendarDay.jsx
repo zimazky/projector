@@ -33,7 +33,7 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
       <div className={styles.balance}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>
-      <div> {children} </div>
+      {children}
       <div ref={inputElementRef} className={styles.input} contentEditable='true' suppressContentEditableWarning={true}
       onBlur={onBlurHandle} onKeyDown={onKeyDownHandle}></div>
     </div> 

@@ -4,11 +4,13 @@
   height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
-}
-.before_actual_date {
   background-color: rgb(245, 245, 245);
 }
+.before_actual_date {
+  background-color: rgb(236, 235, 235);
+}
 .header, .today {
+  background-color: rgb(238, 238, 238);
   color: gray;
   font-size: 12px;
   padding: 1px 4px;
