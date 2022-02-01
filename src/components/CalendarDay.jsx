@@ -18,12 +18,17 @@ export default function CalendarDay({data, onAddEvent=()=>{}, onDragDrop=e=>{}, 
     e.target.innerText = ''
   } 
 
+  const dragOver = (e) => {
+    e.preventDefault()
+    if(e.ctrlKey) e.dataTransfer.dropEffect='copy'
+    else e.dataTransfer.dropEffect='move'
+  }
   const minimize = d => (d/1000).toFixed(1)
   const plus = d => d>0?'+'+d.toFixed(1):d.toFixed(1)
 
   return (
     <div className={timestamp>=eventList.lastActualBalanceDate?styles.day:styles.before_actual_date} 
-      onClick={onClickHandle} onDrop={onDragDrop} onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect="move"}}>
+      onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +

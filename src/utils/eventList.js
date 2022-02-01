@@ -347,7 +347,10 @@ export default class EventList {
     }
   }
 
-  shiftToDate(id, timestamp) {
+  // id - идентификатор события
+  // timestamp - дата в которую совершается копирование
+  // eventTimestamp - для повторяемых событий дата конкретного
+  shiftToDate(id, timestamp, eventTimestamp) {
     var event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
       const delta = timestamp - event.start
@@ -366,7 +369,50 @@ export default class EventList {
       this.clearCache()
       return
     }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      if(event.repeat[0]!=='/' || event.start!==eventTimestamp) return
+      const delta = timestamp - eventTimestamp
+      event.start = event.start + delta
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
+      return
+    }
   }
+  
+  // id - идентификатор события
+  // timestamp - дата в которую совершается копирование
+  copyToDate(id, timestamp) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, start: timestamp, end: event.end? event.end+delta : event.end}
+      this.addCompletedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, start: timestamp, end: event.end? event.end+delta : event.end}
+      this.addPlannedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, repeat: '', start: timestamp, end: timestamp+86400}
+      this.addPlannedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+  }
+
 
   // Функция предварительной сортировки событий
   // упорядочивает для более быстрой сортировки в методе getEvents

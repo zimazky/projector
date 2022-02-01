@@ -89,7 +89,8 @@ export default function Calendar() {
   const dragDrop = (e, timestamp) => {
     e.preventDefault()
     const c = JSON.parse(e.dataTransfer.getData('event_item'))
-    eventList.shiftToDate(c.id,timestamp)
+    if(e.ctrlKey) eventList.copyToDate(c.id,timestamp)
+    else eventList.shiftToDate(c.id,timestamp,c.start)
     setModalState(s=>({...s}))
   }
 
