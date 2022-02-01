@@ -20,6 +20,7 @@ export default function Calendar() {
   const divElement = React.useRef(null)
   const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
   const currentWeekRef = React.useRef(null)
+  const [selected,setSelected] = React.useState({})
   
 
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -81,7 +82,6 @@ export default function Calendar() {
     setModalState({...EventList.eventToRaw(s), completed, timestamp:start, id:s.id})
     setModal(true)
   }
-
   const dragStart = (e,id) => {
     e.dataTransfer.setData('event_item', JSON.stringify(id))
     console.log('drag start',e,id)
@@ -114,7 +114,9 @@ export default function Calendar() {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} onAddEvent={openNewEventForm} onDragDrop={e=>dragDrop(e,d.timestamp)}>
               { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} 
-                onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
+                selected={selected.timestamp===d.timestamp && selected.id===t.id}
+                onClick={()=>{setSelected({id:t.id,timestamp:d.timestamp});console.log({id:t.id,timestamp:d.timestamp})}}
+                onDoubleClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
             </CalendarDay>
           ))}
         </div>

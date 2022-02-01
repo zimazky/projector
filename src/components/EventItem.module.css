@@ -1,4 +1,4 @@
-.item, .completed, .repeatable{
+.item, .completed, .repeatable, .selected{
   position: relative;
   width: 100%;
   height: 15px;
@@ -20,6 +20,13 @@
 }
 .repeatable {
   background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);
+}
+.selected {
+  border-width: 2px;
+  border-color: black;
+  margin: -2px 0 0 -1px;
+  height: 16px;
+  z-index: 1;
 }
 .placeholder {
   height: 15px;
