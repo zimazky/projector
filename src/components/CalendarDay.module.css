@@ -8,10 +8,14 @@
 .before_actual_date {
   background-color: rgb(245, 245, 245);
 }
-.header {
+.header, .today {
   color: gray;
   font-size: 12px;
   padding: 1px 4px;
+}
+.today {
+  background-color: hotpink;
+  color: white;
 }
 .balance {
   margin: 0 1px;

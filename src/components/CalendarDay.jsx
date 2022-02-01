@@ -2,7 +2,7 @@ import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime.js'
 import { eventList } from '../model/data.js'
 
-export default function CalendarDay({data, onAddEvent=()=>{}, onDragDrop=e=>{}, children = null}) {
+export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDragDrop=e=>{}, children = null}) {
   const {timestamp, actualBalance, plannedBalance, plannedBalanceChange} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
@@ -29,7 +29,7 @@ export default function CalendarDay({data, onAddEvent=()=>{}, onDragDrop=e=>{}, 
   return (
     <div className={timestamp>=eventList.lastActualBalanceDate?styles.day:styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
-      <div className={styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
+      <div className={today?styles.today:styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>
