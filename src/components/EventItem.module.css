@@ -2,7 +2,6 @@
   position: relative;
   width: 100%;
   height: 15px;
-  background-color: white;
   overflow: hidden;
   margin: -1px 0 0 -1px;
   padding: 1px 2px;
@@ -14,18 +13,15 @@
   text-align-last: justify;
 }
 .completed {
-/*  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);*/
   background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
   linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
-
   color: gray;
-  /*text-decoration: line-through;*/
 }
 .repeatable {
   /*background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);*/
   /*background-image: repeating-linear-gradient(-45deg, rgb(0,0,0,0.1) 0 4px, rgb(255,255,255,0.1) 6px, rgb(0,0,0,0.1) 7px 10px);*/
-
-  background-image: repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),
+  background-image: /*repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),*/
+  repeating-linear-gradient(45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),
   linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
 
 }
@@ -36,11 +32,17 @@
 .name {
   display: inline-block;
   text-align: left;
-  word-wrap: break-word;
-  white-space:pre-line ;
-  /*white-space: nowrap;*/
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
-.completed .name {
+.time {
+  display: inline-block;
+  vertical-align: top;
+}
+.completed .name, .completed .time {
   text-decoration: line-through;
   color: gray;
 }

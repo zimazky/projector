@@ -15,6 +15,6 @@ export default function EventItem({event, days, onClick=(compactEvent)=>{}, onDr
       color: color
     }} 
     onClick={e=>{e.stopPropagation(); onClick(event)}}>
-      <div className={styles.name}>{name}</div>{' '+DateTime.HHMMFromSeconds(event.time)}
+      <div className={styles.name}>{name}</div> <div className={styles.time}>{DateTime.HHMMFromSeconds(event.time)}</div>
   </div>)
 }

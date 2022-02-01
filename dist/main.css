@@ -60,7 +60,7 @@
   background-color: rgb(245, 245, 245);
 }
 .before_actual_date_fb6a4cf {
-  background-color: rgb(236, 235, 235);
+  background-color: rgb(238, 238, 238);
 }
 .header_d741756, .today_ded7894 {
   background-color: rgb(238, 238, 238);
@@ -90,7 +90,6 @@
   position: relative;
   width: 100%;
   height: 15px;
-  background-color: white;
   overflow: hidden;
   margin: -1px 0 0 -1px;
   padding: 1px 2px;
@@ -102,18 +101,15 @@
   text-align-last: justify;
 }
 .completed_b30da5e {
-/*  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.3) 45%, rgba(255, 255, 255, 0.6) 48%,rgba(0,0,0,0.3) 52%, rgba(0,0,0,0.1) 55%);*/
   background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
   linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
-
   color: gray;
-  /*text-decoration: line-through;*/
 }
 .repeatable_ca186f6 {
   /*background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);*/
   /*background-image: repeating-linear-gradient(-45deg, rgb(0,0,0,0.1) 0 4px, rgb(255,255,255,0.1) 6px, rgb(0,0,0,0.1) 7px 10px);*/
-
-  background-image: repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),
+  background-image: /*repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),*/
+  repeating-linear-gradient(45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),
   linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
 
 }
@@ -124,14 +120,21 @@
 .name_ddde4d8 {
   display: inline-block;
   text-align: left;
-  word-wrap: break-word;
-  white-space:pre-line ;
-  /*white-space: nowrap;*/
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
-.completed_b30da5e .name_ddde4d8 {
+.time_c10a237 {
+  display: inline-block;
+  vertical-align: top;
+}
+.completed_b30da5e .name_ddde4d8, .completed_b30da5e .time_c10a237 {
   text-decoration: line-through;
   color: gray;
 }
+
 .modalOverlay_faa7164 {
   background-color: rgba(0,0,0,0.5);
   position: fixed;
