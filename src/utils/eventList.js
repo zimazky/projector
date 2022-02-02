@@ -188,28 +188,49 @@ export default class EventList {
     return raw
   }
 
-  constructor(rawCompletedList=[], rawPlannedList=[], rawProjects=[]) {
+  constructor({completedList=[], plannedList=[], projectsList=[]}) {
+
 
     this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
 
     this.lastId = 1
-    this.projects = [{name:'Default', background:EventList.default_background, color:EventList.default_color}, ...rawProjects]
+    this.projects = [{name:'Default', background:EventList.default_background, color:EventList.default_color}, ...projectsList]
     this.completed = []
-    rawCompletedList.forEach(raw=>{
+    completedList.forEach(raw=>{
       const e = this.rawToEvent(raw)
       this.addCompletedEvent(e)
     })
     this.planned = []
     this.plannedRepeatable = []
-    rawPlannedList.forEach(raw=>this.addPlannedRawEvent(raw))
+    plannedList.forEach(raw=>this.addPlannedRawEvent(raw))
     this.sort()
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
   
+  reload({completedList=[], plannedList=[], projectsList=[]}) {
+    this.cachedEvents = []
+    this.cachedActualBalance = []
+    this.cachedPlannedBalance = []
+    this.lastId = 1
+    this.projects = [{name:'Default', background:EventList.default_background, color:EventList.default_color}, ...projectsList]
+    this.completed = []
+    completedList.forEach(raw=>{
+      const e = this.rawToEvent(raw)
+      this.addCompletedEvent(e)
+    })
+    this.planned = []
+    this.plannedRepeatable = []
+    plannedList.forEach(raw=>this.addPlannedRawEvent(raw))
+    this.sort()
+    this.lastActualBalance = this.calculateActualBalance()
+    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+
   addCompletedEvent(e) {
     this.completed.push({
       id: this.lastId++,

@@ -7,7 +7,8 @@ import {eventList} from '../model/data.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
-import { loadClient, logIn, logOut, isLoggedIn } from '../utils/gapi'
+import GAPI from '../utils/gapi.js'
+import RemoteStorage from '../utils/remoteStorage.js'
 
 const dayHeight = 150
 const weekBuffer = 4
@@ -27,7 +28,6 @@ export default function Calendar() {
   currentTimestamp -= shift*7*86400
 
   React.useEffect(()=>{
-    loadClient()
     currentWeekRef.current.scrollIntoView(true)
   }, [])
 
@@ -66,6 +66,20 @@ export default function Calendar() {
     console.log(dataString)
   }
 
+  const SaveToGoogleDrive = async ()=>{
+    //const dataString = JSON.stringify(eventList.prepareToStorage())
+    RemoteStorage.saveFile('data.json',eventList.prepareToStorage())
+      .then(()=>console.log('save ok'))
+      .catch(()=>console.log('save error'))
+  }
+  const LoadFromGoogleDrive = async ()=>{
+    const obj = await RemoteStorage.loadFile('data.json')
+    eventList.reload(obj)
+    console.log(eventList)
+    setModalState(s=>({...s}))
+  }
+
+
   /////////////////////////////////////////////////////////////////////////////
   // Методы открывания формы
   const openNewEventForm = (timestamp, name) => {
@@ -97,10 +111,10 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
-      { isLoggedIn()?
-        <Button onClick={logOut}>Logout</Button>
-        :<Button onClick={logIn}>Login</Button>}
+      <Button onClick={GAPI.logOut}>Log out</Button>
       <Button onClick={SaveToLocalStorage}>Save to LocalStorage</Button>
+      <Button onClick={SaveToGoogleDrive}>Save to Google</Button>
+      <Button onClick={LoadFromGoogleDrive}>Load from Google</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
     </div>
