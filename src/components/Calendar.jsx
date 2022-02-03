@@ -111,10 +111,11 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
-      <Button onClick={GAPI.logOut}>Log out</Button>
-      <Button onClick={SaveToLocalStorage}>Save to LocalStorage</Button>
-      <Button onClick={SaveToGoogleDrive}>Save to Google</Button>
-      <Button onClick={LoadFromGoogleDrive}>Load from Google</Button>
+      <Button onClick={document.body.requestFullscreen()}>FullScr</Button>
+      <Button onClick={GAPI.logOut}>Logout</Button>
+      <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
+      <Button onClick={SaveToGoogleDrive}>Save&gt;GD</Button>
+      <Button onClick={LoadFromGoogleDrive}>Load&lt;GD</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
     </div>
