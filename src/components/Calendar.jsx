@@ -111,7 +111,7 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div className={styles.header}>
-      <Button onClick={document.body.requestFullscreen()}>FullScr</Button>
+      <Button onClick={()=>document.body.requestFullscreen()}>FullScr</Button>
       <Button onClick={GAPI.logOut}>Logout</Button>
       <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
       <Button onClick={SaveToGoogleDrive}>Save&gt;GD</Button>
