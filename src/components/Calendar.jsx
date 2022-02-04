@@ -21,6 +21,7 @@ export default function Calendar() {
   const divElement = React.useRef(null)
   const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
   const currentWeekRef = React.useRef(null)
+  const wrapperRef = React.useRef(null)
   
   const currentDay = DateTime.getBeginDayTimestamp(Date.now()/1000)
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
@@ -29,6 +30,7 @@ export default function Calendar() {
 
   React.useEffect(()=>{
     currentWeekRef.current.scrollIntoView(true)
+    wrapperRef.current.scrollIntoView(true)
   }, [])
 
   const arrayOfDays = []
@@ -110,7 +112,7 @@ export default function Calendar() {
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
-    <div className={styles.header}>
+    <div ref={wrapperRef} className={styles.header}>
       <Button onClick={()=>document.body.requestFullscreen()}>FullScr</Button>
       <Button onClick={GAPI.logOut}>Logout</Button>
       <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
@@ -118,9 +120,9 @@ export default function Calendar() {
       <Button onClick={LoadFromGoogleDrive}>Load&lt;GD</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
-    </div>
-    <div className={styles.dayOfWeekLabels}>
-      { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
+      <div className={styles.dayOfWeekLabels}>
+        { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
+      </div>
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
       { arrayOfDays.map( week => (
