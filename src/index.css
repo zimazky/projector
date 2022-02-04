@@ -11,3 +11,15 @@ body {
 	font-family: 'Roboto',sans-serif;
 	overflow-y: hidden;
 }
+
+@media (max-width: 800px) { 
+	body {
+		font-size: 14px;
+	}
+}
+
+@media (max-width: 480px) { 
+	body {
+		font-size: 12px;
+	}
+}

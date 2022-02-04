@@ -10,7 +10,6 @@ import EventForm from './EventForm.jsx'
 import GAPI from '../utils/gapi.js'
 import RemoteStorage from '../utils/remoteStorage.js'
 
-const dayHeight = 150
 const weekBuffer = 4
 
 export default function Calendar() {
@@ -55,11 +54,12 @@ export default function Calendar() {
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
-    const w = Math.ceil(t/(dayHeight+1)-shift)
+    const avgDayHeight = el.scrollHeight/arrayOfDays.length
+    const w = Math.ceil(t/avgDayHeight-shift)
     const d = new Date((zeroPoint+w*7*86400)*1000)
     divElement.current.innerText =d.getFullYear() + ' ' + DateTime.MONTHS_FULL[d.getMonth()] + ' '+w+' week'
-    if(t<weekBuffer*dayHeight) setShift(s=>s+weekBuffer)
-    else if(b<weekBuffer*dayHeight) setShift(s=>s-weekBuffer)
+    if(t<weekBuffer*avgDayHeight) setShift(s=>s+weekBuffer)
+    else if(b<weekBuffer*avgDayHeight) setShift(s=>s-weekBuffer)
   }
 
   const SaveToLocalStorage = ()=>{

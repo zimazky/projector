@@ -29,7 +29,7 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
   return (
     <div className={timestamp>=eventList.lastActualBalanceDate?styles.day:styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
-      <div className={today?styles.today:styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
+      <div className={today?styles.today:styles.header} onClick={e=>{console.log(e),e.target.parentElement.requestFullscreen()}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>
