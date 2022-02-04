@@ -113,7 +113,7 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div ref={wrapperRef} className={styles.header}>
-      <Button onClick={()=>document.body.requestFullscreen()}>FullScr</Button>
+      <Button onClick={()=>document.getElementById('root').requestFullscreen()}>FullScr</Button>
       <Button onClick={GAPI.logOut}>Logout</Button>
       <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
       <Button onClick={SaveToGoogleDrive}>Save&gt;GD</Button>
@@ -126,7 +126,7 @@ export default function Calendar() {
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
       { arrayOfDays.map( week => (
-        <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*14+31+19}}> {
+        <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp}
               onAddEvent={openNewEventForm} onDragDrop={e=>dragDrop(e,d.timestamp)}>

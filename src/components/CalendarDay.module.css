@@ -12,16 +12,17 @@
 .header, .today {
   background-color: rgb(238, 238, 238);
   color: gray;
-  font-size: 12px;
-  padding: 1px 4px;
+  padding: 0.1em 0.4em;
+  height: 1.4em;
 }
 .today {
   background-color: hotpink;
   color: white;
 }
 .balance {
-  margin: 0 1px;
-  height: 14px;
+  font-size: 0.9em;
+  margin: 0.1em;
+  height: 1.2em;
   overflow: hidden;
   text-align: justify;
   text-align-last: justify;
@@ -30,6 +31,7 @@
   outline-width: 0;
   white-space: pre-wrap;
   overflow-wrap: break-word;
-  padding: 2px;
-  font-size: 12px;
+  font-size: 0.9em;
+  padding: 0.2em;
+  height: 1.4em;
 }
