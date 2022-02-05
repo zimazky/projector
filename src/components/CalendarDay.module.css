@@ -1,41 +1,35 @@
-.CalendarDay {
+.day, .before_actual_date {
   display: inline-block;
   width: calc(100%/7);
+  height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
+  background-color: rgb(245, 245, 245);
 }
-
-.CalendarDayHeader {
+.before_actual_date {
+  background-color: rgb(238, 238, 238);
+}
+.header, .today {
+  background-color: rgb(238, 238, 238);
   color: gray;
-  font-size: 12px;
-  padding: 1px 4px;
+  padding: 0.1em 0.4em;
+  height: 1.4em;
 }
-
-.DayTaskInput {
-  width: 100%;
-  padding: 2px 4px;
+.today {
+  background-color: hotpink;
+  color: white;
 }
-
-.DayTaskInput input {
-  width: 100%;
-  font-size: 11px;
-  resize: none;
-  /*outline-color: lightgray;*/
-  border-style: none;
-  outline: none;
-  overflow: hidden;
-  padding: 0;
-}
-
 .balance {
-  margin: 0 1px;
-  height: 14px;
+  font-size: 0.9em;
+  margin: 0.1em;
+  height: 1.2em;
   overflow: hidden;
-  white-space: nowrap;
+  text-align: justify;
+  text-align-last: justify;
 }
-.plannedBalance {
+.input {
+  outline-width: 0;
   white-space: nowrap;
-}
-.actualBalance {
-  float: right;
+  padding: 0.2em;
+  height: 1.4em;
 }

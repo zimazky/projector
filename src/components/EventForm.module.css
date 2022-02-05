@@ -1,53 +1,38 @@
-.event_form {
+.form {
   text-align: left;
 }
 
-.name {
-  font-size: 20px;
-  outline-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-.comment {
+.value {
   font-size: 20px;
   outline-width: 0;
   border: 1px solid lightgray;
   white-space: pre-wrap;
   overflow-wrap: break-word;
 }
-.date {
-  width: 170px;
-  font-size: 20px;
+.color, .completed {
+  display: inline-block;
+  min-width: 65px;
+  height: 20px;
+  font-size: 16px;
+  border: 1px solid gray;
+  margin-left: -1px;
 }
-.time {
-  width: 100px;
-  font-size: 20px;
+.completed {
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.6) 0 100%);
+  color: gray;
+  text-decoration: line-through;
 }
-
+.select {
+  font-size: 16px;
+}
+.name {
+  font-size: 20px;
+  outline-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
 .parameter {
   display: inline-block;
   text-align: left;
   padding: 2px 0;
-}
-
-.block_parameter {
-  padding: 2px 0;
-}
-
-.row {
-  text-align: justify;
-  text-align-last: justify;
-}
-
-.repeat_row {
-  margin: 4px 0;
-  font-size: 20px;
-  vertical-align: text-bottom;
-}
-
-.repeat_string {
-  font-size: 20px;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  padding: 2px;
 }

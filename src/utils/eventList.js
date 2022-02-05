@@ -11,89 +11,13 @@ const repeatableToSingle = (id, e, timestamp) => {
     name: e.name,
     comment: e.comment,
     project: e.project,
-    background: e.background,
-    color: e.color,
+    projectId: e.projectId,
     start: timestamp,
     time: e.time,
     end: timestamp+86400,
     days: 1,
     credit: e.credit,
     debit: e.debit,
-  }
-}
-
-// Преобразование события в компактное представление для кэша и для отображения
-// повторяемых событий нет, они представляются одиночными
-// многодневные события представлены отдельными событиями на каждый день
-// {
-//    id,                     идентификатор
-//    name,                   наименование
-//    background,             цвет фона
-//    color,                  цвет текста
-//    start, ??               начальная дата события (для повторяемых текущая дата)
-//    date, ??                текущая дата
-//    time,                   время события
-//    end,                    дата завершения события
-//    days,                   длительность в днях, начиная с текущей даты (для повторяемых 1)
-//    credit,                 поступление средств
-//    debit,                  списание средств
-//    completed               признак завершенности
-// }
-const eventToCompact = (e, timestamp, completed) => ({
-  id: e.id,
-  name: e.name,
-  background: e.background,
-  color: e.color,
-  start: e.start, // для идентификации конкретного повторяемого события
-  time: e.time,
-  end: e.end,
-  days: Math.ceil((e.end-timestamp)/86400),
-  credit: e.credit,
-  debit: e.debit,
-  completed: completed
-})
-
-
-// Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
-// формат записей в списках rawCompletedList и rowPlannedList:
-// {                                          default   
-//    name:string,                    mandatory   
-//    comment:string,                 optional    ''
-//    project:string,                 optional    ''
-//    repeat:string 'D M W',          optional    ''
-//    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
-//    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
-//    time:string 'HH:MI',            optional    null
-//    duration:string 'DDd HH:MI',    optional    0
-//    credit:float,                   optional    0
-//    debit:float                     optional    0
-// }
-//
-const rawToEvent = e => {
-
-  const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
-  const time = e.time? DateTime.HHMMToSeconds(e.time) : null
-  const duration = e.duration? DateTime.DDHHMMToSeconds(e.duration) : 0
-
-  if(e.repeat) {
-    return {
-      name: e.name,
-      comment: e.comment ?? '',
-      project: e.project ?? '',
-      repeat: e.repeat,
-      start, time, duration,
-      end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
-      credit: e.credit ?? 0, debit: e.debit ?? 0
-    }
-  }
-
-  const startdatetime = time!==null? start + time : start
-  const end = duration? startdatetime + duration : 
-    e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : start+86400
-
-  return { 
-    name: e.name, comment: e.comment ?? '', project: e.project ?? '',
-    start, time, duration, end, credit: e.credit ?? 0, debit: e.debit ?? 0
   }
 }
 
@@ -106,8 +30,9 @@ const rawToEvent = e => {
 //    name:string,        наименование
 //    comment:string,     описание
 //    project:string,     наименование проекта
-//    background:string,  цвет фона, из проекта
-//    color:string,       цвет текста, из проекта
+//   +projectId:int       индекс записи проекта 
+//   -background:string,  цвет фона, из проекта
+//   -color:string,       цвет текста, из проекта
 //    start:timestamp,    дата события, указывает на начало дня по местному времени
 //    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
 //    duration:sec,       длительность в секундах, 0-неопределен, если определен задает дату завершения
@@ -122,8 +47,9 @@ const rawToEvent = e => {
 //    name:string,        наименование
 //    comment:string,     описание
 //    project:string,     наименование проекта
-//    background:string,  цвет фона, из проекта
-//    color:string,       цвет текста, из проекта
+//   +projectId:int       индекс записи проекта 
+//   -background:string,  цвет фона, из проекта
+//   -color:string,       цвет текста, из проекта
 //    repeat:string,      шаблон расписания
 //    start:timestamp,    дата начала расписания, указывает на начало дня по местному времени
 //    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
@@ -139,57 +65,201 @@ export default class EventList {
   static default_background = 'lightgray'
   static default_color = 'black'
 
-  constructor(rawCompletedList, rawPlannedList, rawProjects) {
+  static asanaToEvent = str => {
+    const asana = str.split('"')
+    const str1 = asana.map((s,i)=>i%2==0?s:s.replace(/,/g,'.')).join('"')
+    const [id,created,completed,modified,name,section,assignee,email,startDate,dueDate,tags,notes,projects,parent,cost] = str1.split(',')
+    const e = {name:name.replace(/"/g,''),start:dueDate,comment:notes.replace(/"/g,''),project:projects}
+    const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
+    const time = null
+    const duration = 0
+    const end = start+86400
+    return { 
+      name: e.name===''?'без названия':e.name, comment: e.comment ?? '', project: e.project ?? '',
+      start, time, duration, end, credit: 0, debit: 0, completed: completed===''?false:true
+    }
+  }
+
+  // Преобразование события в компактное представление для кэша и для отображения
+  // повторяемых событий нет, они представляются одиночными
+  // многодневные события представлены отдельными событиями на каждый день
+  // {
+  //    id,                     идентификатор
+  //    name,                   наименование
+  //    background,             цвет фона
+  //    color,                  цвет текста
+  //    start,                  начальная дата события (для повторяемых текущая дата)
+  //    time,                   время события
+  //    end,                    дата завершения события
+  //    days,                   длительность в днях, начиная с текущей даты (для повторяемых 1)
+  //    credit,                 поступление средств
+  //    debit,                  списание средств
+  //    completed               признак завершенности
+  // }
+  eventToCompact = (e, timestamp, completed) => {
+    const c = {
+      id: e.id,
+      name: e.name,
+      background: this.projects[e.projectId].background,
+      color: this.projects[e.projectId].color,
+      start: e.start,
+      time: e.time,
+      end: e.end,
+      days: Math.ceil((e.end-timestamp)/86400),
+      credit: e.credit,
+      debit: e.debit,
+      completed: completed,
+      repeatable: false
+    }
+    if(e.repeat) {
+      c.start = timestamp
+      c.end = timestamp+86400
+      c.days = 1
+      c.repeatable = true
+    }
+    return c
+  }
+
+  // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
+  // формат записей в списках rawCompletedList и rowPlannedList:
+  // {                                          default   
+  //    name:string,                    mandatory   
+  //    comment:string,                 optional    ''
+  //    project:string,                 optional    ''
+  //    repeat:string 'D M W',          optional    ''
+  //    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
+  //    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
+  //    time:string 'HH:MI',            optional    null
+  //    duration:string 'DDd HH:MI',    optional    0
+  //    credit:float,                   optional    0
+  //    debit:float                     optional    0
+  // }
+  //
+  rawToEvent = e => {
+
+    const start = DateTime.getBeginDayTimestamp(new Date(e.start)/1000)
+    const time = e.time? DateTime.HHMMToSeconds(e.time) : null
+    const duration = e.duration? DateTime.DDHHMMToSeconds(e.duration) : 0
+    var projectId = e.project? this.projects.findIndex(p=>p.name===e.project) : 0
+    if(projectId<0) projectId = 0
+
+    if(e.repeat) {
+      return {
+        name: e.name,
+        comment: e.comment ?? '',
+        project: e.project ?? '',
+        projectId,
+        repeat: e.repeat,
+        start, time, duration,
+        end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
+        credit: e.credit ?? 0, debit: e.debit ?? 0
+      }
+    }
+
+    const startdatetime = time!==null? start + time : start
+    const end = duration? startdatetime + duration : 
+      e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : start+86400
+
+    return { 
+      name: e.name, comment: e.comment ?? '', project: e.project ?? '', projectId,
+      start, time, duration, end, credit: e.credit ?? 0, debit: e.debit ?? 0
+    }
+  }
+
+  static eventToRaw = e => {
+    const raw = {}
+    raw.name = e.name
+    if(e.comment) raw.comment = e.comment
+    if(e.project) raw.project = e.project
+
+    raw.start = DateTime.getYYYYMMDD(e.start)
+    if(e.time!==null) raw.time = DateTime.HHMMFromSeconds(e.time)
+    if(e.repeat) {
+      raw.repeat = e.repeat
+      if(e.duration) raw.duration = DateTime.DDHHMMFromSeconds(e.duration)
+      if(e.end) raw.end = DateTime.getYYYYMMDD(e.end)
+    }
+    else {
+      if(e.duration) raw.duration = DateTime.DDHHMMFromSeconds(e.duration)
+      else if(e.end && (e.end-e.start)!==86400) raw.end = DateTime.getYYYYMMDD(e.end)
+    }
+    if(e.credit) raw.credit = e.credit
+    if(e.debit) raw.debit = e.debit
+    return raw
+  }
+
+  constructor({completedList=[], plannedList=[], projectsList=[]}) {
+
 
     this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
 
     this.lastId = 1
-    this.projects = [...rawProjects]
-    this.completed = rawCompletedList.map(raw=>{
-      const e = rawToEvent(raw)
-      const project = e.project?
-        this.projects.find(p=>p.name===e.project):
-        {name: '', background: EventList.default_background, color: EventList.default_color}
-      return {
-        id: this.lastId++,
-        name: e.name,
-        comment: e.comment,
-        project: project.name,
-        background: project.background,
-        color: project.color,
-        start: e.start,
-        time: e.time,
-        duration: e.duration,
-        end: e.end,
-        days: Math.ceil((e.end-e.start)/86400),
-        credit: e.credit,
-        debit: e.debit,
-      }
+    this.projects = [{name:'Default', background:EventList.default_background, color:EventList.default_color}, ...projectsList]
+    this.completed = []
+    completedList.forEach(raw=>{
+      const e = this.rawToEvent(raw)
+      this.addCompletedEvent(e)
     })
     this.planned = []
     this.plannedRepeatable = []
-    rawPlannedList.forEach(raw=>this.addPlannedEvent(raw))
+    plannedList.forEach(raw=>this.addPlannedRawEvent(raw))
+    this.sort()
+    this.lastActualBalance = this.calculateActualBalance()
+    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+  }
+  
+  reload({completedList=[], plannedList=[], projectsList=[]}) {
+    this.cachedEvents = []
+    this.cachedActualBalance = []
+    this.cachedPlannedBalance = []
+    this.lastId = 1
+    this.projects = [{name:'Default', background:EventList.default_background, color:EventList.default_color}, ...projectsList]
+    this.completed = []
+    completedList.forEach(raw=>{
+      const e = this.rawToEvent(raw)
+      this.addCompletedEvent(e)
+    })
+    this.planned = []
+    this.plannedRepeatable = []
+    plannedList.forEach(raw=>this.addPlannedRawEvent(raw))
     this.sort()
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
 
-  addPlannedEvent(raw) {
-    const e = rawToEvent(raw)
-    const project = e.project?
-      this.projects.find(p=>p.name===e.project):
-      {name: '', background: EventList.default_background, color: EventList.default_color}
+  addCompletedEvent(e) {
+    this.completed.push({
+      id: this.lastId++,
+      name: e.name,
+      comment: e.comment,
+      project: e.project,
+      projectId: e.projectId,
+      start: e.start,
+      time: e.time,
+      duration: e.duration,
+      end: e.end,
+      days: Math.ceil((e.end-e.start)/86400),
+      credit: e.credit,
+      debit: e.debit,
+    })
+  }
+
+  addPlannedRawEvent(raw) {
+    this.addPlannedEvent(this.rawToEvent(raw))
+  }  
+
+  addPlannedEvent(e) {
     if(e.repeat) {
       this.plannedRepeatable.push({
         id: this.lastId++,
         name: e.name,
         comment: e.comment,
-        project: project.name,
-        background: project.background,
-        color: project.color,
+        project: e.project,
+        projectId: e.projectId,
         repeat: e.repeat,
         start: e.start,
         time: e.time,
@@ -205,9 +275,8 @@ export default class EventList {
       id: this.lastId++,
       name: e.name,
       comment: e.comment,
-      project: project.name,
-      background: project.background,
-      color: project.color,
+      project: e.project,
+      projectId: e.projectId,
       start: e.start,
       time: e.time,
       duration: e.duration,
@@ -218,10 +287,7 @@ export default class EventList {
     })
   }
 
-  deleteEvent(id) {
-    this.completed = this.completed.filter(e=>e.id!==id)
-    this.planned = this.planned.filter(e=>e.id!==id)
-    this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+  clearCache() {
     this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
@@ -230,27 +296,33 @@ export default class EventList {
     this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
   }
 
+  deleteEvent(id) {
+    this.completed = this.completed.filter(e=>e.id!==id)
+    this.planned = this.planned.filter(e=>e.id!==id)
+    this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
+    this.clearCache()
+  }
+
   // Функция завершения события для незавершенных или отмены завершения для завершенных
-  completeEvent(id, timestamp) {
+  // можно изменить параметры, если переданы в raw
+  completeEvent(id, timestamp, raw={}) {
     var event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = {...event, id: this.lastId++}
-      this.planned.push(newevent)
+      this.addPlannedEvent({...event, ...this.rawToEvent(raw)})
       this.sort()
       this.deleteEvent(event.id)
       return
     }
     event = this.planned.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = {...event, id: this.lastId++}
-      this.completed.push(newevent)
+      this.addCompletedEvent({...event, ...this.rawToEvent(raw)})
       this.sort()
       this.deleteEvent(event.id)
       return
     }
     event = this.plannedRepeatable.find(e=>e.id===id)
     if(event !== undefined) {
-      const newevent = repeatableToSingle(this.lastId++, event, timestamp)
+      const newevent = repeatableToSingle(this.lastId++, {...event, ...this.rawToEvent(raw)}, timestamp)
       this.completed.push(newevent)
       // Добавляем только если есть события в предшествующем интервале
       if(ZCron.ariseInInterval(event.repeat,event.start,event.start,timestamp)) {
@@ -267,15 +339,101 @@ export default class EventList {
         this.deleteEvent(event.id)
       }
       this.sort()
-      this.cachedEvents = []
-      this.cachedActualBalance = []
-      this.cachedPlannedBalance = []
-      this.lastActualBalance = this.calculateActualBalance()
-      this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
-      this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+      this.clearCache()
       return
     }
   }
+
+  updateEvent(id, raw) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addCompletedEvent(this.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addPlannedEvent(this.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      this.addPlannedEvent(this.rawToEvent(raw))
+      this.sort()
+      this.deleteEvent(id)
+      return
+    }
+  }
+
+  // id - идентификатор события
+  // timestamp - дата в которую совершается копирование
+  // eventTimestamp - для повторяемых событий дата конкретного
+  shiftToDate(id, timestamp, eventTimestamp) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      event.start = timestamp
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      event.start = timestamp
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      if(event.repeat[0]!=='/' || event.start!==eventTimestamp) return
+      const delta = timestamp - eventTimestamp
+      event.start = event.start + delta
+      event.end = event.end? event.end+delta : event.end
+      this.sort()
+      this.clearCache()
+      return
+    }
+  }
+  
+  // id - идентификатор события
+  // timestamp - дата в которую совершается копирование
+  copyToDate(id, timestamp) {
+    var event = this.completed.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, start: timestamp, end: event.end? event.end+delta : event.end}
+      this.addCompletedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.planned.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, start: timestamp, end: event.end? event.end+delta : event.end}
+      this.addPlannedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+    event = this.plannedRepeatable.find(e=>e.id===id)
+    if(event !== undefined) {
+      const delta = timestamp - event.start
+      const newevent = {...event, repeat: '', start: timestamp, end: timestamp+86400}
+      this.addPlannedEvent(newevent)
+      this.sort()
+      this.clearCache()
+      return
+    }
+  }
+
 
   // Функция предварительной сортировки событий
   // упорядочивает для более быстрой сортировки в методе getEvents
@@ -300,17 +458,17 @@ export default class EventList {
     if(this.cachedEvents[timestamp] !== undefined) return this.cachedEvents[timestamp]
     const events = this.planned.reduce( (a,e)=>{
       if(timestamp < e.start || timestamp >= e.end) return a
-      return a.push(eventToCompact(e,timestamp,false)), a
+      return a.push(this.eventToCompact(e,timestamp,false)), a
     }, [])
     this.plannedRepeatable.reduce( (a,e)=>{
       if(timestamp<e.start) return a
       if(e.end && timestamp+e.time >= e.end) return a
       if(ZCron.isMatch(e.repeat, e.start, timestamp)) 
-        a.push(eventToCompact(repeatableToSingle(e.id,e,timestamp),timestamp,false))
+        a.push(this.eventToCompact(e,timestamp,false))
       return a
     }, events)
     this.completed.reduce( (a,e) => {
-      if(timestamp >= e.start && timestamp < e.end) a.push(eventToCompact(e,timestamp,true))
+      if(timestamp >= e.start && timestamp < e.end) a.push(this.eventToCompact(e,timestamp,true))
       return a
     }, events)
     events.sort((a,b)=>{
@@ -408,50 +566,14 @@ export default class EventList {
 
   // Подготовка для сохранения в хранилище
   prepareToStorage() {
-    const completedList = this.completed.map(e=>{
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return out
-    })
-
+    const completedList = this.completed.map(e=>EventList.eventToRaw(e))
     const plannedList = this.plannedRepeatable.reduce((a,e) => {
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.repeat = e.repeat
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      if(e.end) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return a.push(out), a
+      return a.push(EventList.eventToRaw(e)), a
     }, [])
-
     this.planned.reduce((a,e) => {
-      const out = {}
-      out.name = e.name
-      if(e.comment) out.comment = e.comment
-      if(e.project) out.project = e.project
-      out.start = DateTime.getYYYYMMDD(e.start)
-      if(e.time!==null) out.time = DateTime.HHMMFromSeconds(e.time)
-      if(e.duration) out.duration = DateTime.DDHHMMFromSeconds(e.duration)
-      else if(e.end-e.start!==86400) out.end = DateTime.getYYYYMMDD(e.end)
-      if(e.credit) out.credit = e.credit
-      if(e.debit) out.debit = e.debit
-      return a.push(out), a
+      return a.push(EventList.eventToRaw(e)), a
     }, plannedList)
-
-    return {projectsList: this.projects, completedList, plannedList}
+    return {projectsList: this.projects.slice(1), completedList, plannedList}
   }
 
 

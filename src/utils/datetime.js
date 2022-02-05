@@ -87,13 +87,11 @@ export default class DateTime {
   static HHMMToSeconds(s) {
     if(!s) return 0
     const [h, m] = s.split(':',2)
-    console.log('hhmm',h,m)
     return (h*60 + (+m)) * 60
   }
   // DDd HH:MM
   static DDHHMMToSeconds(s) {
     const [d, t] = s.split('d',2)
-    console.log(s,d,t)
     if(t === undefined) return DateTime.HHMMToSeconds(d)
     return d*86400 + DateTime.HHMMToSeconds(t)
   }

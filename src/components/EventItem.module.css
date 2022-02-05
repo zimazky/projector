@@ -1,69 +1,49 @@
-.item {
+.item, .completed, .repeatable, .selected{
   position: relative;
   width: 100%;
-  height: 18px;
-  background-color: lightgreen;
+  height: 1.5em;
+  overflow: hidden;
+  margin: 0 0 0 -1px;
+  padding: 0.15em 0.3em;
+  /*border: 1px solid gray;*/
+  background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  /*box-shadow: 0 0 0 1px gray;*/
+
+  cursor: pointer;
+  text-align: justify;
+  text-align-last: justify;
+}
+.placeholder {
+  height: 1.5em;
+  margin: 0 0 0 -1px;
+}
+.completed {
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
+  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  color: gray;
+}
+.repeatable {
+  /*background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);*/
+  /*background-image: repeating-linear-gradient(-45deg, rgb(0,0,0,0.1) 0 4px, rgb(255,255,255,0.1) 6px, rgb(0,0,0,0.1) 7px 10px);*/
+  background-image: /*repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),*/
+  repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
+  /*repeating-radial-gradient(circle at 0 0, transparent 0, transparent 5px, rgb(0,0,0,0.1) 7px, transparent 8px),*/
+  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+}
+.name {
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-left: -1px;
-  padding: 2px 2px;
-  font-size: 10px;
-  border-width: 1px;
-  border-style: solid;
-  border-color: gray;
-  margin-top: -1px;
-  cursor: pointer;
+  vertical-align: top;
 }
-
-.completed {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 18px;
-  background: repeating-linear-gradient(-45deg, 
-  rgba(255, 255, 255, 0.3) 0 10px, 
-  rgba(0,0,0,0.1) 10px 20px);
-  background-attachment: fixed;
-
-  /*
-  background: linear-gradient(-45deg, 
-  rgba(255, 255, 255, 0.4) 0 20%, 
-  rgba(0,0,0,0.1) 20% 30%,
-  rgba(255,255,255,0.4) 30% 40%, 
-  rgba(0,0,0,0.1) 40% 50%,
-  transparent 50% 100%);
-  */
-  pointer-events: none;
-}
-
-.event_row {
-  margin-left: -12px;
-  transition: margin-left 200ms;
-}
-.event_row:hover {
-  margin-left: 0;
-}
-.complete_button {
-  display: inline-block;
-  width: 12px;
-  cursor: pointer;
-}
-
-.EventPlaceholder {
-  height: 18px;
-  margin-top: -1px;
-}
-/*
-.name {
-  display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-*/
 .time {
-  text-align: right;
-  width: 25px;
-  float: right;
+  display: inline-block;
+  vertical-align: top;
+}
+.completed .name, .completed .time {
+  text-decoration: line-through;
+  color: gray;
 }
