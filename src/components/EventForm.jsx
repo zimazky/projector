@@ -1,14 +1,14 @@
-import { eventList } from "../model/data.js"
-import Button from "./Button.jsx"
-import styles from "./EventForm.module.css"
+import { eventList } from '../model/data.js'
+import Button from './Button.jsx'
+import styles from './EventForm.module.css'
 
 function Parameter({name, style, children}) {
   return (
     <>
-    <div className={styles.parameter} style={style}>
-      <div>{name}</div>
-      {children}
-    </div>{' '}
+      <div className={styles.parameter} style={style}>
+        <div>{name}</div>
+        {children}
+      </div>{' '}
     </>
   )
 }
@@ -17,20 +17,13 @@ function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
 
-function BackgroundInput({colorRef}) {
-  const [state,setState] = React.useState(colorRef.current)
+function BackgroundInput({colors, onChange=()=>{}}) {
   return (<>
-    <div className={styles.color} style={{backgroundColor:state.background,color:state.color}} contentEditable='true' suppressContentEditableWarning={true} 
-    onBlur={e=>{
-      colorRef.current.background = e.target.innerText
-      setState(s=>({...s,background:e.target.innerText}))
-      }} >{state.background}</div>
-    <div className={styles.completed} style={{backgroundColor:state.background}}>{state.background}</div>
+    <div className={styles.color} style={{backgroundColor:colors.background,color:colors.color}} contentEditable='true' suppressContentEditableWarning={true} 
+    onBlur={e=>onChange(s=>({...s,background:e.target.innerText}))}>{colors.background}</div>
+    <div className={styles.completed} style={{backgroundColor:colors.background}}>{colors.background}</div>
     <div className={styles.color} style={{backgroundColor:'white',color:'black'}} contentEditable='true' suppressContentEditableWarning={true} 
-    onBlur={e=>{
-      colorRef.current.color = e.target.innerText
-      setState(s=>({...s,color:e.target.innerText}))
-      }} >{state.color}</div>
+    onBlur={e=>onChange(s=>({...s,color:e.target.innerText}))}>{colors.color}</div>
   </>)
 }
 
@@ -50,7 +43,9 @@ export default function EventForm({event, onExit=()=>{}}) {
 
   var pi = eventList.projects.findIndex(p=>p.name===event.project)
   if(pi<0) pi = 0
-  const projectColorRef = React.useRef({...eventList.projects[pi]})
+  const [projectId, setProjectId] = React.useState(pi)
+  const [colors, setColors] = React.useState({...eventList.projects[projectId]})
+
 
   const onCompleteHandle = () => {
     const raw = {
@@ -119,13 +114,19 @@ export default function EventForm({event, onExit=()=>{}}) {
     onExit()
   }
 
-  const onChangeColors = () => {
-    eventList.projects[pi].background = projectColorRef.current.background
-    eventList.projects[pi].color = projectColorRef.current.color
+  const onSaveColors = () => {
+    eventList.projects[projectId].background = colors.background
+    eventList.projects[projectId].color = colors.color
     eventList.clearCache()
     onExit()
   }
 
+  const onChangeProject = (e)=>{
+    var pi = eventList.projects.findIndex(p=>p.name===e.target.value)
+    if(pi<0) pi = 0
+    setColors({...eventList.projects[pi]})
+    setProjectId(pi)
+  }
 
   console.log('event',event)
   return (
@@ -134,7 +135,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
       {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
       {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
-      <Button onClick={onChangeColors}>Save Project Color</Button>
+      <Button onClick={onSaveColors}>Save Project Color</Button>
       <Button onClick={onExit}>Cancel</Button>
 
       <div ref={nameRef} className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
@@ -146,12 +147,13 @@ export default function EventForm({event, onExit=()=>{}}) {
       </Parameter>
       <br/>
       <Parameter name='project' style={{minWidth:100}}>
-        <select className={styles.select} ref={projectRef} defaultValue={event.project}>
+        <select className={styles.select} ref={projectRef} defaultValue={event.project}
+        onChange={onChangeProject}>
           {eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
         </select>
       </Parameter>
       <Parameter name='background/color' style={{minWidth:60}}>
-        <BackgroundInput colorRef={projectColorRef} />
+        <BackgroundInput colors={colors} onChange={setColors}/>
       </Parameter>
 
       <br/>

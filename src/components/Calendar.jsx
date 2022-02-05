@@ -26,10 +26,19 @@ export default function Calendar() {
   let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
   const zeroPoint = currentTimestamp
   currentTimestamp -= shift*7*86400
-
+  /*
+  onOrientationChange = (e)=>{
+    if(window.innerWidth<=480) {
+      const t = scrollElement.current.scrollTop/scrollElement.current.scrollHeight
+      document.body.style.fontSize = '10px'
+    }
+  }
+  */
   React.useEffect(()=>{
     currentWeekRef.current.scrollIntoView(true)
     wrapperRef.current.scrollIntoView(true)
+    /*window.addEventListener('orientationchange', onOrientationChange)
+    return ()=>window.removeEventListener('orientationchange', onOrientationChange)*/
   }, [])
 
   const arrayOfDays = []

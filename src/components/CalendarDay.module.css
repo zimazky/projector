@@ -29,9 +29,7 @@
 }
 .input {
   outline-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-  font-size: 0.9em;
+  white-space: nowrap;
   padding: 0.2em;
   height: 1.4em;
 }
