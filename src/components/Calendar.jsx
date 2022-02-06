@@ -108,7 +108,6 @@ export default function Calendar() {
   }
   const dragStart = (e,id) => {
     e.dataTransfer.setData('event_item', JSON.stringify(id))
-    console.log('drag start',e,id)
   }
   const dragDrop = (e, timestamp) => {
     e.preventDefault()

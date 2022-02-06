@@ -1,6 +1,6 @@
 import Calendar from './Calendar.jsx'
 import GAPI from '../utils/gapi.js'
-import Login from './Login.jsx'
+import styles from './App.module.css'
 import Navbar from './Navbar.jsx'
 
 export default function () {
@@ -21,9 +21,9 @@ export default function () {
   console.log('app')
   
   return ( 
-  <>
+  <div className={styles.page}>
     <Navbar></Navbar>
     <Calendar></Calendar>
-  </>
+  </div>
   )
 }

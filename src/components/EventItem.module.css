@@ -4,8 +4,7 @@
   height: 1.5em;
   overflow: hidden;
   margin: 0 0 0 -1px;
-  padding: 0.15em 0.3em;
-  /*border: 1px solid gray;*/
+  padding: 0.2em 0.3em;
   background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
   /*box-shadow: 0 0 0 1px gray;*/
 
@@ -23,12 +22,9 @@
   color: gray;
 }
 .repeatable {
-  /*background-image: linear-gradient(135deg,  white 0 5px, transparent 5px);*/
-  /*background-image: repeating-linear-gradient(-45deg, rgb(0,0,0,0.1) 0 4px, rgb(255,255,255,0.1) 6px, rgb(0,0,0,0.1) 7px 10px);*/
-  background-image: /*repeating-linear-gradient(-45deg, transparent 0 4px, rgb(0,0,0,0.1) 6px, transparent 7px 10px),*/
-  repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
-  /*repeating-radial-gradient(circle at 0 0, transparent 0, transparent 5px, rgb(0,0,0,0.1) 7px, transparent 8px),*/
-  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  background-image: 
+    repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
+    linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
 }
 .name {
   display: inline-block;
