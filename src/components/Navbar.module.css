@@ -1,0 +1,27 @@
+.navigationbar {
+  font-size: 16px;
+  height: 1.6em;
+  width: 100%;
+  background-color: #707070;
+  vertical-align: baseline;
+  padding: 0.3em 8px;
+}
+.navigationbar div {
+  display: inline-block;
+  margin-right: 0.4em;
+  color: lightgray;
+}
+.burgermenu {
+  height: 1em;
+  width: 1em;
+  fill: lightgray;
+}
+.menu {
+  position: absolute;
+  font-size: 16px;
+  left: 0;
+  top: 1.6em;
+  /*max-width: 120px;*/
+  z-index: 1;
+  background-color: #707070;
+}

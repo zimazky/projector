@@ -281,6 +281,33 @@
   padding: 2px 0;
 }
 
+.navigationbar_f859c3d {
+  font-size: 16px;
+  height: 1.6em;
+  width: 100%;
+  background-color: #707070;
+  vertical-align: baseline;
+  padding: 0.3em 8px;
+}
+.navigationbar_f859c3d div {
+  display: inline-block;
+  margin-right: 0.4em;
+  color: lightgray;
+}
+.burgermenu_c26f52c {
+  height: 1em;
+  width: 1em;
+  fill: lightgray;
+}
+.menu_c9f0c5b {
+  position: absolute;
+  font-size: 16px;
+  left: 0;
+  top: 1.6em;
+  /*max-width: 120px;*/
+  z-index: 1;
+  background-color: #707070;
+}
 * {
 	padding: 0;
 	margin: 0;
@@ -295,7 +322,7 @@ body {
 	overflow-y: hidden;
 }
 
-@media (max-width: 1280px) { 
+@media (max-width: 1400px) { 
 	html {
 		font-size: 14px;
 	}
