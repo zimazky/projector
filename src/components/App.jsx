@@ -1,15 +1,13 @@
-import Calendar from './Calendar.jsx'
 import GAPI from '../utils/gapi.js'
+import Calendar from './Calendar.jsx'
 import styles from './App.module.css'
 import Navbar from './Navbar.jsx'
 
 export default function () {
   const [loginState, setLoginState] = React.useState(false)
-  const [gapiInit, setGapiInit] = React.useState(false)
   React.useEffect(()=>{
     GAPI.init({
       onSuccess: ()=>{
-        setGapiInit(true)
         setLoginState(GAPI.isLoggedIn())
       },
       onSignIn: ()=>{
@@ -22,7 +20,7 @@ export default function () {
   
   return ( 
   <div className={styles.page}>
-    <Navbar></Navbar>
+    <Navbar isLogin={loginState}></Navbar>
     <Calendar></Calendar>
   </div>
   )

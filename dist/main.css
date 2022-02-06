@@ -1,9 +1,31 @@
 .wrapper_af90f78 {
+  font-size: 16px;
   width: 100%;
   height: 100%;
   overflow-y: hidden;
   overflow-x: auto;
   user-select: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: max-content 1fr;
+}
+
+@media (max-width: 1400px) { 
+	.wrapper_af90f78 {
+		font-size: 14px;
+	}
+}
+
+@media (max-width: 800px) { 
+	.wrapper_af90f78 {
+		font-size: 12px;
+	}
+}
+
+@media (max-width: 480px) { 
+	.wrapper_af90f78 {
+		font-size: 11px;
+	}
 }
 
 .header_e3daf93 {
@@ -282,35 +304,57 @@
   top: 0;
   height: 100vh;
   display: grid;
-  grid-template-rows: 2em 1fr;
+  user-select: none;
+  grid-template-columns: 1fr;
+  grid-template-rows: max-content 1fr;
+}
+:root{
+  --navbackground: white;
+  --navcolor: gray;
 }
 .navigationbar_f859c3d {
-  font-size: 16px;
+  font-size: 18px;
   height: 1.6em;
   width: 100%;
-  background-color: #707070;
+  background-color: var(--navbackground);
   vertical-align: baseline;
   padding: 0.3em 8px;
+  border-bottom: 1px solid lightgray;
+  color: var(--navcolor);
 }
-.navigationbar_f859c3d div {
+.navigationbar_f859c3d span {
   display: inline-block;
-  margin-right: 0.4em;
-  color: lightgray;
+  height: 100%;
+  margin-right: 0.8em;
+  color: var(--navcolor);
 }
+
 .burgermenu_c26f52c {
   height: 1em;
   width: 1em;
-  fill: lightgray;
+  fill: var(--navcolor);
+}
+.burgermenu_c26f52c:focus {
+  fill: black;
 }
 .menu_c9f0c5b {
-  position: absolute;
+  display: block;
+  position: fixed;
   font-size: 16px;
   left: 0;
   top: 1.6em;
-  /*max-width: 120px;*/
   z-index: 1;
-  background-color: #707070;
+  background-color: var(--navbackground);
+  border: 1px solid lightgray;
 }
+.menu_c9f0c5b div {
+  padding: 1em;
+  color: var(--navcolor);
+}
+.menu_c9f0c5b div:hover {
+  background-color: lightgray;
+}
+
 * {
 	padding: 0;
 	margin: 0;
@@ -325,20 +369,3 @@ body {
 	overflow-y: hidden;
 }
 
-@media (max-width: 1400px) { 
-	html {
-		font-size: 14px;
-	}
-}
-
-@media (max-width: 800px) { 
-	html {
-		font-size: 12px;
-	}
-}
-
-@media (max-width: 480px) { 
-	html {
-		font-size: 11px;
-	}
-}
