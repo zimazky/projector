@@ -7,8 +7,6 @@ import {eventList} from '../model/data.js'
 import Modal from './Modal.jsx'
 import Button from './Button.jsx'
 import EventForm from './EventForm.jsx'
-import GAPI from '../utils/gapi.js'
-import RemoteStorage from '../utils/remoteStorage.js'
 
 const weekBuffer = 4
 
@@ -51,6 +49,7 @@ export default function Calendar() {
         timestamp: currentTimestamp, 
         tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
         actualBalance: eventList.getActualBalance(currentTimestamp),
+        lastActualBalanceDate: eventList.lastActualBalanceDate,
         plannedBalance: eventList.getPlannedBalance(currentTimestamp),
         plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp)
       }
@@ -70,26 +69,6 @@ export default function Calendar() {
     if(t<weekBuffer*avgDayHeight) setShift(s=>s+weekBuffer)
     else if(b<weekBuffer*avgDayHeight) setShift(s=>s-weekBuffer)
   }
-
-  const SaveToLocalStorage = ()=>{
-    const dataString = JSON.stringify(eventList.prepareToStorage())
-    localStorage.setItem('data',dataString)
-    console.log(dataString)
-  }
-
-  const SaveToGoogleDrive = async ()=>{
-    //const dataString = JSON.stringify(eventList.prepareToStorage())
-    RemoteStorage.saveFile('data.json',eventList.prepareToStorage())
-      .then(()=>console.log('save ok'))
-      .catch(()=>console.log('save error'))
-  }
-  const LoadFromGoogleDrive = async ()=>{
-    const obj = await RemoteStorage.loadFile('data.json')
-    eventList.reload(obj)
-    console.log(eventList)
-    setModalState(s=>({...s}))
-  }
-
 
   /////////////////////////////////////////////////////////////////////////////
   // Методы открывания формы
@@ -121,9 +100,6 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div ref={wrapperRef} className={styles.header}>
-      <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
-      <Button onClick={SaveToGoogleDrive}>Save&gt;GD</Button>
-      <Button onClick={LoadFromGoogleDrive}>Load&lt;GD</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
       <div className={styles.dayOfWeekLabels}>

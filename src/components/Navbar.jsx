@@ -1,7 +1,6 @@
 import styles from './Navbar.module.css'
-import GAPI from '../utils/gapi.js'
 
-export default function Navbar({event, isLogin=false}) {
+export default function Navbar({menuItems=[], navItems=[]}) {
   const [menuOpen,setMenuOpen] = React.useState(false)
 /*
   React.useEffect(() => {
@@ -10,6 +9,7 @@ export default function Navbar({event, isLogin=false}) {
     return () => document.removeEventListener('click', onClick)
   }, [])
 */
+
   return (
     <>
     <nav className={styles.navigationbar}>
@@ -21,16 +21,7 @@ export default function Navbar({event, isLogin=false}) {
         </svg>
         { menuOpen && 
         <div className={styles.menu}>
-          <div onClick={()=>console.log('click')}>Save to LocalStorage</div>
-          {isLogin?
-            <>
-              <div onClick={GAPI.logOut}>Logout</div>
-              <div>Save to GoogleDrive</div>
-              <div>Load from GoogleDrive</div>
-            </>:
-            <div onClick={GAPI.logIn}>Login</div>
-          }
-          <div>Projects</div>
+            { menuItems.map((e, i)=><div key={i} onClick={e.fn}>{e.name}</div>) }
         </div> }
       </span>
       <span onClick={()=>document.getElementById('root').requestFullscreen()}>Fullscreen</span>

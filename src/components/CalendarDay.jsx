@@ -1,9 +1,8 @@
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime.js'
-import { eventList } from '../model/data.js'
 
 export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDragDrop=e=>{}, children = null}) {
-  const {timestamp, actualBalance, plannedBalance, plannedBalanceChange} = data
+  const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
 
@@ -11,6 +10,7 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
     if(inputElementRef) inputElementRef.current.focus()
   }
   function onKeyDownHandle(e) {
+    console.log('key',e.key)
     if (e.key == 'Enter') e.target.blur()
   }
   function onBlurHandle(e) {
@@ -27,7 +27,7 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
   const plus = d => d>0?'+'+d.toFixed(1):d.toFixed(1)
 
   return (
-    <div className={timestamp>=eventList.lastActualBalanceDate?styles.day:styles.before_actual_date} 
+    <div className={timestamp>=lastActualBalanceDate?styles.day:styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={today?styles.today:styles.header} onClick={e=>{console.log(e),e.target.parentElement.requestFullscreen()}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance}>{minimize(plannedBalance) + 
