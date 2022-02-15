@@ -302,7 +302,8 @@
 .page_d7bcb36 {
   position: fixed;
   top: 0;
-  height: 100vh;
+  height: 100%;
+  width: 100%;
   display: grid;
   user-select: none;
   grid-template-columns: 1fr;
