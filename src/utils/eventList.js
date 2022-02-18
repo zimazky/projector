@@ -501,7 +501,7 @@ export default class EventList {
 
     this.getEvents(timestamp).reduce((a,e)=>{
       if(skip.some(s=>e.id===s.id)) return a
-      if(e.days>1) skip.push({id:e.id,end:e.end})
+      if((e.end-e.start)>86400) skip.push({id:e.id,end:e.end})
       return a.push(e), a
     }, events)
 
