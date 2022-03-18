@@ -18,20 +18,21 @@ async function saveToGoogleDrive() {
         .catch(()=>alert('Save error'))
 }
 
-async function loadFromGoogleDrive() {
-  try {
-    const obj = await RemoteStorage.loadFile('data.json')
-    eventList.reload(obj)
-    forceUpdate()
-  } catch(e) {
-    console.log('Load error', e)
-    alert('Load error')
-  }
-}
-
 export default function () {
   const forceUpdate = useUpdate()
   const [loginState, setLoginState] = React.useState(false)
+
+  async function loadFromGoogleDrive() {
+    try {
+      const obj = await RemoteStorage.loadFile('data.json')
+      eventList.reload(obj)
+      forceUpdate()
+    } catch(e) {
+      console.log('Load error', e)
+      alert('Load error')
+    }
+  }
+  
   React.useEffect(()=>{
     GAPI.init({
       onSuccess: ()=>{
