@@ -15,7 +15,7 @@
 .navigationbar span {
   display: inline-block;
   height: 100%;
-  margin-right: 0.8em;
+  margin-right: 0.6em;
   color: var(--navcolor);
 }
 
@@ -43,4 +43,14 @@
 }
 .menu div:hover {
   background-color: lightgray;
+}
+
+.icons {
+  height: 1em;
+  width: 1em;
+  stroke: var(--navcolor);
+  stroke-width: 4;
+}
+.icons:hover {
+  stroke: black;
 }

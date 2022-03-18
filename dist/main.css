@@ -326,7 +326,7 @@
 .navigationbar_f859c3d span {
   display: inline-block;
   height: 100%;
-  margin-right: 0.8em;
+  margin-right: 0.6em;
   color: var(--navcolor);
 }
 
@@ -354,6 +354,16 @@
 }
 .menu_c9f0c5b div:hover {
   background-color: lightgray;
+}
+
+.icons_d57fcfa {
+  height: 1em;
+  width: 1em;
+  stroke: var(--navcolor);
+  stroke-width: 4;
+}
+.icons_d57fcfa:hover {
+  stroke: black;
 }
 
 * {
