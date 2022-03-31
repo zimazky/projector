@@ -3,8 +3,8 @@ import RemoteStorage from '../utils/remoteStorage.js'
 import {eventList} from '../model/data.js'
 import useUpdate from '../hooks/useUpdate.js'
 import Calendar from './Calendar.jsx'
-import styles from './App.module.css'
 import Navbar from './Navbar.jsx'
+import styles from './App.module.css'
 
 function saveToLocalStorage() {
   const dataString = JSON.stringify(eventList.prepareToStorage())
