@@ -157,7 +157,7 @@ export default class EventList {
     }
 
     const startdatetime = time!==null? start + time : start
-    const end = duration? DateTime.getEndDayTimestamp(startdatetime+duration) : 
+    const end = duration? DateTime.getBeginDayTimestamp(startdatetime+duration+86399) : 
       e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : start+86400
 
     return { 

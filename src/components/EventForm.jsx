@@ -129,6 +129,7 @@ export default function EventForm({event, onExit=()=>{}}) {
   }
 
   console.log('event',event)
+  console.log('eventList',eventList.planned)
   return (
     <div className={styles.form}>
       {!isNew && <Button onClick={onCompleteHandle}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
