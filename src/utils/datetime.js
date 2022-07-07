@@ -106,8 +106,9 @@ export default class DateTime {
   static DDHHMMFromSeconds(s) {
     if(s<0) return ''
     const d = ~~(s/86400)
-    const t = DateTime.HHMMFromSeconds(s%86400)
-    return (d<1?'':d+'d ') + t
+    const t = s%86400
+    if(t) return (d<1?'':d+'d ') + DateTime.HHMMFromSeconds(t)
+    return d<1?'':d+'d'
   }
 
 }

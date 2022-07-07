@@ -14,7 +14,13 @@ export default function EventItem({event, days, onClick=(compactEvent)=>{}, onDr
       backgroundColor: background,
       color: color
     }} 
-    onClick={e=>{e.stopPropagation(); onClick(event)}}>
+    onClick={e=>{e.stopPropagation(); onClick(event)}}
+    title={
+      name+
+      (event.time!==null?'\ntime: '+DateTime.HHMMFromSeconds(event.time):'')
+      +(event.credit?'\ncredit: '+event.credit:'')
+      +(event.debit?'\ndebit: '+event.debit:'')
+    }>
       <div className={styles.name}>{name}</div> <div className={styles.time}>{DateTime.HHMMFromSeconds(event.time)}</div>
   </div>)
 }

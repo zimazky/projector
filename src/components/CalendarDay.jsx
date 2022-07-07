@@ -24,13 +24,13 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
     else e.dataTransfer.dropEffect='move'
   }
   const minimize = d => (d/1000).toFixed(1)
-  const plus = d => d>0?'+'+d.toFixed(1):d.toFixed(1)
+  const plus = (d,n=1) => d>0?'+'+d.toFixed(1):d.toFixed(n)
 
   return (
     <div className={timestamp>=lastActualBalanceDate?styles.day:styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={today?styles.today:styles.header} onClick={e=>{console.log(e),e.target.parentElement.requestFullscreen()}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
-      <div className={styles.balance}>{minimize(plannedBalance) + 
+      <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>
       {children}

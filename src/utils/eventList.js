@@ -31,8 +31,6 @@ const repeatableToSingle = (id, e, timestamp) => {
 //    comment:string,     описание
 //    project:string,     наименование проекта
 //   +projectId:int       индекс записи проекта 
-//   -background:string,  цвет фона, из проекта
-//   -color:string,       цвет текста, из проекта
 //    start:timestamp,    дата события, указывает на начало дня по местному времени
 //    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
 //    duration:sec,       длительность в секундах, 0-неопределен, если определен задает дату завершения
@@ -48,8 +46,6 @@ const repeatableToSingle = (id, e, timestamp) => {
 //    comment:string,     описание
 //    project:string,     наименование проекта
 //   +projectId:int       индекс записи проекта 
-//   -background:string,  цвет фона, из проекта
-//   -color:string,       цвет текста, из проекта
 //    repeat:string,      шаблон расписания
 //    start:timestamp,    дата начала расписания, указывает на начало дня по местному времени
 //    time:sec,           время начала события, количество секунд с начала дня, null-неопределен
@@ -80,9 +76,9 @@ export default class EventList {
     }
   }
 
-  // Преобразование события в компактное представление для кэша и для отображения
-  // повторяемых событий нет, они представляются одиночными
-  // многодневные события представлены отдельными событиями на каждый день
+  // Преобразование события в компактное представление для кэша и для отображения.
+  // Повторяемых событий нет, они представляются одиночными.
+  // Многодневные события представлены отдельными событиями на каждый день.
   // {
   //    id,                     идентификатор
   //    name,                   наименование
@@ -123,16 +119,22 @@ export default class EventList {
   // Функция преобразования сырых данных, представленных в строчном виде, в структуру Event
   // формат записей в списках rawCompletedList и rowPlannedList:
   // {                                          default   
-  //    name:string,                    mandatory   
-  //    comment:string,                 optional    ''
-  //    project:string,                 optional    ''
-  //    repeat:string 'D M W',          optional    ''
-  //    start:string 'YYYY.MM.DD',      mandatory           для повторяемых начало расписания
-  //    end:string 'YYYY.MM.DD',        optional    0       для повторяемых конец расписания
-  //    time:string 'HH:MI',            optional    null
-  //    duration:string 'DDd HH:MI',    optional    0
-  //    credit:float,                   optional    0
-  //    debit:float                     optional    0
+  //    name:string,                  mandatory         наименование события
+  //    comment:string,               optional    ''    комментарий
+  //    project:string,               optional    ''    наименование проекта
+  //    repeat:string 'D M W',        optional    ''    строка шаблона zcrone для повторяемых событий
+  //    start:string 'YYYY.MM.DD',    mandatory         для повторяемых дата начала расписания
+  //                                                    для одиночных дата события
+  //    time:string 'HH:MI',          optional    null  время начала события
+  //    duration:string 'DDd HH:MI',  optional    0     длительность события
+  //                                                    для повторяемых time+duration в пределах дня
+  //                                                    для одиночных если задана, то end игнорируется
+  //                                                    end = начало_след_дня(start+time+duration)
+  //    end:string 'YYYY.MM.DD',      optional    0     для повторяемых конец расписания
+  //                                                    для одиночных дата завершения события
+  //                                                    (событие длится до даты, не включая ее)
+  //    credit:float,                 optional    0     поступление на счет
+  //    debit:float                   optional    0     списание со счета
   // }
   //
   rawToEvent = e => {
@@ -166,6 +168,7 @@ export default class EventList {
     }
   }
 
+  // Функция преобразования в строчный формат для сохранения в хранилище
   static eventToRaw = e => {
     const raw = {}
     raw.name = e.name
@@ -369,7 +372,7 @@ export default class EventList {
   }
 
   // id - идентификатор события
-  // timestamp - дата в которую совершается копирование
+  // timestamp - дата в которую совершается перемещение
   // eventTimestamp - для повторяемых событий дата конкретного
   shiftToDate(id, timestamp, eventTimestamp) {
     var event = this.completed.find(e=>e.id===id)
