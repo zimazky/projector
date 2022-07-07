@@ -3,6 +3,7 @@ import RemoteStorage from '../utils/remoteStorage.js'
 import {eventList} from '../model/data.js'
 import useUpdate from '../hooks/useUpdate.js'
 import Calendar from './Calendar.jsx'
+import DayList from './DayList.jsx'
 import Navbar from './Navbar.jsx'
 import styles from './App.module.css'
 
@@ -21,6 +22,7 @@ async function saveToGoogleDrive() {
 export default function () {
   const forceUpdate = useUpdate()
   const [loginState, setLoginState] = React.useState(false)
+  const [state, setState] = React.useState({view:'Calendar', timestamp: Date.now()/1000})
 
   async function loadFromGoogleDrive() {
     try {
@@ -87,7 +89,19 @@ export default function () {
   return ( 
   <div className={styles.page}>
     <Navbar menuItems={menu} iconItems={icons}/>
-    <Calendar/>
+    {
+      state.view==='Calendar'?
+      <Calendar onDayOpen={t=>setState(s=>{return {...s,timestamp:t,view:'Day'}})}/>
+      :null
+    }
+    {
+      state.view==='Day'?
+      <DayList timestamp={state.timestamp} 
+      onChangeDate={t=>setState(s=>{return {...s,timestamp:t}})}
+      onCalendarOpen={()=>setState(s=>{return {...s,view:'Calendar'}})}
+      />
+      :null
+    }
   </div>
   )
 }

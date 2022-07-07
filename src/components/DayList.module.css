@@ -1,0 +1,80 @@
+.item, .completed, .repeatable, .selected{
+  position: relative;
+  width: 100%;
+  height: 1.5em;
+  overflow: hidden;
+  margin: 0 0 0 -1px;
+  padding: 0.2em 0.3em;
+  background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  cursor: pointer;
+  text-align: justify;
+  text-align-last: justify;
+}
+.placeholder {
+  height: 1.5em;
+  margin: 0 0 0 -1px;
+}
+.completed {
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
+  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  color: gray;
+}
+.repeatable {
+  background-image: 
+    repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
+    linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+}
+.name {
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.time {
+  display: inline-block;
+  vertical-align: top;
+}
+.completed .name, .completed .time {
+  text-decoration: line-through;
+  color: gray;
+}
+
+
+.day, .before_actual_date {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  border-left:  1px solid lightgray;
+  vertical-align: top;
+  background-color: rgb(245, 245, 245);
+}
+.before_actual_date {
+  background-color: rgb(240, 240, 240);
+}
+.header, .today {
+  background-color: rgb(233, 233, 233);
+  color: gray;
+  padding: 0.1em 0.4em;
+  height: 1.4em;
+}
+.today {
+  background-color: hotpink;
+  color: white;
+}
+.balance {
+  font-size: 0.9em;
+  margin: 0.1em;
+  height: 1.2em;
+  overflow: hidden;
+  text-align: justify;
+  text-align-last: justify;
+}
+.input {
+  outline-width: 0;
+  white-space: nowrap;
+  padding: 0.2em;
+  height: 1.4em;
+}

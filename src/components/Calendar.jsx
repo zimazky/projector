@@ -10,7 +10,7 @@ import EventForm from './EventForm.jsx'
 
 const weekBuffer = 4
 
-export default function Calendar() {
+export default function Calendar({onDayOpen=(timestamp)=>{}}) {
 
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
@@ -111,7 +111,10 @@ export default function Calendar() {
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp}
-              onAddEvent={openNewEventForm} onDragDrop={e=>dragDrop(e,d.timestamp)}>
+              onAddEvent={openNewEventForm}
+              onDragDrop={e=>dragDrop(e,d.timestamp)}
+              onDayOpen={onDayOpen}
+              >
               { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} 
                 onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
             </CalendarDay>

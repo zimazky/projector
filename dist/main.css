@@ -299,6 +299,86 @@
   padding: 2px 0;
 }
 
+.item_b75c1de, .completed_ec0f567, .repeatable_ee3a7b6, .selected_a66a7c0{
+  position: relative;
+  width: 100%;
+  height: 1.5em;
+  overflow: hidden;
+  margin: 0 0 0 -1px;
+  padding: 0.2em 0.3em;
+  background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  cursor: pointer;
+  text-align: justify;
+  text-align-last: justify;
+}
+.placeholder_f4ef77a {
+  height: 1.5em;
+  margin: 0 0 0 -1px;
+}
+.completed_ec0f567 {
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
+  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  color: gray;
+}
+.repeatable_ee3a7b6 {
+  background-image: 
+    repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
+    linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+}
+.name_b0488ca {
+  display: inline-block;
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.time_faa3c63 {
+  display: inline-block;
+  vertical-align: top;
+}
+.completed_ec0f567 .name_b0488ca, .completed_ec0f567 .time_faa3c63 {
+  text-decoration: line-through;
+  color: gray;
+}
+
+
+.day_a940e80, .before_actual_date_a486a82 {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+  border-left:  1px solid lightgray;
+  vertical-align: top;
+  background-color: rgb(245, 245, 245);
+}
+.before_actual_date_a486a82 {
+  background-color: rgb(240, 240, 240);
+}
+.header_b8f8720, .today_d03b0b1 {
+  background-color: rgb(233, 233, 233);
+  color: gray;
+  padding: 0.1em 0.4em;
+  height: 1.4em;
+}
+.today_d03b0b1 {
+  background-color: hotpink;
+  color: white;
+}
+.balance_b241d9b {
+  font-size: 0.9em;
+  margin: 0.1em;
+  height: 1.2em;
+  overflow: hidden;
+  text-align: justify;
+  text-align-last: justify;
+}
+.input_a4e7605 {
+  outline-width: 0;
+  white-space: nowrap;
+  padding: 0.2em;
+  height: 1.4em;
+}
 :root{
   --navbackground: white;
   --navcolor: gray;

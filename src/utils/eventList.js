@@ -154,7 +154,7 @@ export default class EventList {
         repeat: e.repeat,
         start, time, duration,
         end: e.end? DateTime.getBeginDayTimestamp(new Date(e.end)/1000) : 0,
-        credit: e.credit ?? 0, debit: e.debit ?? 0
+        credit: e.credit?+e.credit:0, debit: e.debit?+e.debit:0
       }
     }
 
@@ -164,7 +164,7 @@ export default class EventList {
 
     return { 
       name: e.name, comment: e.comment ?? '', project: e.project ?? '', projectId,
-      start, time, duration, end, credit: e.credit ?? 0, debit: e.debit ?? 0
+      start, time, duration, end, credit: e.credit?+e.credit:0, debit: e.debit?+e.debit:0
     }
   }
 

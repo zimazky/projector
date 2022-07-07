@@ -1,7 +1,7 @@
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime.js'
 
-export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDragDrop=e=>{}, children = null}) {
+export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}) {
   const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
@@ -29,7 +29,7 @@ export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDra
   return (
     <div className={timestamp>=lastActualBalanceDate?styles.day:styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
-      <div className={today?styles.today:styles.header} onClick={e=>{console.log(e),e.target.parentElement.requestFullscreen()}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
+      <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
       <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>

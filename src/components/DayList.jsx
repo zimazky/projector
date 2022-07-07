@@ -1,8 +1,10 @@
-//import styles from './CalendarDay.module.css'
+import styles from './DayList.module.css'
 import DateTime from '../utils/datetime.js'
+import {eventList} from '../model/data.js'
 
 function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   const {name,completed,background,color,repeatable,start,end,time,credit,debit} = event
+
   return (
     <div className={completed?styles.completed:repeatable?styles.repeatable:styles.item}
       style={{backgroundColor: background,color: color}} 
@@ -18,8 +20,15 @@ function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   )
 }
 
-export default function DayList({data, today=false, onAddEvent=()=>{}, children = null}) {
-  const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange} = data
+export default function DayList({timestamp, onAddEvent=()=>{}, onChangeDate=()=>{}, onCalendarOpen=()=>{}}) {
+
+  const today = false
+  const events = eventList.getEvents(timestamp)
+  const actualBalance = eventList.getActualBalance(timestamp)
+  const lastActualBalanceDate = eventList.lastActualBalanceDate
+  const plannedBalance = eventList.getPlannedBalance(timestamp)
+  const plannedBalanceChange = eventList.getPlannedBalanceChange(timestamp)
+
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
 
@@ -27,7 +36,6 @@ export default function DayList({data, today=false, onAddEvent=()=>{}, children 
     if(inputElementRef) inputElementRef.current.focus()
   }
   function onKeyDownHandle(e) {
-    console.log('key',e.key)
     if (e.key == 'Enter') e.target.blur()
   }
   function onBlurHandle(e) {
@@ -41,13 +49,18 @@ export default function DayList({data, today=false, onAddEvent=()=>{}, children 
   return (
     <div className={timestamp>=lastActualBalanceDate?styles.day:styles.before_actual_date}
     onClick={onClickHandle}>
-      <div className={today?styles.today:styles.header}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>
+      <div>
+        <div onClick={onCalendarOpen}>Calendar</div>
+        <div onClick={e=>onChangeDate(timestamp-86400)}>Prev</div>
+        <div className={today?styles.today:styles.header}>{day+' '+DateTime.MONTHS[month]}</div>
+        <div onClick={e=>onChangeDate(timestamp+86400)}>Next</div>
+      </div>
       <div className={styles.balance}>
         {minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}
       </div>
-      { tasks.map((t,i)=>(<EventItem key={i} event={t} onClick={openEventForm}/>))}
+      { events.map((e,i)=>(<EventItem key={i} event={e} /*onClick={openEventForm}*//>))}
       <div ref={inputElementRef} className={styles.input} 
         contentEditable='true' 
         suppressContentEditableWarning={true}
