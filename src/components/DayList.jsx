@@ -4,25 +4,27 @@ import {eventList} from '../model/data.js'
 
 function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   const {name,completed,background,color,repeatable,start,end,time,credit,debit} = event
+  console.log('st',start,timestamp)
 
   return (
     <div className={completed?styles.completed:repeatable?styles.repeatable:styles.item}
       style={{backgroundColor: background,color: color}} 
       onClick={e=>{e.stopPropagation(); onClick(event)}}
     >
-      {start<timestamp?<div className={styles.start}>{DateTime.getYYYYMMDD(start)}</div>:<div></div>}
+      {(start<timestamp)?<div className={styles.start}>{DateTime.getYYYYMMDD(start)}</div>
+      :<div className={styles.startplaceholder}></div>}
       <div className={styles.name}>{name}</div>
       <div className={styles.time}>{DateTime.HHMMFromSeconds(time)}</div>
-      <div className={styles.credit}>{credit.toFixed(2)}</div>
-      <div className={styles.debit}>{debit.toFixed(2)}</div>
-      {(timestamp+86400)<end?<div className={styles.end}>{DateTime.getYYYYMMDD(end)}</div>:<div></div>}
+      <div className={styles.credit}>{credit?credit.toFixed(2):''}</div>
+      <div className={styles.debit}>{debit?debit.toFixed(2):''}</div>
+      {(timestamp+86400)<end?<div className={styles.end}>{DateTime.getYYYYMMDD(end)}</div>:<div> </div>}
     </div>
   )
 }
 
 export default function DayList({timestamp, onAddEvent=()=>{}, onChangeDate=()=>{}, onCalendarOpen=()=>{}}) {
 
-  const today = false
+  const today = DateTime.isToday(timestamp)
   const events = eventList.getEvents(timestamp)
   const actualBalance = eventList.getActualBalance(timestamp)
   const lastActualBalanceDate = eventList.lastActualBalanceDate
@@ -60,7 +62,15 @@ export default function DayList({timestamp, onAddEvent=()=>{}, onChangeDate=()=>
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}
       </div>
-      { events.map((e,i)=>(<EventItem key={i} event={e} /*onClick={openEventForm}*//>))}
+      <div>
+        <div className={styles.start}>start</div>
+        <div className={styles.name}>event</div>
+        <div className={styles.time}>time</div>
+        <div className={styles.credit}>credit</div>
+        <div className={styles.debit}>debit</div>
+        <div className={styles.end}>end</div>
+      </div>
+      { events.map((e,i)=>(<EventItem key={i} event={e} timestamp={timestamp} /*onClick={openEventForm}*//>))}
       <div ref={inputElementRef} className={styles.input} 
         contentEditable='true' 
         suppressContentEditableWarning={true}

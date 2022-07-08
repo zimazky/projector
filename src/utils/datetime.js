@@ -111,5 +111,8 @@ export default class DateTime {
     return d<1?'':d+'d'
   }
 
+  static isToday(timestamp) {
+    return DateTime.getBeginDayTimestamp(Date.now()/1000)==timestamp
+  }
 }
 
