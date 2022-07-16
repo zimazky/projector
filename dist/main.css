@@ -348,16 +348,13 @@
 }
 
 
-.day_a940e80, .before_actual_date_a486a82 {
-  display: inline-block;
+.day_a940e80 {
+  /*display: inline-block;*/
   width: 100%;
   height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
   background-color: rgb(245, 245, 245);
-}
-.before_actual_date_a486a82 {
-  background-color: rgb(240, 240, 240);
 }
 .header_b8f8720, .today_d03b0b1 {
   background-color: rgb(233, 233, 233);

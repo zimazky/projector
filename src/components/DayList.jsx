@@ -49,7 +49,7 @@ export default function DayList({timestamp, onAddEvent=()=>{}, onChangeDate=()=>
   const plus = (d,n=1) => d>0?'+'+d.toFixed(1):d.toFixed(n)
 
   return (
-    <div className={timestamp>=lastActualBalanceDate?styles.day:styles.before_actual_date}
+    <div className={styles.day}
     onClick={onClickHandle}>
       <div>
         <div onClick={onCalendarOpen}>Calendar</div>

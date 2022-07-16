@@ -47,16 +47,13 @@
 }
 
 
-.day, .before_actual_date {
-  display: inline-block;
+.day {
+  /*display: inline-block;*/
   width: 100%;
   height: 100%;
   border-left:  1px solid lightgray;
   vertical-align: top;
   background-color: rgb(245, 245, 245);
-}
-.before_actual_date {
-  background-color: rgb(240, 240, 240);
 }
 .header, .today {
   background-color: rgb(233, 233, 233);
