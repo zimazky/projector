@@ -61,7 +61,8 @@ export default class DateTime {
   
   /** Преобразовать строку даты формата YYYY.MM.DD в таймстемп по времени UTC [tested]*/
   static YYYYMMDDToTimestampUTC(s: string): timestamp {
-    const [y, m, d] = s.split('.',3)
+    let [y, m, d] = s.split('.',3)
+    if(m === undefined) [y, m, d] = s.split('-',3)                  // добавлено чтение формата YYYY-MM-DD
     const year = +y
     const month = +m - 1
     const leap = ((!(year%4) && (year%100)) || !(year%400)) ? 1 : 0 // Определение високосного года

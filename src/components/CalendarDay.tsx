@@ -1,7 +1,8 @@
+import React from 'react'
 import styles from './CalendarDay.module.css'
-import DateTime from '../utils/datetime.js'
+import DateTime from '../utils/datetime'
 
-export default function CalendarDay({data, today=false, onAddEvent=()=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}) {
+export default function CalendarDay({data, today=false, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}) {
   const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)

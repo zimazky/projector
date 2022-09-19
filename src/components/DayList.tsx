@@ -1,6 +1,7 @@
+import React from 'react'
 import styles from './DayList.module.css'
-import DateTime from '../utils/datetime.js'
-import {eventList} from '../model/data.js'
+import DateTime from '../utils/datetime'
+import {eventList} from '../model/data'
 
 function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   const {name,completed,background,color,repeatable,start,end,time,credit,debit} = event
@@ -14,7 +15,7 @@ function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
       {(start<timestamp)?<div className={styles.start}>{DateTime.getYYYYMMDD(start)}</div>
       :<div className={styles.startplaceholder}></div>}
       <div className={styles.name}>{name}</div>
-      <div className={styles.time}>{DateTime.HHMMFromSeconds(time)}</div>
+      <div className={styles.time}>{DateTime.secondsToHMM(time)}</div>
       <div className={styles.credit}>{credit?credit.toFixed(2):''}</div>
       <div className={styles.debit}>{debit?debit.toFixed(2):''}</div>
       {(timestamp+86400)<end?<div className={styles.end}>{DateTime.getYYYYMMDD(end)}</div>:<div> </div>}
@@ -22,7 +23,7 @@ function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   )
 }
 
-export default function DayList({timestamp, onAddEvent=()=>{}, onChangeDate=()=>{}, onCalendarOpen=()=>{}}) {
+export default function DayList({timestamp, onAddEvent=(t,s)=>{}, onChangeDate=(t)=>{}, onCalendarOpen=()=>{}}) {
 
   const today = DateTime.isToday(timestamp)
   const events = eventList.getEvents(timestamp)

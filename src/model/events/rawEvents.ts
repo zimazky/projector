@@ -1,4 +1,4 @@
-import DateTime from "src/utils/datetime"
+import DateTime, { timestamp } from "../../utils/datetime"
 import { IEvent, IRepeatableEvent, ISingleEvent } from "./ievents"
 
 /** Тип события, сохраняемого во внешнем хранилище */
@@ -88,5 +88,10 @@ export function repeatableEventToRaw(e: IRepeatableEvent): rawEvent {
   if(e.end) raw.end = DateTime.getYYYYMMDD(e.end)
   if(e.credit) raw.credit = e.credit
   if(e.debit) raw.debit = e.debit
+  return raw
+}
+
+export function createRawEvent(name: string, start: timestamp) {
+  const raw: rawEvent = {name, start: DateTime.getYYYYMMDD(start)}
   return raw
 }

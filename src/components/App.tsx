@@ -1,20 +1,21 @@
+import React from 'react'
 import GAPI from '../utils/gapi.js'
 import RemoteStorage from '../utils/remoteStorage.js'
-import {eventList} from '../model/data.js'
+import {eventList} from '../model/data'
 import useUpdate from '../hooks/useUpdate.js'
-import Calendar from './Calendar.jsx'
-import DayList from './DayList.jsx'
-import Navbar from './Navbar.jsx'
+import Calendar from './Calendar'
+import DayList from './DayList'
+import Navbar from './Navbar'
 import styles from './App.module.css'
 
 function saveToLocalStorage() {
-  const dataString = JSON.stringify(eventList.prepareToStorage())
+  const dataString = JSON.stringify(eventList.prepareToSave())
   localStorage.setItem('data',dataString)
   console.log(dataString)
 }
 
 async function saveToGoogleDrive() {
-  RemoteStorage.saveFile('data.json',eventList.prepareToStorage())
+  RemoteStorage.saveFile('data.json',eventList.prepareToSave())
         .then(()=>console.log('save ok'))
         .catch(()=>alert('Save error'))
 }
@@ -27,7 +28,7 @@ export default function () {
   async function loadFromGoogleDrive() {
     try {
       const obj = await RemoteStorage.loadFile('data.json')
-      eventList.reload(obj)
+      eventList.load(obj)
       forceUpdate()
     } catch(e) {
       console.log('Load error', e)

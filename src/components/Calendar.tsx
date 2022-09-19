@@ -1,12 +1,13 @@
+import React from 'react'
 import styles from './Calendar.module.css'
-import CalendarDay from './CalendarDay.jsx'
-import EventItem from './EventItem.jsx'
-import DateTime from '../utils/datetime.js'
-import EventList from '../utils/eventList'
-import {eventList} from '../model/data.js'
-import Modal from './Modal.jsx'
-import Button from './Button.jsx'
-import EventForm from './EventForm.jsx'
+import CalendarDay from './CalendarDay'
+import EventItem from './EventItem'
+import DateTime from '../utils/datetime'
+import {eventList} from '../model/data'
+import Modal from './Modal'
+import Button from './Button'
+import EventForm from './EventForm'
+import { createRawEvent } from '../model/events/rawEvents'
 
 const weekBuffer = 4
 
@@ -16,7 +17,7 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
   const divElement = React.useRef(null)
-  const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
+  const [modalState,setModalState] = React.useState({})
   const currentWeekRef = React.useRef(null)
   const wrapperRef = React.useRef(null)
   
@@ -74,15 +75,14 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
   // Методы открывания формы
   const openNewEventForm = (timestamp, name) => {
     if(name==='') return
-    setModalState(EventList.eventToRaw({name, start:timestamp, time:null}))
+    setModalState(createRawEvent(name, timestamp))
     setModal(true)
   }
 
   const openEventForm = compactEvent => {
     const {id, completed, start} = compactEvent
-    const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
-      eventList.plannedRepeatable.find(e=>e.id===id)
-    setModalState({...EventList.eventToRaw(s), completed, timestamp:start, id:s.id})
+    const s = eventList.getRawEvent(id)
+    setModalState({...s, completed, timestamp:start, id})
     setModal(true)
   }
   const dragStart = (e,id) => {

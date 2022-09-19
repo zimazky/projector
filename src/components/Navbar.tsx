@@ -1,3 +1,4 @@
+import React from 'react'
 import styles from './Navbar.module.css'
 
 export default function Navbar({menuItems=[], iconItems=[], navItems=[]}) {
@@ -13,7 +14,7 @@ export default function Navbar({menuItems=[], iconItems=[], navItems=[]}) {
   return (
     <>
     <nav className={styles.navigationbar}>
-      <span className={styles.burgermenu} tabIndex='0' onClick={()=>setMenuOpen(s=>!s)} onBlur={()=>setMenuOpen(false)}>
+      <span className={styles.burgermenu} tabIndex={0} onClick={()=>setMenuOpen(s=>!s)} onBlur={()=>setMenuOpen(false)}>
         <svg width='100%' viewBox='0 0 12 11'>
           <rect width='12' height='2' y='0'/>
           <rect width='12' height='2' y='4'/>

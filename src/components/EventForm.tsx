@@ -1,5 +1,6 @@
-import { eventList } from '../model/data.js'
-import Button from './Button.jsx'
+import React from 'react'
+import { eventList } from '../model/data'
+import Button from './Button'
 import styles from './EventForm.module.css'
 
 function Parameter({name, style, children}) {
@@ -17,7 +18,7 @@ function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
 
-function BackgroundInput({colors, onChange=()=>{}}) {
+function BackgroundInput({colors, onChange=(s)=>{}}) {
   return (<>
     <div className={styles.color} style={{backgroundColor:colors.background,color:colors.color}} contentEditable='true' suppressContentEditableWarning={true} 
     onBlur={e=>onChange(s=>({...s,background:e.target.innerText}))}>{colors.background}</div>
