@@ -385,7 +385,7 @@
   --navcolor: gray;
 }
 .navigationbar_f859c3d {
-  font-size: 18px;
+  font-size: 24px;
   height: 1.6em;
   width: 100%;
   background-color: var(--navbackground);
@@ -412,15 +412,14 @@
 .menu_c9f0c5b {
   display: block;
   position: fixed;
-  font-size: 16px;
   left: 0;
-  top: 1.6em;
+  top: 1.5em;
   z-index: 1;
   background-color: var(--navbackground);
   border: 1px solid lightgray;
 }
 .menu_c9f0c5b div {
-  padding: 1em;
+  padding: 0.5em;
   color: var(--navcolor);
 }
 .menu_c9f0c5b div:hover {
@@ -431,7 +430,6 @@
   height: 1em;
   width: 1em;
   stroke: var(--navcolor);
-  stroke-width: 4;
 }
 .icons_d57fcfa:hover {
   stroke: black;

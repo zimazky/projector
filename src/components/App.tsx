@@ -20,6 +20,10 @@ async function saveToGoogleDrive() {
         .catch(()=>alert('Save error'))
 }
 
+function fullScreen() { 
+  document.getElementById('root').requestFullscreen() 
+}
+
 export default function () {
   const forceUpdate = useUpdate()
   const [loginState, setLoginState] = React.useState(false)
@@ -59,8 +63,8 @@ export default function () {
   menu.push({ name: 'Save to LocalStorage', fn: saveToLocalStorage})
   icons.push({
     name: 'Save to LocalStorage', 
-    jsx: <svg width='100%' viewBox="0 0 76 76">
-      <path fill="none" d="m3 10a7 7 0 017-7l54 0a7 7 0 017 7l0 56a7 7 0 01-7 7l-54 0a7 7 0 01-7-7l0-56m14-7 0 22a4 4 0 004 4l32 0a4 4 0 004-4l0-22m-9 7a1 1 0 00-6 0l0 12a1 1 0 006 0l0-12"/>
+    jsx: <svg width='100%' viewBox="0 0 22 22">
+      <path fill="none" d="m 1 3 a 2 2 90 0 1 2 -2 l 16 0 a 2 2 90 0 1 2 2 l 0 16 a 2 2 90 0 1 -2 2 l -16 0 a 2 2 90 0 1 -2 -2 l 0 -16 m 5 -2 l 0 6 a 1 1 90 0 0 1 1 l 8 0 a 1 1 90 0 0 1 -1 l 0 -6 m -2 2 a 1 1 90 0 0 -2 0 l 0 3 a 1 1 90 0 0 2 0 l 0 -3"/>
       </svg>, 
     fn: saveToLocalStorage
   })
@@ -72,8 +76,8 @@ export default function () {
       <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
       <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
       <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
-      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 17 L 18 9 M 22 22 L 14 22" stroke="white" strokeWidth="6"/>
-      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 17 L 18 9 M 22 22 L 14 22" strokeWidth="2"/>
+      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 18 L 18 9 M 22 22 L 14 22" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 18 L 18 9 M 22 22 L 14 22" strokeWidth="2"/>
       </svg>, 
     fn: loadFromGoogleDrive
   })
@@ -106,8 +110,8 @@ export default function () {
         <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
         <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
         <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
-        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 13 M 22 22 L 14 22" stroke="white" strokeWidth="6"/>
-        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 13 M 22 22 L 14 22" strokeWidth="2"/>
+        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 12 M 22 22 L 14 22" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 12 M 22 22 L 14 22" strokeWidth="2"/>
         </svg>, 
       fn: saveToGoogleDrive
     })
@@ -115,7 +119,17 @@ export default function () {
   else {
     menu.push({ name: 'Login', fn: GAPI.logIn})
 
+
   }
+  icons.push({
+    name: 'Fullscreen mode', 
+    jsx: <svg width='100%' viewBox="0 0 22 22">
+      <path fill="none" d="M 1 10 L 1 3 A 2 2 0 0 1 3 1 L 19 1 A 2 2 0 0 1 21 3 L 21 19 A 2 2 0 0 1 19 21 L 12 21 M 11 19 A 2 2 0 0 1 9 21 L 3 21 A 2 2 0 0 1 1 19 L 1 13 A 2 2 0 0 1 3 11 L 9 11 A 2 2 0 0 1 11 13 L 11 19" strokeWidth="1"/>
+      <path fill="none" d="M 12 10 L 17 5 M 18 8 L 18 4 L 14 4" strokeWidth="2"/>
+      </svg>, 
+    fn: fullScreen
+  })
+
   menu.push({ name: 'Projects', fn: ()=>{} })
 
 

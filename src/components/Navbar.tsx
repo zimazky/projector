@@ -26,7 +26,6 @@ export default function Navbar({menuItems=[], iconItems=[], navItems=[]}) {
         </div> }
       </span>
       { iconItems.map((e,i)=><span className={styles.icons} title={e.name} key={i} onClick={e.fn}>{e.jsx}</span>)}
-      <span onClick={()=>document.getElementById('root').requestFullscreen()}>Fullscreen</span>
       {/*
       Для событий
       <div>Complete/Mark uncompleted</div>
