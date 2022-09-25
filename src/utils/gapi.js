@@ -1,3 +1,8 @@
+const API_KEY = 'AIzaSyDRPEe6LBi-O697m5NPCxhn8swqHm3ExEg'
+const CLIENT_ID = '153901704601-4n12u2s1bup0sinlesv6aetfgjdsldt2.apps.googleusercontent.com'
+const SCOPES = 'https://www.googleapis.com/auth/drive.appfolder'
+const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+
 function prom(gapiCall, argObj) {
   return new Promise((resolve, reject) => {
       gapiCall(argObj).then(resp => {
@@ -14,34 +19,91 @@ function prom(gapiCall, argObj) {
   })
 }
 
-export default class GAPI {
+function loadScriptPromise(url) {
+  return new Promise((resolve, reject)=>{
+    const script = document.createElement('script')
+    script.src = url
+    script.async = true
+    script.onerror = reject
+    script.onload = resolve
+    document.head.appendChild(script)
+  })
+}
   
-  static init({onSuccess=()=>{}, onFailure=()=>{}, onSignIn=()=>{}}) {
-    gapi.load('client:auth2', ()=>{
-      gapi.client.init({
-        apiKey: process.env.API_KEY,
-        clientId: process.env.CLIENT_ID,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/drive.appfolder'
-      }).then(() => {
-        console.log('Init GAPI client ok')
-        gapi.auth2.getAuthInstance().isSignedIn.listen(onSignIn)
-        onSuccess()
-      }, error => {
-        console.log('Failed to init GAPI client', error)
-        onFailure()
+let onLogIn = ()=>{}
+
+export default class GAPI {
+  static tokenClient
+
+  static async init({onSuccess = ()=>{}, onFailure = ()=>{}, onSignIn = ()=>{}}) {
+    try {
+      const gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
+      const gapi = loadScriptPromise('https://apis.google.com/js/api.js')
+      await gsi
+      GAPI.tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        prompt: '',
+        callback: (tokenResponse) => {
+          console.log('tokenResponse', tokenResponse)
+          onSignIn()
+          onLogIn()
+        }
       })
+      console.log('gis inited')
+      await gapi
+      window.gapi.load('client', ()=>{
+        window.gapi.client.init({
+          apiKey: API_KEY,
+          discoveryDocs: [DISCOVERY_DOC],
+          // NOTE: OAuth2 'scope' and 'client_id' parameters have moved to initTokenClient().
+        })
+        .then(function() {
+          console.log('gapi inited')
+          onSuccess()
+        })
+        .catch(()=>{
+          console.log('gapi init error')
+          onFailure()
+        })
+      })
+    }
+    catch(error) {
+      console.log('error gapi or gis load')
+      onFailure()
+    }
+  }
+
+  static logIn() {
+    return new Promise((resolve, reject)=>{
+      GAPI.tokenClient?.requestAccessToken({prompt: ''})
+      onLogIn = resolve
     })
   }
 
-  static isGapiLoaded = () => gapi && gapi.auth2
+  static logOut() {
+    const token = window.gapi.client.getToken()
+    if (token !== null) {
+      window.google.accounts.oauth2.revoke(token.access_token,()=>{
+        console.log('revoke', token.access_token)
+        window.gapi.client.setToken(null)
+      })
+    }
+  }
 
-  // откроется стандартное окно Google с выбором аккаунта
-  static logIn = () => { if(GAPI.isGapiLoaded()) gapi.auth2.getAuthInstance().signIn()}
+  static isLoggedIn() {
+    const token = window.gapi.client.getToken()
+    console.log('check token', token)
+    return token !== null
+  }
 
-  static logOut = () => { if(GAPI.isGapiLoaded()) gapi.auth2.getAuthInstance().signOut()}
+  static isGranted(scope, ...scopes) {
+    console.log(scope)
+    console.log(...scopes)
+    return window.google.accounts.oauth2.hasGrantedAllScopes(window.gapi.client.getToken(), scope, ...scopes)
+  }
 
-  static isLoggedIn = () => GAPI.isGapiLoaded() && gapi.auth2.getAuthInstance().isSignedIn.get()
+  //static isGapiLoaded = () => gapi && gapi.auth2
 
   static async createEmptyFile(name, mimeType) {
     const resp = await prom(gapi.client.drive.files.create, {

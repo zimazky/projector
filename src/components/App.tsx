@@ -27,6 +27,11 @@ export default function () {
 
   async function loadFromGoogleDrive() {
     try {
+      if(!GAPI.isLoggedIn()) {
+        console.log('logging...')
+        await GAPI.logIn()
+        console.log('login ok')
+      }
       const obj = await RemoteStorage.loadFile('data.json')
       eventList.load(obj)
       forceUpdate()
@@ -60,27 +65,56 @@ export default function () {
     fn: saveToLocalStorage
   })
 
+  icons.push({
+    name: 'Load from Google Drive', 
+    jsx: <svg width='100%' viewBox="0 0 23 23">
+      <path fill="#E34133" d="M 17 3 A 10 10 8 0 0 3 5 L 6.2 7.4 A 6 6 0 0 1 14.6 6.2 Z" stroke="none"/>
+      <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
+      <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
+      <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
+      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 17 L 18 9 M 22 22 L 14 22" stroke="white" strokeWidth="6"/>
+      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 17 L 18 9 M 22 22 L 14 22" strokeWidth="2"/>
+      </svg>, 
+    fn: loadFromGoogleDrive
+  })
   if(loginState) {
-    menu.push({ name: 'Logout', fn: GAPI.logOut})
+    menu.push({ name: 'Logout', fn: ()=>{
+      GAPI.logOut()
+      setLoginState(false)
+    }})
     menu.push({ name: 'Save to Google Drive', fn: saveToGoogleDrive})
+
+    // icons.push({
+    //   name: 'Save to Google Drive', 
+    //   jsx: <svg width='100%' viewBox="0 0 76 76">
+    //     <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10-2-9-9-9 9m9 13 0-22"/>
+    //     </svg>, 
+    //   fn: saveToGoogleDrive
+    // })
+    menu.push({ name: 'Load from Google Drive', fn: loadFromGoogleDrive})
+    // icons.push({
+    //   name: 'Load from Google Drive', 
+    //   jsx: <svg width='100%' viewBox="0 0 76 76">
+    //     <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10 2-9 9-9-9m9 9 0-22"/>
+    //     </svg>, 
+    //   fn: loadFromGoogleDrive
+    // })
     icons.push({
       name: 'Save to Google Drive', 
-      jsx: <svg width='100%' viewBox="0 0 76 76">
-        <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10-2-9-9-9 9m9 13 0-22"/>
+      jsx: <svg width='100%' viewBox="0 0 23 23">
+        <path fill="#E34133" d="M 17 3 A 10 10 8 0 0 3 5 L 6.2 7.4 A 6 6 0 0 1 14.6 6.2 Z" stroke="none"/>
+        <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
+        <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
+        <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
+        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 13 M 22 22 L 14 22" stroke="white" strokeWidth="6"/>
+        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 13 M 22 22 L 14 22" strokeWidth="2"/>
         </svg>, 
       fn: saveToGoogleDrive
-    })
-    menu.push({ name: 'Load from Google Drive', fn: loadFromGoogleDrive})
-    icons.push({
-      name: 'Load from Google Drive', 
-      jsx: <svg width='100%' viewBox="0 0 76 76">
-        <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10 2-9 9-9-9m9 9 0-22"/>
-        </svg>, 
-      fn: loadFromGoogleDrive
     })
   }
   else {
     menu.push({ name: 'Login', fn: GAPI.logIn})
+
   }
   menu.push({ name: 'Projects', fn: ()=>{} })
 
