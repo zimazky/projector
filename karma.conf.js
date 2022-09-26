@@ -16,7 +16,7 @@ module.exports = function(config) {
     files: ['./src/**/*[sS]pec.ts', './src/**/*[sS]pec.js'],
 
     // list of files / patterns to exclude
-    exclude: [],
+    exclude: ['./src/**/datetime.spec.ts'],
 
 
     // preprocess matching files before serving them to the browser

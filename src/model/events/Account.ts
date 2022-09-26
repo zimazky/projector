@@ -1,30 +1,44 @@
-type AccountOperation = {
+export type AccountOperation = {
   account: string
   credit: number
   debit: number
 }
 
-class Accounts {
+export type AccountBalance = {
+  account: string
+  balance: number
+  unit: string
+}
 
-  lastId = 1
-  accounts: string[] = []
-  balance: { [account: string]: number }
-  unit: { [account: string]: string }
+export class Accounts {
 
-  createAccount(account: string, unit: string = 'RUB') {
-    this.accounts.push(account)
-    this.balance[account] = 0
-    this.unit[account] = unit
+  lastId = 0
+  ids: number[] = []
+  accounts: AccountBalance[] = []
+
+  /** Добавляет счет в список с нулевым балансом, если такого счета нет */
+  addAccount(account: string, unit: string = 'RUB') {
+    if(account in this.ids) return
+    this.accounts[this.lastId] = {account, balance: 0, unit}
+    this.ids[account] = this.lastId
+    this.lastId++
   }
-  list() {
-    return this.accounts
+
+  /** Получить список, отфильтрованный по единице измерения */
+  getFilteredList(unit: string) {
+    return this.accounts.filter(o=>o.unit===unit)
   }
-  makeOperations(os: AccountOperation[]) {
-    os.forEach(o => {this.balance[o.account] + o.credit - o.debit})
+
+  executeOperations(operations: AccountOperation[]) {
+    operations.forEach(o => {this.accounts[this.ids[o.account]].balance += o.credit - o.debit})
   }
-  makeOperation(o: AccountOperation) {
-    this.balance[o.account] + o.credit - o.debit
+
+  executeOperation(o: AccountOperation) {
+    this.accounts[this.ids[o.account]].balance += o.credit - o.debit
   }
-  //getBalance(unit) {}
+
+  getAggregatedBalance(unit: string) {
+    return this.accounts.reduce((a, o) => a + (o.unit===unit ? o.balance: 0), 0)
+  }
 
 }
