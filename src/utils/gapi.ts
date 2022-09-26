@@ -1,25 +1,34 @@
-const API_KEY = 'AIzaSyDRPEe6LBi-O697m5NPCxhn8swqHm3ExEg'
-const CLIENT_ID = '153901704601-4n12u2s1bup0sinlesv6aetfgjdsldt2.apps.googleusercontent.com'
+const API_KEY: string = process.env.API_KEY
+const CLIENT_ID: string = process.env.CLIENT_ID
 const SCOPES = 'https://www.googleapis.com/auth/drive.appfolder'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
-function prom(gapiCall, argObj) {
-  return new Promise((resolve, reject) => {
-      gapiCall(argObj).then(resp => {
-          if (resp && (resp.status < 200 || resp.status > 299)) {
-              console.log('GAPI call returned bad status', resp)
-              reject(resp)
-          } else {
-              resolve(resp)
-          }
-      }, err => {
-          console.log('GAPI call failed', err)
-          reject(err)
-      })
+/** Хелпер-функция, оборачиваюая в Promise вызовы Google API */
+function prom(gapiCall: (arg: any)=>Promise<any>, argObj: any) {
+  return new Promise<any>((resolve, reject) => {
+    gapiCall(argObj)
+    .then(resp => resolve(resp))
+    .catch(err => {
+      console.log('GAPI call failed', err)
+      if(err.result.error.code == 401 || (err.result.error.code == 403) && (err.result.error.status == "PERMISSION_DENIED")) {
+        console.log('401 denied')
+        expiredTokenHandle()
+        reject(err)
+        /*
+        GAPI.logIn('consent').then(()=>{
+          console.log('retry') 
+          gapiCall(argObj)
+          .then(resp => resolve(resp))
+          .catch(err => reject(err))
+        })
+        */
+      } else reject(err)
+    })
   })
 }
 
-function loadScriptPromise(url) {
+/** Promise-функция загрузки скрипта */
+function loadScriptPromise(url: string) {
   return new Promise((resolve, reject)=>{
     const script = document.createElement('script')
     script.src = url
@@ -29,18 +38,25 @@ function loadScriptPromise(url) {
     document.head.appendChild(script)
   })
 }
-  
-let onLogIn = ()=>{}
 
+/** Обработчик события ауторизации пользователя */
+let onLogIn = (value?: unknown)=>{}
+
+let expiredTokenHandle = ()=>{}
+
+/** Класс статических методов для работы с Google API */
 export default class GAPI {
-  static tokenClient
+  /** Экземпляр клиента, для запроса на аутентификацию */
+  static tokenClient: google.accounts.oauth2.TokenClient
 
-  static async init({onSuccess = ()=>{}, onFailure = ()=>{}, onSignIn = ()=>{}}) {
+  /** Асинхронная функция инициализации модулей Google API */
+  static async init({onSuccess = ()=>{}, onFailure = ()=>{}, onSignIn = ()=>{}, onExpiredToken = ()=>{}}) {
+    expiredTokenHandle = onExpiredToken
     try {
-      const gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
-      const gapi = loadScriptPromise('https://apis.google.com/js/api.js')
-      await gsi
-      GAPI.tokenClient = window.google.accounts.oauth2.initTokenClient({
+      const _gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
+      const _gapi = loadScriptPromise('https://apis.google.com/js/api.js')
+      await _gsi
+      GAPI.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         prompt: '',
@@ -51,9 +67,9 @@ export default class GAPI {
         }
       })
       console.log('gis inited')
-      await gapi
-      window.gapi.load('client', ()=>{
-        window.gapi.client.init({
+      await _gapi
+      gapi.load('client', ()=>{
+        gapi.client.init({
           apiKey: API_KEY,
           discoveryDocs: [DISCOVERY_DOC],
           // NOTE: OAuth2 'scope' and 'client_id' parameters have moved to initTokenClient().
@@ -74,67 +90,69 @@ export default class GAPI {
     }
   }
 
-  static logIn() {
+  /** Функция-промис ауторизации в системе Google, делает запрос токена ауторизации*/
+  static logIn(prompt = '') {
     return new Promise((resolve, reject)=>{
-      GAPI.tokenClient?.requestAccessToken({prompt: ''})
+      GAPI.tokenClient?.requestAccessToken({prompt})
       onLogIn = resolve
     })
   }
 
+  /** Функция отзыва токена ауторизации */
   static logOut() {
-    const token = window.gapi.client.getToken()
+    const token = gapi.client.getToken()
     if (token !== null) {
-      window.google.accounts.oauth2.revoke(token.access_token,()=>{
+      google.accounts.oauth2.revoke(token.access_token,()=>{
         console.log('revoke', token.access_token)
-        window.gapi.client.setToken(null)
+        gapi.client.setToken(null)
       })
     }
   }
 
+  /** Функция проверки ауторизации в системе Google*/
   static isLoggedIn() {
-    const token = window.gapi.client.getToken()
-    console.log('check token', token)
+    const token = gapi.client.getToken()
     return token !== null
   }
 
-  static isGranted(scope, ...scopes) {
-    console.log(scope)
-    console.log(...scopes)
-    return window.google.accounts.oauth2.hasGrantedAllScopes(window.gapi.client.getToken(), scope, ...scopes)
+  /** Функция проверки выданных приложению разрешений тем, которые перечислены в параметрах scope и scopes */
+  static isGranted(scope: string, ...scopes: string[]) {
+    return google.accounts.oauth2.hasGrantedAllScopes(gapi.client.getToken() as google.accounts.oauth2.TokenResponse, scope, ...scopes)
   }
 
-  //static isGapiLoaded = () => gapi && gapi.auth2
-
-  static async createEmptyFile(name, mimeType) {
+  /** Создание файла в папке приложения appDataFolder */
+  static async createEmptyFile(name: string, mimeType: string = 'text/plain') {
     const resp = await prom(gapi.client.drive.files.create, {
-        resource: {
-            name: name,
-            // для создания папки используйте
-            // mimeType = 'application/vnd.google-apps.folder'
-            mimeType: mimeType || 'text/plain',
-            // вместо 'appDataFolder' можно использовать ID папки
-            parents: ['appDataFolder']
-        },
-        fields: 'id'
+      resource: {
+        name: name,
+        // для создания папки используйте
+        // mimeType = 'application/vnd.google-apps.folder'
+        mimeType: mimeType,
+        // вместо 'appDataFolder' можно использовать ID папки
+        parents: ['appDataFolder']
+      },
+      fields: 'id'
     })
     // функция возвращает строку — идентификатор нового файла
     return resp.result.id
   }
 
-  static async upload(fileId, content) {
+  /** Запись содержимого content в файл, заданный идентификатором fileId */
+  static async upload(fileId: string, content: string | object) {
     // функция принимает либо строку, либо объект, который можно сериализовать в JSON
     return prom(gapi.client.request, {
-        path: `/upload/drive/v3/files/${fileId}`,
-        method: 'PATCH',
-        params: {uploadType: 'media'},
-        body: typeof content === 'string' ? content : JSON.stringify(content)
+      path: `/upload/drive/v3/files/${fileId}`,
+      method: 'PATCH',
+      params: {uploadType: 'media'},
+      body: typeof content === 'string' ? content : JSON.stringify(content)
     })
   }
 
-  static async download(fileId) {
+  /** Получение содержимого файла, заданного идентификатором fileId */
+  static async download(fileId: string) {
     const resp = await prom(gapi.client.drive.files.get, {
-        fileId: fileId,
-        alt: 'media'
+      fileId: fileId,
+      alt: 'media'
     })
     // resp.body хранит ответ в виде строки
     // resp.result — это попытка интерпретировать resp.body как JSON.
@@ -143,41 +161,41 @@ export default class GAPI {
     return resp.result || resp.body
   }
 
-  static async find(query) {
+  /** Получение списка файлов, соответствующих запросу query */
+  static async find(query: string) {
     let ret = []
-    let token
+    let token: any
     do {
-        const resp = await prom(gapi.client.drive.files.list, {
-            // вместо 'appDataFolder' можно использовать ID папки
-            spaces: 'appDataFolder',
-            fields: 'files(id, name), nextPageToken',
-            pageSize: 100,
-            pageToken: token,
-            orderBy: 'createdTime',
-            q: query
-        })
-        ret = ret.concat(resp.result.files)
-        token = resp.result.nextPageToken
+      const resp = await prom(gapi.client.drive.files.list, {
+        // вместо 'appDataFolder' можно использовать ID папки
+        spaces: 'appDataFolder',
+        fields: 'files(id, name), nextPageToken',
+        pageSize: 100,
+        pageToken: token,
+        orderBy: 'createdTime',
+        q: query
+      })
+      ret = ret.concat(resp.result.files)
+      token = resp.result.nextPageToken
     } while (token)
     // результат: массив объектов вида [{id: '...', name: '...'}], 
     // отсортированных по времени создания
     return ret
   }
 
-  static async deleteFile(fileId) {
+  /** Удаление файла */
+  static async deleteFile(fileId: string) {
     try {
-        await prom(gapi.client.drive.files.delete, {
-            fileId: fileId
-        })
-        return true
+      await prom(gapi.client.drive.files.delete, { fileId: fileId })
+      return true
     } catch (err) {
-        if (err.status === 404) {
-            return false
-        }
-        throw err
+      if (err.status === 404) return false
+      throw err
     }
   }
 }
+
+/*
 
 ///////////////////////////////////////////////////////////////////////////////
 // Пример синхронизации данных
@@ -210,7 +228,7 @@ async function getConfigFileId() {
     }
     return configFileId
 }
-/*
+
 async function onSignIn() {
     // обработчик события логина/логаута (см. выше)
     if (isLoggedIn()) {
@@ -225,7 +243,7 @@ async function onSignIn() {
         // в localStorage лежит актуальный конфиг, дальше пользуемся им
     }
 }
-*/
+
 function getConfig() {
     let ret
     try {
@@ -291,3 +309,5 @@ function initApp() {
     // запускаем синхронизацию при старте приложения
     scheduleConfigSync()
 }
+
+*/

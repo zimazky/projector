@@ -1,6 +1,6 @@
 import React from 'react'
-import GAPI from '../utils/gapi.js'
-import RemoteStorage from '../utils/remoteStorage.js'
+import GAPI from '../utils/gapi'
+import RemoteStorage from '../utils/remoteStorage'
 import {eventList} from '../model/data'
 import useUpdate from '../hooks/useUpdate.js'
 import Calendar from './Calendar'
@@ -53,6 +53,9 @@ export default function () {
       onSignIn: ()=>{
         setLoginState(GAPI.isLoggedIn())
         console.log('onSignIn',GAPI.isLoggedIn())
+      },
+      onExpiredToken: ()=>{
+        setLoginState(false)
       }
     })
   },[])
@@ -117,7 +120,7 @@ export default function () {
     })
   }
   else {
-    menu.push({ name: 'Login', fn: GAPI.logIn})
+    menu.push({ name: 'Login', fn: ()=>{GAPI.logIn()}})
 
 
   }

@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@types/gapi": "^0.0.42",
+    "@types/gapi.client.drive": "^3.0.14",
+    "@types/google.accounts": "^0.0.2",
     "mobx": "^6.6.1",
     "mobx-react-lite": "^3.4.0",
     "react": "^17.0.2",
