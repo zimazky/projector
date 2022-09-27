@@ -1,4 +1,23 @@
+export type RawAccount = {
+  account: string
+  unit?: string
+}
+
+export type Account = {
+  account: string
+  unit: string
+  links: number
+}
+
+export type RawAccountOperation = {
+  account: string
+  credit?: number
+  debit?: number
+  unit?: string
+}
+
 export type AccountOperation = {
+  accountId: number
   account: string
   credit: number
   debit: number
@@ -10,35 +29,118 @@ export type AccountBalance = {
   unit: string
 }
 
+export type GroupedBalance = {
+  unit: string
+  balance: number
+}
+
+export type Balance = AccountBalance[]
+
 export class Accounts {
 
-  lastId = 0
-  ids: number[] = []
-  accounts: AccountBalance[] = []
+  static list: Account[] = []
 
-  /** Добавляет счет в список с нулевым балансом, если такого счета нет */
-  addAccount(account: string, unit: string = 'RUB') {
-    if(account in this.ids) return
-    this.accounts[this.lastId] = {account, balance: 0, unit}
-    this.ids[account] = this.lastId
-    this.lastId++
+  static init(rawAccounts: RawAccount[]) {
+    Accounts.list = []
+    rawAccounts.forEach(v=>Accounts.addRawAccount(v))
+  }
+  
+  /** Преобразование сырых данных аккаунта из внешнего хранилища */
+  static rawToAccount(r: RawAccount): Account {
+    return {
+      account: r.account,
+      unit: r.unit ?? 'RUB',
+      links: 0
+    }
   }
 
-  /** Получить список, отфильтрованный по единице измерения */
-  getFilteredList(unit: string) {
-    return this.accounts.filter(o=>o.unit===unit)
+  /** Преобразование счета в форму для сохранения во внешнем хранилище */
+  static accountToRaw(a: Account): RawAccount {
+    return {
+      account: a.account,
+      unit: a.unit
+    }
   }
 
-  executeOperations(operations: AccountOperation[]) {
-    operations.forEach(o => {this.accounts[this.ids[o.account]].balance += o.credit - o.debit})
+  /** Преобразование сырых данных операции по счету из внешнего хранилища */
+  static rawToAccountOperation(r: RawAccountOperation): AccountOperation {
+    const accountId = Accounts.addAccount(r.account, r.unit)
+    Accounts.list[accountId].links++
+    return {
+      accountId,
+      account: r.account,
+      credit: r.credit ?? 0,
+      debit: r.debit ?? 0
+    }
   }
 
-  executeOperation(o: AccountOperation) {
-    this.accounts[this.ids[o.account]].balance += o.credit - o.debit
+  /** Преобразование сырых данных списка операций по счету из внешнего хранилища */
+  static rawToAccountOperations(r: RawAccountOperation[]): AccountOperation[] {
+    return r.map(v=>Accounts.rawToAccountOperation(v))
   }
 
-  getAggregatedBalance(unit: string) {
-    return this.accounts.reduce((a, o) => a + (o.unit===unit ? o.balance: 0), 0)
+  /** Преобразование данных операции по счету к форме для сохранения во внешнем хранилище */
+  static accountOperationToRaw(a: AccountOperation): RawAccountOperation {
+    const r: RawAccountOperation = {account: a.account}
+    if(a.credit != 0) r.credit = a.credit
+    if(a.debit != 0) r.debit = a.debit
+    return r
+  }
+
+  /** Клонирование баланса */
+  static cloneBalance(b: Balance): Balance {
+    return b.map(v=>{ return {...v} })
+  }
+
+  /** 
+   * Добавляет счет в общий список и возвращает индекс нового элемента, если такого счета нет.
+   * Если счет уже есть, то возвращает индекс существующего элемента
+   */
+  static addAccount(account: string, unit: string = 'RUB'): number {
+    let i = Accounts.list.findIndex(o=>o.account===account)
+    if(i>=0) return i
+    i = Accounts.list.length
+    Accounts.list.push({account, unit, links: 0})
+    return i
+  }
+
+  static addRawAccount(r: RawAccount): number {
+    return Accounts.addAccount(r.account, r.unit)
+  }
+
+  /** Выполнение операции по счету, изменяет переданный баланс и возвращает на него ссылку */
+  static executeOperation(o: AccountOperation, b: Balance = []): Balance {
+    const a = b.find(v=>v.account===o.account)
+    console.log(a)
+    if(a===undefined) b.push({account: o.account, balance: o.credit-o.debit, unit: Accounts.list[o.accountId].unit})
+    else a.balance += o.credit - o.debit
+    console.log(a)
+    return b
+  }
+
+  /** Выполнение списка операций */
+  static executeOperations(operations: AccountOperation[], b: Balance = []): Balance {
+    return operations.reduce((a,o) => Accounts.executeOperation(o,a), b)
+  }
+
+  /** Получить баланс, отфильтрованный по единице измерения */
+  static getFilteredBalance(b: Balance, unit: string): Balance {
+    return b.filter(v=>v.unit===unit)
+  }
+
+  /** Получить сумму баланса, агрегированную по единице измерения */
+  static getAggregatedBalance(b: Balance, unit: string): number {
+    return b.reduce((a, o) => a + (o.unit===unit ? o.balance: 0), 0)
+  }
+
+  /** Получить список сгруппированных по единице измерения балансов */
+  static getGroupedBalance(b: Balance): GroupedBalance[] {
+    return b.reduce((a,o)=>{
+      const unitBalance = a.find(v=>v.unit===o.unit)
+      if(unitBalance===undefined) a.push({unit: o.unit, balance: o.balance})
+      else unitBalance.balance += o.balance
+      return a
+    }, <GroupedBalance[]>[])
   }
 
 }

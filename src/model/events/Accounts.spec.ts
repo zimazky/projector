@@ -1,4 +1,4 @@
-import { Accounts } from "./Account"
+import { Account, Accounts, Balance, GroupedBalance, RawAccountOperation } from "./Account"
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов
@@ -16,36 +16,129 @@ import { Accounts } from "./Account"
 describe('Accounts addAccount', ()=>{
 
   it(`test `, ()=>{
-    const testObject = new Accounts
-    const p1 = {account: 'RUB', unit: 'RUB'}
-    const p2 = {account: 'SBER', unit: 'RUB'}
-    const p3 = {account: 'ALFA', unit: 'RUB'}
-    const p4 = {account: 'USD', unit: 'USD'}
 
-    testObject.addAccount(p1.account, p1.unit)
-    testObject.addAccount(p2.account, p2.unit)
-    testObject.addAccount(p3.account, p3.unit)
-    testObject.addAccount(p4.account, p4.unit)
+    Accounts.addAccount('RUB', 'RUB')
+    Accounts.addAccount('SBER')
+    Accounts.addAccount('ALFA', 'RUB')
+    Accounts.addAccount('USD', 'USD')
 
-    const expectedObject = new Accounts
-    expectedObject.accounts[expectedObject.lastId] = {...p1, balance: 0}
-    expectedObject.ids[p1.account] = expectedObject.lastId
-    expectedObject.lastId++
-    expectedObject.accounts[expectedObject.lastId] = {...p2, balance: 0}
-    expectedObject.ids[p2.account] = expectedObject.lastId
-    expectedObject.lastId++
-    expectedObject.accounts[expectedObject.lastId] = {...p3, balance: 0}
-    expectedObject.ids[p3.account] = expectedObject.lastId
-    expectedObject.lastId++
-    expectedObject.accounts[expectedObject.lastId] = {...p4, balance: 0}
-    expectedObject.ids[p4.account] = expectedObject.lastId
-    expectedObject.lastId++
+    const expectedObject: Account[] = [
+      {account: 'RUB', unit: 'RUB', links: 0},
+      {account: 'SBER', unit: 'RUB', links: 0},
+      {account: 'ALFA', unit: 'RUB', links: 0},
+      {account: 'USD', unit: 'USD', links: 0}
+    ]
 
-    console.log(testObject, expectedObject)
-    expect(testObject).toEqual(expectedObject)
+    console.log('add new accounts')
+    console.log(Accounts.list, expectedObject)
+    expect(Accounts.list).toEqual(expectedObject)
 
-    const p5 = {account: 'RUB', credit: 20000, debit: 0}
-    testObject.executeOperation(p5)
+    Accounts.addAccount('SBER', 'USD')
+    Accounts.addAccount('ALFA', 'USD')
+    Accounts.addAccount('USD')
+
+    console.log('add repeatedly accounts')
+    console.log(Accounts.list, expectedObject)
+    expect(Accounts.list).toEqual(expectedObject)
+
+    const op1: RawAccountOperation = {account: 'RUB', credit: 20000}
+
+    const a1 = Accounts.rawToAccountOperation(op1)
+    console.log(a1)
+    const b1 = Accounts.executeOperation(a1)
+    const e1: Balance = [{account: 'RUB', balance: 20000, unit: 'RUB'}]
+    console.log(b1, e1)
+    expect(b1).toEqual(e1)
+
+    const op2: RawAccountOperation = {account: 'USD', credit: 1000, debit: 300}
+    const a2 = Accounts.rawToAccountOperation(op2)
+    console.log(a2)
+    const b2 = Accounts.executeOperation(a2, Accounts.cloneBalance(b1))
+    const e2: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'USD', balance: 700, unit: 'USD'}
+    ]
+    console.log(b2, e2)
+    expect(b2).toEqual(e2)
+
+    const op3: RawAccountOperation = {account: 'USD', debit: 100}
+    const a3 = Accounts.rawToAccountOperation(op3)
+    console.log(a3)
+    const b3 = Accounts.executeOperation(a3, Accounts.cloneBalance(b2))
+    const e3: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'USD', balance: 600, unit: 'USD'}
+    ]
+    console.log(b3, e3)
+    expect(b3).toEqual(e3)
+
+    const op4: RawAccountOperation = {account: 'BENZ', credit: 40, unit: 'L'}
+    const a4 = Accounts.rawToAccountOperation(op4)
+    console.log(a4)
+    const b4 = Accounts.executeOperation(a4, Accounts.cloneBalance(b3))
+    const e4: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'USD', balance: 600, unit: 'USD'},
+      {account: 'BENZ', balance: 40, unit: 'L'}
+    ]
+    console.log(b4, e4)
+    expect(b4).toEqual(e4)
+
+    const op5: RawAccountOperation = {account: 'BENZ', debit: 10, unit: 'RUB'}
+    const a5 = Accounts.rawToAccountOperation(op5)
+    console.log(a5)
+    const b5 = Accounts.executeOperation(a5, Accounts.cloneBalance(b4))
+    const e5: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'USD', balance: 600, unit: 'USD'},
+      {account: 'BENZ', balance: 30, unit: 'L'}
+    ]
+    console.log(b5, e5)
+    expect(b5).toEqual(e5)
+
+    const op6: RawAccountOperation[] = [
+      {account: 'SBER', credit: 100000},
+      {account: 'ALFA', credit: 50000}
+    ]
+    const a6 = Accounts.rawToAccountOperations(op6)
+    console.log(a6)
+    const b6 = Accounts.executeOperations(a6, Accounts.cloneBalance(b5))
+    const e6: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'USD', balance: 600, unit: 'USD'},
+      {account: 'BENZ', balance: 30, unit: 'L'},
+      {account: 'SBER', balance: 100000, unit: 'RUB'},
+      {account: 'ALFA', balance: 50000, unit: 'RUB'}
+    ]
+    console.log(b6, e6)
+    expect(b6).toEqual(e6)
+
+
+    const b7 = Accounts.getFilteredBalance(b6,'RUB')
+    const e7: Balance = [
+      {account: 'RUB', balance: 20000, unit: 'RUB'},
+      {account: 'SBER', balance: 100000, unit: 'RUB'},
+      {account: 'ALFA', balance: 50000, unit: 'RUB'}
+    ]
+    console.log(b7, e7)
+    expect(b7).toEqual(e7)
+
+    const b8 = Accounts.getAggregatedBalance(b6,'RUB')
+    const e8 = 170000
+    console.log(b8, e8)
+    expect(b8).toEqual(e8)
+
+    const b9 = Accounts.getGroupedBalance(b6)
+    const e9: GroupedBalance[] = [
+      {unit: 'RUB', balance: 170000},
+      {unit: 'USD', balance: 600},
+      {unit: 'L', balance: 30}
+    ]
+    console.log(b9, e9)
+    expect(b9).toEqual(e9)
+
+
+/*
     expectedObject.accounts.forEach(v=>{ if(v.account===p5.account) v.balance += p5.credit - p5.debit })
     console.log(testObject, expectedObject)
     expect(testObject).toEqual(expectedObject)
@@ -87,6 +180,7 @@ describe('Accounts addAccount', ()=>{
     console.log(res2, expres2)
     expect(res2).toEqual(expres2)
 
+  */
 
   })
 })
