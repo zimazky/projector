@@ -12,6 +12,7 @@ function prom(gapiCall: (arg: any)=>Promise<any>, argObj: any) {
       console.log('GAPI call failed', err)
       if(err.result.error.code == 401 || (err.result.error.code == 403) && (err.result.error.status == "PERMISSION_DENIED")) {
         console.log('401 denied')
+        gapi.client.setToken(null) // Сброс токена
         expiredTokenHandle()
         reject(err)
         /*
