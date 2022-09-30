@@ -7,10 +7,10 @@
   background-color: rgb(245, 245, 245);
 }
 .before_actual_date {
-  background-color: rgb(238, 238, 238);
+  background-color: rgb(240, 240, 240);
 }
 .header, .today {
-  background-color: rgb(238, 238, 238);
+  background-color: rgb(233, 233, 233);
   color: gray;
   padding: 0.1em 0.4em;
   height: 1.4em;

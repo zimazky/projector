@@ -1,24 +1,23 @@
+import React from 'react'
 import styles from './Calendar.module.css'
-import CalendarDay from './CalendarDay.jsx'
-import EventItem from './EventItem.jsx'
-import DateTime from '../utils/datetime.js'
-import EventList from '../utils/eventList'
-import {eventList} from '../model/data.js'
-import Modal from './Modal.jsx'
-import Button from './Button.jsx'
-import EventForm from './EventForm.jsx'
-import GAPI from '../utils/gapi.js'
-import RemoteStorage from '../utils/remoteStorage.js'
+import CalendarDay from './CalendarDay'
+import EventItem from './EventItem'
+import DateTime from '../utils/datetime'
+import {eventList} from '../model/data'
+import Modal from './Modal'
+import Button from './Button'
+import EventForm from './EventForm'
+import { createRawEvent } from '../model/events/rawEvents'
 
 const weekBuffer = 4
 
-export default function Calendar() {
+export default function Calendar({onDayOpen=(timestamp)=>{}}) {
 
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
   const scrollElement = React.useRef(null)
   const divElement = React.useRef(null)
-  const [modalState,setModalState] = React.useState({title: 'Add new event', name:'New event'})
+  const [modalState,setModalState] = React.useState({})
   const currentWeekRef = React.useRef(null)
   const wrapperRef = React.useRef(null)
   
@@ -51,6 +50,7 @@ export default function Calendar() {
         timestamp: currentTimestamp, 
         tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
         actualBalance: eventList.getActualBalance(currentTimestamp),
+        lastActualBalanceDate: eventList.lastActualBalanceDate,
         plannedBalance: eventList.getPlannedBalance(currentTimestamp),
         plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp)
       }
@@ -71,44 +71,22 @@ export default function Calendar() {
     else if(b<weekBuffer*avgDayHeight) setShift(s=>s-weekBuffer)
   }
 
-  const SaveToLocalStorage = ()=>{
-    const dataString = JSON.stringify(eventList.prepareToStorage())
-    localStorage.setItem('data',dataString)
-    console.log(dataString)
-  }
-
-  const SaveToGoogleDrive = async ()=>{
-    //const dataString = JSON.stringify(eventList.prepareToStorage())
-    RemoteStorage.saveFile('data.json',eventList.prepareToStorage())
-      .then(()=>console.log('save ok'))
-      .catch(()=>console.log('save error'))
-  }
-  const LoadFromGoogleDrive = async ()=>{
-    const obj = await RemoteStorage.loadFile('data.json')
-    eventList.reload(obj)
-    console.log(eventList)
-    setModalState(s=>({...s}))
-  }
-
-
   /////////////////////////////////////////////////////////////////////////////
   // Методы открывания формы
   const openNewEventForm = (timestamp, name) => {
     if(name==='') return
-    setModalState(EventList.eventToRaw({name, start:timestamp, time:null}))
+    setModalState(createRawEvent(name, timestamp))
     setModal(true)
   }
 
   const openEventForm = compactEvent => {
     const {id, completed, start} = compactEvent
-    const s = (completed ? eventList.completed.find(e=>e.id===id) : eventList.planned.find(e=>e.id===id)) ?? 
-      eventList.plannedRepeatable.find(e=>e.id===id)
-    setModalState({...EventList.eventToRaw(s), completed, timestamp:start, id:s.id})
+    const s = eventList.getRawEvent(id)
+    setModalState({...s, completed, timestamp:start, id})
     setModal(true)
   }
   const dragStart = (e,id) => {
     e.dataTransfer.setData('event_item', JSON.stringify(id))
-    console.log('drag start',e,id)
   }
   const dragDrop = (e, timestamp) => {
     e.preventDefault()
@@ -122,11 +100,6 @@ export default function Calendar() {
   return (
     <div className={styles.wrapper}>
     <div ref={wrapperRef} className={styles.header}>
-      <Button onClick={()=>document.getElementById('root').requestFullscreen()}>FullScr</Button>
-      <Button onClick={GAPI.logOut}>Logout</Button>
-      <Button onClick={SaveToLocalStorage}>Save&gt;LS</Button>
-      <Button onClick={SaveToGoogleDrive}>Save&gt;GD</Button>
-      <Button onClick={LoadFromGoogleDrive}>Load&lt;GD</Button>
       <Button>Today</Button>
       <span ref={divElement} className={styles.monthTitle}></span>
       <div className={styles.dayOfWeekLabels}>
@@ -138,7 +111,10 @@ export default function Calendar() {
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp}
-              onAddEvent={openNewEventForm} onDragDrop={e=>dragDrop(e,d.timestamp)}>
+              onAddEvent={openNewEventForm}
+              onDragDrop={e=>dragDrop(e,d.timestamp)}
+              onDayOpen={onDayOpen}
+              >
               { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} 
                 onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
             </CalendarDay>

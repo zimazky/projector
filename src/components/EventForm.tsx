@@ -1,5 +1,6 @@
-import { eventList } from '../model/data.js'
-import Button from './Button.jsx'
+import React from 'react'
+import { eventList } from '../model/data'
+import Button from './Button'
 import styles from './EventForm.module.css'
 
 function Parameter({name, style, children}) {
@@ -17,7 +18,7 @@ function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
 
-function BackgroundInput({colors, onChange=()=>{}}) {
+function BackgroundInput({colors, onChange=(s)=>{}}) {
   return (<>
     <div className={styles.color} style={{backgroundColor:colors.background,color:colors.color}} contentEditable='true' suppressContentEditableWarning={true} 
     onBlur={e=>onChange(s=>({...s,background:e.target.innerText}))}>{colors.background}</div>
@@ -47,7 +48,7 @@ export default function EventForm({event, onExit=()=>{}}) {
   const [colors, setColors] = React.useState({...eventList.projects[projectId]})
 
 
-  const onCompleteHandle = () => {
+  const onCompleteHandle = (isCompleted: boolean) => {
     const raw = {
       name: nameRef.current.innerText,
       comment: commentRef.current.innerText,
@@ -59,7 +60,8 @@ export default function EventForm({event, onExit=()=>{}}) {
       credit: creditRef.current.innerText,
       debit: debitRef.current.innerText
     }
-    eventList.completeEvent(event.id, event.timestamp, raw)
+    if(isCompleted) eventList.uncompleteEvent(event.id, raw)
+    else eventList.completeEvent(event.id, event.timestamp, raw)
     onExit()
   }
 
@@ -129,9 +131,10 @@ export default function EventForm({event, onExit=()=>{}}) {
   }
 
   console.log('event',event)
+  console.log('eventList',eventList.planned)
   return (
     <div className={styles.form}>
-      {!isNew && <Button onClick={onCompleteHandle}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
+      {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
       {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
       {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
       {isNew && <Button onClick={onAddHandle}>Add Event</Button>}

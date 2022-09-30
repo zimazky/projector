@@ -3,15 +3,23 @@ const path = require('path');
 const Dotenv = require('dotenv-webpack');
 
 module.exports = {
-  //mode: 'development',
+  mode: 'development',
   entry: './src/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js',
 	  publicPath: '/dist/'
   },
+  resolve: {
+    extensions: ['.ts', '.tsx', '.js']
+  },
   module: {
     rules: [ 
+      {
+        test: /\.tsx?$/,
+        exclude: '/node_modules/',
+        loader: 'ts-loader',
+      },
       {
         test: /\.(js|jsx)$/,
         exclude: '/node_modules/',

@@ -1,0 +1,54 @@
+:root{
+  --navbackground: white;
+  --navcolor: gray;
+}
+.navigationbar {
+  font-size: 22px;
+  height: 1.6em;
+  width: 100%;
+  background-color: var(--navbackground);
+  vertical-align: baseline;
+  padding: 0.3em 8px;
+  border-bottom: 1px solid lightgray;
+  color: var(--navcolor);
+}
+.navigationbar span {
+  display: inline-block;
+  height: 100%;
+  margin-right: 0.6em;
+  color: var(--navcolor);
+}
+
+.burgermenu {
+  height: 1em;
+  width: 1em;
+  fill: var(--navcolor);
+}
+.burgermenu:focus {
+  fill: black;
+}
+.menu {
+  display: block;
+  position: fixed;
+  left: 0;
+  top: 1.5em;
+  z-index: 1;
+  background-color: var(--navbackground);
+  border: 1px solid lightgray;
+}
+.menu div {
+  padding: 0.5em;
+  color: var(--navcolor);
+}
+.menu div:hover {
+  background-color: lightgray;
+}
+
+.icons {
+  height: 1em;
+  width: 1em;
+  stroke: var(--navcolor);
+}
+.icons:hover {
+  stroke: black;
+}

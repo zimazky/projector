@@ -1,4 +1,5 @@
-import DateTime from '../utils/datetime.js'
+import React from 'react'
+import DateTime from '../utils/datetime'
 import styles from './EventItem.module.css'
 
 export default function EventItem({event, days, onClick=(compactEvent)=>{}, onDragStart=e=>{}}) {
@@ -14,7 +15,13 @@ export default function EventItem({event, days, onClick=(compactEvent)=>{}, onDr
       backgroundColor: background,
       color: color
     }} 
-    onClick={e=>{e.stopPropagation(); onClick(event)}}>
-      <div className={styles.name}>{name}</div> <div className={styles.time}>{DateTime.HHMMFromSeconds(event.time)}</div>
+    onClick={e=>{e.stopPropagation(); onClick(event)}}
+    title={
+      name+
+      (event.time!==null?'\ntime: '+DateTime.secondsToHMM(event.time):'')
+      +(event.credit?'\ncredit: '+event.credit:'')
+      +(event.debit?'\ndebit: '+event.debit:'')
+    }>
+      <div className={styles.name}>{name}</div> <div className={styles.time}>{event.time===null?'':DateTime.secondsToHMM(event.time)}</div>
   </div>)
 }

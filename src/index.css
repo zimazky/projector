@@ -11,21 +11,3 @@ body {
 	font-family: 'Roboto',sans-serif;
 	overflow-y: hidden;
 }
-
-@media (max-width: 1280px) { 
-	html {
-		font-size: 14px;
-	}
-}
-
-@media (max-width: 800px) { 
-	html {
-		font-size: 12px;
-	}
-}
-
-@media (max-width: 480px) { 
-	html {
-		font-size: 11px;
-	}
-}
