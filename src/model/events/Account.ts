@@ -1,14 +1,17 @@
+/** Запись Счет, полученный из внешнего хранилища или из интерфейса */
 export type RawAccount = {
   account: string
   unit?: string
 }
 
+/** Счет */
 export type Account = {
   account: string
   unit: string
   links: number
 }
 
+/** Операция по счету, полученная из внешнего хранилища или из интерфейса */
 export type RawAccountOperation = {
   account: string
   credit?: number
@@ -16,6 +19,7 @@ export type RawAccountOperation = {
   unit?: string
 }
 
+/** Операция по счету */
 export type AccountOperation = {
   accountId: number
   account: string
@@ -23,28 +27,35 @@ export type AccountOperation = {
   debit: number
 }
 
+/** Баланс по счету */
 export type AccountBalance = {
   account: string
   balance: number
   unit: string
 }
 
+/** Список балансов по единицам измерения (валютам) */
 export type GroupedBalance = {
   unit: string
   balance: number
 }
 
+/** Список балансов по счетам*/
 export type Balance = AccountBalance[]
 
 export class Accounts {
 
   static list: Account[] = []
 
-  static init(rawAccounts: RawAccount[]) {
+  static load(rawAccounts: RawAccount[]) {
     Accounts.list = []
     rawAccounts.forEach(v=>Accounts.addRawAccount(v))
   }
-  
+
+  static prepareToSave(): RawAccount[] {
+    return Accounts.list.map(v=>Accounts.accountToRaw(v))
+  }
+
   /** Преобразование сырых данных аккаунта из внешнего хранилища */
   static rawToAccount(r: RawAccount): Account {
     return {
@@ -74,9 +85,13 @@ export class Accounts {
     }
   }
 
-  /** Преобразование сырых данных списка операций по счету из внешнего хранилища */
-  static rawToAccountOperations(r: RawAccountOperation[]): AccountOperation[] {
-    return r.map(v=>Accounts.rawToAccountOperation(v))
+  /** 
+   * Преобразование сырых данных списка операций по счету из внешнего хранилища
+   * Предусмотрена загрузка старого формата - {credit: number, debit: number} для счета по умолчанию 'RUB'
+   */
+  static rawToAccountOperations(r: RawAccountOperation[] | {credit?: number, debit?: number}): AccountOperation[] {
+    if(Array.isArray(r)) return r.map(v=>Accounts.rawToAccountOperation(v))
+    return [Accounts.rawToAccountOperation({account: 'RUB', ...r})]
   }
 
   /** Преобразование данных операции по счету к форме для сохранения во внешнем хранилище */
