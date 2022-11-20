@@ -90,4 +90,12 @@ export default class ZCron {
     }
     return false
   }
+
+  /** Функция определения первого соответствия шаблону */
+  static first(scheduleString:string, startTimestamp: timestamp, maxinterval = 366) {
+    for(let i=0, t=startTimestamp; i<maxinterval; t+=86400, i++) {
+      if(this.isMatch(scheduleString, startTimestamp, t)) return t
+    }
+    return 0
+  }
 }

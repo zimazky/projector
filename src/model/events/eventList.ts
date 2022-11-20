@@ -209,7 +209,8 @@ export default class EventList {
         const d = +revent.repeat.substring(1)
         revent.start = currentdate + d*86400
       }
-      else revent.start = currentdate + 86400
+      // Определяем первое повторяемое событие после выполненного
+      else revent.start = ZCron.first(revent.repeat,currentdate + 86400)
       // Удаляем, если в оставшемся интервале нет событий
       if(revent.end && !ZCron.ariseInInterval(revent.repeat,revent.start,revent.start,revent.end)) {
         this.deleteEvent(revent.id, false)

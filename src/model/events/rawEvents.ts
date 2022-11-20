@@ -1,5 +1,6 @@
 import DateTime, { timestamp } from "../../utils/datetime"
 import { IEvent, IRepeatableEvent, ISingleEvent } from "./ievents"
+import ZCron from "../../utils/zcron"
 
 /** Тип события, сохраняемого во внешнем хранилище */
 export type rawEvent = {
@@ -47,7 +48,8 @@ export function rawToEvent(e: rawEvent): IEvent {
       comment: e.comment ?? '',
       project: e.project ?? '',
       repeat: e.repeat,
-      start, time, duration,
+      start: ZCron.first(e.repeat,start),
+      time, duration,
       end: e.end? DateTime.YYYYMMDDToTimestamp(e.end) : 0,
       credit: e.credit? +e.credit : 0, debit: e.debit? +e.debit : 0
     }
