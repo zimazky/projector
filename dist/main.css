@@ -68,7 +68,7 @@
   overflow: hidden;
 }
 
-.day_d84e778, .before_actual_date_fb6a4cf {
+.day_d84e778, .before_actual_date_fb6a4cf, .between_firstplanned_and_actual_e39150e {
   display: inline-block;
   width: calc(100%/7);
   height: 100%;
@@ -78,6 +78,9 @@
 }
 .before_actual_date_fb6a4cf {
   background-color: rgb(240, 240, 240);
+}
+.between_firstplanned_and_actual_e39150e{
+  background-color: rgb(255, 215, 215);
 }
 .header_d741756, .today_ded7894 {
   background-color: rgb(233, 233, 233);

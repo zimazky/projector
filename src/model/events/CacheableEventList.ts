@@ -255,4 +255,11 @@ export class CacheableEventList extends EventList {
   }
 
 
+  getFirstPlannedEventDate() {
+    let first = this.planned[0].start
+    this.plannedRepeatable.forEach(e=>{
+      if(e.start<first) first = e.start
+    })
+    return first
+  }
 }

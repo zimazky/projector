@@ -1,4 +1,4 @@
-.day, .before_actual_date {
+.day, .before_actual_date, .between_firstplanned_and_actual {
   display: inline-block;
   width: calc(100%/7);
   height: 100%;
@@ -8,6 +8,9 @@
 }
 .before_actual_date {
   background-color: rgb(240, 240, 240);
+}
+.between_firstplanned_and_actual{
+  background-color: rgb(255, 215, 215);
 }
 .header, .today {
   background-color: rgb(233, 233, 233);

@@ -52,7 +52,8 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
         actualBalance: eventList.getActualBalance(currentTimestamp),
         lastActualBalanceDate: eventList.lastActualBalanceDate,
         plannedBalance: eventList.getPlannedBalance(currentTimestamp),
-        plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp)
+        plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp),
+        firstPlannedEventDate: eventList.getFirstPlannedEventDate()
       }
       currentTimestamp += 86400
     }
