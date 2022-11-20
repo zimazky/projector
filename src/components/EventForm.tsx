@@ -14,6 +14,24 @@ function Parameter({name, style, children}) {
   )
 }
 
+function minuscalculate(s: string): number {
+  const [first, ...terms] = s.split('-')
+  let sum = +first.replace(',','.')
+  terms.forEach(s=>{
+    sum -= +s.replace(',','.')
+  })
+  return sum
+}
+
+function calculate(s: string): number {
+  const terms = s.split('+')
+  let sum = 0
+  terms.forEach(s=>{
+    sum += minuscalculate(s)
+  })
+  return sum
+}
+
 function Input({inputRef,children}) {
   return <div ref={inputRef} className={styles.value} contentEditable='true' suppressContentEditableWarning={true}>{children}</div>
 }
@@ -57,8 +75,8 @@ export default function EventForm({event, onExit=()=>{}}) {
       end: endRef.current.innerText,
       time: timeRef.current.innerText,
       duration: durationRef.current.innerText,
-      credit: creditRef.current.innerText,
-      debit: debitRef.current.innerText
+      credit: calculate(creditRef.current.innerText),
+      debit: calculate(debitRef.current.innerText)
     }
     if(isCompleted) eventList.uncompleteEvent(event.id, raw)
     else eventList.completeEvent(event.id, event.timestamp, raw)
@@ -80,8 +98,8 @@ export default function EventForm({event, onExit=()=>{}}) {
     const end = endRef.current.innerText
     const time = timeRef.current.innerText
     const duration = durationRef.current.innerText
-    const credit = creditRef.current.innerText
-    const debit = debitRef.current.innerText
+    const credit = calculate(creditRef.current.innerText)
+    const debit = calculate(debitRef.current.innerText)
 
     const raw = {name, comment, project, repeat, start, end, time, duration, credit, debit}
     eventList.updateEvent(id, raw)
@@ -108,8 +126,8 @@ export default function EventForm({event, onExit=()=>{}}) {
       end: endRef.current.innerText,
       time: timeRef.current.innerText,
       duration: durationRef.current.innerText,
-      credit: creditRef.current.innerText,
-      debit: debitRef.current.innerText
+      credit: calculate(creditRef.current.innerText),
+      debit: calculate(debitRef.current.innerText)
     }
     eventList.addPlannedRawEvent(raw)
     eventList.clearCache()

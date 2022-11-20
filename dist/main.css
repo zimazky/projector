@@ -98,6 +98,8 @@
   text-align-last: justify;
 }
 .input_f2f0e78 {
+  width: 100%;
+  overflow: hidden;
   outline-width: 0;
   white-space: nowrap;
   padding: 0.2em;
