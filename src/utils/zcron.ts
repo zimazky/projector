@@ -91,6 +91,14 @@ export default class ZCron {
     return false
   }
 
+  /** Функция определения первого соответствия шаблону на интервале*/
+  static firstInInterval(scheduleString:string, startTimestamp: timestamp, begin: timestamp, end: timestamp) {
+    for(var t=begin;t<end;t+=86400) {
+      if(this.isMatch(scheduleString, startTimestamp, t)) return t
+    }
+    return 0
+  }
+  
   /** Функция определения первого соответствия шаблону */
   static first(scheduleString:string, startTimestamp: timestamp, maxinterval = 366) {
     for(let i=0, t=startTimestamp; i<maxinterval; t+=86400, i++) {

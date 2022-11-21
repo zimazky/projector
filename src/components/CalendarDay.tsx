@@ -32,7 +32,7 @@ export default function CalendarDay({data, today=false, onAddEvent=(t,s)=>{}, on
   return (
     <div className={timestamp>=lastActualBalanceDate ?
         styles.day
-        : timestamp>=firstPlannedEventDate ? 
+        : firstPlannedEventDate!==0 && timestamp>=firstPlannedEventDate ? 
           styles.between_firstplanned_and_actual : styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>{day + (day==1?' '+DateTime.MONTHS[month]:'') }</div>

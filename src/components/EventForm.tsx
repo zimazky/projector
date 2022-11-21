@@ -2,6 +2,7 @@ import React from 'react'
 import { eventList } from '../model/data'
 import Button from './Button'
 import styles from './EventForm.module.css'
+import calculate from '../utils/calculate'
 
 function Parameter({name, style, children}) {
   return (
@@ -12,24 +13,6 @@ function Parameter({name, style, children}) {
       </div>{' '}
     </>
   )
-}
-
-function minuscalculate(s: string): number {
-  const [first, ...terms] = s.split('-')
-  let sum = +first.replace(',','.')
-  terms.forEach(s=>{
-    sum -= +s.replace(',','.')
-  })
-  return sum
-}
-
-function calculate(s: string): number {
-  const terms = s.split('+')
-  let sum = 0
-  terms.forEach(s=>{
-    sum += minuscalculate(s)
-  })
-  return sum
 }
 
 function Input({inputRef,children}) {
