@@ -12,7 +12,11 @@ import calculate from './calculate'
 
 function ev(s: string): number {
   try {
-    return eval(s.replace(/,/g,'.'))
+    if(s.includes('**')) return NaN
+    let t = s.replace(/,/g,'.')
+    t = t.replace(/\^/g,'**')
+    t = t.replace(/--/g,'')
+    return eval(t)
   }
   catch(e) {
     return NaN
@@ -55,6 +59,10 @@ describe('ZCrone addSequence', ()=>{
     '3**4',
     's*3',
     '2^4',
+    '2^-4',
+    '-2^4',
+    '50-2^4',
+    '50*-2^4',
     '567+(',
     '2*-4'
 

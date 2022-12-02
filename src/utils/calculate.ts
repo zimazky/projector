@@ -12,8 +12,10 @@ const priority = {
   '*': 2,
   /** деление */
   '/': 2,
+  /** возведение в степень */
+  '^': 3,
   /** унарный минус */
-  'n': 3,
+  'n': 4,
   /** начало подвыражения */
   '(': 0,
   /** конец подвыражения */
@@ -34,7 +36,7 @@ type nextresult = {
 /** Чтение первого операнда и оператора из заданной строки */
 function readnext(s: string): nextresult {
   if(s.length === 0) return <nextresult> {rest: '', operation: 'e'}
-  const i = s.search(/[-\+\*\/\(\)]/)
+  const i = s.search(/[-\+\*\/\(\)\^]/)
   if(i === -1) return <nextresult> {number: +s, rest: '', operation: 'e'}
   if(i === 0) return <nextresult> {operation: <operators> s.slice(0,1), rest: s.slice(1)}
   return <nextresult> {number: +s.slice(0,i), operation: <operators> s.slice(i,i+1), rest: s.slice(i+1)}
@@ -48,6 +50,7 @@ function doOp(right: number, left: number, operand: string): number {
     case '-': return left - right
     case '*': return left * right
     case '/': return left / right
+    case '^': return Math.pow(left,right)
     default: return NaN //throw Error('Неизвестная опреация ' + op)
   }
 }
@@ -66,10 +69,8 @@ export default function calculate(s: string): number {
     next = readnext(next.rest)
     const o_prev = o
     o = next.operation
-
     // признак двух подряд операторов
     const twinops = next.number === undefined
-
     // операнд или унарный оператор
     if(!twinops) numstack.push(next.number)
     else if(o_prev!==')') switch(o) {
@@ -77,15 +78,13 @@ export default function calculate(s: string): number {
       case '-': o = 'n'; opstack.push(o)
       case '+': continue
     }
-
     // начало подвыражения
     if(o === '(') {
       if(!twinops) return NaN //throw Error('Отсутствует оператор перед открывающей скобкой')
       opstack.push(o)
       continue
     }
-
-    // конец подвыражения
+    // конец подвыражения и его вычисление
     o_top = opstack.pop()
     if(o === ')') {
       if(twinops && o_prev!==')') return NaN //throw Error('Отсутствует операнд перед закрывающей скобкой')
@@ -97,13 +96,13 @@ export default function calculate(s: string): number {
       }
       continue
     }
-
     // обработка предыдущих операторов с высшим приоритетом
     while(o_top!=='b' && priority[o]<=priority[o_top]) {
       if(o_top === 'n') numstack.push(-numstack.pop())
       else numstack.push(doOp(numstack.pop(), numstack.pop(), o_top))
       o_top = opstack.pop()
     }
+    // сохранение в стек операторов с меньшим приоритетом
     opstack.push(o_top)
     opstack.push(o)
   }
