@@ -1,3 +1,15 @@
+/**
+ * Модуль для вычисления строкового алгебраического выражения
+ * Возможны скобочные подвыражения и следующие операторы:
+ * + сложение
+ * - вычитание
+ * - унарный минус
+ * * умножение
+ * / деление
+ * ^ возведение в степень
+ */
+
+
 /** Приоритеты операторов */
 const priority = {
   /** начало выражения */
@@ -75,21 +87,33 @@ export default function calculate(s: string): number {
     if(!twinops) numstack.push(next.number)
     else if(o_prev!==')') switch(o) {
       // унарные операторы
-      case '-': o = 'n'; opstack.push(o)
+      case '-': opstack.push(o = 'n')
       case '+': continue
     }
     // начало подвыражения
     if(o === '(') {
-      if(!twinops) return NaN //throw Error('Отсутствует оператор перед открывающей скобкой')
+      if(!twinops) {
+        console.log(s)
+        console.log('Отсутствует оператор перед открывающей скобкой')
+        return NaN //throw Error('Отсутствует оператор перед открывающей скобкой')
+      }
       opstack.push(o)
       continue
     }
     // конец подвыражения и его вычисление
     o_top = opstack.pop()
     if(o === ')') {
-      if(twinops && o_prev!==')') return NaN //throw Error('Отсутствует операнд перед закрывающей скобкой')
+      if(twinops && o_prev!==')') {
+        console.log(s)
+        console.log('Отсутствует операнд перед закрывающей скобкой')
+        return NaN //throw Error('Отсутствует операнд перед закрывающей скобкой')
+      }
       while(o_top !== '(') {
-        if(o_top === 'b') return NaN //throw Error('Непредвиденное закрытие скобки')
+        if(o_top === 'b') {
+          console.log(s)
+          console.log('Непредвиденное закрытие скобки')
+          return NaN //throw Error('Непредвиденное закрытие скобки')
+        }
         if(o_top === 'n') numstack.push(-numstack.pop())
         else numstack.push(doOp(numstack.pop(), numstack.pop(), o_top))
         o_top = opstack.pop()
@@ -106,6 +130,5 @@ export default function calculate(s: string): number {
     opstack.push(o_top)
     opstack.push(o)
   }
-  if(o_top!=='b') throw Error(`Некорректное выражение, остался необработанный оператор '${o_top}'`)
   return numstack.pop()
 }
