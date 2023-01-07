@@ -120,7 +120,7 @@ export default function calculate(s: string): number {
       }
       continue
     }
-    // обработка предыдущих операторов с высшим приоритетом
+    // обработка предыдущих операторов с высшим или равным приоритетом
     while(o_top!=='b' && priority[o]<=priority[o_top]) {
       if(o_top === 'n') numstack.push(-numstack.pop())
       else numstack.push(doOp(numstack.pop(), numstack.pop(), o_top))

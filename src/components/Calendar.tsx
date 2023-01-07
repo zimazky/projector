@@ -116,7 +116,7 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
               onDragDrop={e=>dragDrop(e,d.timestamp)}
               onDayOpen={onDayOpen}
               >
-              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} 
+              { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}
                 onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
             </CalendarDay>
           ))}
