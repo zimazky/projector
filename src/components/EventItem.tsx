@@ -22,6 +22,12 @@ export default function EventItem({event, days, timestamp, onClick=(compactEvent
       +(event.credit?'\ncredit: '+event.credit:'')
       +(event.debit?'\ndebit: '+event.debit:'')
     }>
-      <div className={styles.name}>{timestamp-start===0?name:`${(timestamp-start)/86400+1}/${(end-start)/86400} ${name}`}</div> <div className={styles.time}>{event.time===null?'':DateTime.secondsToHMM(time)}</div>
+      <div className={styles.name}>{
+      timestamp-start === 0 ? name : `${(timestamp-start)/86400+1}/${(end-start)/86400} ${name}`
+      }</div> <div className={styles.time}>{
+      event.time === null ?
+      (event.days-days>0?` ${(timestamp-start)/86400+days}/${(end-start)/86400}`:'')
+      : DateTime.secondsToHMM(time)
+      }</div>
   </div>)
 }
