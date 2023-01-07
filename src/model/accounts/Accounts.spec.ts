@@ -1,4 +1,5 @@
-import { Account, Accounts, Balance, GroupedBalance, RawAccountOperation } from "./Account"
+import { Account, Accounts, AccountBalance, UnitBalance } from "./Accounts"
+import { RawAccountOperation, RawAccounts } from "./RawAccounts"
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов
@@ -43,18 +44,18 @@ describe('Accounts addAccount', ()=>{
 
     const op1: RawAccountOperation = {account: 'RUB', credit: 20000}
 
-    const a1 = Accounts.rawToAccountOperation(op1)
+    const a1 = RawAccounts.rawToAccountOperation(op1)
     console.log(a1)
     const b1 = Accounts.executeOperation(a1)
-    const e1: Balance = [{account: 'RUB', balance: 20000, unit: 'RUB'}]
+    const e1: AccountBalance[] = [{account: 'RUB', balance: 20000, unit: 'RUB'}]
     console.log(b1, e1)
     expect(b1).toEqual(e1)
 
     const op2: RawAccountOperation = {account: 'USD', credit: 1000, debit: 300}
-    const a2 = Accounts.rawToAccountOperation(op2)
+    const a2 = RawAccounts.rawToAccountOperation(op2)
     console.log(a2)
     const b2 = Accounts.executeOperation(a2, Accounts.cloneBalance(b1))
-    const e2: Balance = [
+    const e2: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'USD', balance: 700, unit: 'USD'}
     ]
@@ -62,10 +63,10 @@ describe('Accounts addAccount', ()=>{
     expect(b2).toEqual(e2)
 
     const op3: RawAccountOperation = {account: 'USD', debit: 100}
-    const a3 = Accounts.rawToAccountOperation(op3)
+    const a3 = RawAccounts.rawToAccountOperation(op3)
     console.log(a3)
     const b3 = Accounts.executeOperation(a3, Accounts.cloneBalance(b2))
-    const e3: Balance = [
+    const e3: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'USD', balance: 600, unit: 'USD'}
     ]
@@ -73,10 +74,10 @@ describe('Accounts addAccount', ()=>{
     expect(b3).toEqual(e3)
 
     const op4: RawAccountOperation = {account: 'BENZ', credit: 40, unit: 'L'}
-    const a4 = Accounts.rawToAccountOperation(op4)
+    const a4 = RawAccounts.rawToAccountOperation(op4)
     console.log(a4)
     const b4 = Accounts.executeOperation(a4, Accounts.cloneBalance(b3))
-    const e4: Balance = [
+    const e4: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'USD', balance: 600, unit: 'USD'},
       {account: 'BENZ', balance: 40, unit: 'L'}
@@ -85,10 +86,10 @@ describe('Accounts addAccount', ()=>{
     expect(b4).toEqual(e4)
 
     const op5: RawAccountOperation = {account: 'BENZ', debit: 10, unit: 'RUB'}
-    const a5 = Accounts.rawToAccountOperation(op5)
+    const a5 = RawAccounts.rawToAccountOperation(op5)
     console.log(a5)
     const b5 = Accounts.executeOperation(a5, Accounts.cloneBalance(b4))
-    const e5: Balance = [
+    const e5: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'USD', balance: 600, unit: 'USD'},
       {account: 'BENZ', balance: 30, unit: 'L'}
@@ -100,10 +101,10 @@ describe('Accounts addAccount', ()=>{
       {account: 'SBER', credit: 100000},
       {account: 'ALFA', credit: 50000}
     ]
-    const a6 = Accounts.rawToAccountOperations(op6)
+    const a6 = RawAccounts.rawToAccountOperations(op6)
     console.log(a6)
     const b6 = Accounts.executeOperations(a6, Accounts.cloneBalance(b5))
-    const e6: Balance = [
+    const e6: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'USD', balance: 600, unit: 'USD'},
       {account: 'BENZ', balance: 30, unit: 'L'},
@@ -114,8 +115,8 @@ describe('Accounts addAccount', ()=>{
     expect(b6).toEqual(e6)
 
 
-    const b7 = Accounts.getFilteredBalance(b6,'RUB')
-    const e7: Balance = [
+    const b7 = Accounts.getBalanceByUnit(b6,'RUB')
+    const e7: AccountBalance[] = [
       {account: 'RUB', balance: 20000, unit: 'RUB'},
       {account: 'SBER', balance: 100000, unit: 'RUB'},
       {account: 'ALFA', balance: 50000, unit: 'RUB'}
@@ -123,13 +124,13 @@ describe('Accounts addAccount', ()=>{
     console.log(b7, e7)
     expect(b7).toEqual(e7)
 
-    const b8 = Accounts.getAggregatedBalance(b6,'RUB')
+    const b8 = Accounts.getSumByUnit(b6,'RUB')
     const e8 = 170000
     console.log(b8, e8)
     expect(b8).toEqual(e8)
 
     const b9 = Accounts.getGroupedBalance(b6)
-    const e9: GroupedBalance[] = [
+    const e9: UnitBalance[] = [
       {unit: 'RUB', balance: 170000},
       {unit: 'USD', balance: 600},
       {unit: 'L', balance: 30}
