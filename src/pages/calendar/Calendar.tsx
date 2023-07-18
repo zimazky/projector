@@ -1,13 +1,13 @@
 import React from 'react'
 import styles from './Calendar.module.css'
-import CalendarDay from './CalendarDay'
-import EventItem from './EventItem'
-import DateTime from '../utils/datetime'
-import {eventList} from '../model/data'
-import Modal from './Modal'
-import Button from './Button'
-import EventForm from './EventForm'
-import { createRawEvent } from '../model/events/rawEvents'
+import CalendarDay from "../../components/CalendarDay"
+import EventItem from '../../components/EventItem'
+import DateTime from '../../utils/datetime'
+import {eventList} from '../../model/data'
+import Modal from '../../components/Modal'
+import Button from '../../components/Button'
+import EventForm from '../../components/EventForm'
+import { createRawEvent } from '../../model/events/rawEvents'
 
 const weekBuffer = 4
 

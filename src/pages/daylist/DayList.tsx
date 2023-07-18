@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './DayList.module.css'
-import DateTime from '../utils/datetime'
-import {eventList} from '../model/data'
+import DateTime from '../../utils/datetime'
+import {eventList} from '../../model/data'
 
 function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   const {name,completed,background,color,repeatable,start,end,time,credit,debit} = event

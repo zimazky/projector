@@ -4,14 +4,14 @@ const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   mode: 'development',
-  entry: './src/index.js',
+  entry: './src/App.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js',
 	  publicPath: '/dist/'
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js']
+    extensions: ['.ts', '.tsx', '.js'],
   },
   module: {
     rules: [ 
@@ -19,14 +19,6 @@ module.exports = {
         test: /\.tsx?$/,
         exclude: '/node_modules/',
         loader: 'ts-loader',
-      },
-      {
-        test: /\.(js|jsx)$/,
-        exclude: '/node_modules/',
-        loader: 'babel-loader',
-        options:{
-          presets:['@babel/preset-react']
-        }
       },
       {
         test: /\.module\.css$/,

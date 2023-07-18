@@ -1,13 +1,14 @@
 import React from 'react'
-import GAPI from '../utils/gapi'
-import RemoteStorage from '../utils/remoteStorage'
-import {eventList} from '../model/data'
-import useUpdate from '../hooks/useUpdate.js'
-import Calendar from './Calendar'
-import DayList from './DayList'
-import Navbar from './Navbar'
+import ReactDOM from 'react-dom'
+import GAPI from './utils/gapi'
+import RemoteStorage from './utils/remoteStorage'
+import {eventList} from './model/data'
+import useUpdate from './hooks/useUpdate.js'
+import Calendar from './pages/calendar/Calendar'
+import DayList from './pages/daylist/DayList'
+import Navbar from './components/Navbar'
 import styles from './App.module.css'
-import OpenWeatherMap from '../utils/openweathermap'
+import OpenWeatherMap from './utils/openweathermap'
 
 function saveToLocalStorage() {
   const dataString = JSON.stringify(eventList.prepareToSave())
@@ -30,7 +31,7 @@ async function loadWeatherForecast() {
   console.log(data);
 }
 
-export default function () {
+export default function App() {
   const forceUpdate = useUpdate()
   const [loginState, setLoginState] = React.useState(false)
   const [state, setState] = React.useState({view:'Calendar', timestamp: Date.now()/1000})
@@ -173,3 +174,5 @@ export default function () {
   </div>
   )
 }
+
+ReactDOM.render(<App/>, document.getElementById('root'))
