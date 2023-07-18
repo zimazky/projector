@@ -7,6 +7,7 @@ import Calendar from './Calendar'
 import DayList from './DayList'
 import Navbar from './Navbar'
 import styles from './App.module.css'
+import OpenWeatherMap from '../utils/openweathermap'
 
 function saveToLocalStorage() {
   const dataString = JSON.stringify(eventList.prepareToSave())
@@ -22,6 +23,11 @@ async function saveToGoogleDrive() {
 
 function fullScreen() { 
   document.getElementById('root').requestFullscreen() 
+}
+
+async function loadWeatherForecast() {
+  const data = await OpenWeatherMap.getForecast(58.727591, 32.463607);
+  console.log(data);
 }
 
 export default function () {
@@ -125,9 +131,19 @@ export default function () {
 
   }
   icons.push({
+    name: 'Load weather forecast',
+    jsx: <svg width='100%' viewBox="0 0 23 23">
+      <path fill="#f15d46" stroke="none" d="m16 1a1 1 0 000 12 1 1 0 000-12"></path>
+      <path fill="#dddddd" stroke="none" d="m4 9h.5a4.3 4.3 90 01-.1-.9 1 1 0 018.6-.1 2.5 2.5 0 014.1 2.7l.6-.1a1 1 0 01.3 6.4h-14a1 1 0 010-8"></path>
+      <path fill="none" d="m22 15-4 4-4-4m4 3 0-9m4 13-8 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+      <path fill="none" d="m22 15-4 4-4-4m4 3 0-9m4 13-8 0" strokeWidth="2"/>
+    </svg>,
+    fn: loadWeatherForecast
+  })
+  icons.push({
     name: 'Fullscreen mode', 
     jsx: <svg width='100%' viewBox="0 0 22 22">
-      <path fill="none" d="M 1 10 L 1 3 A 2 2 0 0 1 3 1 L 19 1 A 2 2 0 0 1 21 3 L 21 19 A 2 2 0 0 1 19 21 L 12 21 M 11 19 A 2 2 0 0 1 9 21 L 3 21 A 2 2 0 0 1 1 19 L 1 13 A 2 2 0 0 1 3 11 L 9 11 A 2 2 0 0 1 11 13 L 11 19" strokeWidth="1"/>
+      <path fill="none" d="m 1 10 l 0 -7 a 2 2 0 0 1 2 -2 l 16 0 a 2 2 0 0 1 2 2 l 0 16 a 2 2 0 0 1 -2 2 l -7 0 m -1 -2 a 2 2 0 0 1 -2 2 l -6 0 a 2 2 0 0 1 -2 -2 l 0 -6 a 2 2 0 0 1 2 -2 l 6 0 a 2 2 0 0 1 2 2 l 0 6" strokeWidth="1"/>
       <path fill="none" d="M 12 10 L 17 5 M 18 8 L 18 4 L 14 4" strokeWidth="2"/>
       </svg>, 
     fn: fullScreen
