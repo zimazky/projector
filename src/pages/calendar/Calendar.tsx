@@ -8,10 +8,12 @@ import Modal from '../../components/Modal'
 import Button from '../../components/Button'
 import EventForm from '../../components/EventForm'
 import { createRawEvent } from '../../model/events/rawEvents'
+import { observer } from 'mobx-react-lite'
+import { weatherStore } from '../../stores/weatherStore'
 
 const weekBuffer = 4
 
-export default function Calendar({onDayOpen=(timestamp)=>{}}) {
+function calendar({onDayOpen = (timestamp: number) => {}}) {
 
   const [isModal,setModal] = React.useState(false)
   const [shift,setShift] = React.useState(weekBuffer)
@@ -46,8 +48,10 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
     let stack = []
     for(let j=0;j<=6;j++) {
       arrayOfDays[i].push([])
+      const weather = weatherStore.state === 'ready'? weatherStore.data.find(d => d.timestamp==currentTimestamp) : null;
       arrayOfDays[i][j] = {
-        timestamp: currentTimestamp, 
+        timestamp: currentTimestamp,
+        weather,
         tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
         actualBalance: eventList.getActualBalance(currentTimestamp),
         lastActualBalanceDate: eventList.lastActualBalanceDate,
@@ -111,7 +115,8 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
       { arrayOfDays.map( week => (
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
-            <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp}
+            <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp} 
+              weather={d.weather}
               onAddEvent={openNewEventForm}
               onDragDrop={e=>dragDrop(e,d.timestamp)}
               onDayOpen={onDayOpen}
@@ -129,3 +134,5 @@ export default function Calendar({onDayOpen=(timestamp)=>{}}) {
     </div>
   )
 }
+
+export const Calendar = observer(calendar);

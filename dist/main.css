@@ -1,4 +1,4 @@
-.wrapper_af90f78 {
+.wrapper_d60d5c2 {
   font-size: 16px;
   width: 100%;
   height: 100%;
@@ -11,35 +11,35 @@
 }
 
 @media (max-width: 1400px) { 
-	.wrapper_af90f78 {
+	.wrapper_d60d5c2 {
 		font-size: 14px;
 	}
 }
 
 @media (max-width: 800px) { 
-	.wrapper_af90f78 {
+	.wrapper_d60d5c2 {
 		font-size: 12px;
 	}
 }
 
 @media (max-width: 480px) { 
-	.wrapper_af90f78 {
+	.wrapper_d60d5c2 {
 		font-size: 11px;
 	}
 }
 
-.header_e3daf93 {
+.header_e002c54 {
   background-color: white;
 }
 
-.monthTitle_a8c3ab6 {
+.monthTitle_ffb631c {
   display: inline-block;
   font-size: 1.8em;
   color: #a0a0a0;
   vertical-align: middle;
 }
 
-.dayOfWeekLabels_cf63ad3 {
+.dayOfWeekLabels_beea7a6 {
   width: 100%;
   height: 1.4em;
   text-transform: uppercase;
@@ -47,20 +47,20 @@
   border-bottom: 1px solid lightgray;
 }
 
-.dayOfWeekLabels_cf63ad3 div {
+.dayOfWeekLabels_beea7a6 div {
   display: inline-block;
   width: calc(100%/7);
   padding-left: 0.4em;
 }
 
-.CalendarBody_b3637e9 {
+.CalendarBody_e226a34 {
   width: 100%;
   height: 100%;
   overflow-y: scroll;
   /*overflow-x: hidden;*/
 }
 
-.CalendarWeek_ef509bf {
+.CalendarWeek_e09d547 {
   border-bottom: 1px solid lightgrey;
   font-size: 0.9em;
   height: 150px;
@@ -304,7 +304,7 @@
   padding: 2px 0;
 }
 
-.item_b75c1de, .completed_ec0f567, .repeatable_ee3a7b6, .selected_a66a7c0{
+.item_fb7ba52, .completed_bc4d6de, .repeatable_e019185, .selected_daef432{
   position: relative;
   width: 100%;
   height: 1.5em;
@@ -314,17 +314,17 @@
   background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
   cursor: pointer;
 }
-.completed_ec0f567 {
+.completed_bc4d6de {
   background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
   linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
   color: gray;
 }
-.repeatable_ee3a7b6 {
+.repeatable_e019185 {
   background-image: 
     repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
     linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
 }
-.name_b0488ca {
+.name_e59abfe {
   display: inline-block;
   text-align: left;
   width: 42%;
@@ -333,27 +333,27 @@
   white-space: nowrap;
   vertical-align: top;
 }
-.time_faa3c63, .start_ec90dad, .startplaceholder_a0e3ec9, .end_f8f8b4d, .credit_df7a8f7, .debit_e6abeeb {
+.time_ad1d8b6, .start_dc7860e, .startplaceholder_b9f8e09, .end_efb2163, .credit_f009472, .debit_be8c045 {
   display: inline-block;
   vertical-align: top;
 }
-.time_faa3c63 {
+.time_ad1d8b6 {
   width: 10%;
 }
-.start_ec90dad, .startplaceholder_a0e3ec9, .end_f8f8b4d {
+.start_dc7860e, .startplaceholder_b9f8e09, .end_efb2163 {
   width: 12%;
 }
-.credit_df7a8f7, .debit_e6abeeb {
+.credit_f009472, .debit_be8c045 {
   text-align: center;
   width: 12%;
 }
-.completed_ec0f567 .name_b0488ca, .completed_ec0f567 .time_faa3c63 {
+.completed_bc4d6de .name_e59abfe, .completed_bc4d6de .time_ad1d8b6 {
   text-decoration: line-through;
   color: gray;
 }
 
 
-.day_a940e80 {
+.day_a7e654e {
   /*display: inline-block;*/
   width: 100%;
   height: 100%;
@@ -361,17 +361,17 @@
   vertical-align: top;
   background-color: rgb(245, 245, 245);
 }
-.header_b8f8720, .today_d03b0b1 {
+.header_ba7467c, .today_f290341 {
   background-color: rgb(233, 233, 233);
   color: gray;
   padding: 0.1em 0.4em;
   height: 1.4em;
 }
-.today_d03b0b1 {
+.today_f290341 {
   background-color: hotpink;
   color: white;
 }
-.balance_b241d9b {
+.balance_de9debb {
   font-size: 0.9em;
   margin: 0.1em;
   height: 1.2em;
@@ -379,7 +379,7 @@
   text-align: justify;
   text-align-last: justify;
 }
-.input_a4e7605 {
+.input_cecfe21 {
   outline-width: 0;
   white-space: nowrap;
   padding: 0.2em;
@@ -440,7 +440,7 @@
   stroke: black;
 }
 
-.page_d7bcb36 {
+.page_f9fced8 {
   position: fixed;
   top: 0;
   height: 100%;
@@ -450,17 +450,3 @@
   grid-template-columns: 1fr;
   grid-template-rows: max-content 1fr;
 }
-* {
-	padding: 0;
-	margin: 0;
-	border: 0;
-	box-sizing: border-box;
-	}
-
-body {
-	width: 100vw;
-	height: 100vh;
-	font-family: 'Roboto',sans-serif;
-	overflow-y: hidden;
-}
-

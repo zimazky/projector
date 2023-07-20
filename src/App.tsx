@@ -4,11 +4,11 @@ import GAPI from './utils/gapi'
 import RemoteStorage from './utils/remoteStorage'
 import {eventList} from './model/data'
 import useUpdate from './hooks/useUpdate.js'
-import Calendar from './pages/calendar/Calendar'
+import { Calendar } from './pages/calendar/Calendar'
 import DayList from './pages/daylist/DayList'
 import Navbar from './components/Navbar'
 import styles from './App.module.css'
-import OpenWeatherMap from './utils/openweathermap'
+import { weatherStore } from './stores/weatherStore'
 
 function saveToLocalStorage() {
   const dataString = JSON.stringify(eventList.prepareToSave())
@@ -27,8 +27,7 @@ function fullScreen() {
 }
 
 async function loadWeatherForecast() {
-  const data = await OpenWeatherMap.getForecast(58.727591, 32.463607);
-  console.log(data);
+  await weatherStore.loadForecast();
 }
 
 export default function App() {
@@ -86,8 +85,8 @@ export default function App() {
       <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
       <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
       <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
-      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 18 L 18 9 M 22 22 L 14 22" stroke="white" strokeWidth="5" strokeLinecap="round"/>
-      <path fill="none" d="M 22 15 L 18 19 L 14 15 M 18 18 L 18 9 M 22 22 L 14 22" strokeWidth="2"/>
+      <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+      <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
       </svg>, 
     fn: loadFromGoogleDrive
   })
@@ -120,8 +119,8 @@ export default function App() {
         <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
         <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
         <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
-        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 12 M 22 22 L 14 22" stroke="white" strokeWidth="5" strokeLinecap="round"/>
-        <path fill="none" d="M 22 15 L 18 11 L 14 15 M 18 20 L 18 12 M 22 22 L 14 22" strokeWidth="2"/>
+        <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+        <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" strokeWidth="2"/>
         </svg>, 
       fn: saveToGoogleDrive
     })
@@ -136,8 +135,8 @@ export default function App() {
     jsx: <svg width='100%' viewBox="0 0 23 23">
       <path fill="#f15d46" stroke="none" d="m16 1a1 1 0 000 12 1 1 0 000-12"></path>
       <path fill="#dddddd" stroke="none" d="m4 9h.5a4.3 4.3 90 01-.1-.9 1 1 0 018.6-.1 2.5 2.5 0 014.1 2.7l.6-.1a1 1 0 01.3 6.4h-14a1 1 0 010-8"></path>
-      <path fill="none" d="m22 15-4 4-4-4m4 3 0-9m4 13-8 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
-      <path fill="none" d="m22 15-4 4-4-4m4 3 0-9m4 13-8 0" strokeWidth="2"/>
+      <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
+      <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
     </svg>,
     fn: loadWeatherForecast
   })

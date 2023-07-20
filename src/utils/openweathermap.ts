@@ -121,8 +121,8 @@ export default class OpenWeatherMap {
    * @param lon 
    * @returns 
    */
-  static async getForecast(lat: number, lon: number, units: Units = 'standard'): Promise<OpenWeatherMapResponse> {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
+  static async getForecast(lat: number, lon: number, units: Units = 'metric'): Promise<OpenWeatherMapResponse> {
+    const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${units}&appid=${API_KEY}`);
     const json: OpenWeatherMapResponse = await response.json();
     return json;
   }
