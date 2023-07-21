@@ -89,6 +89,7 @@
   height: 1.6em;
   font-size: 1.2em;
   line-height: 1.6em;
+  position: relative;
 }
 .today_ded7894 {
   background-color: hotpink;
@@ -109,10 +110,6 @@
   white-space: nowrap;
   padding: 0.2em;
   height: 1.4em;
-}
-.day_d84e778 {
-  position: relative;
-  left: 0px;
 }
 .weather_e943af6 {
   font-size: 0.8em;
