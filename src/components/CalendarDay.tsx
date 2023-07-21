@@ -61,6 +61,7 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
           + '\nprecipitation: ' + weather.pop.toFixed(2)
           + '\nrain: ' + weather.rain.toFixed(2)
           + '\nsnow: ' + weather.snow.toFixed(2)
+          + '\ncount: ' + weather.count
           + (weather.isThunderstorm ? '\nThunderstorm' : '')
         }><sup>{'🌡️'+formatT(weather.temperatureMax)}</sup><sub>{formatT(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>: null}
       </div>

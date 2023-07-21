@@ -26,6 +26,8 @@ export type DayForecast = {
   isThunderstorm: boolean;
   /** Строка с иконками emoji */
   emoji: string;
+  /** Число выборок в пределах дня */
+  count: number;
 }
 
 class WeatherStore {
@@ -86,9 +88,10 @@ class WeatherStore {
           snow,
           isThunderstorm,
           emoji: defineEmoji(clouds, rain, snow, isThunderstorm),
+          count: 1
         })
         else {
-          clouds = Math.max(cd.clouds, clouds);
+          clouds = (cd.clouds*cd.count + clouds)/(cd.count + 1);
           cd.temperatureMin = Math.min(cd.temperatureMin, d.main.temp_min);
           cd.temperatureMax = Math.max(cd.temperatureMax, d.main.temp_max);
           cd.humidityMin = Math.min(cd.humidityMin, d.main.humidity);
@@ -99,6 +102,7 @@ class WeatherStore {
           cd.snow += d.snow ? d.snow['3h'] : 0;
           cd.isThunderstorm ||= isThunderstorm;
           cd.emoji = defineEmoji(cd.clouds, cd.rain, cd.snow, cd.isThunderstorm);
+          cd.count++;
         }
       });
     });
