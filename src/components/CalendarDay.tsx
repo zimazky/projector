@@ -1,9 +1,26 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime'
-import { weatherEmojis, weatherIcons } from '../stores/weather'
+import { DayForecast } from '../stores/weather';
 
-export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}) {
+type CalendarDayProperties = {
+  data: {
+    timestamp: number,
+    actualBalance: number,
+    lastActualBalanceDate: number,
+    plannedBalance: number,
+    plannedBalanceChange: number,
+    firstPlannedEventDate: number
+  };
+  today: boolean;
+  weather: DayForecast;
+  onAddEvent: (timestamp: number, name: string) => void;
+  onDragDrop: (e) => void;
+  onDayOpen: (timestamp: number) => void;
+  children: any;
+}
+
+export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}: CalendarDayProperties) {
   const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange, firstPlannedEventDate} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
@@ -36,18 +53,16 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
         : firstPlannedEventDate!==0 && timestamp>=firstPlannedEventDate ? 
           styles.between_firstplanned_and_actual : styles.before_actual_date} 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
-      <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}} 
-      title={
-        weather ? 
-        'temperature: '+ formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin)
-        + '\nclouds: ' + weather.clouds.toFixed(0)
-        + '\nprecipitation: ' + weather.pop.toFixed(2)
-        + '\nrain: ' + weather.rain.toFixed(2)
-        + '\nsnow: ' + weather.snow.toFixed(2)
-        : ''
-      }>
+      <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
         {day + (day==1?' '+DateTime.MONTHS[month]:'')}
-        {weather ? (<div className={styles.weather}><sup>{'🌡️'+formatT(weather.temperatureMax)}</sup><sub>{formatT(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>): ''}
+        {weather ? <div className={styles.weather} title={
+          'temperature: '+ formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin)
+          + '\nclouds: ' + weather.clouds.toFixed(0)
+          + '\nprecipitation: ' + weather.pop.toFixed(2)
+          + '\nrain: ' + weather.rain.toFixed(2)
+          + '\nsnow: ' + weather.snow.toFixed(2)
+          + (weather.isThunderstorm ? '\nThunderstorm' : '')
+        }><sup>{'🌡️'+formatT(weather.temperatureMax)}</sup><sub>{formatT(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>: null}
       </div>
       <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
