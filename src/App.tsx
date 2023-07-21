@@ -8,7 +8,7 @@ import { Calendar } from './pages/calendar/Calendar'
 import DayList from './pages/daylist/DayList'
 import Navbar from './components/Navbar'
 import styles from './App.module.css'
-import { weatherStore } from './stores/weatherStore'
+import { weatherStore } from './stores/weather'
 
 function saveToLocalStorage() {
   const dataString = JSON.stringify(eventList.prepareToSave())

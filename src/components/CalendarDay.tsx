@@ -1,6 +1,7 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime'
+import { weatherEmojis, weatherIcons } from '../stores/weather'
 
 export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}) {
   const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange, firstPlannedEventDate} = data
@@ -37,15 +38,17 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}} 
       title={
-        weather ? 'temperature: '+ formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin)
-        + '\nclouds: ' + weather.clouds
-        + '\nprecipitation: ' + weather.pop
-        + '\nrain: ' + weather.rain
-        + '\nsnow: ' + weather.snow
+        weather ? 
+        'temperature: '+ formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin)
+        + '\nclouds: ' + weather.clouds.toFixed(0)
+        + '\nprecipitation: ' + weather.pop.toFixed(2)
+        + '\nrain: ' + weather.rain.toFixed(2)
+        + '\nsnow: ' + weather.snow.toFixed(2)
         : ''
-      }>{
-        day + (day==1?' '+DateTime.MONTHS[month]:'') 
-      + (weather ? ' '+formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin) : '') }</div>
+      }>
+        {day + (day==1?' '+DateTime.MONTHS[month]:'')}
+        {weather ? (<div className={styles.weather}><sup>{'🌡️'+formatT(weather.temperatureMax)}</sup><sub>{formatT(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>): ''}
+      </div>
       <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
         ' ' + minimize(actualBalance)}</div>

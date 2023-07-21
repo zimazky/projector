@@ -16,7 +16,9 @@
   background-color: rgb(233, 233, 233);
   color: gray;
   padding: 0.1em 0.4em;
-  height: 1.4em;
+  height: 1.6em;
+  font-size: 1.2em;
+  line-height: 1.6em;
 }
 .today {
   background-color: hotpink;
@@ -37,4 +39,14 @@
   white-space: nowrap;
   padding: 0.2em;
   height: 1.4em;
+}
+.day {
+  position: relative;
+  left: 0px;
+}
+.weather {
+  font-size: 0.8em;
+  position: absolute;
+  right: 0px;
+  top: 0px;
 }

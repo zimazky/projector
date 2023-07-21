@@ -9,7 +9,7 @@ import Button from '../../components/Button'
 import EventForm from '../../components/EventForm'
 import { createRawEvent } from '../../model/events/rawEvents'
 import { observer } from 'mobx-react-lite'
-import { weatherStore } from '../../stores/weatherStore'
+import { weatherStore } from '../../stores/weather'
 
 const weekBuffer = 4
 

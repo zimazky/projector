@@ -1,6 +1,6 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from '../../utils/zcron'
-import EventList, { SingleEvent, RepeatableEvent } from './EventList'
+import EventList, { SingleEvent, RepeatableEvent } from './eventList'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type compact = {

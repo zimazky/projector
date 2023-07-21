@@ -86,7 +86,9 @@
   background-color: rgb(233, 233, 233);
   color: gray;
   padding: 0.1em 0.4em;
-  height: 1.4em;
+  height: 1.6em;
+  font-size: 1.2em;
+  line-height: 1.6em;
 }
 .today_ded7894 {
   background-color: hotpink;
@@ -107,6 +109,16 @@
   white-space: nowrap;
   padding: 0.2em;
   height: 1.4em;
+}
+.day_d84e778 {
+  position: relative;
+  left: 0px;
+}
+.weather_e943af6 {
+  font-size: 0.8em;
+  position: absolute;
+  right: 0px;
+  top: 0px;
 }
 .item_bb964bd, .completed_b30da5e, .repeatable_ca186f6, .selected_be28f52{
   position: relative;
