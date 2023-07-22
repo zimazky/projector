@@ -1,22 +1,109 @@
+import { projectsStore } from '../../stores/projects'
 import { timestamp } from '../../utils/datetime'
 import ZCron from '../../utils/zcron'
-import { IEvent, IRepeatableEvent, ISingleEvent } from './ievents'
-import { rawEvent, rawToEvent, repeatableEventToRaw, singleEventToRaw } from './rawEvents'
+import { rawToEvent, repeatableEventToRaw, singleEventToRaw } from './rawEvents'
 
-/** Одиночное событие */
-export type SingleEvent = ISingleEvent & {
+/** Базовый интерфейс события, общий для одиночных и повторяемых событий */
+export interface IEvent {
+  name: string
+  repeat?: string
+  comment: string
+  project: string
+  start: timestamp
+  time: number | null
+  duration: number
+  end: timestamp
+  credit: number
+  debit: number
+}
+
+/** Тип события, сохраняемого во внешнем хранилище */
+export type EventData = {
+  /** Наименование события (обязательное поле) */
+  name: string
+  /** Комментарий */
+  comment?: string
+  /** Наименование проекта */
+  project?: string
+  /** Строка шаблона zcrone для повторяемых событий*/
+  repeat?: string
+  /** Дата события для одиночных / дата начала расписания для повторяемых событий ('YYYY.MM.DD') */
+  start: string
+  /** Время начала события ('H:MM') */
+  time?: string
+  /** 
+   * Длительность события для одиночных событий ('Dd H:MM').
+   * Дата завершения события считается как end = начало_след_дня(start+time+duration).
+   * Для повторяемых - событие не должно выходить за пределы дня, иначе игнорируется.
+   * */
+  duration?: string
+  /** 
+   * Дата завершения события для одиночных событий ('YYYY.MM.DD').
+   * Событие длится до указанной даты, исключая саму дату. 
+   * Указанная дата игнорируется, если задана длительность события duration.
+   * Для повторяемых событий - конец расписания.
+   * */
+  end?: string
+  /** Поступление на счет */
+  credit?: number
+  /** Списание со счета */
+  debit?: number
+}
+
+/** Структура одиночного события для хранения в классе хранилища */
+export type SingleEventStructure = {
   /** Идентификатор события */
   id: number
+  /** Наименование */
+  name: string
+  /** Комментарий */
+  comment: string
+  /** Наименование проекта */
+  project: string
+  /** Дата события, указывает на начало дня по местному времени */
+  start: timestamp
+  /** Время начала события, количество секунд с начала дня. null - неопределено */
+  time: number | null
+  /** Длительность события в секундах. 0 - неопределено. Если определено, end = начало_след_дня(start + time + duration) */
+  duration: number
+  /** Дата завершения. Игнорируется, если задана длительность. 0 - неопределено */
+  end: timestamp
+  /** Поступление средств на счет */
+  credit: number
+  /** Списание средств со счета */
+  debit: number
+
   /** Индекс записи проекта */
   projectId: number
   /** Длительность события в днях */
   days: number
 }
 
-/** Повторяемое событие */
-export type RepeatableEvent = IRepeatableEvent & {
+/** Структура повторяемого события для хранения в классе хранилища */
+export type RepeatableEventStructure = {
   /** Идентификатор события */
   id: number
+  /** Наименование */
+  name: string
+  /** Шаблон расписания в формате zcron "D M W" */
+  repeat: string
+  /** Комментарий */
+  comment: string
+  /** Наименование проекта */
+  project: string
+  /** Дата начала расписания, указывает на начало дня по местному времени */
+  start: timestamp
+  /** Время начала события, количество секунд с начала дня, null-неопределен */
+  time: number | null
+  /** Длительность события в секундах. Игнорируется, если событие выходит за пределы дня. */
+  duration: number
+  /** Дата завершения действия расписания. 0 - неопределено */
+  end: timestamp
+  /** Поступление средств на счет */
+  credit: number
+  /** Списание средств со счета */
+  debit: number
+
   /** Индекс записи проекта */
   projectId: number
 }
@@ -40,15 +127,13 @@ export default class EventList {
   /** Список проектов */
   projects: Project[] = [{name:'Default', background: 'lightgray', color: 'black'}]
   /** Список завершенных событий */
-  completed: SingleEvent[] = []
+  completed: SingleEventStructure[] = []
   /** Список запланированных, одиночных событий */
-  planned: SingleEvent[] = []
+  planned: SingleEventStructure[] = []
   /** Список запланированных, повторяемых событий */
-  plannedRepeatable: RepeatableEvent[] = []
+  plannedRepeatable: RepeatableEventStructure[] = []
   /** Колбэк функция, вызывается при каждом изменении списка */
   onChangeList = () => {}
-
-  constructor() {}
 
   /** Загрузка данных со сбросом предшествующих данных */
   load({completedList=[], plannedList=[], projectsList=[]}) {
@@ -65,7 +150,7 @@ export default class EventList {
   /** Подготовка для сохранения в хранилище */
   prepareToSave() {
     const completedList = this.completed.map(e=>singleEventToRaw(e))
-    const plannedList: rawEvent[] = this.plannedRepeatable.reduce((a,e) => {
+    const plannedList: EventData[] = this.plannedRepeatable.reduce((a,e) => {
       return a.push(repeatableEventToRaw(e)), a
     }, [])
     this.planned.reduce((a,e) => {
@@ -83,7 +168,7 @@ export default class EventList {
     if(revent !== undefined) return revent
   }
 
-  getRawEvent(id: number): rawEvent {
+  getRawEvent(id: number): EventData {
     let event = this.completed.find(e=>e.id===id)
     if(event !== undefined) return singleEventToRaw(event)
     event = this.planned.find(e=>e.id===id)
@@ -97,7 +182,9 @@ export default class EventList {
    * @param e Событие
    * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
    */
-  addCompletedEvent(e: ISingleEvent, isFinal: boolean = true) {
+  addCompletedEvent(e: IEvent, isFinal: boolean = true) {
+    projectsStore.getIdWithIncEventsCount(e.project);
+
     let projectId = e.project? this.projects.findIndex(p=>p.name===e.project) : 0
     if(projectId<0) projectId = 0
 
@@ -124,6 +211,8 @@ export default class EventList {
    * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
    */
   addPlannedEvent(e: IEvent, isFinal: boolean = true) {
+    projectsStore.getIdWithIncEventsCount(e.project);
+
     let projectId = e.project? this.projects.findIndex(p=>p.name===e.project) : 0
     if(projectId<0) projectId = 0
 
@@ -162,7 +251,7 @@ export default class EventList {
     if(isFinal) this.onChangeList()
   }
 
-  addPlannedRawEvent(raw: rawEvent, isFinal: boolean = true) {
+  addPlannedRawEvent(raw: EventData, isFinal: boolean = true) {
     this.addPlannedEvent(rawToEvent(raw), isFinal)
   }
 
@@ -186,7 +275,7 @@ export default class EventList {
    * @param currentdate Текущая дата для уточнения события среди повторяемых
    * @param raw Модифицированное событие
    */
-  completeEvent(id: number, currentdate: timestamp, raw: rawEvent) {
+  completeEvent(id: number, currentdate: timestamp, raw: EventData) {
     {
       let event = this.planned.find(e=>e.id===id)
       if(event !== undefined) {
@@ -225,7 +314,7 @@ export default class EventList {
    * @param id Идентификатор события
    * @param raw Модифицированное событие
    */
-  uncompleteEvent(id: number, raw: rawEvent) {
+  uncompleteEvent(id: number, raw: EventData) {
     let event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
       this.addPlannedEvent({...event, ...rawToEvent(raw)}, false)
@@ -239,7 +328,7 @@ export default class EventList {
    * @param id Идентификатор события
    * @param raw Модифицированное событие в текстовом представлении rawEvent
    */
-  updateEvent(id: number, raw: rawEvent) {
+  updateEvent(id: number, raw: EventData) {
     {
       let event = this.completed.find(e=>e.id===id)
       if(event !== undefined) {
@@ -338,7 +427,7 @@ export default class EventList {
    * @param currentdate Текущая дата для уточнения события среди повторяемых
    * @param raw Модифицированное событие
    */
-  transformToSingleEvent(id: number, currentdate: timestamp, raw: rawEvent) {
+  transformToSingleEvent(id: number, currentdate: timestamp, raw: EventData) {
     let revent = this.plannedRepeatable.find(e=>e.id===id)
     if(revent !== undefined) {
       this.addPlannedEvent({...rawToEvent(raw), repeat: undefined, start: currentdate, end: currentdate + 86400}, false)
@@ -362,6 +451,5 @@ export default class EventList {
       return
     }
   }
-
 }
 

@@ -3,7 +3,7 @@ import DateTime from '../utils/datetime';
 import OpenWeatherMap from '../utils/openweathermap';
 
 /** Погодные условия, аггрегированные за день */
-export type DayForecast = {
+export type ForecastData1d = {
   /** Временная метка дня, unixtime, UTC */
   timestamp: number;
   /** Минимальная температура за день */
@@ -30,6 +30,30 @@ export type DayForecast = {
   count: number;
 }
 
+/** Погодные условия за 3 часа */
+export type ForecastData3h = {
+  /** Временная метка времени, unixtime, UTC */
+  timestamp: number;
+  /** Минимальная температура, С */
+  temperatureMin: number;
+  /** Максимальная температура, С */
+  temperatureMax: number;
+  /** Влажность в % */
+  humidity: number;
+  /** Облачность в % */
+  clouds: number;
+  /** Вероятность осадков 0..1 */
+  pop: number;
+  /** Количество осадков в виде дождя в мм */
+  rain: number;
+  /** Количество осадков в виде снега в мм */
+  snow: number;
+  /** Признак грозы */
+  isThunderstorm: boolean;
+  /** Строка с иконками emoji */
+  emoji: string;
+}
+
 class WeatherStore {
   /** 
    * Состояние хранилища
@@ -46,7 +70,8 @@ class WeatherStore {
   /** Долгота локации */
   lon: number = 32.366389;
   /** Данные прогноза погоды на 5-6 дней */
-  data: DayForecast[] = [];
+  data1d: ForecastData1d[] = [];
+  data3h: ForecastData3h[] = [];
 
   constructor() {
     makeAutoObservable(this);
@@ -57,7 +82,8 @@ class WeatherStore {
     this.lat = lat;
     this.lon = lon;
     this.locationName = name;
-    this.data = [];
+    this.state = 'undefined';
+    this.data1d = [];
   }
 
   /** Загрузка данных прогноза погоды */
@@ -67,16 +93,30 @@ class WeatherStore {
     runInAction(()=>{
       let t = DateTime.getBeginDayTimestamp(Date.now()/1000);
       this.state = 'ready';
-      this.data = [];
+      this.data1d = [];
       console.log(f);
       f.list.forEach(d => {
-        if(d.dt > t+86400) t += 86400;
-        const cd = this.data.find(d => d.timestamp==t);
         let clouds = d.clouds.all;
         const rain = d.rain ? d.rain['3h'] : 0;
         const snow = d.snow ? d.snow['3h'] : 0;
         const isThunderstorm = d.weather.reduce((a, w) => a || (200 <= w.id && w.id < 300), false);
-        if(cd === undefined) this.data.push({
+        // прогноз с периодом 3 часа
+        this.data3h.push({
+          timestamp: d.dt,
+          temperatureMin: d.main.temp_min,
+          temperatureMax: d.main.temp_max,
+          humidity: d.main.humidity,
+          clouds,
+          pop: d.pop,
+          rain,
+          snow,
+          isThunderstorm,
+          emoji: defineEmoji(clouds, rain, snow, isThunderstorm)
+        });
+        // аггрегируемый прогноз с периодом 1 день
+        if(d.dt > t+86400) t += 86400;
+        const cd = this.data1d.find(d => d.timestamp==t);
+        if(cd === undefined) this.data1d.push({
           timestamp: t,
           temperatureMin: d.main.temp_min,
           temperatureMax: d.main.temp_max,
@@ -112,7 +152,7 @@ class WeatherStore {
 // Иконки '☀️', '🌤️', '⛅', '☁️', '🌦️', '🌧️', '🌩️', '⛈️', '🌨️'
 
 function defineEmoji(clouds: number, rain: number, snow: number, isThunderstorm: boolean): string {
-  const cloudiness = clouds<10 ? '☀️' : clouds<30 ? '🌤️' : clouds < 60 ? '⛅' : '☁️';
+  const cloudiness = clouds<10 ? '☀️' : clouds<30 ? '🌤️' : clouds < 70 ? '⛅' : '☁️';
   return cloudiness + (rain>0 ? '💧' : '') + (snow>0 ? '❄️' : '') + (isThunderstorm ? '⚡' : '');
 }
 

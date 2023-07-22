@@ -1,4 +1,4 @@
-import { action, computed, makeObservable, observable } from "mobx";
+import { autorun, makeAutoObservable, untracked } from "mobx";
 
 /** Тип данных, определяющий стиль проекта */
 export type ProjectStyle = {
@@ -8,34 +8,28 @@ export type ProjectStyle = {
   background: string;
 }
 
-/** Тип сырых данных проекта для сохранения во внешних хранилищах (localStorage или GoogleDrive) */
-export type ProjectRaw = {
+/** Тип данных проекта для сохранения во внешних хранилищах (localStorage или GoogleDrive) */
+export type ProjectData = {
   /** Наименование проекта */
   name: string;
 } & ProjectStyle
 
-/** Тип данных, определяющий проект в классе хранилища Projects */
-export type Project = {
+/** Структура для хранения данных проекта в классе хранилища Projects */
+export type ProjectStructure = {
   /** Число ссылок на события */
   events: number;
-} & ProjectRaw;
+} & ProjectData;
+
+/** Проект по умолчанию */
+const defaultProject: ProjectStructure = {name:'Default', background: 'lightgray', color: 'black', events: 0};
 
 /** Класс хранилища списка проектов */
-class Projects {
-  /** Список локаций */
-  list: Project[];
+export class ProjectsStore {
+  /** Список проектов, по умолчанию есть defaultProject для событий без определенного проекта */
+  list: ProjectStructure[] = [defaultProject];
 
   constructor() {
-    makeObservable(this, {
-      list: observable,
-      add: action,
-      delete: action,
-      getByName: computed,
-      getById: computed,
-      eventInc: action,
-      load: action,
-      getRawList: computed
-    });
+    makeAutoObservable(this);
   }
 
   /** Добавить проект в список */
@@ -48,43 +42,75 @@ class Projects {
   /** 
    * Удалить проект из списка 
    * Проект удаляется если отсутствуют ссылки на события
-   * */
+   */
   delete(name: string) {
     const l = this.list.find(l => l.name===name);
     if(l.events > 0) alert(`Project "${name}" has ${l.events} links to events`);
     else this.list = this.list.filter(l => l.name!==name);
   }
 
-  /** Получить проект из списка по наименованию */
+  /**
+   * Получить проект из списка по наименованию
+   * @param name - наименование проекта
+   * @returns элемент списка проектов или undefined если проект не найден
+   */
   getByName(name: string) {
     return this.list.find(l => l.name===name);
   }
 
-  /** Получить проект из списка по идентификатору */
+  /** 
+   * Получить проект из списка по идентификатору
+   * @param id - идентификатор проекта
+   * @returns элемент списка проектов или undefined если проект не найден
+   */
   getById(id: number) {
     return id<this.list.length ? this.list[id] : undefined;
   }
 
-  /** 
-   * Увеличение счетчика ссылок на события для существующего проекта или добавление проекта
-   * Предназначено для определения связанности проекта с событиями и для восстановления потерянных проектов из списка событий
-   * */
-  eventInc(name: string) {
-    const l = this.list.find(l => l.name===name);
-    if(l === undefined) this.list.push({name, events: 1, color: 'black', background: 'gray'});
-    else l.events++;
+  /**
+   * Получить идентификатор проекта и увеличить счетчик ссылок на события для существующего проекта.
+   * Если проект с указанным наименованием отсутствует, то проект добавляется в список.
+   * Обеспечивает связанность проекта с событиями и для восстановления потерянных проектов из списка событий
+   * @param name - наименование проекта
+   * @returns идентификатор проекта
+   */
+  getIdWithIncEventsCount(name: string): number {
+    if(name === '') name = 'Default';
+    let id = this.list.findIndex(p => p.name===name);
+    if(id < 0) {
+      this.list.push({name, events: 1, color: 'black', background: 'gray'});
+      id = this.list.length - 1;
+    }
+    else untracked(() => {this.list[id].events++});
+    return id;
   }
 
-  /** Загрузка списка проектов из массива, полученного из внешних хранилищ */
-  load(list: ProjectRaw[]) {
-    this.list = list.map(p => { return {...p, events: 0} });
+  /**
+   * Инициализация списка проектов из массива, полученного из внешних хранилищ
+   * @param list - список проектов из внешнего хранилища
+   */
+  init(list: ProjectData[]) {
+    this.list = [defaultProject, ...list.map(p => { return {...p, events: 0} })];
   }
 
-  /** Получить список проектов в виде списка ProjectModel[] для сохранения во внешних хранилищах */
-  getRawList(): ProjectRaw[] {
-    return this.list.map(p => { return {name: p.name, color: p.color, background: p.background} })
+  /** Получить список проектов ProjectData[] для сохранения во внешних хранилищах */
+  getList(): ProjectData[] {
+    return this.list.map(p => { return {name: p.name, color: p.color, background: p.background} }).slice(1);
   }
 }
 
 /** Синглтон-экземпляр хранилища проектов */
-export const projectsStore = new Projects;
+export const projectsStore = new ProjectsStore;
+
+/*
+spy(event => {
+  if (event.type === "action") {
+      console.log(`${event.name} with args: ${event.arguments}`)
+  }
+})
+
+autorun(()=>{
+  console.log('num', projectsStore.list.length)
+  //console.log('default links', projectsStore.list[0].events)
+})
+*/

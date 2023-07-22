@@ -1,42 +1,9 @@
 import DateTime, { timestamp } from "../../utils/datetime"
-import { IEvent, IRepeatableEvent, ISingleEvent } from "./ievents"
 import ZCron from "../../utils/zcron"
-
-/** Тип события, сохраняемого во внешнем хранилище */
-export type rawEvent = {
-  /** наименование события (обязательное поле) */
-  name: string
-  /** комментарий */
-  comment?: string
-  /** наименование проекта */
-  project?: string
-  /** строка шаблона zcrone для повторяемых событий*/
-  repeat?: string
-  /** дата события для одиночных / дата начала расписания для повторяемых событий ('YYYY.MM.DD') */
-  start: string
-  /** время начала события ('H:MM') */
-  time?: string
-  /** 
-   * Длительность события для одиночных событий ('Dd H:MM').
-   * Дата завершения события считается как end = начало_след_дня(start+time+duration).
-   * Для повторяемых - событие не должно выходить за пределы дня, иначе игнорируется.
-   * */
-  duration?: string
-  /** 
-   * Дата завершения события для одиночных событий ('YYYY.MM.DD').
-   * Событие длится до указанной даты, исключая саму дату. 
-   * Указанная дата игнорируется, если задана длительность события duration.
-   * Для повторяемых событий - конец расписания.
-   * */
-  end?: string
-  /** поступление на счет */
-  credit?: number
-  /** списание со счета */
-  debit?: number
-}
+import { EventData, IEvent, RepeatableEventStructure, SingleEventStructure } from "./eventList"
 
 /** Функция преобразования сырых данных (rawEvent) из хранилища, в структуру baseEvent */
-export function rawToEvent(e: rawEvent): IEvent {
+export function rawToEvent(e: EventData): IEvent {
 
   const start = DateTime.YYYYMMDDToTimestamp(e.start)
   const time = e.time? DateTime.HMMToSeconds(e.time) : null
@@ -67,8 +34,8 @@ export function rawToEvent(e: rawEvent): IEvent {
 }
 
 /** Функция преобразования одиночного события в формат rawEvent для сохранения в хранилище */
-export function singleEventToRaw(e: ISingleEvent): rawEvent {
-  const raw: rawEvent = {name: e.name, start: DateTime.getYYYYMMDD(e.start)}
+export function singleEventToRaw(e: SingleEventStructure): EventData {
+  const raw: EventData = {name: e.name, start: DateTime.getYYYYMMDD(e.start)}
   if(e.comment) raw.comment = e.comment
   if(e.project) raw.project = e.project
   if(e.time!==null) raw.time = DateTime.secondsToHMM(e.time)
@@ -80,8 +47,8 @@ export function singleEventToRaw(e: ISingleEvent): rawEvent {
 }
 
 /** Функция преобразования повторяемого события в формат rawEvent для сохранения в хранилище */
-export function repeatableEventToRaw(e: IRepeatableEvent): rawEvent {
-  const raw: rawEvent = {name: e.name, start: DateTime.getYYYYMMDD(e.start)}
+export function repeatableEventToRaw(e: RepeatableEventStructure): EventData {
+  const raw: EventData = {name: e.name, start: DateTime.getYYYYMMDD(e.start)}
   if(e.comment) raw.comment = e.comment
   if(e.project) raw.project = e.project
   if(e.time!==null) raw.time = DateTime.secondsToHMM(e.time)
@@ -94,6 +61,6 @@ export function repeatableEventToRaw(e: IRepeatableEvent): rawEvent {
 }
 
 export function createRawEvent(name: string, start: timestamp) {
-  const raw: rawEvent = {name, start: DateTime.getYYYYMMDD(start)}
+  const raw: EventData = {name, start: DateTime.getYYYYMMDD(start)}
   return raw
 }

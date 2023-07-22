@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
 import DateTime from '../utils/datetime'
-import { DayForecast } from '../stores/weather';
+import { ForecastData1d } from '../stores/weather';
 
 type CalendarDayProperties = {
   data: {
@@ -13,7 +13,7 @@ type CalendarDayProperties = {
     firstPlannedEventDate: number
   };
   today: boolean;
-  weather: DayForecast;
+  weather: ForecastData1d;
   onAddEvent: (timestamp: number, name: string) => void;
   onDragDrop: (e) => void;
   onDayOpen: (timestamp: number) => void;

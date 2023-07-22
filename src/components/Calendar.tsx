@@ -1,15 +1,15 @@
 import React from 'react'
 import styles from './Calendar.module.css'
-import CalendarDay from "../../components/CalendarDay"
-import EventItem from '../../components/EventItem'
-import DateTime from '../../utils/datetime'
-import {eventList} from '../../model/data'
-import Modal from '../../components/Modal'
-import Button from '../../components/Button'
-import EventForm from '../../components/EventForm'
-import { createRawEvent } from '../../model/events/rawEvents'
+import CalendarDay from "./CalendarDay"
+import EventItem from './EventItem'
+import DateTime from '../utils/datetime'
+import {eventList} from '../model/data'
+import Modal from './Modal'
+import Button from './Button'
+import EventForm from './EventForm'
+import { createRawEvent } from '../model/events/rawEvents'
 import { observer } from 'mobx-react-lite'
-import { weatherStore } from '../../stores/weather'
+import { weatherStore } from '../stores/weather'
 
 const weekBuffer = 4
 
@@ -48,7 +48,7 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
     let stack = []
     for(let j=0;j<=6;j++) {
       arrayOfDays[i].push([])
-      const weather = weatherStore.state === 'ready'? weatherStore.data.find(d => d.timestamp==currentTimestamp) : null;
+      const weather = weatherStore.state === 'ready'? weatherStore.data1d.find(d => d.timestamp==currentTimestamp) : null;
       arrayOfDays[i][j] = {
         timestamp: currentTimestamp,
         weather,

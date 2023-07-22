@@ -1,6 +1,6 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from '../../utils/zcron'
-import EventList, { SingleEvent, RepeatableEvent } from './eventList'
+import EventList, { SingleEventStructure, RepeatableEventStructure } from './eventList'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type compact = {
@@ -34,7 +34,7 @@ export type compact = {
  * Функция преобразования одиночного события в компактное представление для отображения и кэширования. 
  * Многодневные события представлены отдельными событиями на каждый день.
  */
-function singleToCompact(e: SingleEvent, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
+function singleToCompact(e: SingleEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
   const c: compact = {
     id: e.id,
     name: e.name,
@@ -56,7 +56,7 @@ function singleToCompact(e: SingleEvent, currentDate: timestamp, completed: bool
  * Функция преобразования повторяемого события в компактное представление для отображения и кэширования. 
  * Повторяемых событий нет, они представляются одиночными.
  */
-function repeatableToCompact(e: RepeatableEvent, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
+function repeatableToCompact(e: RepeatableEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
   const c: compact = {
     id: e.id,
     name: e.name,
@@ -84,7 +84,7 @@ export class CacheableEventList extends EventList {
   lastActualBalanceDate = 0
   firstActualBalanceDate = 0
 
-  constructor () {
+  constructor() {
     super()
     // Задание обработчика, вызываемого при изменении списка событий
     // Список пересортируется и сбрасывается кэш
