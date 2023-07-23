@@ -9,15 +9,24 @@ import DayList from './components/DayList'
 import Navbar from './components/Navbar'
 import styles from './App.module.css'
 import { weatherStore } from './stores/Weather/WeatherStore'
+import { projectsStore } from './stores/Projects/ProjectsStore'
 
 function saveToLocalStorage() {
-  const dataString = JSON.stringify(eventList.prepareToSave())
+  const data = {
+    projectsList: projectsStore.getList(),
+    ...eventList.prepareToSave()
+  }
+  const dataString = JSON.stringify(data)
   localStorage.setItem('data',dataString)
   console.log(dataString)
 }
 
 async function saveToGoogleDrive() {
-  RemoteStorage.saveFile('data.json',eventList.prepareToSave())
+  const data = {
+    prjectsList: projectsStore.getList(),
+    ...eventList.prepareToSave()
+  }
+  RemoteStorage.saveFile('data.json', data)
         .then(()=>console.log('save ok'))
         .catch(()=>alert('Save error'))
 }
@@ -43,6 +52,7 @@ export default function App() {
         console.log('login ok')
       }
       const obj = await RemoteStorage.loadFile('data.json')
+      projectsStore.init(obj.projectsList)
       eventList.load(obj)
       forceUpdate()
     } catch(e) {

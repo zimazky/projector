@@ -2,6 +2,7 @@ import { timestamp } from 'src/utils/datetime'
 import ZCron from 'src/utils/zcron'
 import { EventsStore } from 'src/stores/Events/EventsStore'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
+import { projectsStore } from '../Projects/ProjectsStore'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
 export class EventsCache extends EventsStore {
@@ -59,9 +60,10 @@ export class EventsCache extends EventsStore {
     const events: EventCacheStructure[] = this.planned.reduce( (a,e) => {
       if(date < e.start || date >= e.end) return a
       //const {color, background} = this.projects[e.projectId].style
-      const color = this.projects[e.projectId].color
-      const background = this.projects[e.projectId].background
-
+      //const color = this.projects[e.projectId].color
+      //const background = this.projects[e.projectId].background
+      const color = projectsStore.getById(e.projectId).color
+      const background = projectsStore.getById(e.projectId).background
       a.push(singleEventToEventCache(e, date, false, color, background))
       return a
     }, [])
@@ -70,8 +72,10 @@ export class EventsCache extends EventsStore {
       if(e.end && date+e.time >= e.end) return a
       if(ZCron.isMatch(e.repeat, e.start, date)) {
         //const {color, background} = this.projects[e.projectId].style
-        const color = this.projects[e.projectId].color
-        const background = this.projects[e.projectId].background
+        //const color = this.projects[e.projectId].color
+        //const background = this.projects[e.projectId].background
+        const color = projectsStore.getById(e.projectId).color
+        const background = projectsStore.getById(e.projectId).background
         a.push(repeatableEventToEventCache(e, date, false, color, background))
       }
       return a
@@ -79,8 +83,10 @@ export class EventsCache extends EventsStore {
     this.completed.reduce( (a,e) => {
       if(date >= e.start && date < e.end) {
         //const {color, background} = this.projects[e.projectId].style
-        const color = this.projects[e.projectId].color
-        const background = this.projects[e.projectId].background
+        //const color = this.projects[e.projectId].color
+        //const background = this.projects[e.projectId].background
+        const color = projectsStore.getById(e.projectId).color
+        const background = projectsStore.getById(e.projectId).background
         a.push(singleEventToEventCache(e,date,true, color, background))
       }
       return a

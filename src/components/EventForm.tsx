@@ -3,6 +3,7 @@ import { eventList } from '../model/data'
 import Button from './Button'
 import styles from './EventForm.module.css'
 import calculate from '../utils/calculate'
+import { projectsStore } from 'src/stores/Projects/ProjectsStore'
 
 function Parameter({name, style, children}) {
   return (
@@ -43,10 +44,12 @@ export default function EventForm({event, onExit=()=>{}}) {
 
   const isNew = event.id?false:true
 
-  var pi = eventList.projects.findIndex(p=>p.name===event.project)
+  //var pi = eventList.projects.findIndex(p=>p.name===event.project)
+  var pi = projectsStore.list.findIndex(p => p.name===event.project)
   if(pi<0) pi = 0
   const [projectId, setProjectId] = React.useState(pi)
-  const [colors, setColors] = React.useState({...eventList.projects[projectId]})
+  //const [colors, setColors] = React.useState({...eventList.projects[projectId]})
+  const [colors, setColors] = React.useState({...projectsStore.list[projectId]})
 
 
   const onCompleteHandle = (isCompleted: boolean) => {
@@ -118,21 +121,25 @@ export default function EventForm({event, onExit=()=>{}}) {
   }
 
   const onSaveColors = () => {
-    eventList.projects[projectId].background = colors.background
-    eventList.projects[projectId].color = colors.color
+    //eventList.projects[projectId].background = colors.background
+    //eventList.projects[projectId].color = colors.color
+    projectsStore.list[projectId].background = colors.background
+    projectsStore.list[projectId].color = colors.color
     eventList.clearCache()
     onExit()
   }
 
   const onChangeProject = (e)=>{
-    var pi = eventList.projects.findIndex(p=>p.name===e.target.value)
+    //var pi = eventList.projects.findIndex(p=>p.name===e.target.value)
+    var pi = projectsStore.list.findIndex(p=>p.name===e.target.value)
     if(pi<0) pi = 0
-    setColors({...eventList.projects[pi]})
+    //setColors({...eventList.projects[pi]})
+    setColors({...projectsStore.list[pi]})
     setProjectId(pi)
   }
 
   console.log('event',event)
-  console.log('eventList',eventList.planned)
+  console.log('eventList.planned',eventList.planned)
   return (
     <div className={styles.form}>
       {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
@@ -153,7 +160,9 @@ export default function EventForm({event, onExit=()=>{}}) {
       <Parameter name='project' style={{minWidth:100}}>
         <select className={styles.select} ref={projectRef} defaultValue={event.project}
         onChange={onChangeProject}>
-          {eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
+          {/*eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))*/}
+          {projectsStore.list.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
+
         </select>
       </Parameter>
       <Parameter name='background/color' style={{minWidth:60}}>

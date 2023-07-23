@@ -55,7 +55,7 @@ export class ProjectsStore {
    * @returns элемент списка проектов или undefined если проект не найден
    */
   getByName(name: string) {
-    return this.list.find(l => l.name===name);
+    return this.list.find(l => l.name===name) ?? this.list[0];
   }
 
   /** 
@@ -90,7 +90,8 @@ export class ProjectsStore {
    * @param list - список проектов из внешнего хранилища
    */
   init(list: ProjectData[]) {
-    this.list = [defaultProject, ...list.map(p => { return {...p, events: 0} })];
+    if(list===undefined) this.list = [defaultProject];
+    else this.list = [defaultProject, ...list.map(p => { return {...p, events: 0} })];
   }
 
   /** Получить список проектов ProjectData[] для сохранения во внешних хранилищах */
