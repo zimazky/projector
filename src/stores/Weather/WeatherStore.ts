@@ -87,7 +87,7 @@ class WeatherStore {
   }
 
   /** Загрузка данных прогноза погоды */
-  async loadForecast() {
+  loadForecast = async () => {
     this.state = 'pending';
     const f = await OpenWeatherMap.getForecast(this.lat, this.lon);
     runInAction(()=>{

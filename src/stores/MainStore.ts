@@ -5,6 +5,7 @@ import RemoteStorage from "src/utils/remoteStorage"
 import { EventData } from "./Events/EventData"
 import { makeAutoObservable, runInAction } from "mobx"
 import GAPI from "src/utils/gapi"
+import { timestamp } from "src/utils/datetime"
 
 /** Синглтон-экземпляр хранилища проектов */
 export const projectsStore = new ProjectsStore
@@ -22,16 +23,22 @@ type MainStoreData = {
   plannedList: EventData[]
 }
 
+type ViewMode = 'Calendar' | 'Day'
+
 /** Класс главного хранилища приложения */
 class MainStore {
   /** Признак соответствия данных хранилища данным в Localstorage */
-  isSyncWithLocalstorage: boolean
+  isSyncWithLocalstorage: boolean = false
   /** Признак соответствия данных хранилища данным в GoogleDrive */
-  isSyncWithGoogleDrive: boolean
+  isSyncWithGoogleDrive: boolean = false
   /** Признак авторизации в сервисах Google */
-  isGoogleLoggedIn: boolean
+  isGoogleLoggedIn: boolean = false
   /** Структура сигнализирующая необходимость обновления страницы */
   mustForceUpdate: {} = {}
+  /** Режим отображения */
+  viewMode: ViewMode = 'Calendar'
+  /** Метка времени текущего дня */
+  timestamp: timestamp
 
   constructor() {
     const json = localStorage.getItem('data') ?? '{}'
@@ -40,11 +47,13 @@ class MainStore {
     projectsStore.init(obj.projectsList)
     eventsStore.load(obj)
     this.isSyncWithLocalstorage = true
-    this.isSyncWithGoogleDrive = false
-    this.isGoogleLoggedIn = false
-
-
+    this.timestamp = Date.now()/1000
     makeAutoObservable(this)
+  }
+
+  changeViewMode(props : {mode?: ViewMode, timestamp?: timestamp}) {
+    if(props.mode) this.viewMode = props.mode
+    if(props.timestamp) this.timestamp = props.timestamp
   }
 
   gapiInit = () => {

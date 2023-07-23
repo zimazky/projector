@@ -13,32 +13,8 @@ function fullScreen() {
   document.getElementById('root').requestFullscreen() 
 }
 
-async function loadWeatherForecast() {
-  await weatherStore.loadForecast();
-}
-
 function app() {
   const forceUpdate = useUpdate()
-  //const [loginState, setLoginState] = React.useState(false)
-  const [state, setState] = React.useState({view:'Calendar', timestamp: Date.now()/1000})
-/*
-  async function loadFromGoogleDrive() {
-    try {
-      if(!GAPI.isLoggedIn()) {
-        console.log('logging...')
-        await GAPI.logIn()
-        console.log('login ok')
-      }
-      const obj = await RemoteStorage.loadFile('data.json')
-      projectsStore.init(obj.projectsList)
-      eventsStore.load(obj)
-      forceUpdate()
-    } catch(e) {
-      console.log('Load error', e)
-      alert('Load error')
-    }
-  }
-*/
   React.useEffect(mainStore.gapiInit, [])
   React.useEffect(forceUpdate, [mainStore.mustForceUpdate])
   
@@ -64,27 +40,12 @@ function app() {
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
       </svg>, 
-    fn: mainStore.loadFromGoogleDrive //loadFromGoogleDrive
+    fn: mainStore.loadFromGoogleDrive
   })
   if(mainStore.isGoogleLoggedIn) {
     menu.push({ name: 'Logout', fn: mainStore.logOut })
     menu.push({ name: 'Save to Google Drive', fn: mainStore.saveToGoogleDrive })
-
-    // icons.push({
-    //   name: 'Save to Google Drive', 
-    //   jsx: <svg width='100%' viewBox="0 0 76 76">
-    //     <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10-2-9-9-9 9m9 13 0-22"/>
-    //     </svg>, 
-    //   fn: saveToGoogleDrive
-    // })
-    menu.push({ name: 'Load from Google Drive', fn: mainStore.loadFromGoogleDrive }) //loadFromGoogleDrive})
-    // icons.push({
-    //   name: 'Load from Google Drive', 
-    //   jsx: <svg width='100%' viewBox="0 0 76 76">
-    //     <path fill="none" strokeLinecap="round" d="m15 44a1 1 0 010-25 11 11 0 0117-8 13 13 0 0125 4 1 1 0 013 29m-3 10a1 1 0 00-39 0 1 1 0 0039 0m-10 2-9 9-9-9m9 9 0-22"/>
-    //     </svg>, 
-    //   fn: loadFromGoogleDrive
-    // })
+    menu.push({ name: 'Load from Google Drive', fn: mainStore.loadFromGoogleDrive })
     icons.push({
       name: 'Save to Google Drive', 
       jsx: <svg width='100%' viewBox="0 0 23 23">
@@ -109,7 +70,7 @@ function app() {
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
     </svg>,
-    fn: loadWeatherForecast
+    fn: weatherStore.loadForecast
   })
   icons.push({
     name: 'Fullscreen mode', 
@@ -129,15 +90,15 @@ function app() {
   <div className={styles.page}>
     <Navbar menuItems={menu} iconItems={icons}/>
     {
-      state.view==='Calendar'?
-      <Calendar onDayOpen={t=>setState(s=>{return {...s,timestamp:t,view:'Day'}})}/>
+      mainStore.viewMode === 'Calendar' ?
+      <Calendar onDayOpen={t=>mainStore.changeViewMode({mode: 'Day', timestamp: t}) /*setState(s=>{return {...s,timestamp:t,view:'Day'}})*/ }/>
       :null
     }
     {
-      state.view==='Day'?
-      <DayList timestamp={state.timestamp} 
-      onChangeDate={t=>setState(s=>{return {...s,timestamp:t}})}
-      onCalendarOpen={()=>setState(s=>{return {...s,view:'Calendar'}})}
+      mainStore.viewMode === 'Day' ?
+      <DayList timestamp={mainStore.timestamp} 
+      onChangeDate={t=> mainStore.changeViewMode({timestamp: t}) /*setState(s=>{return {...s,timestamp:t}})*/}
+      onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})   /*setState(s=>{return {...s,view:'Calendar'}})*/ }
       />
       :null
     }
