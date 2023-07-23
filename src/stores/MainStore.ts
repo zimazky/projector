@@ -93,10 +93,14 @@ class MainStore {
     const data: MainStoreData = {
       projectsList: projectsStore.getList(), ...eventsStore.prepareToSave()
     }
-    RemoteStorage.saveFile('data.json', data)
-      .then(()=>console.log('save ok'))
-      .catch(()=>alert('Save error'))
-    runInAction(()=>{ this.isSyncWithGoogleDrive = true})
+    try {
+      await RemoteStorage.saveFile('data.json', data)
+      console.log('save ok')
+      runInAction(() => { this.isSyncWithGoogleDrive = true })
+    }
+    catch(e) {
+      alert('Save error')
+    }
   }
 
   loadFromGoogleDrive = async () => {
