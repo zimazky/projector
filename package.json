@@ -38,10 +38,5 @@
     "start": "webpack serve --mode development"
   },
   "author": "Andrey Zimatskiy <zimazky@gmail.com>",
-  "license": "ISC",
-  "babel": {
-    "presets": [
-      "@babel/preset-react"
-    ]
-  }
+  "license": "ISC"
 }

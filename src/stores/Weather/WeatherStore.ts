@@ -54,7 +54,7 @@ export type ForecastData3h = {
   emoji: string;
 }
 
-class WeatherStore {
+export class WeatherStore {
   /** 
    * Состояние хранилища
    * 'undefined' - данные не определены
@@ -155,6 +155,3 @@ function defineEmoji(clouds: number, rain: number, snow: number, isThunderstorm:
   const cloudiness = clouds<10 ? '☀️' : clouds<30 ? '🌤️' : clouds < 70 ? '⛅' : '☁️';
   return cloudiness + (rain>0 ? '💧' : '') + (snow>0 ? '❄️' : '') + (isThunderstorm ? '⚡' : '');
 }
-
-/** Синглтон-экземпляр хранилища данных прогноза погоды*/
-export const weatherStore = new WeatherStore;

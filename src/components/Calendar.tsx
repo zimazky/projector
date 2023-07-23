@@ -3,12 +3,11 @@ import styles from './Calendar.module.css'
 import CalendarDay from "./CalendarDay"
 import EventItem from './EventItem'
 import DateTime from 'src/utils/datetime'
-import {eventsCache, eventsStore} from 'src/stores/MainStore'
+import {eventsCache, eventsStore, weatherStore} from 'src/stores/MainStore'
 import Modal from './Modal'
 import Button from './Button'
 import EventForm from './EventForm'
 import { observer } from 'mobx-react-lite'
-import { weatherStore } from 'src/stores/Weather/WeatherStore'
 
 const weekBuffer = 4
 

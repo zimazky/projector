@@ -1,7 +1,7 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from 'src/utils/zcron'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
-import { eventsStore, projectsStore } from 'src/stores/MainStore'
+import { eventsStore, mainStore, projectsStore } from 'src/stores/MainStore'
 import { makeAutoObservable } from 'mobx'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
@@ -20,6 +20,7 @@ export class EventsCache {
     // Список пересортируется и сбрасывается кэш
     eventsStore.onChangeList = () => {
       eventsStore.sort()
+      mainStore.desyncWithStorages()
       this.clearCache()
     }
 

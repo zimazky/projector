@@ -1,12 +1,10 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
-import useUpdate from './hooks/useUpdate'
-import { Calendar } from './components/Calendar'
-import DayList from './components/DayList'
-import Navbar from './components/Navbar'
+import useUpdate from 'src/hooks/useUpdate'
+import { Calendar } from './Calendar'
+import DayList from './DayList'
+import Navbar from './Navbar'
 import styles from './App.module.css'
-import { weatherStore } from './stores/Weather/WeatherStore'
-import { mainStore } from './stores/MainStore'
+import { mainStore, weatherStore } from 'src/stores/MainStore'
 import { observer } from 'mobx-react-lite'
 
 function fullScreen() { 
@@ -25,7 +23,9 @@ function app() {
   icons.push({
     name: 'Save to LocalStorage', 
     jsx: <svg width='100%' viewBox="0 0 22 22">
-      <path fill="none" d="m 1 3 a 2 2 90 0 1 2 -2 l 16 0 a 2 2 90 0 1 2 2 l 0 16 a 2 2 90 0 1 -2 2 l -16 0 a 2 2 90 0 1 -2 -2 l 0 -16 m 5 -2 l 0 6 a 1 1 90 0 0 1 1 l 8 0 a 1 1 90 0 0 1 -1 l 0 -6 m -2 2 a 1 1 90 0 0 -2 0 l 0 3 a 1 1 90 0 0 2 0 l 0 -3"/>
+      <path fill="none" d="m1 3a2 2 90 012-2l16 0a2 2 90 012 2l0 16a2 2 90 01-2 2l-16 0a2 2 90 01-2-2l0-16m5-2 0 6a1 1 90 001 1l8 0a1 1 90 001-1l0-6m-2 2a1 1 90 00-2 0l0 3a1 1 90 002 0l0-3"/>
+      { mainStore.isSyncWithLocalstorage || <path fill="none" d="M17 1v8m-3-7 6 6m-6 0 6-6m-7 3h8" stroke="white" strokeWidth="5" strokeLinecap="round"></path> }
+      { mainStore.isSyncWithLocalstorage || <path fill="none" strokeWidth="1" d="M17 1v8m-3-7 6 6m-6 0 6-6m-7 3h8"></path>}
       </svg>, 
     fn: mainStore.saveToLocalStorage
   })
@@ -33,10 +33,10 @@ function app() {
   icons.push({
     name: 'Load from Google Drive', 
     jsx: <svg width='100%' viewBox="0 0 23 23">
-      <path fill="#E34133" d="M 17 3 A 10 10 8 0 0 3 5 L 6.2 7.4 A 6 6 0 0 1 14.6 6.2 Z" stroke="none"/>
-      <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
-      <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
-      <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
+      <path fill="#E34133" d="m17 3a10 10 8 00-14 2l3.2 2.4a6 6 0 018.4-1.2z" stroke="none"/>
+      <path fill="#F3B605" d="m3 5a10 10 0 000 12l3.2-2.4a6 6 0 010-7.2z" stroke="none"/>
+      <path fill="#32A350" d="m3 17a10 10 0 0014 2l-2.4-3.2a6 6 0 01-8.4-1.2z" stroke="none"/>
+      <path fill="#4081EC" d="m17 19a10 10 0 003.8-10l-9.8 0 0 4 5.655 0a6 6 0 01-2.055 2.8z" stroke="none"/>
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
       </svg>, 
@@ -49,12 +49,15 @@ function app() {
     icons.push({
       name: 'Save to Google Drive', 
       jsx: <svg width='100%' viewBox="0 0 23 23">
-        <path fill="#E34133" d="M 17 3 A 10 10 8 0 0 3 5 L 6.2 7.4 A 6 6 0 0 1 14.6 6.2 Z" stroke="none"/>
-        <path fill="#F3B605" d="M 3 5 A 10 10 0 0 0 3 17 L 6.2 14.6 A 6 6 0 0 1 6.2 7.4 Z" stroke="none"/>
-        <path fill="#32A350" d="M 3 17 A 10 10 0 0 0 17 19 L 14.6 15.8 A 6 6 0 0 1 6.2 14.6 Z" stroke="none"/>
-        <path fill="#4081EC" d="M 17 19 A 10 10 0 0 0 20.8 9 L 11 9 L 11 13 L 16.655 13 A 6 6 0 0 1 14.6 15.8 Z" stroke="none"/>
+        <path fill="#E34133" d="m17 3a10 10 8 00-14 2l3.2 2.4a6 6 0 018.4-1.2z" stroke="none"/>
+        <path fill="#F3B605" d="m3 5a10 10 0 000 12l3.2-2.4a6 6 0 010-7.2z" stroke="none"/>
+        <path fill="#32A350" d="m3 17a10 10 0 0014 2l-2.4-3.2a6 6 0 01-8.4-1.2z" stroke="none"/>
+        <path fill="#4081EC" d="m17 19a10 10 0 003.8-10l-9.8 0 0 4 5.655 0a6 6 0 01-2.055 2.8z" stroke="none"/>
         <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
         <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" strokeWidth="2"/>
+        { mainStore.isSyncWithGoogleDrive || <path fill="none" d="M17 1v8m-3-7 6 6m-6 0 6-6m-7 3h8" stroke="white" strokeWidth="5" strokeLinecap="round"></path> }
+        { mainStore.isSyncWithGoogleDrive || <path fill="none" strokeWidth="1" d="M17 1v8m-3-7 6 6m-6 0 6-6m-7 3h8"></path>}
+
         </svg>, 
       fn: mainStore.saveToGoogleDrive
     })
@@ -75,8 +78,8 @@ function app() {
   icons.push({
     name: 'Fullscreen mode', 
     jsx: <svg width='100%' viewBox="0 0 22 22">
-      <path fill="none" d="m 1 10 l 0 -7 a 2 2 0 0 1 2 -2 l 16 0 a 2 2 0 0 1 2 2 l 0 16 a 2 2 0 0 1 -2 2 l -7 0 m -1 -2 a 2 2 0 0 1 -2 2 l -6 0 a 2 2 0 0 1 -2 -2 l 0 -6 a 2 2 0 0 1 2 -2 l 6 0 a 2 2 0 0 1 2 2 l 0 6" strokeWidth="1"/>
-      <path fill="none" d="M 12 10 L 17 5 M 18 8 L 18 4 L 14 4" strokeWidth="2"/>
+      <path fill="none" d="m1 10 0-7a2 2 0 012-2l16 0a2 2 0 012 2l0 16a2 2 0 01-2 2l-7 0m-1-2a2 2 0 01-2 2l-6 0a2 2 0 01-2-2l0-6a2 2 0 012-2l6 0a2 2 0 012 2l0 6" strokeWidth="1"/>
+      <path fill="none" d="m12 10 5-5m1 3 0-4-4 0" strokeWidth="2"/>
       </svg>, 
     fn: fullScreen
   })
@@ -106,5 +109,3 @@ function app() {
   )
 }
 export const App = observer(app);
-
-ReactDOM.render(<App/>, document.getElementById('root'))

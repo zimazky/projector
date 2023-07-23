@@ -4,7 +4,7 @@ const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   mode: 'development',
-  entry: './src/App.tsx',
+  entry: './src/index.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js',

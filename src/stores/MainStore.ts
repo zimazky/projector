@@ -6,6 +6,7 @@ import { EventData } from "./Events/EventData"
 import { makeAutoObservable, runInAction } from "mobx"
 import GAPI from "src/utils/gapi"
 import { timestamp } from "src/utils/datetime"
+import { WeatherStore } from "./Weather/WeatherStore"
 
 /** Синглтон-экземпляр хранилища проектов */
 export const projectsStore = new ProjectsStore
@@ -13,8 +14,8 @@ export const projectsStore = new ProjectsStore
 /** Синглтон-экземпляр хранилища событий */
 export const eventsStore = new EventsStore
 
-/** Синглтон-экземпляр кэша событий */
-export const eventsCache = new EventsCache
+/** Синглтон-экземпляр хранилища данных прогноза погоды*/
+export const weatherStore = new WeatherStore;
 
 /** Тип данных приложения для сохранения во внешнем хранилище */
 type MainStoreData = {
@@ -54,6 +55,11 @@ class MainStore {
   changeViewMode(props : {mode?: ViewMode, timestamp?: timestamp}) {
     if(props.mode) this.viewMode = props.mode
     if(props.timestamp) this.timestamp = props.timestamp
+  }
+
+  desyncWithStorages = () => {
+    this.isSyncWithGoogleDrive = false
+    this.isSyncWithLocalstorage = false
   }
 
   gapiInit = () => {
@@ -103,7 +109,11 @@ class MainStore {
       const obj = await RemoteStorage.loadFile('data.json')
       projectsStore.init(obj.projectsList)
       eventsStore.load(obj)
-      runInAction(()=>{ this.mustForceUpdate = {} })
+      runInAction(() => {
+        this.isSyncWithLocalstorage = false
+        this.isSyncWithGoogleDrive = true
+        this.mustForceUpdate = {} 
+      })
       //forceUpdate()
       eventsCache.clearCache()
     } catch(e) {
@@ -124,3 +134,6 @@ class MainStore {
 
 /** Синглтон-экземпляр хранилища приложения */
 export const mainStore = new MainStore
+
+/** Синглтон-экземпляр кэша событий */
+export const eventsCache = new EventsCache
