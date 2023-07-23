@@ -1,4 +1,4 @@
-import { projectsStore } from 'src/stores/projects'
+import { projectsStore } from 'src/stores/Projects/ProjectsStore'
 import ZCron from 'src/utils/zcron'
 import { EventData } from './EventData'
 import { IEventStructure, RepeatableEventStructure, SingleEventStructure, eventDataToIEventStructure, repeatableEventStructureToEventData, singleEventStructureToEventData } from './EventStructure'
@@ -36,10 +36,10 @@ export class EventsStore {
     this.lastId = 1
     this.projects = [{name:'Default', background: 'lightgray', color: 'black'}, ...projectsList]
     this.completed = []
-    completedList.forEach(raw => { this.addCompletedEventStructure(eventDataToIEventStructure(raw), false) })
+    completedList.forEach(e => { this.addCompletedEventData(e, false) })
     this.planned = []
     this.plannedRepeatable = []
-    plannedList.forEach(raw=>this.addPlannedEventStructure(eventDataToIEventStructure(raw), false))
+    plannedList.forEach(e => this.addPlannedEventData(e, false))
     this.onChangeList()
   }
 
@@ -99,6 +99,10 @@ export class EventsStore {
       debit: e.debit,
     })
     if(isFinal) this.onChangeList()
+  }
+
+  addCompletedEventData(e: EventData, isFinal: boolean = true) {
+    this.addCompletedEventStructure(eventDataToIEventStructure(e), isFinal)
   }
 
   /**
@@ -169,20 +173,20 @@ export class EventsStore {
    * текущее событие.
    * @param id Идентификатор события
    * @param currentdate Текущая дата для уточнения события среди повторяемых
-   * @param raw Модифицированное событие
+   * @param e Модифицированное событие
    */
-  completeEvent(id: number, currentdate: timestamp, raw: EventData) {
+  completeEvent(id: number, currentdate: timestamp, e: EventData) {
     {
-      let event = this.planned.find(e=>e.id===id)
+      let event = this.planned.find(e => e.id===id)
       if(event !== undefined) {
-        this.addCompletedEventStructure({...event, ...eventDataToIEventStructure(raw)}, false)
+        this.addCompletedEventStructure({...event, ...eventDataToIEventStructure(e)}, false)
         this.deleteEvent(event.id)
         return
       }
     }
-    let revent = this.plannedRepeatable.find(e=>e.id===id)
+    let revent = this.plannedRepeatable.find(e => e.id===id)
     if(revent !== undefined) {
-      this.addCompletedEventStructure({...eventDataToIEventStructure(raw), start: currentdate, end: currentdate + 86400}, false)
+      this.addCompletedEventStructure({...eventDataToIEventStructure(e), start: currentdate, end: currentdate + 86400}, false)
       // При выполнении одного из периодических событий перед ним могли остаться незавершенные события.
       // В этом случае добавляем еще одно периодическое событие, задающий шаблон для этих незавершенных 
       // событий в предшествующем интервале
@@ -222,26 +226,26 @@ export class EventsStore {
   /**
    * Изменение параметров события
    * @param id Идентификатор события
-   * @param raw Модифицированное событие в текстовом представлении rawEvent
+   * @param e Модифицированное событие в текстовом представлении rawEvent
    */
-  updateEvent(id: number, raw: EventData) {
+  updateEvent(id: number, e: EventData) {
     {
-      let event = this.completed.find(e=>e.id===id)
+      let event = this.completed.find(e => e.id===id)
       if(event !== undefined) {
-        this.addCompletedEventStructure(eventDataToIEventStructure(raw), false)
+        this.addCompletedEventData(e, false)
         this.deleteEvent(id)
         return
       }
-      event = this.planned.find(e=>e.id===id)
+      event = this.planned.find(e => e.id===id)
       if(event !== undefined) {
-        this.addPlannedEventStructure(eventDataToIEventStructure(raw), false)
+        this.addPlannedEventData(e, false)
         this.deleteEvent(id)
         return
       }
     }
     let revent = this.plannedRepeatable.find(e=>e.id===id)
     if(revent !== undefined) {
-      this.addPlannedEventStructure(eventDataToIEventStructure(raw), false)
+      this.addPlannedEventData(e, false)
       this.deleteEvent(id)
       return
     }

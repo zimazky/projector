@@ -8,7 +8,7 @@ import Modal from './Modal'
 import Button from './Button'
 import EventForm from './EventForm'
 import { observer } from 'mobx-react-lite'
-import { weatherStore } from 'src/stores/weather'
+import { weatherStore } from 'src/stores/Weather/WeatherStore'
 
 const weekBuffer = 4
 

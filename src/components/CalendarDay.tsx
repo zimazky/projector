@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
-import DateTime from '../utils/datetime'
-import { ForecastData1d } from '../stores/weather';
+import DateTime from 'src/utils/datetime'
+import { ForecastData1d } from 'src/stores/Weather/WeatherStore';
 
 type CalendarDayProperties = {
   data: {
