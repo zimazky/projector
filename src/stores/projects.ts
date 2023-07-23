@@ -1,4 +1,4 @@
-import { autorun, makeAutoObservable, untracked } from "mobx";
+import { makeAutoObservable } from "mobx";
 
 /** Тип данных, определяющий стиль проекта */
 export type ProjectStyle = {
@@ -81,7 +81,7 @@ export class ProjectsStore {
       this.list.push({name, events: 1, color: 'black', background: 'gray'});
       id = this.list.length - 1;
     }
-    else untracked(() => {this.list[id].events++});
+    else this.list[id].events++;
     return id;
   }
 

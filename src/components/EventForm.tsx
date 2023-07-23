@@ -112,7 +112,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       credit: calculate(creditRef.current.innerText),
       debit: calculate(debitRef.current.innerText)
     }
-    eventList.addPlannedRawEvent(raw)
+    eventList.addPlannedEventData(raw)
     eventList.clearCache()
     onExit()
   }

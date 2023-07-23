@@ -1,4 +1,4 @@
-import { action, computed, makeObservable, observable } from "mobx";
+import { makeAutoObservable } from "mobx";
 
 /** Тип данных, определяющий локацию погоды */
 export type WeatherLocation = {
@@ -11,18 +11,12 @@ export type WeatherLocation = {
 }
 
 /** Класс хранилища списка локаций погоды */
-class Locations {
+class LocationsStore {
   /** Список локаций */
   list: WeatherLocation[];
 
   constructor() {
-    makeObservable(this, {
-      list: observable,
-      add: action,
-      delete: action,
-      getByName: computed,
-      getById: computed
-    });
+    makeAutoObservable(this);
   }
 
   /** Добавить локацию в список */
@@ -54,4 +48,4 @@ class Locations {
 }
 
 /** Синглтон-экземпляр хранилища локаций для отслеживания погоды */
-export const locationsStore = new Locations;
+export const locationsStore = new LocationsStore;

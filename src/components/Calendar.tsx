@@ -2,14 +2,13 @@ import React from 'react'
 import styles from './Calendar.module.css'
 import CalendarDay from "./CalendarDay"
 import EventItem from './EventItem'
-import DateTime from '../utils/datetime'
-import {eventList} from '../model/data'
+import DateTime from 'src/utils/datetime'
+import {eventList} from 'src/model/data'
 import Modal from './Modal'
 import Button from './Button'
 import EventForm from './EventForm'
-import { createRawEvent } from '../model/events/rawEvents'
 import { observer } from 'mobx-react-lite'
-import { weatherStore } from '../stores/weather'
+import { weatherStore } from 'src/stores/weather'
 
 const weekBuffer = 4
 
@@ -80,13 +79,13 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
   // Методы открывания формы
   const openNewEventForm = (timestamp, name) => {
     if(name==='') return
-    setModalState(createRawEvent(name, timestamp))
+    setModalState({name, start: DateTime.getYYYYMMDD(timestamp)})
     setModal(true)
   }
 
   const openEventForm = compactEvent => {
     const {id, completed, start} = compactEvent
-    const s = eventList.getRawEvent(id)
+    const s = eventList.getEventData(id)
     setModalState({...s, completed, timestamp:start, id})
     setModal(true)
   }

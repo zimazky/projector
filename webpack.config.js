@@ -11,6 +11,9 @@ module.exports = {
 	  publicPath: '/dist/'
   },
   resolve: {
+    alias: {
+      src: path.resolve(__dirname, 'src'),
+    },
     extensions: ['.ts', '.tsx', '.js'],
   },
   module: {

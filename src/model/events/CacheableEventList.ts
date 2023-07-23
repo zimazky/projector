@@ -1,6 +1,6 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from '../../utils/zcron'
-import EventList, { SingleEventStructure, RepeatableEventStructure } from './eventList'
+import { EventsStore, SingleEventStructure, RepeatableEventStructure } from './eventList'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type compact = {
@@ -75,7 +75,7 @@ function repeatableToCompact(e: RepeatableEventStructure, currentDate: timestamp
 }
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
-export class CacheableEventList extends EventList {
+export class CacheableEventList extends EventsStore {
 
   private cachedEvents = []
   private cachedActualBalance = []
