@@ -1,81 +1,10 @@
 import { timestamp } from 'src/utils/datetime'
-import ZCron from '../../utils/zcron'
-import { EventsStore, SingleEventStructure, RepeatableEventStructure } from './eventList'
-
-/** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
-export type compact = {
-  /** идентификатор */
-  id: number
-  /** наименование */
-  name: string
-  /** цвет фона */
-  background: string
-  /** цвет текста */
-  color: string
-  /** начальная дата события / текущая дата для повторяемых событий (unixtime) */
-  start: timestamp
-  /** время события в секундах с начала дня */
-  time: number | null
-  /** дата завершения события */
-  end: timestamp
-  /** длительность в днях, начиная с текущей даты / 1 для повторяемых событий */
-  days: number
-  /** поступление средств */
-  credit: number
-  /** списание средств */
-  debit: number
-  /** Признак завершенности события */
-  completed: boolean
-  /** Признак повторяемого события */
-  repeatable: boolean
-}
-
-/** 
- * Функция преобразования одиночного события в компактное представление для отображения и кэширования. 
- * Многодневные события представлены отдельными событиями на каждый день.
- */
-function singleToCompact(e: SingleEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
-  const c: compact = {
-    id: e.id,
-    name: e.name,
-    background: background,
-    color: color,
-    start: e.start,
-    time: e.time,
-    end: e.end,
-    days: Math.ceil((e.end-currentDate)/86400),
-    credit: e.credit,
-    debit: e.debit,
-    completed: completed,
-    repeatable: false
-  }
-  return c
-}
-
-/** 
- * Функция преобразования повторяемого события в компактное представление для отображения и кэширования. 
- * Повторяемых событий нет, они представляются одиночными.
- */
-function repeatableToCompact(e: RepeatableEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): compact {
-  const c: compact = {
-    id: e.id,
-    name: e.name,
-    background: background,
-    color: color,
-    start: currentDate,
-    time: e.time,
-    end: currentDate + 86400,
-    days: 1,
-    credit: e.credit,
-    debit: e.debit,
-    completed: completed,
-    repeatable: true
-  }
-  return c
-}
+import ZCron from 'src/utils/zcron'
+import { EventsStore } from 'src/stores/Events/EventsStore'
+import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
-export class CacheableEventList extends EventsStore {
+export class EventsCache extends EventsStore {
 
   private cachedEvents = []
   private cachedActualBalance = []
@@ -125,15 +54,15 @@ export class CacheableEventList extends EventsStore {
  
   // список всех событий за день, отсортированных для отрисовки
   // данные кэшируются
-  getEvents(date: timestamp): compact[] {
+  getEvents(date: timestamp): EventCacheStructure[] {
     if(this.cachedEvents[date] !== undefined) return this.cachedEvents[date]
-    const events: compact[] = this.planned.reduce( (a,e) => {
+    const events: EventCacheStructure[] = this.planned.reduce( (a,e) => {
       if(date < e.start || date >= e.end) return a
       //const {color, background} = this.projects[e.projectId].style
       const color = this.projects[e.projectId].color
       const background = this.projects[e.projectId].background
 
-      a.push(singleToCompact(e, date, false, color, background))
+      a.push(singleEventToEventCache(e, date, false, color, background))
       return a
     }, [])
     this.plannedRepeatable.reduce( (a,e) => {
@@ -143,7 +72,7 @@ export class CacheableEventList extends EventsStore {
         //const {color, background} = this.projects[e.projectId].style
         const color = this.projects[e.projectId].color
         const background = this.projects[e.projectId].background
-        a.push(repeatableToCompact(e, date, false, color, background))
+        a.push(repeatableEventToEventCache(e, date, false, color, background))
       }
       return a
     }, events)
@@ -152,7 +81,7 @@ export class CacheableEventList extends EventsStore {
         //const {color, background} = this.projects[e.projectId].style
         const color = this.projects[e.projectId].color
         const background = this.projects[e.projectId].background
-        a.push(singleToCompact(e,date,true, color, background))
+        a.push(singleEventToEventCache(e,date,true, color, background))
       }
       return a
     }, events)
@@ -170,14 +99,14 @@ export class CacheableEventList extends EventsStore {
     return events
   }
 
-  static placeholder: compact = {
+  static placeholder: EventCacheStructure = {
     id: -1, name: '', background: '', color: '', 
     start: 0, time: null, end: 0, days: 1, credit: 0, debit: 0, completed: false, repeatable: false
   }
   // Список событий за день с плейсхолдерами ({id:-1}), за исключением соответствующих id из стека skip
   // Может использоваться для создания структуры для рендеринга в календаре с многодневными событиями
   // Стек skip обновляется для возможности использования в цепочке обработок
-  getEventsWithPlaceholders(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: compact[]=[]) {
+  getEventsWithPlaceholders(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]) {
     // очистка стека
     while(skip.length>0) {
       // в стеке skip последний элемент может блокировать очищение стека если его действие не завершено
@@ -186,7 +115,7 @@ export class CacheableEventList extends EventsStore {
       skip.pop()
     }
     // добавление плейсхолдеров
-    skip.forEach( _=>events.push(CacheableEventList.placeholder) )
+    skip.forEach( _=>events.push(EventsCache.placeholder) )
 
     this.getEvents(date).reduce((a,e)=>{
       if(skip.some(s=>e.id===s.id)) return a
@@ -200,7 +129,7 @@ export class CacheableEventList extends EventsStore {
   // Список планируемых событий, за исключением id из стека skip
   // Может использоваться для создания списка, исключая повторы многодневных событий
   // стек skip обновляется для возможности использования в цепочке обработок
-  getPlannedEventsFilteredBySkip(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: compact[]=[]) {
+  getPlannedEventsFilteredBySkip(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]) {
     while(skip.length>0) {
       if(date < skip[skip.length-1].end) break
       skip.pop()
@@ -215,7 +144,7 @@ export class CacheableEventList extends EventsStore {
   // Список планируемых событий за интервал времени (begin,end)
   getPlannedEventsInInterval(begin: timestamp, end: timestamp) {
     const skip: {id: number, end: timestamp}[] = []
-    const events: compact[] = []
+    const events: EventCacheStructure[] = []
     for(let t=begin; t<end; t+=86400) this.getPlannedEventsFilteredBySkip(t, skip, events)
     return events
   }
