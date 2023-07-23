@@ -30,6 +30,8 @@ class MainStore {
   isSyncWithGoogleDrive: boolean
   /** Признак авторизации в сервисах Google */
   isGoogleLoggedIn: boolean
+  /** Структура сигнализирующая необходимость обновления страницы */
+  mustForceUpdate: {} = {}
 
   constructor() {
     const json = localStorage.getItem('data') ?? '{}'
@@ -40,6 +42,7 @@ class MainStore {
     this.isSyncWithLocalstorage = true
     this.isSyncWithGoogleDrive = false
     this.isGoogleLoggedIn = false
+
 
     makeAutoObservable(this)
   }
@@ -91,7 +94,9 @@ class MainStore {
       const obj = await RemoteStorage.loadFile('data.json')
       projectsStore.init(obj.projectsList)
       eventsStore.load(obj)
+      runInAction(()=>{ this.mustForceUpdate = {} })
       //forceUpdate()
+      eventsCache.clearCache()
     } catch(e) {
       console.log('Load error', e)
       alert('Load error')

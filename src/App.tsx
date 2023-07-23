@@ -1,14 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import GAPI from './utils/gapi'
-import RemoteStorage from './utils/remoteStorage'
-import useUpdate from './hooks/useUpdate.js'
+import useUpdate from './hooks/useUpdate'
 import { Calendar } from './components/Calendar'
 import DayList from './components/DayList'
 import Navbar from './components/Navbar'
 import styles from './App.module.css'
 import { weatherStore } from './stores/Weather/WeatherStore'
-import { eventsStore, mainStore, projectsStore } from './stores/MainStore'
+import { mainStore } from './stores/MainStore'
 import { observer } from 'mobx-react-lite'
 
 function fullScreen() { 
@@ -23,7 +21,7 @@ function app() {
   const forceUpdate = useUpdate()
   //const [loginState, setLoginState] = React.useState(false)
   const [state, setState] = React.useState({view:'Calendar', timestamp: Date.now()/1000})
-
+/*
   async function loadFromGoogleDrive() {
     try {
       if(!GAPI.isLoggedIn()) {
@@ -40,8 +38,9 @@ function app() {
       alert('Load error')
     }
   }
-  
+*/
   React.useEffect(mainStore.gapiInit, [])
+  React.useEffect(forceUpdate, [mainStore.mustForceUpdate])
   
   let menu = []
   let icons = []
@@ -65,7 +64,7 @@ function app() {
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
       <path fill="none" d="m21 16-3 3-3-3m3 2 0-8m3 12-6 0" strokeWidth="2"/>
       </svg>, 
-    fn: loadFromGoogleDrive
+    fn: mainStore.loadFromGoogleDrive //loadFromGoogleDrive
   })
   if(mainStore.isGoogleLoggedIn) {
     menu.push({ name: 'Logout', fn: mainStore.logOut })
@@ -78,7 +77,7 @@ function app() {
     //     </svg>, 
     //   fn: saveToGoogleDrive
     // })
-    menu.push({ name: 'Load from Google Drive', fn: loadFromGoogleDrive})
+    menu.push({ name: 'Load from Google Drive', fn: mainStore.loadFromGoogleDrive }) //loadFromGoogleDrive})
     // icons.push({
     //   name: 'Load from Google Drive', 
     //   jsx: <svg width='100%' viewBox="0 0 76 76">
