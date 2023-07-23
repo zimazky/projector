@@ -1,8 +1,8 @@
-import { projectsStore } from 'src/stores/Projects/ProjectsStore'
 import ZCron from 'src/utils/zcron'
 import { EventData } from './EventData'
 import { IEventStructure, RepeatableEventStructure, SingleEventStructure, eventDataToIEventStructure, repeatableEventStructureToEventData, singleEventStructureToEventData } from './EventStructure'
 import { timestamp } from 'src/utils/datetime'
+import { projectsStore } from 'src/stores/MainStore'
 
 /** 
  * Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме.
@@ -22,7 +22,7 @@ export class EventsStore {
   onChangeList = () => {}
 
   /** Загрузка данных со сбросом предшествующих данных */
-  load({completedList=[], plannedList=[], projectsList=[]}) {
+  load({completedList=[], plannedList=[]}) {
     this.lastId = 1
     this.completed = []
     completedList.forEach(e => { this.addCompletedEventData(e, false) })
@@ -340,7 +340,26 @@ export class EventsStore {
       return
     }
   }
+
+  /** 
+   * Функция предварительной сортировки событий,
+   * упорядочивает для более быстрой сортировки в методе getEvents
+   */
+  sort() {
+    // в начало массива поднимаются события с самой ранней датой начала start
+    // при одинаковой дате начала первыми идут задачи с наибольшей длительностью в днях days
+    this.completed.sort((a,b)=>{
+      const d = a.start-b.start
+      return d === 0 ? b.days-a.days : d
+    })
+    this.planned.sort((a,b)=>{
+      const d = a.start-b.start
+      return d === 0 ? b.days-a.days : d
+    })
+    // повторяемые сортируются по времени
+    this.plannedRepeatable.sort((a,b)=>a.time-b.time)
+  }
 }
 
 /** Синглтон-экземпляр хранилища событий */
-export const eventsStore = new EventsStore;
+//export const eventsStore = new EventsStore;

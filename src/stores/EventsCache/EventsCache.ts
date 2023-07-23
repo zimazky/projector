@@ -1,11 +1,10 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from 'src/utils/zcron'
-import { EventsStore } from 'src/stores/Events/EventsStore'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
-import { projectsStore } from '../Projects/ProjectsStore'
+import { eventsStore, projectsStore } from 'src/stores/MainStore'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
-export class EventsCache extends EventsStore {
+export class EventsCache {
 
   private cachedEvents = []
   private cachedActualBalance = []
@@ -15,32 +14,13 @@ export class EventsCache extends EventsStore {
   firstActualBalanceDate = 0
 
   constructor() {
-    super()
+    //super()
     // Задание обработчика, вызываемого при изменении списка событий
     // Список пересортируется и сбрасывается кэш
-    this.onChangeList = ()=>{
-      this.sort()
+    eventsStore.onChangeList = () => {
+      eventsStore.sort()
       this.clearCache()
     }
-  }
-
-  /** 
-   * Функция предварительной сортировки событий,
-   * упорядочивает для более быстрой сортировки в методе getEvents
-   */
-  sort() {
-    // в начало массива поднимаются события с самой ранней датой начала start
-    // при одинаковой дате начала первыми идут задачи с наибольшей длительностью в днях days
-    this.completed.sort((a,b)=>{
-      const d = a.start-b.start
-      return d === 0 ? b.days-a.days : d
-    })
-    this.planned.sort((a,b)=>{
-      const d = a.start-b.start
-      return d === 0 ? b.days-a.days : d
-    })
-    // повторяемые сортируются по времени
-    this.plannedRepeatable.sort((a,b)=>a.time-b.time)
   }
 
   /** Очищение кэша */
@@ -49,15 +29,15 @@ export class EventsCache extends EventsStore {
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
-    this.lastActualBalanceDate = this.completed.length? this.completed[this.completed.length-1].start : 0
-    this.firstActualBalanceDate = this.completed.length? this.completed[0].start : 0
+    this.lastActualBalanceDate = eventsStore.completed.length? eventsStore.completed[eventsStore.completed.length-1].start : 0
+    this.firstActualBalanceDate = eventsStore.completed.length? eventsStore.completed[0].start : 0
   }
  
   // список всех событий за день, отсортированных для отрисовки
   // данные кэшируются
   getEvents(date: timestamp): EventCacheStructure[] {
     if(this.cachedEvents[date] !== undefined) return this.cachedEvents[date]
-    const events: EventCacheStructure[] = this.planned.reduce( (a,e) => {
+    const events: EventCacheStructure[] = eventsStore.planned.reduce( (a,e) => {
       if(date < e.start || date >= e.end) return a
       //const {color, background} = this.projects[e.projectId].style
       //const color = this.projects[e.projectId].color
@@ -67,7 +47,7 @@ export class EventsCache extends EventsStore {
       a.push(singleEventToEventCache(e, date, false, color, background))
       return a
     }, [])
-    this.plannedRepeatable.reduce( (a,e) => {
+    eventsStore.plannedRepeatable.reduce( (a,e) => {
       if(date < e.start) return a
       if(e.end && date+e.time >= e.end) return a
       if(ZCron.isMatch(e.repeat, e.start, date)) {
@@ -80,7 +60,7 @@ export class EventsCache extends EventsStore {
       }
       return a
     }, events)
-    this.completed.reduce( (a,e) => {
+    eventsStore.completed.reduce( (a,e) => {
       if(date >= e.start && date < e.end) {
         //const {color, background} = this.projects[e.projectId].style
         //const color = this.projects[e.projectId].color
@@ -157,7 +137,7 @@ export class EventsCache extends EventsStore {
 
   // Вычисление фактического баланса на момент последнего выполненного события
   calculateActualBalance() {
-    return this.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
+    return eventsStore.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
   }
   
   // Фактический баланс на начало дня
@@ -165,7 +145,7 @@ export class EventsCache extends EventsStore {
     if(date < this.firstActualBalanceDate) return 0
     if(date > this.lastActualBalanceDate) return this.lastActualBalance
     if(this.cachedActualBalance[date] !== undefined) return this.cachedActualBalance[date]
-    const balance = this.completed.reduce((a,e)=>{
+    const balance = eventsStore.completed.reduce((a,e)=>{
       if(date > e.start+e.time) a += e.credit - e.debit
       return a
     }, 0)
@@ -191,9 +171,9 @@ export class EventsCache extends EventsStore {
 
 
   getFirstPlannedEventDate() {
-    if(this.planned.length === 0) return 0
-    let first = this.planned[0].start
-    this.plannedRepeatable.forEach(e=>{
+    if(eventsStore.planned.length === 0) return 0
+    let first = eventsStore.planned[0].start
+    eventsStore.plannedRepeatable.forEach(e=>{
       if(e.start<first) first = e.start
     })
     return first

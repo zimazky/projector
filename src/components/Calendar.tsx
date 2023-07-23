@@ -3,7 +3,7 @@ import styles from './Calendar.module.css'
 import CalendarDay from "./CalendarDay"
 import EventItem from './EventItem'
 import DateTime from 'src/utils/datetime'
-import {eventList} from 'src/model/data'
+import {eventsCache, eventsStore} from 'src/stores/MainStore'
 import Modal from './Modal'
 import Button from './Button'
 import EventForm from './EventForm'
@@ -51,12 +51,12 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
       arrayOfDays[i][j] = {
         timestamp: currentTimestamp,
         weather,
-        tasks: eventList.getEventsWithPlaceholders(currentTimestamp,stack),
-        actualBalance: eventList.getActualBalance(currentTimestamp),
-        lastActualBalanceDate: eventList.lastActualBalanceDate,
-        plannedBalance: eventList.getPlannedBalance(currentTimestamp),
-        plannedBalanceChange: eventList.getPlannedBalanceChange(currentTimestamp),
-        firstPlannedEventDate: eventList.getFirstPlannedEventDate()
+        tasks: eventsCache.getEventsWithPlaceholders(currentTimestamp,stack),
+        actualBalance: eventsCache.getActualBalance(currentTimestamp),
+        lastActualBalanceDate: eventsCache.lastActualBalanceDate,
+        plannedBalance: eventsCache.getPlannedBalance(currentTimestamp),
+        plannedBalanceChange: eventsCache.getPlannedBalanceChange(currentTimestamp),
+        firstPlannedEventDate: eventsCache.getFirstPlannedEventDate()
       }
       currentTimestamp += 86400
     }
@@ -85,7 +85,7 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
 
   const openEventForm = compactEvent => {
     const {id, completed, start} = compactEvent
-    const s = eventList.getEventData(id)
+    const s = eventsStore.getEventData(id)
     setModalState({...s, completed, timestamp:start, id})
     setModal(true)
   }
@@ -95,8 +95,8 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
   const dragDrop = (e, timestamp) => {
     e.preventDefault()
     const c = JSON.parse(e.dataTransfer.getData('event_item'))
-    if(e.ctrlKey) eventList.copyToDate(c.id,timestamp)
-    else eventList.shiftToDate(c.id,timestamp,c.start)
+    if(e.ctrlKey) eventsStore.copyToDate(c.id,timestamp)
+    else eventsStore.shiftToDate(c.id,timestamp,c.start)
     setModalState(s=>({...s}))
   }
 

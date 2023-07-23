@@ -101,7 +101,7 @@ export class ProjectsStore {
 }
 
 /** Синглтон-экземпляр хранилища проектов */
-export const projectsStore = new ProjectsStore;
+//export const projectsStore = new ProjectsStore;
 
 /*
 spy(event => {

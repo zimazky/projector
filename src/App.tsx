@@ -2,34 +2,14 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import GAPI from './utils/gapi'
 import RemoteStorage from './utils/remoteStorage'
-import {eventList} from './model/data'
 import useUpdate from './hooks/useUpdate.js'
 import { Calendar } from './components/Calendar'
 import DayList from './components/DayList'
 import Navbar from './components/Navbar'
 import styles from './App.module.css'
 import { weatherStore } from './stores/Weather/WeatherStore'
-import { projectsStore } from './stores/Projects/ProjectsStore'
-
-function saveToLocalStorage() {
-  const data = {
-    projectsList: projectsStore.getList(),
-    ...eventList.prepareToSave()
-  }
-  const dataString = JSON.stringify(data)
-  localStorage.setItem('data',dataString)
-  console.log(dataString)
-}
-
-async function saveToGoogleDrive() {
-  const data = {
-    prjectsList: projectsStore.getList(),
-    ...eventList.prepareToSave()
-  }
-  RemoteStorage.saveFile('data.json', data)
-        .then(()=>console.log('save ok'))
-        .catch(()=>alert('Save error'))
-}
+import { eventsStore, mainStore, projectsStore } from './stores/MainStore'
+import { observer } from 'mobx-react-lite'
 
 function fullScreen() { 
   document.getElementById('root').requestFullscreen() 
@@ -39,9 +19,9 @@ async function loadWeatherForecast() {
   await weatherStore.loadForecast();
 }
 
-export default function App() {
+function app() {
   const forceUpdate = useUpdate()
-  const [loginState, setLoginState] = React.useState(false)
+  //const [loginState, setLoginState] = React.useState(false)
   const [state, setState] = React.useState({view:'Calendar', timestamp: Date.now()/1000})
 
   async function loadFromGoogleDrive() {
@@ -53,7 +33,7 @@ export default function App() {
       }
       const obj = await RemoteStorage.loadFile('data.json')
       projectsStore.init(obj.projectsList)
-      eventList.load(obj)
+      eventsStore.load(obj)
       forceUpdate()
     } catch(e) {
       console.log('Load error', e)
@@ -61,31 +41,18 @@ export default function App() {
     }
   }
   
-  React.useEffect(()=>{
-    GAPI.init({
-      onSuccess: ()=>{
-        setLoginState(GAPI.isLoggedIn())
-      },
-      onSignIn: ()=>{
-        setLoginState(GAPI.isLoggedIn())
-        console.log('onSignIn',GAPI.isLoggedIn())
-      },
-      onExpiredToken: ()=>{
-        setLoginState(false)
-      }
-    })
-  },[])
+  React.useEffect(mainStore.gapiInit, [])
   
   let menu = []
   let icons = []
 
-  menu.push({ name: 'Save to LocalStorage', fn: saveToLocalStorage})
+  menu.push({ name: 'Save to LocalStorage', fn: mainStore.saveToLocalStorage })
   icons.push({
     name: 'Save to LocalStorage', 
     jsx: <svg width='100%' viewBox="0 0 22 22">
       <path fill="none" d="m 1 3 a 2 2 90 0 1 2 -2 l 16 0 a 2 2 90 0 1 2 2 l 0 16 a 2 2 90 0 1 -2 2 l -16 0 a 2 2 90 0 1 -2 -2 l 0 -16 m 5 -2 l 0 6 a 1 1 90 0 0 1 1 l 8 0 a 1 1 90 0 0 1 -1 l 0 -6 m -2 2 a 1 1 90 0 0 -2 0 l 0 3 a 1 1 90 0 0 2 0 l 0 -3"/>
       </svg>, 
-    fn: saveToLocalStorage
+    fn: mainStore.saveToLocalStorage
   })
 
   icons.push({
@@ -100,12 +67,9 @@ export default function App() {
       </svg>, 
     fn: loadFromGoogleDrive
   })
-  if(loginState) {
-    menu.push({ name: 'Logout', fn: ()=>{
-      GAPI.logOut()
-      setLoginState(false)
-    }})
-    menu.push({ name: 'Save to Google Drive', fn: saveToGoogleDrive})
+  if(mainStore.isGoogleLoggedIn) {
+    menu.push({ name: 'Logout', fn: mainStore.logOut })
+    menu.push({ name: 'Save to Google Drive', fn: mainStore.saveToGoogleDrive })
 
     // icons.push({
     //   name: 'Save to Google Drive', 
@@ -132,13 +96,11 @@ export default function App() {
         <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" stroke="white" strokeWidth="5" strokeLinecap="round"/>
         <path fill="none" d="m21 15-3-3-3 3m3 5 0-7m3 9-6 0" strokeWidth="2"/>
         </svg>, 
-      fn: saveToGoogleDrive
+      fn: mainStore.saveToGoogleDrive
     })
   }
   else {
-    menu.push({ name: 'Login', fn: ()=>{GAPI.logIn()}})
-
-
+    menu.push({ name: 'Login', fn: mainStore.logIn })
   }
   icons.push({
     name: 'Load weather forecast',
@@ -183,5 +145,6 @@ export default function App() {
   </div>
   )
 }
+export const App = observer(app);
 
 ReactDOM.render(<App/>, document.getElementById('root'))

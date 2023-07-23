@@ -1,9 +1,8 @@
 import React from 'react'
-import { eventList } from '../model/data'
+import { eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
 import Button from './Button'
 import styles from './EventForm.module.css'
-import calculate from '../utils/calculate'
-import { projectsStore } from 'src/stores/Projects/ProjectsStore'
+import calculate from 'src/utils/calculate'
 
 function Parameter({name, style, children}) {
   return (
@@ -64,13 +63,13 @@ export default function EventForm({event, onExit=()=>{}}) {
       credit: calculate(creditRef.current.innerText),
       debit: calculate(debitRef.current.innerText)
     }
-    if(isCompleted) eventList.uncompleteEvent(event.id, raw)
-    else eventList.completeEvent(event.id, event.timestamp, raw)
+    if(isCompleted) eventsStore.uncompleteEvent(event.id, raw)
+    else eventsStore.completeEvent(event.id, event.timestamp, raw)
     onExit()
   }
 
   const onDeleteHandle = id => {
-    eventList.deleteEvent(id)
+    eventsStore.deleteEvent(id)
     onExit()
   }
 
@@ -88,7 +87,7 @@ export default function EventForm({event, onExit=()=>{}}) {
     const debit = calculate(debitRef.current.innerText)
 
     const raw = {name, comment, project, repeat, start, end, time, duration, credit, debit}
-    eventList.updateEvent(id, raw)
+    eventsStore.updateEvent(id, raw)
     onExit()
   }
 
@@ -115,8 +114,8 @@ export default function EventForm({event, onExit=()=>{}}) {
       credit: calculate(creditRef.current.innerText),
       debit: calculate(debitRef.current.innerText)
     }
-    eventList.addPlannedEventData(raw)
-    eventList.clearCache()
+    eventsStore.addPlannedEventData(raw)
+    eventsCache.clearCache()
     onExit()
   }
 
@@ -125,7 +124,7 @@ export default function EventForm({event, onExit=()=>{}}) {
     //eventList.projects[projectId].color = colors.color
     projectsStore.list[projectId].background = colors.background
     projectsStore.list[projectId].color = colors.color
-    eventList.clearCache()
+    eventsCache.clearCache()
     onExit()
   }
 
@@ -139,7 +138,7 @@ export default function EventForm({event, onExit=()=>{}}) {
   }
 
   console.log('event',event)
-  console.log('eventList.planned',eventList.planned)
+  console.log('eventList.planned',eventsStore.planned)
   return (
     <div className={styles.form}>
       {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}

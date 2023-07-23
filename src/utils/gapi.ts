@@ -91,7 +91,7 @@ export default class GAPI {
     }
   }
 
-  /** Функция-промис ауторизации в системе Google, делает запрос токена ауторизации*/
+  /** Функция-промис авторизации в системе Google, делает запрос токена авторизации*/
   static logIn(prompt = '') {
     return new Promise((resolve, reject)=>{
       GAPI.tokenClient?.requestAccessToken({prompt})

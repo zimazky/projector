@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './DayList.module.css'
 import DateTime from '../utils/datetime'
-import {eventList} from '../model/data'
+import {eventsCache} from '../stores/MainStore'
 
 function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
   const {name,completed,background,color,repeatable,start,end,time,credit,debit} = event
@@ -26,11 +26,11 @@ function EventItem({event, timestamp, onClick=(compactEvent)=>{}}) {
 export default function DayList({timestamp, onAddEvent=(t,s)=>{}, onChangeDate=(t)=>{}, onCalendarOpen=()=>{}}) {
 
   const today = DateTime.isToday(timestamp)
-  const events = eventList.getEvents(timestamp)
-  const actualBalance = eventList.getActualBalance(timestamp)
-  const lastActualBalanceDate = eventList.lastActualBalanceDate
-  const plannedBalance = eventList.getPlannedBalance(timestamp)
-  const plannedBalanceChange = eventList.getPlannedBalanceChange(timestamp)
+  const events = eventsCache.getEvents(timestamp)
+  const actualBalance = eventsCache.getActualBalance(timestamp)
+  const lastActualBalanceDate = eventsCache.lastActualBalanceDate
+  const plannedBalance = eventsCache.getPlannedBalance(timestamp)
+  const plannedBalanceChange = eventsCache.getPlannedBalanceChange(timestamp)
 
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
