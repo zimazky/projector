@@ -60,6 +60,10 @@
   /*overflow-x: hidden;*/
 }
 
+.CalendarBody::-webkit-scrollbar {
+  width: 0;
+}
+
 .CalendarWeek {
   border-bottom: 1px solid lightgrey;
   font-size: 0.9em;

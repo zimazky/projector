@@ -85,7 +85,7 @@ class MainStore {
     }
     const dataString = JSON.stringify(data)
     localStorage.setItem('data', dataString)
-    console.log(dataString)
+    //console.log(dataString)
     this.isSyncWithLocalstorage = true
   }
   
