@@ -28,17 +28,10 @@
 	}
 }
 
-.monthTitle_a8c3ab6 {
-  display: inline-block;
-  font-size: 1.8em;
-  color: #a0a0a0;
-  vertical-align: middle;
-}
-
 .dayOfWeekLabels_cf63ad3 {
   background-color: white;
   width: 100%;
-  height: 1.4em;
+  height: 1.2em;
   text-transform: uppercase;
   color: darkgray;
   border-bottom: 1px solid lightgray;
@@ -408,8 +401,17 @@
   padding: 0.3em 8px;
   border-bottom: 1px solid lightgray;
   color: var(--navcolor);
+  display: grid;
+  grid-template-columns: 1fr min-content 1fr;
+  column-gap: 1em;
+  justify-content: space-between;
 }
-.navigationbar_f859c3d span {
+
+.navbar__icon_list_a06676b {
+  white-space: nowrap;
+}
+
+.burgermenu_c26f52c, .icons_d57fcfa {
   display: inline-block;
   height: 100%;
   margin-right: 0.6em;
@@ -451,16 +453,10 @@
 }
 
 .caption_b94a5fd {
-  margin-left: 1em;
+  white-space: nowrap;
 }
 
-.page_d7bcb36 {
-  position: fixed;
-  top: 0;
-  height: 100%;
-  width: 100%;
-  display: grid;
-  user-select: none;
-  grid-template-columns: 1fr;
-  grid-template-rows: max-content 1fr;
+.time_a11a607 {
+  text-align: right;
 }
+

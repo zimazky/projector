@@ -40,10 +40,20 @@ module.exports = {
       {
         test: /^((?!\.module).)*css$/,
         use: [ MiniCssExtractPlugin.loader, 'css-loader' ]
+      },
+      {
+        test: /\.m?js$/,
+        enforce: 'pre',
+        use: ['source-map-loader'],
       }
     ]
   },
-
+  performance: {
+    hints: false,
+    maxEntrypointSize: 512000,
+    maxAssetSize: 512000
+  },
+  
   plugins: [
     new Dotenv(),
     new MiniCssExtractPlugin({ filename: 'main.css' })

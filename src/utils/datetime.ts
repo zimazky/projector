@@ -156,19 +156,27 @@ export default class DateTime {
     return year + (M>9?'.':'.0') + M + (day>9?'.':'.0') + day
   }
   
-  /** Получить времня в виде количества часов и минут с начала дня таймстемпа по времени UTC */
+  /** Получить время в виде количества часов и минут с начала дня таймстемпа по времени UTC */
   static getUTCHoursMinutes(t: timestamp): {hours: number, minutes: number} {
     const time = DateTime.getUTCTime(t)
     const hours = Math.floor(time/3600)
     const minutes = Math.floor((time%3600)/60)
     return {hours, minutes}
   }
-  /** Получить времня в виде количества часов и минут с начала дня по локальному времени [tested]*/
+  /** Получить время в виде количества часов и минут с начала дня по локальному времени [tested]*/
   static getHoursMinutes(t: timestamp): {hours: number, minutes: number} {
     const time = DateTime.getTime(t)
     const hours = Math.floor(time/3600)
     const minutes = Math.floor((time%3600)/60)
     return {hours, minutes}
+  }
+  /** Получить время в виде количества часов, минут и секунд с начала дня по локальному времени*/
+  static getHoursMinutesSeconds(t: timestamp): {hours: number, minutes: number, seconds: number} {
+    const time = DateTime.getTime(t)
+    const hours = Math.floor(time/3600)
+    const minutes = Math.floor((time%3600)/60)
+    const seconds = Math.floor(time%60)
+    return {hours, minutes, seconds}
   }
   /** Получить строку времени таймстемпа в формате HH:MM по времени UTC*/
   static getUTCHHMM(t: timestamp): string {
@@ -179,6 +187,11 @@ export default class DateTime {
   static getHHMM(t: timestamp): string {
     const {hours, minutes} = DateTime.getHoursMinutes(t)
     return (hours>9?'':'0') + hours + (minutes>9?':':':0') + minutes
+  }
+  /** Получить строку времени таймстемпа в формате HH:MM:SS по локальному времени*/
+  static getHHMMSS(t: timestamp): string {
+    const {hours, minutes, seconds} = DateTime.getHoursMinutesSeconds(t)
+    return (hours>9?'':'0') + hours + (minutes>9?':':':0') + minutes + (seconds>9?':':':0') + seconds
   }
   /** Получить строку времени таймстемпа в формате YYYY.MM.DDTHH:00 по времени UTC */
   static getUTCYYYYMMDDTHHMM(t: timestamp): string {

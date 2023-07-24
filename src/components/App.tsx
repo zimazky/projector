@@ -3,7 +3,6 @@ import useUpdate from 'src/hooks/useUpdate'
 import { Calendar } from './Calendar'
 import DayList from './DayList'
 import { Navbar } from './Navbar'
-import styles from './App.module.css'
 import { mainStore, weatherStore } from 'src/stores/MainStore'
 import { observer } from 'mobx-react-lite'
 
@@ -89,8 +88,7 @@ function app() {
 
   console.log('app')
  
-  return ( 
-  <div className={styles.page}>
+  return <>
     <Navbar menuItems={menu} iconItems={icons}/>
     {
       mainStore.viewMode === 'Calendar' ?
@@ -105,7 +103,6 @@ function app() {
       />
       :null
     }
-  </div>
-  )
+  </>
 }
 export const App = observer(app);

@@ -11,8 +11,17 @@
   padding: 0.3em 8px;
   border-bottom: 1px solid lightgray;
   color: var(--navcolor);
+  display: grid;
+  grid-template-columns: 1fr min-content 1fr;
+  column-gap: 1em;
+  justify-content: space-between;
 }
-.navigationbar span {
+
+.navbar__icon_list {
+  white-space: nowrap;
+}
+
+.burgermenu, .icons {
   display: inline-block;
   height: 100%;
   margin-right: 0.6em;
@@ -54,5 +63,5 @@
 }
 
 .caption {
-  margin-left: 1em;
+  white-space: nowrap;
 }
