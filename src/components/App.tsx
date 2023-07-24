@@ -92,14 +92,14 @@ function app() {
     <Navbar menuItems={menu} iconItems={icons}/>
     {
       mainStore.viewMode === 'Calendar' ?
-      <Calendar onDayOpen={t=>mainStore.changeViewMode({mode: 'Day', timestamp: t}) /*setState(s=>{return {...s,timestamp:t,view:'Day'}})*/ }/>
+      <Calendar onDayOpen={t=>mainStore.changeViewMode({mode: 'Day', timestamp: t})}/>
       :null
     }
     {
       mainStore.viewMode === 'Day' ?
       <DayList timestamp={mainStore.timestamp} 
-      onChangeDate={t=> mainStore.changeViewMode({timestamp: t}) /*setState(s=>{return {...s,timestamp:t}})*/}
-      onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})   /*setState(s=>{return {...s,view:'Calendar'}})*/ }
+      onChangeDate={t=> mainStore.changeViewMode({timestamp: t})}
+      onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})}
       />
       :null
     }

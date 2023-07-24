@@ -1,7 +1,10 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
 import DateTime from 'src/utils/datetime'
-import { ForecastData1d } from 'src/stores/Weather/WeatherStore';
+import { ForecastData1d } from 'src/stores/Weather/WeatherStore'
+import { plus } from 'src/utils/utils'
+
+function minimize(d: number) { return (d/1000).toFixed(1) }
 
 type CalendarDayProperties = {
   data: {
@@ -29,7 +32,7 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
     if(inputElementRef) inputElementRef.current.focus()
   }
   function onKeyDownHandle(e) {
-    console.log('key',e.key)
+    //console.log('key',e.key)
     if (e.key == 'Enter') e.target.blur()
   }
   function onBlurHandle(e) {
@@ -42,9 +45,6 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
     if(e.ctrlKey) e.dataTransfer.dropEffect='copy'
     else e.dataTransfer.dropEffect='move'
   }
-  const minimize = d => (d/1000).toFixed(1)
-  const plus = (d,n=1) => d>0?'+'+d.toFixed(1):d.toFixed(n)
-
   //console.log(firstPlannedEventDate)
 
   return (
@@ -56,25 +56,21 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
       <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
         {day + (day==1?' '+DateTime.MONTHS[month]:'')}
         {weather ? <div className={styles.weather} title={
-          'temperature: '+ formatT(weather.temperatureMax)+'/'+formatT(weather.temperatureMin)
+          'temperature: '+ plus(weather.temperatureMax)+'/'+plus(weather.temperatureMin)
           + '\nclouds: ' + weather.clouds.toFixed(0)
           + '\nprecipitation: ' + weather.pop.toFixed(2)
           + '\nrain: ' + weather.rain.toFixed(2)
           + '\nsnow: ' + weather.snow.toFixed(2)
           + '\ncount: ' + weather.count
           + (weather.isThunderstorm ? '\nThunderstorm' : '')
-        }><sup>{'🌡️'+formatT(weather.temperatureMax)}</sup><sub>{formatT(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>: null}
+        }><sup>{'🌡️'+plus(weather.temperatureMax)}</sup><sub>{plus(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>: null}
       </div>
       <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
-        (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000)+'k') +
+        (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000, 1)+'k') +
         ' ' + minimize(actualBalance)}</div>
       {children}
       <div ref={inputElementRef} className={styles.input} contentEditable='true' suppressContentEditableWarning={true}
       onBlur={onBlurHandle} onKeyDown={onKeyDownHandle}></div>
     </div> 
   )
-}
-
-function formatT(t: number): string {
-  return t<0 ? '-' : '+' + t.toFixed(0);
 }

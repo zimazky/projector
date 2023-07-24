@@ -2,15 +2,22 @@ import {Flavor} from './typehelper'
 
 export type timestamp = Flavor<number, 'timestamp'>
 
+/** Представление числа со стартовым нулем */
+function NN(n: number): string { return (n<10 ? '0' : '') + n }
+/** Представление числа со стартовой точкой и нулем */
+function dNN(n: number): string { return (n<10 ? '.0' : '.') + n }
+/** Представление числа со стартовым двоеточием и нулем */
+function cNN(n: number): string { return (n<10 ? ':0' : ':') + n }
+/** Представление числа со стартовым тире и нулем */
+function mNN(n: number): string { return (n<10 ? '-0' : '-') + n }
+/** Представление числа со стартовым T и нулем */
+function TNN(n: number): string { return (n<10 ? 'T0' : 'T') + n }
+
 /** 
  * Класс статических методов для работы с timestamp в формате unixtime в секундах с 01.01.1970.
- * 
  * timestamp может использоваться в диапазоне -2^42...+2^42 (±4398046511104) (диапазон дат -16.06.137399...19.07.141338)
- * 
  * Конвертация к датам производится по Григорианскому календарю с учетом временной зоны, заданной в поле timezone.
- * 
  * В отличие от класса Date, исторические изменения временной зоны не учитываются.
- * 
  * Начало недели задается в поле startWeek.
 */
 export default class DateTime {
@@ -146,22 +153,27 @@ export default class DateTime {
   /** Получить строку даты в формате YYYY.MM.DD по времени UTC */
   static getUTCYYYYMMDD(t: timestamp): string {
     const {year, month, day} = DateTime.getUTCYearMonthDay(t)
-    const M = month + 1
-    return year + (M>9?'.':'.0') + M + (day>9?'.':'.0') + day
+    return year + dNN(month + 1) + dNN(day)
   }
   /** Получить строку даты в формате YYYY.MM.DD по локальному времени [tested]*/
   static getYYYYMMDD(t: timestamp): string {
     const {year, month, day} = DateTime.getYearMonthDay(t)
-    const M = month + 1
-    return year + (M>9?'.':'.0') + M + (day>9?'.':'.0') + day
+    return year + dNN(month + 1) + dNN(day)
   }
-  
   /** Получить время в виде количества часов и минут с начала дня таймстемпа по времени UTC */
   static getUTCHoursMinutes(t: timestamp): {hours: number, minutes: number} {
     const time = DateTime.getUTCTime(t)
     const hours = Math.floor(time/3600)
     const minutes = Math.floor((time%3600)/60)
     return {hours, minutes}
+  }
+  /** Получить время в виде количества часов и минут с начала дня таймстемпа по времени UTC */
+  static getUTCHoursMinutesSeconds(t: timestamp): {hours: number, minutes: number, seconds: number} {
+    const time = DateTime.getUTCTime(t)
+    const hours = Math.floor(time/3600)
+    const minutes = Math.floor((time%3600)/60)
+    const seconds = Math.floor(time%60)
+    return {hours, minutes, seconds}
   }
   /** Получить время в виде количества часов и минут с начала дня по локальному времени [tested]*/
   static getHoursMinutes(t: timestamp): {hours: number, minutes: number} {
@@ -181,39 +193,41 @@ export default class DateTime {
   /** Получить строку времени таймстемпа в формате HH:MM по времени UTC*/
   static getUTCHHMM(t: timestamp): string {
     const {hours, minutes} = DateTime.getUTCHoursMinutes(t)
-    return (hours>9?'':'0') + hours + (minutes>9?':':':0') + minutes
+    return NN(hours) + cNN(minutes)
+  }
+  /** Получить строку времени таймстемпа в формате HH:MM:SS по времени UTC*/
+  static getUTCHHMMSS(t: timestamp): string {
+    const {hours, minutes, seconds} = DateTime.getUTCHoursMinutesSeconds(t)
+    return NN(hours) + cNN(minutes) + cNN(seconds)
   }
   /** Получить строку времени таймстемпа в формате HH:MM по локальному времени [tested]*/
   static getHHMM(t: timestamp): string {
     const {hours, minutes} = DateTime.getHoursMinutes(t)
-    return (hours>9?'':'0') + hours + (minutes>9?':':':0') + minutes
+    return NN(hours) + cNN(minutes)
   }
   /** Получить строку времени таймстемпа в формате HH:MM:SS по локальному времени*/
   static getHHMMSS(t: timestamp): string {
     const {hours, minutes, seconds} = DateTime.getHoursMinutesSeconds(t)
-    return (hours>9?'':'0') + hours + (minutes>9?':':':0') + minutes + (seconds>9?':':':0') + seconds
+    return NN(hours) + cNN(minutes) + cNN(seconds)
   }
-  /** Получить строку времени таймстемпа в формате YYYY.MM.DDTHH:00 по времени UTC */
+  /** Получить строку времени таймстемпа в формате YYYY-MM-DDTHH:MM по времени UTC */
   static getUTCYYYYMMDDTHHMM(t: timestamp): string {
     const {year, month, day} = DateTime.getUTCYearMonthDay(t)
     const {hours, minutes} = DateTime.getUTCHoursMinutes(t)
-    const M = month + 1
-    return year + (M>9?'-':'-0') + M + (day>9?'-':'-0') + day + (hours>9?'T':'T0') + hours + (minutes>9?':':':0') + minutes
+    return year + mNN(month + 1) + mNN(day) + TNN(hours) + cNN(minutes)
   }
-   
-  /** Получить строку времени таймстемпа в формате YYYY.MM.DDTHH:00 [tested]*/
+  /** Получить строку времени таймстемпа в формате YYYY-MM-DDTHH:MM [tested]*/
   static getYYYYMMDDTHHMM(t: timestamp): string {
     const {year, month, day} = DateTime.getYearMonthDay(t)
     const {hours, minutes} = DateTime.getHoursMinutes(t)
     const M = month + 1
-    return year + (M>9?'-':'-0') + M + (day>9?'-':'-0') + day + (hours>9?'T':'T0') + hours + (minutes>9?':':':0') + minutes
+    return year + mNN(month + 1) + mNN(day) + TNN(hours) + cNN(minutes)
   }
-  
   /** Преобразование интервала времени в секундах к строке времени в формате "H:MM" [tested]*/
   static secondsToHMM(sec: number) {
-    const h = ~~(sec/3600)
+    const h = ~~(sec/3600) // Округляется так для возможности работы с отрицательными значениями
     const m = Math.abs(~~((sec%3600)/60))
-    return h + (m>9?':':':0') + m
+    return h + cNN(m)
   }
 
   /** Преобразование строки времени в формате "H:MM" к интервалу времени в секундах [tested]*/
@@ -233,7 +247,7 @@ export default class DateTime {
 
   /** Преобразование интервала времени в секундах к строке времени в формате "Dd H:MM" [tested]*/
   static secondsToDdHMM(sec: number): string {
-    const d = ~~(sec/86400)
+    const d = ~~(sec/86400) // Округляется так для возможности работы с отрицательными значениями
     const t = (sec%86400)
     if(d >= 1 || d <= -1) return d + 'd ' + DateTime.secondsToHMM(Math.abs(t))
     return DateTime.secondsToHMM(t)
