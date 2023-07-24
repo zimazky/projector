@@ -43,7 +43,7 @@ class MainStore {
 
   constructor() {
     const json = localStorage.getItem('data') ?? '{}'
-    console.log('localStorage', json)
+    //console.log('localStorage', json)
     const obj: MainStoreData = JSON.parse(json)
     projectsStore.init(obj.projectsList)
     eventsStore.load(obj)
@@ -118,8 +118,6 @@ class MainStore {
         this.isSyncWithGoogleDrive = true
         this.mustForceUpdate = {} 
       })
-      //forceUpdate()
-      eventsCache.clearCache()
     } catch(e) {
       console.log('Load error', e)
       alert('Load error')
@@ -141,3 +139,7 @@ export const mainStore = new MainStore
 
 /** Синглтон-экземпляр кэша событий */
 export const eventsCache = new EventsCache
+
+eventsCache.clearCache()
+mainStore.mustForceUpdate = {}
+

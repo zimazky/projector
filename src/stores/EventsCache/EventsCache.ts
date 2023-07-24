@@ -20,8 +20,8 @@ export class EventsCache {
     // Список пересортируется и сбрасывается кэш
     eventsStore.onChangeList = () => {
       eventsStore.sort()
-      mainStore.desyncWithStorages()
       this.clearCache()
+      mainStore.desyncWithStorages()
     }
 
     //makeAutoObservable(this)
