@@ -1,15 +1,10 @@
 import React from 'react'
 import styles from './Navbar.module.css'
+import { calendarStore } from 'src/stores/MainStore'
+import { observer } from 'mobx-react-lite'
 
-export default function Navbar({menuItems=[], iconItems=[], navItems=[]}) {
-  const [menuOpen,setMenuOpen] = React.useState(false)
-/*
-  React.useEffect(() => {
-    const onClick = e => {if(menuRef.current && menuRef.current.contains(e.target)) setMenuOpen(false)}
-    document.addEventListener('click', onClick)
-    return () => document.removeEventListener('click', onClick)
-  }, [])
-*/
+function navbar({menuItems=[], iconItems=[], navItems=[]}) {
+  const [menuOpen, setMenuOpen] = React.useState(false)
 
   return (
     <>
@@ -26,15 +21,10 @@ export default function Navbar({menuItems=[], iconItems=[], navItems=[]}) {
         </div> }
       </span>
       { iconItems.map((e,i)=><span className={styles.icons} title={e.name} key={i} onClick={e.fn}>{e.jsx}</span>)}
-      {/*
-      Для событий
-      <div>Complete/Mark uncompleted</div>
-      <div>Delete All</div>
-      <div>Delete one</div>
-      <div>Delete one and all before</div>
-      <div>Copy</div>
-      */}
+      <span className={styles.caption}>{ calendarStore.caption }</span>
     </nav>
     </>
   )
 }
+
+export const Navbar = observer(navbar)

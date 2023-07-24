@@ -52,3 +52,7 @@
 .icons:hover {
   stroke: black;
 }
+
+.caption {
+  margin-left: 1em;
+}

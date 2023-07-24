@@ -7,6 +7,10 @@ import { makeAutoObservable, runInAction } from "mobx"
 import GAPI from "src/utils/gapi"
 import { timestamp } from "src/utils/datetime"
 import { WeatherStore } from "./Weather/WeatherStore"
+import { CalendarStore } from "./Calendar/CalendarStore"
+
+/** Синглтон-экземпляр хранилища календаря */
+export const calendarStore = new CalendarStore
 
 /** Синглтон-экземпляр хранилища проектов */
 export const projectsStore = new ProjectsStore

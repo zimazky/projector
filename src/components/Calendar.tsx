@@ -3,42 +3,24 @@ import styles from './Calendar.module.css'
 import CalendarDay from "./CalendarDay"
 import EventItem from './EventItem'
 import DateTime from 'src/utils/datetime'
-import {eventsCache, eventsStore, weatherStore} from 'src/stores/MainStore'
+import {calendarStore, eventsCache, eventsStore, weatherStore} from 'src/stores/MainStore'
 import Modal from './Modal'
 import Button from './Button'
 import EventForm from './EventForm'
 import { observer } from 'mobx-react-lite'
-
-const weekBuffer = 4
+import { min } from 'src/utils/utils'
 
 function calendar({onDayOpen = (timestamp: number) => {}}) {
 
   const [isModal,setModal] = React.useState(false)
-  const [shift,setShift] = React.useState(weekBuffer)
-  const scrollElement = React.useRef(null)
-  const divElement = React.useRef(null)
   const [modalState,setModalState] = React.useState({})
   const currentWeekRef = React.useRef(null)
-  const wrapperRef = React.useRef(null)
   
   const currentDay = DateTime.getBeginDayTimestamp(Date.now()/1000)
-  let currentTimestamp = DateTime.getBegintWeekTimestamp(Date.now()/1000)
-  const zeroPoint = currentTimestamp
-  currentTimestamp -= shift*7*86400
-  /*
-  onOrientationChange = (e)=>{
-    if(window.innerWidth<=480) {
-      const t = scrollElement.current.scrollTop/scrollElement.current.scrollHeight
-      document.body.style.fontSize = '10px'
-    }
-  }
-  */
-  React.useEffect(()=>{
-    currentWeekRef.current.scrollIntoView(true)
-    wrapperRef.current.scrollIntoView(true)
-    /*window.addEventListener('orientationchange', onOrientationChange)
-    return ()=>window.removeEventListener('orientationchange', onOrientationChange)*/
-  }, [])
+  const zeroPoint  = DateTime.getBegintWeekTimestamp(Date.now()/1000)
+  let currentTimestamp = zeroPoint - calendarStore.shift*7*86400
+
+  React.useEffect(()=>{ currentWeekRef.current.scrollIntoView(true) }, [])
 
   const arrayOfDays = []
   for(let i=0;i<=20;i++) {
@@ -60,18 +42,16 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
       currentTimestamp += 86400
     }
   }
-  const min = (a,b)=>a<b?a:b
-
   const onScrollHandle = (e)=>{
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
     const avgDayHeight = el.scrollHeight/arrayOfDays.length
-    const w = Math.ceil(t/avgDayHeight-shift)
+    const w = Math.ceil(t/avgDayHeight-calendarStore.shift)
     const d = new Date((zeroPoint+w*7*86400)*1000)
-    divElement.current.innerText =d.getFullYear() + ' ' + DateTime.MONTHS_FULL[d.getMonth()] + ' '+w+' week'
-    if(t<weekBuffer*avgDayHeight) setShift(s=>s+weekBuffer)
-    else if(b<weekBuffer*avgDayHeight) setShift(s=>s-weekBuffer)
+    
+    calendarStore.setMonthYear(d.getMonth(), d.getFullYear())
+    calendarStore.correctShift(t/avgDayHeight, b/avgDayHeight)
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -102,14 +82,10 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
   console.log('draw calendar')
   return (
     <div className={styles.wrapper}>
-    <div ref={wrapperRef} className={styles.header}>
-      <Button>Today</Button>
-      <span ref={divElement} className={styles.monthTitle}></span>
-      <div className={styles.dayOfWeekLabels}>
-        { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
-      </div>
+    <div className={styles.dayOfWeekLabels}>
+      { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
     </div>
-    <div className={styles.CalendarBody} onScroll={onScrollHandle} ref={scrollElement}>
+    <div className={styles.CalendarBody} onScroll={onScrollHandle}>
       { arrayOfDays.map( week => (
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (

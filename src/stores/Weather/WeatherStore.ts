@@ -1,6 +1,7 @@
 import {makeAutoObservable, runInAction} from 'mobx'
 import DateTime from 'src/utils/datetime';
 import OpenWeatherMap from 'src/utils/openweathermap';
+import { max, min } from 'src/utils/utils';
 
 /** Погодные условия, аггрегированные за день */
 export type ForecastData1d = {
@@ -132,10 +133,10 @@ export class WeatherStore {
         })
         else {
           clouds = (cd.clouds*cd.count + clouds)/(cd.count + 1);
-          cd.temperatureMin = Math.min(cd.temperatureMin, d.main.temp_min);
-          cd.temperatureMax = Math.max(cd.temperatureMax, d.main.temp_max);
-          cd.humidityMin = Math.min(cd.humidityMin, d.main.humidity);
-          cd.humidityMax = Math.max(cd.humidityMax, d.main.humidity);
+          cd.temperatureMin = min(cd.temperatureMin, d.main.temp_min);
+          cd.temperatureMax = max(cd.temperatureMax, d.main.temp_max);
+          cd.humidityMin = min(cd.humidityMin, d.main.humidity);
+          cd.humidityMax = max(cd.humidityMax, d.main.humidity);
           cd.clouds = clouds;
           cd.pop = Math.max(cd.pop, d.pop);
           cd.rain += d.rain ? d.rain['3h'] : 0;
