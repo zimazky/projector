@@ -2,7 +2,12 @@ import ZCron from 'src/utils/zcron'
 import { EventData } from './EventData'
 import { IEventStructure, RepeatableEventStructure, SingleEventStructure, eventDataToIEventStructure, repeatableEventStructureToEventData, singleEventStructureToEventData } from './EventStructure'
 import { timestamp } from 'src/utils/datetime'
-import { projectsStore } from 'src/stores/MainStore'
+import { ProjectsStore } from 'src/stores/Projects/ProjectsStore'
+
+export type EventsStoreData = {
+  completedList: EventData[]
+  plannedList: EventData[]
+}
 
 /** 
  * Класс списка событий, полученных из хранилища и приведенных к оптимизированной для обработки форме.
@@ -10,6 +15,8 @@ import { projectsStore } from 'src/stores/MainStore'
  * Создает новые события, удаляет и изменяет существующие, переводит планируемые в выполненные
  */
 export class EventsStore {
+  /** Указатель на хранилище проектов */
+  projects: ProjectsStore
   /** Нумератор идентификаторов */
   private lastId = 1
   /** Список завершенных событий */
@@ -21,14 +28,18 @@ export class EventsStore {
   /** Колбэк функция, вызывается при каждом изменении списка */
   onChangeList = () => {}
 
+  constructor(projectsStore: ProjectsStore) {
+    this.projects = projectsStore
+  }
+
   /** Загрузка данных со сбросом предшествующих данных */
-  load({completedList=[], plannedList=[]}) {
+  init(d: EventsStoreData) {
     this.lastId = 1
     this.completed = []
-    completedList.forEach(e => { this.addCompletedEventData(e, false) })
+    d.completedList?.forEach(e => { this.addCompletedEventData(e, false) })
     this.planned = []
     this.plannedRepeatable = []
-    plannedList.forEach(e => this.addPlannedEventData(e, false))
+    d.plannedList?.forEach(e => this.addPlannedEventData(e, false))
     this.onChangeList()
   }
 
@@ -68,7 +79,7 @@ export class EventsStore {
    * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
    */
   addCompletedEventStructure(e: IEventStructure, isFinal: boolean = true) {
-    let projectId = projectsStore.getIdWithIncEventsCount(e.project);
+    let projectId = this.projects.getIdWithIncEventsCount(e.project);
 
     //let projectId = e.project? this.projects.findIndex(p=>p.name===e.project) : 0
     if(projectId<0) projectId = 0
@@ -100,7 +111,7 @@ export class EventsStore {
    * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
    */
   addPlannedEventStructure(e: IEventStructure, isFinal: boolean = true) {
-    let projectId = projectsStore.getIdWithIncEventsCount(e.project);
+    let projectId = this.projects.getIdWithIncEventsCount(e.project);
 
     //let projectId = e.project? this.projects.findIndex(p=>p.name===e.project) : 0
     if(projectId<0) projectId = 0
@@ -360,6 +371,3 @@ export class EventsStore {
     this.plannedRepeatable.sort((a,b)=>a.time-b.time)
   }
 }
-
-/** Синглтон-экземпляр хранилища событий */
-//export const eventsStore = new EventsStore;

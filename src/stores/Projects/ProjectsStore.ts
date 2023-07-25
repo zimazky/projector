@@ -99,19 +99,3 @@ export class ProjectsStore {
     return this.list.map(p => { return {name: p.name, color: p.color, background: p.background} }).slice(1);
   }
 }
-
-/** Синглтон-экземпляр хранилища проектов */
-//export const projectsStore = new ProjectsStore;
-
-/*
-spy(event => {
-  if (event.type === "action") {
-      console.log(`${event.name} with args: ${event.arguments}`)
-  }
-})
-
-autorun(()=>{
-  console.log('num', projectsStore.list.length)
-  //console.log('default links', projectsStore.list[0].events)
-})
-*/

@@ -1,76 +1,75 @@
 import { timestamp } from 'src/utils/datetime'
 import ZCron from 'src/utils/zcron'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
-import { eventsStore, mainStore, projectsStore } from 'src/stores/MainStore'
-import { makeAutoObservable } from 'mobx'
+import { EventsStore } from 'src/stores/Events/EventsStore'
+import { ProjectsStore } from 'src/stores/Projects/ProjectsStore'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
 export class EventsCache {
 
-  private cachedEvents = []
-  private cachedActualBalance = []
-  private cachedPlannedBalance = []
+  /** Ссылка на хранилище проектов */
+  projectsStore: ProjectsStore
+  /** Ссылка на хранилище событий */
+  eventsStore: EventsStore
+  /** Кэш событий (хэш-таблица по временным меткам) */
+  private cachedEvents: EventCacheStructure[][] = []
+  /** Кэш фактического баланса  (хэш-таблица по временным меткам) */
+  private cachedActualBalance: number[] = []
+  /** Кэш планируемого баланса  (хэш-таблица по временным меткам) */
+  private cachedPlannedBalance: number[] = []
+  /** Фактический баланс на момент после всех завершенных событий */
   lastActualBalance = 0
+  /** Временная метка последнего завершенного события */
   lastActualBalanceDate = 0
+  /** Временная метка первого завершенного события */
   firstActualBalanceDate = 0
 
-  constructor() {
-    //super()
-    // Задание обработчика, вызываемого при изменении списка событий
-    // Список пересортируется и сбрасывается кэш
-    eventsStore.onChangeList = () => {
-      eventsStore.sort()
-      this.clearCache()
-      mainStore.desyncWithStorages()
-    }
-
-    //makeAutoObservable(this)
+  constructor(projectsStore: ProjectsStore, eventsStore: EventsStore) {
+    this.projectsStore = projectsStore
+    this.eventsStore = eventsStore
   }
 
-  /** Очищение кэша */
-  clearCache() {
+  /** Инициализация кэша событий (очищение кэша) */
+  init() {
     this.cachedEvents = []
     this.cachedActualBalance = []
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
-    this.lastActualBalanceDate = eventsStore.completed.length? eventsStore.completed[eventsStore.completed.length-1].start : 0
-    this.firstActualBalanceDate = eventsStore.completed.length? eventsStore.completed[0].start : 0
+    this.lastActualBalanceDate = this.eventsStore.completed.length ? 
+      this.eventsStore.completed[this.eventsStore.completed.length-1].start : 0
+    this.firstActualBalanceDate = this.eventsStore.completed.length?
+      this.eventsStore.completed[0].start : 0
   }
  
-  // список всех событий за день, отсортированных для отрисовки
-  // данные кэшируются
+  /**
+   * Получить список всех событий за день, отсортированных для отрисовки
+   * Данные кэшируются
+   * @param date - временная метка начала дня, unixtime
+   * @returns 
+   */
   getEvents(date: timestamp): EventCacheStructure[] {
     if(this.cachedEvents[date] !== undefined) return this.cachedEvents[date]
-    const events: EventCacheStructure[] = eventsStore.planned.reduce( (a,e) => {
+    const events: EventCacheStructure[] = this.eventsStore.planned.reduce( (a,e) => {
       if(date < e.start || date >= e.end) return a
-      //const {color, background} = this.projects[e.projectId].style
-      //const color = this.projects[e.projectId].color
-      //const background = this.projects[e.projectId].background
-      const color = projectsStore.getById(e.projectId).color
-      const background = projectsStore.getById(e.projectId).background
+      const color = this.projectsStore.getById(e.projectId).color
+      const background = this.projectsStore.getById(e.projectId).background
       a.push(singleEventToEventCache(e, date, false, color, background))
       return a
     }, [])
-    eventsStore.plannedRepeatable.reduce( (a,e) => {
+    this.eventsStore.plannedRepeatable.reduce( (a,e) => {
       if(date < e.start) return a
       if(e.end && date+e.time >= e.end) return a
       if(ZCron.isMatch(e.repeat, e.start, date)) {
-        //const {color, background} = this.projects[e.projectId].style
-        //const color = this.projects[e.projectId].color
-        //const background = this.projects[e.projectId].background
-        const color = projectsStore.getById(e.projectId).color
-        const background = projectsStore.getById(e.projectId).background
+        const color = this.projectsStore.getById(e.projectId).color
+        const background = this.projectsStore.getById(e.projectId).background
         a.push(repeatableEventToEventCache(e, date, false, color, background))
       }
       return a
     }, events)
-    eventsStore.completed.reduce( (a,e) => {
+    this.eventsStore.completed.reduce( (a,e) => {
       if(date >= e.start && date < e.end) {
-        //const {color, background} = this.projects[e.projectId].style
-        //const color = this.projects[e.projectId].color
-        //const background = this.projects[e.projectId].background
-        const color = projectsStore.getById(e.projectId).color
-        const background = projectsStore.getById(e.projectId).background
+        const color = this.projectsStore.getById(e.projectId).color
+        const background = this.projectsStore.getById(e.projectId).background
         a.push(singleEventToEventCache(e,date,true, color, background))
       }
       return a
@@ -89,14 +88,24 @@ export class EventsCache {
     return events
   }
 
-  static placeholder: EventCacheStructure = {
+  /** Экземпляр плейсхолдера для представления пустого события на месте многодневного события стартовавшего ранее */
+  static readonly placeholder: EventCacheStructure = {
     id: -1, name: '', background: '', color: '', 
     start: 0, time: null, end: 0, days: 1, credit: 0, debit: 0, completed: false, repeatable: false
   }
-  // Список событий за день с плейсхолдерами ({id:-1}), за исключением соответствующих id из стека skip
-  // Может использоваться для создания структуры для рендеринга в календаре с многодневными событиями
-  // Стек skip обновляется для возможности использования в цепочке обработок
-  getEventsWithPlaceholders(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]) {
+
+  /**
+   * Получить список событий за день с плейсхолдерами ({id:-1}), за исключением соответствующих id из стека skip
+   * Может использоваться для создания структуры для рендеринга в календаре с многодневными событиями
+   * Стек skip обновляется для возможности использования в цепочке обработок
+   * @param date - временная метка начала дня, unixtime
+   * @param skip - стек ранее стартовавших событий, вместо которых подставляются плейсхолдеры
+   * @param events - начальный список событий для возможности получения сквозного списка в цепочке вызовов за несколько дней
+   * @returns 
+   */
+  getEventsWithPlaceholders(
+    date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]
+    ): EventCacheStructure[] {
     // очистка стека
     while(skip.length>0) {
       // в стеке skip последний элемент может блокировать очищение стека если его действие не завершено
@@ -112,14 +121,20 @@ export class EventsCache {
       if((e.end-e.start)>86400) skip.push({id:e.id,end:e.end})
       return a.push(e), a
     }, events)
-
     return events
   }
 
-  // Список планируемых событий, за исключением id из стека skip
-  // Может использоваться для создания списка, исключая повторы многодневных событий
-  // стек skip обновляется для возможности использования в цепочке обработок
-  getPlannedEventsFilteredBySkip(date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]) {
+  /**
+   * Получить список планируемых событий, за исключением id из стека skip
+   * Может использоваться для создания списка, исключая повторы многодневных событий
+   * Стек skip обновляется для возможности использования в цепочке обработок
+   * @param date - временная метка начала дня, unixtime
+   * @param skip - стек ранее стартовавших событий
+   * @param events - начальный список событий для возможности получения сквозного списка в цепочке вызовов за несколько дней
+   */
+  getPlannedEventsFilteredBySkip(
+    date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]
+    ): EventCacheStructure[] {
     while(skip.length>0) {
       if(date < skip[skip.length-1].end) break
       skip.pop()
@@ -129,27 +144,38 @@ export class EventsCache {
       if(e.days>1) skip.push({id:e.id,end:e.end})
       return a.push(e), a
     }, events)
+    return events
   }
 
-  // Список планируемых событий за интервал времени (begin,end)
-  getPlannedEventsInInterval(begin: timestamp, end: timestamp) {
+  /**
+   * Получить список планируемых событий за интервал времени (begin, end)
+   * @param begin - метка времени начала интервала, unixtime
+   * @param end - метка времени конца интервала, unixtime
+   * @returns 
+   */
+  getPlannedEventsInInterval(begin: timestamp, end: timestamp): EventCacheStructure[] {
     const skip: {id: number, end: timestamp}[] = []
     const events: EventCacheStructure[] = []
     for(let t=begin; t<end; t+=86400) this.getPlannedEventsFilteredBySkip(t, skip, events)
     return events
   }
 
-  // Вычисление фактического баланса на момент последнего выполненного события
-  calculateActualBalance() {
-    return eventsStore.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
+  /** Вычисление фактического баланса на момент последнего выполненного события */
+  calculateActualBalance(): number {
+    return this.eventsStore.completed.reduce((balance,e) => balance += e.credit-e.debit, 0)
   }
   
-  // Фактический баланс на начало дня
-  getActualBalance(date: timestamp) {
+  /** 
+   * Получить фактический баланс на начало дня 
+   * Данные кэшируются
+   * @param date - временная метка начала дня, unixtime
+   * @returns 
+   */
+  getActualBalance(date: timestamp): number {
     if(date < this.firstActualBalanceDate) return 0
     if(date > this.lastActualBalanceDate) return this.lastActualBalance
     if(this.cachedActualBalance[date] !== undefined) return this.cachedActualBalance[date]
-    const balance = eventsStore.completed.reduce((a,e)=>{
+    const balance = this.eventsStore.completed.reduce((a,e)=>{
       if(date > e.start+e.time) a += e.credit - e.debit
       return a
     }, 0)
@@ -157,8 +183,12 @@ export class EventsCache {
     return balance
   }
 
-  // Планируемый баланс на начало дня
-  getPlannedBalance(date: timestamp) {
+  /**
+   * Получить планируемый баланс на начало дня
+   * @param date - временная метка начала дня, unixtime
+   * @returns 
+   */
+  getPlannedBalance(date: timestamp): number {
     if(date < this.firstActualBalanceDate) return 0
     if(date <= this.lastActualBalanceDate) return this.getActualBalance(date)
     if(this.cachedPlannedBalance[date] !== undefined) return this.cachedPlannedBalance[date]
@@ -168,16 +198,20 @@ export class EventsCache {
     return balance
   }
 
-  // Планируемое изменение баланса с учетом завершенных событий
-  getPlannedBalanceChange(date: timestamp) {
+  /**
+   * Получить планируемое изменение баланса с учетом завершенных событий
+   * @param date - временная метка начала дня, unixtime
+   * @returns 
+   */
+  getPlannedBalanceChange(date: timestamp): number {
     return this.getEvents(date).reduce((a,e)=> a += e.credit-e.debit, 0)
   }
 
-
-  getFirstPlannedEventDate() {
-    if(eventsStore.planned.length === 0) return 0
-    let first = eventsStore.planned[0].start
-    eventsStore.plannedRepeatable.forEach(e=>{
+  /** Получить дату первого запланированного события */
+  getFirstPlannedEventDate(): timestamp {
+    if(this.eventsStore.planned.length === 0) return 0
+    let first = this.eventsStore.planned[0].start
+    this.eventsStore.plannedRepeatable.forEach(e=>{
       if(e.start<first) first = e.start
     })
     return first

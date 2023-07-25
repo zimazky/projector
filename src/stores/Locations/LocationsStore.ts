@@ -46,6 +46,3 @@ class LocationsStore {
     this.list = list;
   }
 }
-
-/** Синглтон-экземпляр хранилища локаций для отслеживания погоды */
-export const locationsStore = new LocationsStore;

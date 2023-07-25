@@ -115,7 +115,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       debit: calculate(debitRef.current.innerText)
     }
     eventsStore.addPlannedEventData(raw)
-    eventsCache.clearCache()
+    eventsCache.init()
     onExit()
   }
 
@@ -124,7 +124,7 @@ export default function EventForm({event, onExit=()=>{}}) {
     //eventList.projects[projectId].color = colors.color
     projectsStore.list[projectId].background = colors.background
     projectsStore.list[projectId].color = colors.color
-    eventsCache.clearCache()
+    eventsCache.init()
     onExit()
   }
 
