@@ -90,14 +90,10 @@ function app() {
  
   return <>
     <Navbar menuItems={menu} iconItems={icons}/>
-    {
-      mainStore.viewMode === 'Calendar' ?
-      <Calendar onDayOpen={t=>mainStore.changeViewMode({mode: 'Day', timestamp: t})}/>
-      :null
-    }
+    { mainStore.viewMode === 'Calendar' ? <Calendar/> : null }
     {
       mainStore.viewMode === 'Day' ?
-      <DayList timestamp={mainStore.timestamp} 
+      <DayList timestamp={mainStore.currentDay} 
       onChangeDate={t=> mainStore.changeViewMode({timestamp: t})}
       onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})}
       />

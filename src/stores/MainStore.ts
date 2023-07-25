@@ -4,24 +4,9 @@ import { EventsStore, EventsStoreData } from "src/stores/Events/EventsStore"
 import RemoteStorage from "src/utils/remoteStorage"
 import { makeAutoObservable, runInAction } from "mobx"
 import GAPI from "src/utils/gapi"
-import { timestamp } from "src/utils/datetime"
+import DateTime, { timestamp } from "src/utils/datetime"
 import { WeatherStore } from "./Weather/WeatherStore"
 import { CalendarStore } from "./Calendar/CalendarStore"
-
-/** Синглтон-экземпляр хранилища календаря */
-export const calendarStore = new CalendarStore
-
-/** Синглтон-экземпляр хранилища проектов */
-export const projectsStore = new ProjectsStore
-
-/** Синглтон-экземпляр хранилища событий */
-export const eventsStore = new EventsStore(projectsStore)
-
-/** Синглтон-экземпляр кэша событий */
-export const eventsCache = new EventsCache(projectsStore, eventsStore)
-
-/** Синглтон-экземпляр хранилища данных прогноза погоды*/
-export const weatherStore = new WeatherStore;
 
 /** Тип данных приложения для сохранения во внешнем хранилище */
 type MainStoreData = {
@@ -48,14 +33,14 @@ class MainStore {
   mustForceUpdate: {} = {}
   /** Режим отображения */
   viewMode: ViewMode = 'Calendar'
-  /** Метка времени текущего дня */
-  timestamp: timestamp
+  /** Метка времени выбранного дня для отображения */
+  currentDay: timestamp
 
   constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, eventsCache: EventsCache) {
     this.projectsStore = projectsStore
     this.eventsStore = eventsStore
     this.eventsCache = eventsCache
-    this.timestamp = Date.now()/1000
+    this.currentDay = Date.now()/1000
     makeAutoObservable(this)
   }
 
@@ -83,7 +68,14 @@ class MainStore {
   /** Изменить режим просмотра приложения */
   changeViewMode(props : {mode?: ViewMode, timestamp?: timestamp}) {
     if(props.mode) this.viewMode = props.mode
-    if(props.timestamp) this.timestamp = props.timestamp
+    if(props.timestamp) { 
+      this.currentDay = props.timestamp
+    }
+  }
+
+  /** Установить текущий день и неделю */
+  setCurrentDay(t: timestamp) {
+    this.currentDay = t
   }
 
   /** Установить флаги рассинхронизации данных с внешними хранилищами */
@@ -169,6 +161,21 @@ class MainStore {
     this.isGoogleLoggedIn = false
   }
 }
+
+/** Синглтон-экземпляр хранилища календаря */
+export const calendarStore = new CalendarStore
+
+/** Синглтон-экземпляр хранилища проектов */
+export const projectsStore = new ProjectsStore
+
+/** Синглтон-экземпляр хранилища событий */
+export const eventsStore = new EventsStore(projectsStore)
+
+/** Синглтон-экземпляр кэша событий */
+export const eventsCache = new EventsCache(projectsStore, eventsStore)
+
+/** Синглтон-экземпляр хранилища данных прогноза погоды*/
+export const weatherStore = new WeatherStore;
 
 /** Синглтон-экземпляр хранилища приложения */
 export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache)

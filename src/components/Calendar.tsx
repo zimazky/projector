@@ -3,20 +3,21 @@ import styles from './Calendar.module.css'
 import CalendarDay from "./CalendarDay"
 import EventItem from './EventItem'
 import DateTime from 'src/utils/datetime'
-import {calendarStore, eventsCache, eventsStore, weatherStore} from 'src/stores/MainStore'
+import {calendarStore, eventsCache, eventsStore, mainStore, weatherStore} from 'src/stores/MainStore'
 import Modal from './Modal'
 import EventForm from './EventForm'
 import { observer } from 'mobx-react-lite'
 import { min } from 'src/utils/utils'
 
-function calendar({onDayOpen = (timestamp: number) => {}}) {
+function calendar() {
 
   const [isModal,setModal] = React.useState(false)
   const [modalState,setModalState] = React.useState({})
   const currentWeekRef = React.useRef(null)
   
-  const currentDay = DateTime.getBeginDayTimestamp(Date.now()/1000)
-  const zeroPoint  = DateTime.getBegintWeekTimestamp(Date.now()/1000)
+  const today = DateTime.getBeginDayTimestamp(Date.now()/1000)
+  const currentDay = DateTime.getBeginDayTimestamp(mainStore.currentDay)
+  const zeroPoint  = DateTime.getBegintWeekTimestamp(currentDay)
   let currentTimestamp = zeroPoint - calendarStore.shift*7*86400
 
   React.useEffect(()=>{ currentWeekRef.current.scrollIntoView(true) }, [])
@@ -88,11 +89,11 @@ function calendar({onDayOpen = (timestamp: number) => {}}) {
       { arrayOfDays.map( week => (
         <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
-            <CalendarDay data={d} key={d.timestamp} today={currentDay===d.timestamp} 
+            <CalendarDay data={d} key={d.timestamp} today={today===d.timestamp} 
               weather={d.weather}
               onAddEvent={openNewEventForm}
               onDragDrop={e=>dragDrop(e,d.timestamp)}
-              onDayOpen={onDayOpen}
+              onDayOpen={(t)=>mainStore.changeViewMode({mode: 'Day', timestamp: t})}
               >
               { d.tasks.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}
                 onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
