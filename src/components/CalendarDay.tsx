@@ -9,22 +9,21 @@ function minimize(d: number) { return (d/1000).toFixed(1) }
 type CalendarDayProperties = {
   data: {
     timestamp: number,
+    weather: ForecastData1d
     actualBalance: number,
-    lastActualBalanceDate: number,
     plannedBalance: number,
     plannedBalanceChange: number,
-    firstPlannedEventDate: number
+    style: 'normal' | 'uncompleted' | 'completed'
   };
   today: boolean;
-  weather: ForecastData1d;
   onAddEvent: (timestamp: number, name: string) => void;
   onDragDrop: (e) => void;
   onDayOpen: (timestamp: number) => void;
   children: any;
 }
 
-export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}: CalendarDayProperties) {
-  const {timestamp, actualBalance, lastActualBalanceDate, plannedBalance, plannedBalanceChange, firstPlannedEventDate} = data
+export default function CalendarDay({data, today=false, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}: CalendarDayProperties) {
+  const {timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style} = data
   const inputElementRef = React.useRef(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
 
@@ -32,7 +31,6 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
     if(inputElementRef) inputElementRef.current.focus()
   }
   function onKeyDownHandle(e) {
-    //console.log('key',e.key)
     if (e.key == 'Enter') e.target.blur()
   }
   function onBlurHandle(e) {
@@ -45,13 +43,9 @@ export default function CalendarDay({data, today=false, weather, onAddEvent=(t,s
     if(e.ctrlKey) e.dataTransfer.dropEffect='copy'
     else e.dataTransfer.dropEffect='move'
   }
-  //console.log(firstPlannedEventDate)
 
   return (
-    <div className={timestamp>=lastActualBalanceDate ?
-        styles.day
-        : firstPlannedEventDate!==0 && timestamp>=firstPlannedEventDate ? 
-          styles.between_firstplanned_and_actual : styles.before_actual_date} 
+    <div className={style==='normal' ? styles.day : (style==='uncompleted' ? styles.between_firstplanned_and_actual : styles.before_actual_date) } 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
         {day + (day==1?' '+DateTime.MONTHS[month]:'')}

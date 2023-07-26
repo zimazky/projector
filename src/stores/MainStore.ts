@@ -173,9 +173,6 @@ class MainStore {
   }
 }
 
-/** Синглтон-экземпляр хранилища календаря */
-export const calendarStore = new CalendarStore
-
 /** Синглтон-экземпляр хранилища проектов */
 export const projectsStore = new ProjectsStore
 
@@ -187,6 +184,9 @@ export const eventsCache = new EventsCache(projectsStore, eventsStore)
 
 /** Синглтон-экземпляр хранилища данных прогноза погоды*/
 export const weatherStore = new WeatherStore;
+
+/** Синглтон-экземпляр хранилища календаря */
+export const calendarStore = new CalendarStore(eventsCache, weatherStore)
 
 /** Синглтон-экземпляр хранилища приложения */
 export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache)
