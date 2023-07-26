@@ -69,13 +69,20 @@ class MainStore {
   changeViewMode(props : {mode?: ViewMode, timestamp?: timestamp}) {
     if(props.mode) this.viewMode = props.mode
     if(props.timestamp) { 
+      calendarStore.resetShift()
       this.currentDay = props.timestamp
     }
   }
 
-  /** Установить текущий день и неделю */
+  /** Установить текущий день */
   setCurrentDay(t: timestamp) {
+    calendarStore.resetShift()
     this.currentDay = t
+  }
+
+  /** Метка времени текущей недели */
+  get currentWeek() {
+    return DateTime.getBegintWeekTimestamp(this.currentDay)
   }
 
   /** Установить флаги рассинхронизации данных с внешними хранилищами */
@@ -159,6 +166,10 @@ class MainStore {
   logOut = () => {
     GAPI.logOut()
     this.isGoogleLoggedIn = false
+  }
+
+  forceUpdate() {
+    this.mustForceUpdate = {}
   }
 }
 

@@ -13,14 +13,15 @@ function calendar() {
 
   const [isModal,setModal] = React.useState(false)
   const [modalState,setModalState] = React.useState({})
-  const currentWeekRef = React.useRef(null)
   
   const today = DateTime.getBeginDayTimestamp(Date.now()/1000)
-  const currentDay = DateTime.getBeginDayTimestamp(mainStore.currentDay)
-  const zeroPoint  = DateTime.getBegintWeekTimestamp(currentDay)
+  const zeroPoint  = mainStore.currentWeek
   let currentTimestamp = zeroPoint - calendarStore.shift*7*86400
 
-  React.useEffect(()=>{ currentWeekRef.current.scrollIntoView(true) }, [])
+  React.useEffect(()=>{
+    const weekDiv = document.getElementById(mainStore.currentWeek.toString())
+    weekDiv?.scrollIntoView(true)
+  }, [mainStore.currentWeek, mainStore.mustForceUpdate])
 
   const arrayOfDays = []
   for(let i=0;i<=20;i++) {
@@ -87,7 +88,7 @@ function calendar() {
     </div>
     <div className={styles.CalendarBody} onScroll={onScrollHandle}>
       { arrayOfDays.map( week => (
-        <div ref={week[0].timestamp==zeroPoint?currentWeekRef:null} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
+        <div id={week[0].timestamp} className={styles.CalendarWeek} key={week[0].timestamp} style={{height:(week.reduce((a,d)=>d.tasks.length>a?d.tasks.length:a,7))*1.5+1.4+1.4+1.4+'em'}}> {
           week.map( (d,j) => (
             <CalendarDay data={d} key={d.timestamp} today={today===d.timestamp} 
               weather={d.weather}

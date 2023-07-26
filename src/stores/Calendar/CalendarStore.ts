@@ -57,4 +57,6 @@ export class CalendarStore {
     if(topBufferSize < minBufferSize) this.shift += minBufferSize
     else if(bottomBufferSize < minBufferSize) this.shift -= minBufferSize
   }
+
+  resetShift() { this.shift = minBufferSize }
 }
