@@ -36,7 +36,7 @@ export class EventsCache {
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.eventsStore.completed.length ? 
-      this.eventsStore.completed[this.eventsStore.completed.length-1].start : 0
+      this.eventsStore.completed.at(-1).start : 0
     this.firstActualBalanceDate = this.eventsStore.completed.length?
       this.eventsStore.completed[0].start : 0
   }
@@ -110,7 +110,7 @@ export class EventsCache {
     while(skip.length>0) {
       // в стеке skip последний элемент может блокировать очищение стека если его действие не завершено
       // очищаем если последний элемент завершил действие
-      if(date < skip[skip.length-1].end) break
+      if(date < skip.at(-1).end) break
       skip.pop()
     }
     // добавление плейсхолдеров
@@ -136,7 +136,7 @@ export class EventsCache {
     date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]
     ): EventCacheStructure[] {
     while(skip.length>0) {
-      if(date < skip[skip.length-1].end) break
+      if(date < skip.at(-1).end) break
       skip.pop()
     }
     this.getEvents(date).reduce((a,e)=>{
