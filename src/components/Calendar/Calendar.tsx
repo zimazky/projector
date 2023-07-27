@@ -29,8 +29,17 @@ function calendar() {
     const el=e.target
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
+    // Общее число строк календаря (включая заголовки, баланс и строку ввода)
+    const sumN = calendarWeeks.reduce((a,w) => a + max(w.maxCount+3, 7+3), 0)
+    // Средняя высота строки календаря
+    const hAvg = el.scrollHeight/sumN
+    // Определение индекса первой недели отображаемой в видимой области
+    for(var i=0, H = t; H>0; i++) { H -= hAvg*max(calendarWeeks[i].maxCount+3, 7+3)}
+    const w = Math.ceil(i-calendarStore.shift)
+
+
     const avgDayHeight = el.scrollHeight/calendarWeeks.length
-    const w = Math.ceil(t/avgDayHeight-calendarStore.shift)
+    //const w = Math.ceil(t/avgDayHeight-calendarStore.shift)
     const d = new Date((zeroPoint+w*7*86400)*1000)
     
     calendarStore.setMonthYear(d.getMonth(), d.getFullYear())
@@ -73,7 +82,7 @@ function calendar() {
           <div id={week.list[0].timestamp.toString()}
             className={styles.CalendarWeek}
             key={week.list[0].timestamp}
-            style={{height: max(week.maxCount, 7)*1.5+1.4+1.4+1.4+'em'}}> {
+            style={{height: max(week.maxCount, 7)*1.5+1.6+1.6+1.6+'em'}}> {
             week.list.map( (d,j) => (
               <CalendarDay data={d}
                 key={d.timestamp} today={today===d.timestamp} 

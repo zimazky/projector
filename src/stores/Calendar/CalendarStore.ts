@@ -1,9 +1,9 @@
 import { makeAutoObservable } from "mobx"
 import DateTime, { timestamp } from "src/utils/datetime"
+import { max } from "src/utils/utils"
 import { EventsCache } from "src/stores/EventsCache/EventsCache"
 import { ForecastData1d, WeatherStore } from "src/stores/Weather/WeatherStore"
 import { EventCacheStructure } from "src/stores/EventsCache/EventCacheStructure"
-import { max } from "src/utils/utils"
 
 /** Минимальный размер буфера в неделях */
 const minBufferSize = 4
