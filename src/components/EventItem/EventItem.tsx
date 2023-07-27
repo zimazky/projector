@@ -1,5 +1,5 @@
 import React from 'react'
-import DateTime from '../utils/datetime'
+import DateTime from '../../utils/datetime'
 import styles from './EventItem.module.css'
 
 export default function EventItem({event, days, timestamp, onClick=(compactEvent)=>{}, onDragStart=e=>{}}) {

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
-    "mobx": "^6.9.1",
+    "mobx": "^6.10.0",
     "mobx-react-lite": "^3.4.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -14,7 +14,7 @@
     "@types/gapi.client.drive": "^3.0.15",
     "@types/google.accounts": "^0.0.2",
     "@types/jasmine": "^4.3.5",
-    "@types/react": "^18.2.15",
+    "@types/react": "^18.2.17",
     "@types/react-dom": "^18.2.7",
     "css-loader": "^6.8.1",
     "dotenv-webpack": "^7.1.1",

@@ -1,8 +1,8 @@
 import React from 'react'
-import styles from './Navbar.module.css'
-import { calendarStore } from 'src/stores/MainStore'
 import { observer } from 'mobx-react-lite'
-import Time from './Time'
+import { calendarStore } from 'src/stores/MainStore'
+import Time from 'src/components/Time/Time'
+import styles from './Navbar.module.css'
 
 function navbar({menuItems=[], iconItems=[], navItems=[]}) {
   const [menuOpen, setMenuOpen] = React.useState(false)

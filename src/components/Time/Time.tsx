@@ -1,7 +1,7 @@
 import React from 'react'
-import styles from './Time.module.css'
-import DateTime from 'src/utils/datetime'
 import { mainStore } from 'src/stores/MainStore'
+import DateTime from 'src/utils/datetime'
+import styles from './Time.module.css'
 
 export default function Time() {
   const [time, setTime] = React.useState('')

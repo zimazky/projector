@@ -1,13 +1,14 @@
 import React from 'react'
-import styles from './Calendar.module.css'
-import CalendarDay from "./CalendarDay"
-import EventItem from './EventItem'
-import DateTime from 'src/utils/datetime'
-import {calendarStore, eventsStore, mainStore} from 'src/stores/MainStore'
-import Modal from './Modal'
-import EventForm from './EventForm'
 import { observer } from 'mobx-react-lite'
 import { max, min } from 'src/utils/utils'
+import DateTime from 'src/utils/datetime'
+import {calendarStore, eventsStore, mainStore} from 'src/stores/MainStore'
+
+import CalendarDay from "./CalendarDay"
+import EventItem from 'src/components/EventItem/EventItem'
+import Modal from 'src/components/Modal/Modal'
+import EventForm from 'src/components/EventForm/EventForm'
+import styles from './Calendar.module.css'
 
 function calendar() {
 

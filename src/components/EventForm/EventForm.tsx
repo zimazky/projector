@@ -1,6 +1,6 @@
 import React from 'react'
 import { eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
-import Button from './Button'
+import Button from '../Common/Button'
 import styles from './EventForm.module.css'
 import calculate from 'src/utils/calculate'
 

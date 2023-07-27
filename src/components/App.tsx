@@ -1,8 +1,8 @@
 import React from 'react'
 import useUpdate from 'src/hooks/useUpdate'
-import { Calendar } from './Calendar'
-import DayList from './DayList'
-import { Navbar } from './Navbar'
+import { Calendar } from './Calendar/Calendar'
+import DayList from './DayList/DayList'
+import { Navbar } from './Navbar/Navbar'
 import { mainStore, weatherStore } from 'src/stores/MainStore'
 import { observer } from 'mobx-react-lite'
 
