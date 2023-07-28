@@ -1,10 +1,8 @@
 import React from 'react'
-import { useForm } from 'react-hook-form'
 import { eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
 import Button from '../Common/Button'
 import styles from './EventForm.module.css'
 import calculate from 'src/utils/calculate'
-import TextField from '../ui/TextField'
 
 function Parameter({name, style, children}) {
   return (
@@ -32,9 +30,6 @@ function BackgroundInput({colors, onChange=(s)=>{}}) {
 }
 
 export default function EventForm({event, onExit=()=>{}}) {
-
-  const {register, handleSubmit} = useForm()
-
   const nameRef = React.useRef(null)
   const commentRef = React.useRef(null)
   const projectRef = React.useRef(null)
@@ -145,7 +140,7 @@ export default function EventForm({event, onExit=()=>{}}) {
   console.log('event',event)
   console.log('eventList.planned',eventsStore.planned)
   return (
-    <form className={styles.form}>
+    <div className={styles.form}>
       {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
       {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
       {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
@@ -153,17 +148,6 @@ export default function EventForm({event, onExit=()=>{}}) {
       <Button onClick={onSaveColors}>Save Project Color</Button>
       <Button onClick={onExit}>Cancel</Button>
 
-
-      <TextField label='Name' value={event.name ?? ''}></TextField>
-      <TextField label='Comment' value={event.comment ?? ''}></TextField>
-
-      <div>!!!!</div>
-
-      <textarea className={styles.input} name='name' {...register('name')} value={event.name ?? ''} placeholder='Name'></textarea>
-      <textarea className={styles.input} name='comment' {...register('comment')} value={event.comment ?? ''} placeholder='Comment'></textarea>
-
-
-      <div>!!!</div>
       <div ref={nameRef} className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
         {event.name ?? ''}
       </div>
@@ -208,7 +192,7 @@ export default function EventForm({event, onExit=()=>{}}) {
       <Parameter name='debit' style={{minWidth:120}}>
         <Input inputRef={debitRef}>{event.debit?event.debit:''}</Input>
       </Parameter>
-    </form>
+    </div>
 
   )
 }

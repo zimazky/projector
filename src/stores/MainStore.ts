@@ -7,6 +7,7 @@ import GAPI from "src/utils/gapi"
 import DateTime, { timestamp } from "src/utils/datetime"
 import { WeatherStore } from "./Weather/WeatherStore"
 import { CalendarStore } from "./Calendar/CalendarStore"
+import { EventFormStore } from "./EventForm/EventFormStore"
 
 /** Тип данных приложения для сохранения во внешнем хранилище */
 type MainStoreData = {
@@ -187,6 +188,9 @@ export const weatherStore = new WeatherStore;
 
 /** Синглтон-экземпляр хранилища календаря */
 export const calendarStore = new CalendarStore(eventsCache, weatherStore)
+
+/** Синглтон-экземпляр хранилища формы события */
+export const eventFormStore = new EventFormStore
 
 /** Синглтон-экземпляр хранилища приложения */
 export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache)

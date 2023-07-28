@@ -2,7 +2,7 @@ import React from 'react'
 import { observer } from 'mobx-react-lite'
 import { max, min } from 'src/utils/utils'
 import DateTime from 'src/utils/datetime'
-import {calendarStore, eventsStore, mainStore} from 'src/stores/MainStore'
+import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/MainStore'
 
 import CalendarDay from "./CalendarDay"
 import EventItem from 'src/components/EventItem/EventItem'
@@ -12,7 +12,6 @@ import styles from './Calendar.module.css'
 
 function calendar() {
 
-  const [isModal,setModal] = React.useState(false)
   const [modalState,setModalState] = React.useState({})
   
   React.useEffect(()=>{
@@ -36,13 +35,11 @@ function calendar() {
     // Определение индекса первой недели отображаемой в видимой области
     for(var i=0, H = t; H>0; i++) { H -= hAvg*max(calendarWeeks[i].maxCount+3, 7+3)}
     const w = Math.ceil(i-calendarStore.shift)
-
-
-    const avgDayHeight = el.scrollHeight/calendarWeeks.length
-    //const w = Math.ceil(t/avgDayHeight-calendarStore.shift)
+    // Дата первой видимой недели
     const d = new Date((zeroPoint+w*7*86400)*1000)
-    
     calendarStore.setMonthYear(d.getMonth(), d.getFullYear())
+    // Средняя высота недели в календаре
+    const avgDayHeight = el.scrollHeight/calendarWeeks.length
     calendarStore.correctShift(t/avgDayHeight, b/avgDayHeight)
   }
 
@@ -51,14 +48,14 @@ function calendar() {
   const openNewEventForm = (timestamp, name) => {
     if(name==='') return
     setModalState({name, start: DateTime.getYYYYMMDD(timestamp)})
-    setModal(true)
+    eventFormStore.show()
   }
 
   const openEventForm = compactEvent => {
     const {id, completed, start} = compactEvent
     const s = eventsStore.getEventData(id)
     setModalState({...s, completed, timestamp:start, id})
-    setModal(true)
+    eventFormStore.show()
   }
   const dragStart = (e,id) => {
     e.dataTransfer.setData('event_item', JSON.stringify(id))
@@ -97,9 +94,11 @@ function calendar() {
           </div>
         ))}
       </div>
-      <Modal isOpen={isModal} onCancel={()=>setModal(false)}>
-        <EventForm event={modalState} onExit={()=>setModal(false)}/>
+      { eventFormStore.isShow &&
+      <Modal onCancel={eventFormStore.hide}>
+        <EventForm event={modalState} onExit={eventFormStore.hide}/>
       </Modal>
+      }
     </div>
   )
 }
