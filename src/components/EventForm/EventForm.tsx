@@ -1,10 +1,11 @@
 import React from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, SubmitHandler, useForm } from 'react-hook-form'
 import { eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
 import Button from '../Common/Button'
 import styles from './EventForm.module.css'
 import calculate from 'src/utils/calculate'
-import TextField from '../ui/TextField'
+import { TextField } from '../ui/TextField/TextField'
+import ZCron from 'src/utils/zcron'
 
 function Parameter({name, style, children}) {
   return (
@@ -31,9 +32,23 @@ function BackgroundInput({colors, onChange=(s)=>{}}) {
   </>)
 }
 
+interface Fields {
+  name: string
+  comment: string
+  repeat: string
+  start: string
+  time: string
+  duration: string
+  end: string
+  credit: string
+  debit: string
+}
+
 export default function EventForm({event, onExit=()=>{}}) {
 
-  const {register, handleSubmit} = useForm()
+  const {register, handleSubmit, formState: {errors}} = useForm<Fields>({mode: 'onChange'})
+
+  const submit: SubmitHandler<Fields> = (data)=>{console.log(data)}
 
   const nameRef = React.useRef(null)
   const commentRef = React.useRef(null)
@@ -142,74 +157,52 @@ export default function EventForm({event, onExit=()=>{}}) {
     setProjectId(pi)
   }
 
-  console.log('event',event)
-  console.log('eventList.planned',eventsStore.planned)
+  //console.log('event',event)
+  //console.log('eventList.planned',eventsStore.planned)
+  console.log('errors', errors)
   return (
-    <form className={styles.form}>
-      {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
-      {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
-      {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
-      {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
-      <Button onClick={onSaveColors}>Save Project Color</Button>
-      <Button onClick={onExit}>Cancel</Button>
+  <form className={styles.form} onSubmit={handleSubmit(submit)}>
+    {!isNew && <Button onClick={()=>onCompleteHandle(event.completed)}>{event.completed?'Mark uncompleted':'Complete'}</Button>}
+    {!isNew && <Button onClick={()=>onDeleteHandle(event.id)}>Delete</Button>}
+    {!isNew && <Button onClick={()=>onChangeEventHandle(event.id)}>{event.repeat?'Change All':'Change'}</Button>}
+    {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
+    <Button onClick={onSaveColors}>Save Project Color</Button>
+    <Button onClick={onExit}>Cancel</Button>
 
+    <TextField label='Name' value={event.name ?? ''} error={!!errors.name} {...register('name', {required: true})}></TextField>
+    <TextField label='Comment' value={event.comment ?? ''} {...register('comment')}></TextField>
 
-      <TextField label='Name' value={event.name ?? ''}></TextField>
-      <TextField label='Comment' value={event.comment ?? ''}></TextField>
+    <button>Send</button>
 
-      <div>!!!!</div>
+{/***********************************************************/}
+    <Parameter name='project' style={{minWidth:100}}>
+      <select className={styles.select} ref={projectRef} defaultValue={event.project}
+      onChange={onChangeProject}>
+        {/*eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))*/}
+        {projectsStore.list.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
 
-      <textarea className={styles.input} name='name' {...register('name')} value={event.name ?? ''} placeholder='Name'></textarea>
-      <textarea className={styles.input} name='comment' {...register('comment')} value={event.comment ?? ''} placeholder='Comment'></textarea>
+      </select>
+    </Parameter>
+    <Parameter name='background/color' style={{minWidth:60}}>
+      <BackgroundInput colors={colors} onChange={setColors}/>
+    </Parameter>
+{/****************************************************************/}
 
-
-      <div>!!!</div>
-      <div ref={nameRef} className={styles.name} contentEditable='true' suppressContentEditableWarning={true}>
-        {event.name ?? ''}
-      </div>
-
-      <Parameter name='comment' style={{width:'100%'}}>
-        <Input inputRef={commentRef}>{event.comment ?? ''}</Input>
-      </Parameter>
-      <br/>
-      <Parameter name='project' style={{minWidth:100}}>
-        <select className={styles.select} ref={projectRef} defaultValue={event.project}
-        onChange={onChangeProject}>
-          {/*eventList.projects.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))*/}
-          {projectsStore.list.map((p,i)=>(<option key={i} value={p.name}>{p.name}</option>))}
-
-        </select>
-      </Parameter>
-      <Parameter name='background/color' style={{minWidth:60}}>
-        <BackgroundInput colors={colors} onChange={setColors}/>
-      </Parameter>
-
-      <br/>
-      <Parameter name='repeat' style={{minWidth:120}}>
-        <Input inputRef={repeatRef}>{event.repeat}</Input>
-      </Parameter>
-      <br/>
-      <Parameter name='start date' style={{minWidth:110}}>
-        <Input inputRef={startRef}>{event.start?event.start:''}</Input>
-      </Parameter>
-      <Parameter name='time' style={{minWidth:60}}>
-        <Input inputRef={timeRef}>{event.time?event.time:''}</Input>
-      </Parameter>
-      <Parameter name='duration' style={{minWidth:70}}>
-        <Input inputRef={durationRef}>{event.duration?event.duration:''}</Input>
-      </Parameter>
-      <Parameter name='end date' style={{minWidth:110}}>
-        <Input inputRef={endRef}>{event.end?event.end:''}</Input>
-      </Parameter>
-      <br/>
-      <Parameter name='credit' style={{minWidth:120}}>
-        <Input inputRef={creditRef}>{event.credit?event.credit:''}</Input>
-      </Parameter>
-      <Parameter name='debit' style={{minWidth:120}}>
-        <Input inputRef={debitRef}>{event.debit?event.debit:''}</Input>
-      </Parameter>
-    </form>
-
+    <TextField label='Repeat' value={event.repeat ?? ''} error={!!errors.repeat} 
+      {...register('repeat', {validate: ZCron.validate})}></TextField>
+    <TextField label='Start date' value={event.start ?? ''} error={!!errors.start}
+      {...register('start', {required: true, pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}></TextField>
+    <TextField label='Time' value={event.time ?? ''} error={!!errors.time}
+      {...register('time', {pattern: /^([0-1]?\d|2[0-3]):[0-5]\d$/})}></TextField>
+    <TextField label='Duration' value={event.duration ?? ''} error={!!errors.duration}
+      {...register('duration', {pattern: /^(\d+d ?)?\d*(:\d\d)?$/})}></TextField> {/* поправить */}
+    <TextField label='End date' value={event.end ?? ''} error={!!errors.end}
+      {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}></TextField>
+    <TextField label='Credit' value={event.credit ?? ''} error={!!errors.credit}
+      {...register('credit', {pattern: /^\d*[\.,]?\d{0,2}$/})}></TextField>
+    <TextField label='Debit' value={event.debit ?? ''} error={!!errors.debit}
+      {...register('debit', {pattern: /^\d*[\.,]?\d{0,2}$/})}></TextField>
+  </form>
   )
 }
 

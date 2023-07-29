@@ -106,4 +106,130 @@ export default class ZCron {
     }
     return 0
   }
+
+  /** Валидация шаблона */
+  static validate(scheduleString: string): boolean {
+    if(scheduleString === '') return true
+    const arr = scheduleString.split(' ')
+    if(arr.length > 3) return false
+    const [d, m = '*', w = '*'] = arr
+    return validateDaysPattern(d) && validateMonthsPattern(m) && validateWeekdaysPattern(w)
+  }
+}
+
+/** 
+ * Проверка целого значения n в строке по диапазону значений (n>=min, n<=max) и возврат числа
+ * Возвращает кортеж из двух значений
+ * 1. true если в строке целое число и оно принадлежит диапазону, false в противном случае
+ * 2. целое число или NaN если в строке не целое число
+ */
+function testIntegerInString(s: string, min = 0, max = 0): [boolean, number] {
+  if(!/^\d+$/.test(s)) return [false, NaN]
+  const n: number = +s
+  if(n < min) return [false, n]
+  if(max > 0 && n > max) return [false, n]
+  return [true, n]
+}
+
+/**  
+ * Проверка целого значения n в строке по диапазону значений (n>=min, n<=max)
+ * Возвращает true если в строке целое число и оно принадлежит диапазону, false в противном случае
+ */
+function testInt(s: string, min = 0, max = 0): boolean {
+  if(!/^\d+$/.test(s)) return false
+  const n: number = +s
+  if(n < min) false
+  if(max > 0 && n > max) return false
+  return true
+}
+
+/**
+ * Проверка части шаблона, отвечающей дням месяца
+ */
+function validateDaysPattern(s: string): boolean {
+  if(s === '*') return true
+  if(s[0] === '/') { // '/3213'
+    if(!testInt(s.substring(1), 1)) return false
+    return true
+  }
+  // '2/180', '*/24'
+  const d = s.split('/')
+  if(d.length === 2) {
+    const [m1, m2] = d
+    if(!testInt(m2, 1)) return false
+    if(m1 !== '*' && !testInt(m1, 1, 31)) return false
+    return true
+  }
+  // '20,25,27-31'
+  const p = s.split(',')
+  return p.every(s=>{
+    const d = s.split('-')
+    if(d.length > 2) return false
+    if(d.length === 2) {    // '20-31'
+      const [m1, m2] = d
+      if(!testInt(m2, 1, 31)) return false
+      if(!testInt(m1, 1, 31)) return false
+      return true
+    }
+    // 24
+    return testInt(d[0], 1, 31)
+  })
+}
+
+/**
+ * Проверка части шаблона, отвечающей месяцам
+ */
+function validateMonthsPattern(s: string): boolean {
+  if(s === '*') return true
+  // '2/2', '*/5'
+  const d = s.split('/')
+  if(d.length === 2) {
+    const [m1, m2] = d
+    if(!testInt(m2, 1)) return false
+    if(m1 !== '*' && !testInt(m1, 1, 12)) return false
+    return true
+  }
+  // '1,3,7-10'
+  const p = s.split(',')
+  return p.every(s=>{
+    const d = s.split('-')
+    if(d.length > 2) return false
+    if(d.length === 2) {    // '7-10'
+      const [m1, m2] = d
+      if(!testInt(m2, 1, 12)) return false
+      if(!testInt(m1, 1, 12)) return false
+      return true
+    }
+    // 3
+    return testInt(d[0], 1, 12)
+  })
+}
+
+/**
+ * Проверка части шаблона, отвечающей дням недели
+ */
+function validateWeekdaysPattern(s: string): boolean {
+  if(s === '*') return true
+  // '2/2', '*/5'
+  const d = s.split('/')
+  if(d.length === 2) {
+    const [m1, m2] = d
+    if(!testInt(m2, 1)) return false
+    if(m1 !== '*' && !testInt(m1, 0, 6)) return false
+    return true
+  }
+  // '1,3-5'
+  const p = s.split(',')
+  return p.every(s=>{
+    const d = s.split('-')
+    if(d.length > 2) return false
+    if(d.length === 2) {    // '3-5'
+      const [m1, m2] = d
+      if(!testInt(m2, 0, 6)) return false
+      if(!testInt(m1, 0, 6)) return false
+      return true
+    }
+    // 3
+    return testInt(d[0], 0, 6)
+  })
 }
