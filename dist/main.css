@@ -243,6 +243,16 @@
   padding: 2px 0;
 }
 
+
+
+
+
+.input_c181ff2 {
+  display: block;
+  width: 100%;
+  font-size: 20px;
+  resize: none;
+}
 .wrapper_ad3ef96 {
   font-size: 16px;
   width: 100%;
@@ -393,18 +403,19 @@
 }
 
 :root{
-  --navbackground: white;
-  --navcolor: gray;
+  --ui-nav-background-color: white;
+  --ui-nav-color: gray;
 }
+
 .navigationbar_f5f3497 {
   font-size: 22px;
   height: 1.6em;
   width: 100%;
-  background-color: var(--navbackground);
+  background-color: var(--ui-nav-background-color);
   vertical-align: baseline;
   padding: 0.3em 8px;
   border-bottom: 1px solid lightgray;
-  color: var(--navcolor);
+  color: var(--ui-nav-color);
   display: grid;
   grid-template-columns: 1fr min-content 1fr;
   column-gap: 1em;
@@ -419,13 +430,13 @@
   display: inline-block;
   height: 100%;
   margin-right: 0.6em;
-  color: var(--navcolor);
+  color: var(--ui-nav-color);
 }
 
 .burgermenu_ce96f5e {
   height: 1em;
   width: 1em;
-  fill: var(--navcolor);
+  fill: var(--ui-nav-color);
 }
 .burgermenu_ce96f5e:focus {
   fill: black;
@@ -436,12 +447,12 @@
   left: 0;
   top: 1.5em;
   z-index: 1;
-  background-color: var(--navbackground);
+  background-color: var(--ui-nav-background-color);
   border: 1px solid lightgray;
 }
 .menu_d4afc10 div {
   padding: 0.5em;
-  color: var(--navcolor);
+  color: var(--ui-nav-color);
 }
 .menu_d4afc10 div:hover {
   background-color: lightgray;
@@ -450,7 +461,7 @@
 .icons_dcfbedd {
   height: 1em;
   width: 1em;
-  stroke: var(--navcolor);
+  stroke: var(--ui-nav-color);
 }
 .icons_dcfbedd:hover {
   stroke: black;
@@ -460,3 +471,32 @@
   white-space: nowrap;
 }
 
+#root {
+  position: fixed;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  user-select: none;
+  grid-template-columns: 1fr;
+  grid-template-rows: max-content 1fr;
+}
+
+
+:root{
+  --ui-backgroung-color: white;
+  --ui-border-focus-color: #1976d2;
+}
+* {
+	padding: 0;
+	margin: 0;
+	border: 0;
+	box-sizing: border-box;
+	}
+
+body {
+	width: 100vw;
+	height: 100vh;
+	font-family: 'Roboto',sans-serif;
+	overflow-y: hidden;
+}
