@@ -1,0 +1,67 @@
+.container {
+  position: relative;
+  height: 40px;
+  width: 100%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
+  border-radius: 4px;
+  margin: 10px 0;
+  padding: 10px;
+  background-color: var(--ui-backgroung-color);
+  font-size: 1rem;
+}
+
+.container:hover {
+  box-shadow: 0 0 0 1px black;
+}
+
+.container:focus-within {
+  box-shadow: 0 0 0 2px var(--ui-border-focus-color);
+}
+
+.container:focus-within .label {
+  color: var(--ui-border-focus-color);
+  transform: translate(9px, -7px) scale(0.75);
+}
+
+.container.error .label::after{
+  content: ' *';
+  color: red;
+}
+
+.label {
+  pointer-events: none;
+  color: rgba(0, 0, 0, 0.3);
+  padding: 0 7px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  background-color: var(--ui-backgroung-color);
+  transform-origin: top left;
+  transform: translate(7px, 8px) scale(1);
+  transition: 
+    color 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms,
+    transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms,
+    max-width 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+}
+
+.select:not(:placeholder-shown) + .label {
+  transform: translate(9px, -7px) scale(0.75);
+}
+
+.select {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  font-size: inherit;
+  font-family: inherit;
+  padding: 8px 10px;
+  background-color: transparent;
+}
+
+.select:focus-visible {
+  outline-style: none;
+}

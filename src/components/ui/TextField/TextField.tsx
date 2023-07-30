@@ -7,9 +7,8 @@ interface Props {
   error?: boolean
 }
 
-export const TextField = React.forwardRef<HTMLInputElement, Props>(function (props, ref) {
+const TextField = React.forwardRef<HTMLInputElement, Props>(function (props, ref) {
   const {label, value, error, ...rest} = props
-  console.log('error', error)
   return (
   <div className={styles.container + (error?' '+styles.error:'')}>
     <input className={styles.input} ref={ref} type='text' defaultValue={value} placeholder=' ' {...rest} />
@@ -17,3 +16,5 @@ export const TextField = React.forwardRef<HTMLInputElement, Props>(function (pro
   </div>
   )
 })
+
+export default TextField
