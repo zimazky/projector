@@ -1,17 +1,17 @@
 import React from 'react'
 import useUpdate from 'src/hooks/useUpdate'
-import { Calendar } from '../Calendar/Calendar'
-import DayList from '../DayList/DayList'
-import { Navbar } from '../Navbar/Navbar'
+import Calendar from 'src/components/Calendar/Calendar'
+import DayList from 'src/components/DayList/DayList'
+import Navbar from 'src/components/Navbar/Navbar'
 import { mainStore, weatherStore } from 'src/stores/MainStore'
 import { observer } from 'mobx-react-lite'
 import './App.css'
 
 function fullScreen() { 
-  document.getElementById('root').requestFullscreen() 
+  document.getElementById('root')?.requestFullscreen() 
 }
 
-function app() {
+const App: React.FC = observer(function() {
   const forceUpdate = useUpdate()
   React.useEffect(mainStore.gapiInit, [])
   React.useEffect(forceUpdate, [mainStore.mustForceUpdate])
@@ -92,14 +92,16 @@ function app() {
   return <>
     <Navbar menuItems={menu} iconItems={icons}/>
     { mainStore.viewMode === 'Calendar' ? <Calendar/> : null }
-    {
+    { /*
       mainStore.viewMode === 'Day' ?
       <DayList timestamp={mainStore.currentDay} 
-      onChangeDate={t=> mainStore.changeViewMode({timestamp: t})}
+      onChangeDate={t=> mainStore.setCurrentDay(t)}
       onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})}
       />
       :null
+      */
     }
   </>
-}
-export const App = observer(app);
+})
+
+export default App

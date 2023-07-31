@@ -68,7 +68,7 @@ function doOp(right: number, left: number, operand: string): number {
 }
 
 /** Вычисление алгебраического выражения, заданного строкой */
-export default function calculate(s: string): number {
+export default function calculate(s: string): number | undefined {
 
   let next: nextresult = {operation: 'b', rest: s.replace(/,/g,'.').replace(/\s/g,'')}
   const opstack: operators[] = []
@@ -84,7 +84,7 @@ export default function calculate(s: string): number {
     // признак двух подряд операторов
     const twinops = next.number === undefined
     // операнд или унарный оператор
-    if(!twinops) numstack.push(next.number)
+    if(next.number !== undefined) numstack.push(next.number)
     else if(o_prev!==')') switch(o) {
       // унарные операторы
       case '-': opstack.push(o = 'n')
@@ -101,7 +101,7 @@ export default function calculate(s: string): number {
       continue
     }
     // конец подвыражения и его вычисление
-    o_top = opstack.pop()
+    o_top = opstack.pop() ?? 'b'
     if(o === ')') {
       if(twinops && o_prev!==')') {
         console.log(s)
@@ -114,17 +114,17 @@ export default function calculate(s: string): number {
           console.log('Непредвиденное закрытие скобки')
           return NaN //throw Error('Непредвиденное закрытие скобки')
         }
-        if(o_top === 'n') numstack.push(-numstack.pop())
-        else numstack.push(doOp(numstack.pop(), numstack.pop(), o_top))
-        o_top = opstack.pop()
+        if(o_top === 'n') numstack.push(-(numstack.pop() ?? NaN))
+        else numstack.push(doOp(numstack.pop() ?? NaN, numstack.pop() ?? NaN, o_top))
+        o_top = opstack.pop() ?? 'b'
       }
       continue
     }
     // обработка предыдущих операторов с высшим или равным приоритетом
     while(o_top!=='b' && priority[o]<=priority[o_top]) {
-      if(o_top === 'n') numstack.push(-numstack.pop())
-      else numstack.push(doOp(numstack.pop(), numstack.pop(), o_top))
-      o_top = opstack.pop()
+      if(o_top === 'n') numstack.push(-(numstack.pop() ?? NaN))
+      else numstack.push(doOp(numstack.pop() ?? NaN, numstack.pop() ?? NaN, o_top))
+      o_top = opstack.pop() ?? 'b'
     }
     // сохранение в стек операторов с меньшим приоритетом
     opstack.push(o_top)

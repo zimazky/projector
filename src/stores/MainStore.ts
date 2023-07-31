@@ -14,7 +14,7 @@ type MainStoreData = {
   projectsList: ProjectData[]
 } & EventsStoreData
 
-type ViewMode = 'Calendar' | 'Day'
+type ViewMode = 'Calendar' | 'Day' | 'Projects'
 
 /** Класс главного хранилища приложения */
 class MainStore {
@@ -67,12 +67,14 @@ class MainStore {
   }
 
   /** Изменить режим просмотра приложения */
-  changeViewMode(props : {mode?: ViewMode, timestamp?: timestamp}) {
+  changeViewMode(props : {mode?: ViewMode/*, timestamp?: timestamp*/}) {
     if(props.mode) this.viewMode = props.mode
+    /*
     if(props.timestamp) { 
       calendarStore.resetShift()
       this.currentDay = props.timestamp
     }
+    */
   }
 
   /** Установить текущий день */

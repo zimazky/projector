@@ -13,7 +13,7 @@ export type WeatherLocation = {
 /** Класс хранилища списка локаций погоды */
 class LocationsStore {
   /** Список локаций */
-  list: WeatherLocation[];
+  list: WeatherLocation[] = [];
 
   constructor() {
     makeAutoObservable(this);

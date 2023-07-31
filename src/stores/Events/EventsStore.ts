@@ -48,14 +48,14 @@ export class EventsStore {
     const completedList = this.completed.map(e=>singleEventStructureToEventData(e))
     const plannedList: EventData[] = this.plannedRepeatable.reduce((a,e) => {
       return a.push(repeatableEventStructureToEventData(e)), a
-    }, [])
+    }, [] as EventData[])
     this.planned.reduce((a,e) => {
       return a.push(singleEventStructureToEventData(e)), a
     }, plannedList)
     return {completedList, plannedList}
   }
 
-  getEventStructure(id: number): IEventStructure {
+  getEventStructure(id: number): IEventStructure | undefined {
     let event = this.completed.find(e=>e.id===id)
     if(event !== undefined) return event
     event = this.planned.find(e=>e.id===id)
@@ -64,7 +64,7 @@ export class EventsStore {
     if(revent !== undefined) return revent
   }
 
-  getEventData(id: number): EventData {
+  getEventData(id: number): EventData | undefined {
     let event = this.completed.find(e=>e.id===id)
     if(event !== undefined) return singleEventStructureToEventData(event)
     event = this.planned.find(e=>e.id===id)
@@ -175,7 +175,7 @@ export class EventsStore {
    * @param currentdate Текущая дата для уточнения события среди повторяемых
    * @param e Модифицированное событие
    */
-  completeEvent(id: number, currentdate: timestamp, e: EventData) {
+  completeEvent(id: number | null, currentdate: timestamp, e: EventData) {
     {
       let event = this.planned.find(e => e.id===id)
       if(event !== undefined) {
@@ -214,7 +214,7 @@ export class EventsStore {
    * @param id Идентификатор события
    * @param raw Модифицированное событие
    */
-  uncompleteEvent(id: number, raw: EventData) {
+  uncompleteEvent(id: number | null, raw: EventData) {
     let event = this.completed.find(e=>e.id===id)
     if(event !== undefined) {
       this.addPlannedEventStructure({...event, ...eventDataToIEventStructure(raw)}, false)
@@ -359,15 +359,15 @@ export class EventsStore {
   sort() {
     // в начало массива поднимаются события с самой ранней датой начала start
     // при одинаковой дате начала первыми идут задачи с наибольшей длительностью в днях days
-    this.completed.sort((a,b)=>{
+    this.completed.sort((a, b) => {
       const d = a.start-b.start
       return d === 0 ? b.days-a.days : d
     })
-    this.planned.sort((a,b)=>{
+    this.planned.sort((a, b) => {
       const d = a.start-b.start
       return d === 0 ? b.days-a.days : d
     })
     // повторяемые сортируются по времени
-    this.plannedRepeatable.sort((a,b)=>a.time-b.time)
+    this.plannedRepeatable.sort((a,b)=>(a.time===null ? 0 : a.time) - (b.time===null ? 0 : b.time))
   }
 }

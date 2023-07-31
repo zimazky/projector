@@ -1,4 +1,4 @@
-const API_KEY: string = process.env.OPEN_WEATHER_KEY;
+const API_KEY: string = process.env.OPEN_WEATHER_KEY ?? '';
 
 type Forecast = {
   /** Time of data forecasted, unix, UTC */

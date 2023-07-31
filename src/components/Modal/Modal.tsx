@@ -1,8 +1,12 @@
 import React from 'react'
 import styles from './Modal.module.css'
 
-export default function({onCancel=()=>{}, children=null}) {
+type ModalProps = {
+  onCancel: () => void
+  children: React.ReactNode
+}
 
+export default function({onCancel = ()=>{}, children = null}: ModalProps) {
   return (
     <div className={styles.modalOverlay} onClick={onCancel}>
       <div className={styles.modalWindow} onClick={e=>e.stopPropagation()}>

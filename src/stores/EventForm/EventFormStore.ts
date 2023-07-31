@@ -1,20 +1,37 @@
 import { makeAutoObservable } from "mobx"
 import { EventData } from "src/stores/Events/EventData"
+import { timestamp } from "src/utils/datetime"
+
+type EventFormStructure = {
+  /** Идентификатор события (если не указан, то новое событие) */
+  id: number | null
+  /** Признак завершенности события */
+  completed?: boolean 
+  /** Метка времени дня */
+  timestamp: timestamp
+} & EventData
 
 export class EventFormStore {
   /** Признак отображения модальной формы на экране */
   isShow: boolean = false
-  /** Идентификатор события, отображаемого в форме */
-  eventId: number
   /** Данные отображаемого события */
-  eventData: EventData
+  eventData: EventFormStructure = {
+    id: null,
+    timestamp: 0,
+    name: '',
+    start: ''
+  }
 
   constructor() {
     makeAutoObservable(this)
   }
 
-  show = () => { this.isShow = true }
+  showForm = () => { this.isShow = true }
 
-  hide = () => { this.isShow = false }
+  hideForm = () => { this.isShow = false }
+
+  setEventData = (e: EventFormStructure) => {
+    this.eventData = e
+  }
 
 }

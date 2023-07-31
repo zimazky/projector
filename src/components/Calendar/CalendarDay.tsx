@@ -1,53 +1,62 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
-import DateTime from 'src/utils/datetime'
-import { ForecastData1d } from 'src/stores/Weather/WeatherStore'
+import DateTime, { timestamp } from 'src/utils/datetime'
 import { plus } from 'src/utils/utils'
+import { eventFormStore, mainStore } from 'src/stores/MainStore'
+import { CalendarDayStructure } from 'src/stores/Calendar/CalendarStore'
 
 function minimize(d: number) { return (d/1000).toFixed(1) }
 
 type CalendarDayProperties = {
-  data: {
-    timestamp: number,
-    weather: ForecastData1d
-    actualBalance: number,
-    plannedBalance: number,
-    plannedBalanceChange: number,
-    style: 'normal' | 'uncompleted' | 'completed'
-  };
-  today: boolean;
-  onAddEvent: (timestamp: number, name: string) => void;
-  onDragDrop: (e) => void;
-  onDayOpen: (timestamp: number) => void;
-  children: any;
+  data: CalendarDayStructure
+  isToday: boolean
+  onDragDrop: (e: React.DragEvent<HTMLElement>) => void
+  children: any
 }
 
-export default function CalendarDay({data, today=false, onAddEvent=(t,s)=>{}, onDragDrop=e=>{}, onDayOpen=(timestamp)=>{}, children = null}: CalendarDayProperties) {
+export default function CalendarDay(props: CalendarDayProperties) {
+  const {data, isToday, onDragDrop, children = null} = props
   const {timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style} = data
-  const inputElementRef = React.useRef(null)
+  const inputElementRef = React.useRef<HTMLDivElement>(null)
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
 
-  function onClickHandle(e) {
-    if(inputElementRef) inputElementRef.current.focus()
+  const onDayOpen = (timestamp: timestamp) => {
+    mainStore.setCurrentDay(timestamp)
+    mainStore.changeViewMode({mode: 'Day'})
   }
-  function onKeyDownHandle(e) {
-    if (e.key == 'Enter') e.target.blur()
+
+  const openEventFormWithNewEvent = (name: string) => {
+    if(name==='') return
+    eventFormStore.setEventData({
+      id: null, name, timestamp,
+      start: DateTime.getYYYYMMDD(timestamp)
+    })
+    eventFormStore.showForm()
   }
-  function onBlurHandle(e) {
-    onAddEvent(timestamp, e.target.innerText)
+
+  function onClickHandle(e: React.MouseEvent<HTMLElement>) {
+    if(inputElementRef) inputElementRef.current?.focus()
+  }
+
+  function onKeyDownHandle(e: React.KeyboardEvent<HTMLElement>) {
+    if (e.key == 'Enter') e.currentTarget.blur()
+  }
+
+  function onBlurHandle(e: React.FocusEvent<HTMLElement>) {
+    openEventFormWithNewEvent(e.target.innerText)
     e.target.innerText = ''
   } 
 
-  const dragOver = (e) => {
+  const dragOver = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault()
-    if(e.ctrlKey) e.dataTransfer.dropEffect='copy'
-    else e.dataTransfer.dropEffect='move'
+    if(e.ctrlKey) e.dataTransfer.dropEffect = 'copy'
+    else e.dataTransfer.dropEffect = 'move'
   }
 
   return (
     <div className={style==='normal' ? styles.day : (style==='uncompleted' ? styles.between_firstplanned_and_actual : styles.before_actual_date) } 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
-      <div className={today?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
+      <div className={isToday?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
         {day + (day==1?' '+DateTime.MONTHS[month]:'')}
         {weather ? <div className={styles.weather} title={
           'temperature: '+ plus(weather.temperatureMax)+'/'+plus(weather.temperatureMin)

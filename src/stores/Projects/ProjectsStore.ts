@@ -20,16 +20,16 @@ export type ProjectStructure = {
   events: number;
 } & ProjectData;
 
-/** Проект по умолчанию */
-const defaultProject: ProjectStructure = {name:'Default', background: 'lightgray', color: 'black', events: 0};
-
 /** Класс хранилища списка проектов */
 export class ProjectsStore {
   /** Список проектов, по умолчанию есть defaultProject для событий без определенного проекта */
-  list: ProjectStructure[] = [defaultProject];
+  list: ProjectStructure[]
+  /** Проект по умолчанию */
+  static defaultProject: ProjectStructure = {name:'Default', background: 'lightgray', color: 'black', events: 0}
 
   constructor() {
-    makeAutoObservable(this);
+    this.list = [ProjectsStore.defaultProject]
+    makeAutoObservable(this)
   }
 
   /** Добавить проект в список */
@@ -45,6 +45,7 @@ export class ProjectsStore {
    */
   delete(name: string) {
     const l = this.list.find(l => l.name===name);
+    if(l===undefined) return
     if(l.events > 0) alert(`Project "${name}" has ${l.events} links to events`);
     else this.list = this.list.filter(l => l.name!==name);
   }
@@ -90,8 +91,8 @@ export class ProjectsStore {
    * @param list - список проектов из внешнего хранилища
    */
   init(list: ProjectData[]) {
-    if(list===undefined) this.list = [defaultProject];
-    else this.list = [defaultProject, ...list.map(p => { return {...p, events: 0} })];
+    if(list===undefined) this.list = [ProjectsStore.defaultProject];
+    else this.list = [ProjectsStore.defaultProject, ...list.map(p => { return {...p, events: 0} })];
   }
 
   /** Получить список проектов ProjectData[] для сохранения во внешних хранилищах */

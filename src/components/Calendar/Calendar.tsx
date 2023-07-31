@@ -1,20 +1,23 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
+import useUpdate from 'src/hooks/useUpdate'
+
 import { max, min } from 'src/utils/utils'
-import DateTime from 'src/utils/datetime'
+import DateTime, { timestamp } from 'src/utils/datetime'
 import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/MainStore'
 
 import CalendarDay from "./CalendarDay"
 import EventItem from 'src/components/EventItem/EventItem'
 import Modal from 'src/components/Modal/Modal'
 import EventForm from 'src/components/EventForm/EventForm'
+
 import styles from './Calendar.module.css'
 
-function calendar() {
+const Calendar: React.FC = observer(function() {
 
-  const [modalState,setModalState] = React.useState({})
-  
-  React.useEffect(()=>{
+  const forceUpdate = useUpdate()
+
+  useEffect(()=>{
     const weekDiv = document.getElementById(mainStore.currentWeek.toString())
     weekDiv?.scrollIntoView(true)
   }, [mainStore.currentWeek, mainStore.mustForceUpdate])
@@ -24,8 +27,8 @@ function calendar() {
 
   const calendarWeeks = calendarStore.getCalendarDataStructure(zeroPoint)
   
-  const onScrollHandle = (e)=>{
-    const el=e.target
+  const onScrollHandle = (e: React.UIEvent<HTMLElement>) => {
+    const el=e.currentTarget
     const t = el.scrollTop
     const b = el.scrollHeight-el.scrollTop-el.clientHeight
     // Общее число строк календаря (включая заголовки, баланс и строку ввода)
@@ -43,32 +46,17 @@ function calendar() {
     calendarStore.correctShift(t/avgDayHeight, b/avgDayHeight)
   }
 
-  /////////////////////////////////////////////////////////////////////////////
-  // Методы открывания формы
-  const openNewEventForm = (timestamp, name) => {
-    if(name==='') return
-    setModalState({name, start: DateTime.getYYYYMMDD(timestamp)})
-    eventFormStore.show()
-  }
-
-  const openEventForm = compactEvent => {
-    const {id, completed, start} = compactEvent
-    const s = eventsStore.getEventData(id)
-    setModalState({...s, completed, timestamp:start, id})
-    eventFormStore.show()
-  }
-  const dragStart = (e,id) => {
-    e.dataTransfer.setData('event_item', JSON.stringify(id))
-  }
-  const dragDrop = (e, timestamp) => {
+  const dragDrop = (e: React.DragEvent<HTMLElement>, timestamp: timestamp) => {
     e.preventDefault()
+    console.log(e.dataTransfer)
     const c = JSON.parse(e.dataTransfer.getData('event_item'))
     if(e.ctrlKey) eventsStore.copyToDate(c.id,timestamp)
     else eventsStore.shiftToDate(c.id,timestamp,c.start)
-    setModalState(s=>({...s}))
+    forceUpdate()
   }
 
   console.log('draw calendar')
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.dayOfWeekLabels}>
@@ -82,25 +70,22 @@ function calendar() {
             style={{height: max(week.maxCount, 7)*1.5+1.6+1.6+1.6+'em'}}> {
             week.list.map( (d,j) => (
               <CalendarDay data={d}
-                key={d.timestamp} today={today===d.timestamp} 
-                onAddEvent={openNewEventForm}
+                key={d.timestamp} isToday={today===d.timestamp} 
                 onDragDrop={e=>dragDrop(e,d.timestamp)}
-                onDayOpen={(t)=>mainStore.changeViewMode({mode: 'Day', timestamp: t})}
                 >
-                { d.events.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}
-                  onClick={openEventForm} onDragStart={e=>dragStart(e,t)}/>))}
+                { d.events.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}/>))}
               </CalendarDay>
             ))}
           </div>
         ))}
       </div>
       { eventFormStore.isShow &&
-      <Modal onCancel={eventFormStore.hide}>
-        <EventForm event={modalState} onExit={eventFormStore.hide}/>
+      <Modal onCancel={eventFormStore.hideForm}>
+        <EventForm/>
       </Modal>
       }
     </div>
   )
-}
+})
 
-export const Calendar = observer(calendar);
+export default Calendar

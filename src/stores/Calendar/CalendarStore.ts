@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx"
 import DateTime, { timestamp } from "src/utils/datetime"
 import { max } from "src/utils/utils"
-import { EventsCache } from "src/stores/EventsCache/EventsCache"
+import { EventsCache, EventsCacheSkipStructure } from "src/stores/EventsCache/EventsCache"
 import { ForecastData1d, WeatherStore } from "src/stores/Weather/WeatherStore"
 import { EventCacheStructure } from "src/stores/EventsCache/EventCacheStructure"
 
@@ -43,6 +43,9 @@ export class CalendarStore {
   constructor(eventsCache: EventsCache, weatherStore: WeatherStore) {
     this.eventsCache = eventsCache
     this.weatherStore = weatherStore
+    const {year, month} = DateTime.getYearMonthDay(Date.now()/1000)
+    this.year = year
+    this.month = month
     makeAutoObservable(this)
   }
 
@@ -80,9 +83,9 @@ export class CalendarStore {
     for(let i=0; i<=renderingSize; i++) {
       const list: CalendarDayStructure[] = []
       let maxCount = 0
-      let stack = []
+      let stack = [] as EventsCacheSkipStructure[]
       for(let j=0; j<=6; j++) {
-        const weather = this.weatherStore.state === 'ready'? this.weatherStore.data1d.find(d => d.timestamp==currentTimestamp) : null;
+        const weather = this.weatherStore.state === 'ready'? this.weatherStore.data1d.find(d => d.timestamp==currentTimestamp) : undefined;
         list.push({
           timestamp: currentTimestamp,
           weather,
@@ -92,7 +95,7 @@ export class CalendarStore {
           plannedBalanceChange: this.eventsCache.getPlannedBalanceChange(currentTimestamp),
           style: currentTimestamp>=lastActualBalanceDate ? 'normal' : (firstPlannedEventDate!==0 && currentTimestamp>=firstPlannedEventDate ? 'uncompleted' : 'completed')
         })
-        maxCount = max(maxCount, list.at(-1).events.length)
+        maxCount = max(maxCount, list.at(-1)?.events.length ?? 0)
         currentTimestamp += 86400
       }
       weeks.push({list, maxCount})
@@ -102,9 +105,9 @@ export class CalendarStore {
 }
 
 /** Структура данных для отображения компонента CalendarDay*/
-type CalendarDayStructure = {
+export type CalendarDayStructure = {
   timestamp: timestamp
-  weather: ForecastData1d
+  weather?: ForecastData1d
   events: EventCacheStructure[]
   actualBalance: number
   plannedBalance: number

@@ -23,7 +23,7 @@ import DateTime, { timestamp } from "./datetime"
 export default class ZCron {
 
   /** 
-   * Функция добавляет в массив array последовательность чисел, представленных строкой str: '\*', 'a', 'a/b' или 'a-b'.
+   * Функция добавляет в массив array последовательность чисел, представленных строкой str: '*', 'a', 'a/b' или 'a-b'.
    * При str = '*' последовательность ограничена значениями from (1) и max (31).
    * 
    * Примеры использования str:
@@ -42,9 +42,9 @@ export default class ZCron {
       const [a, b = null] = str.split('/',2)
       if(a === '' || b === '') return array
       const start = (a === '*') ? from : +a
-      let inc = +b
+      let inc = +(b ?? 0)
       if(isNaN(start) || isNaN(inc)) return array
-      if(b===null && a!=='*') return array.push(+a),array
+      if(b===null && a!=='*') return array.push(+a), array
       if(inc === 0) inc = 1
       for(let i=start; i<=max; i+=inc) array.push(i)
       return array
@@ -76,9 +76,9 @@ export default class ZCron {
       return false
     }
     // обычное расписание подобный cron-шаблонам
-    const days = d.split(',').reduce( (a,s) => ZCron.addSequence(a,s), [])
-    const months = m.split(',').reduce( (a,s) => ZCron.addSequence(a,s,12), [])
-    const weekdays = w.split(',').reduce( (a,s) => ZCron.addSequence(a,s,7,0), [])
+    const days = d.split(',').reduce( (a,s) => ZCron.addSequence(a,s), <number[]> [])
+    const months = m.split(',').reduce( (a,s) => ZCron.addSequence(a,s,12), <number[]> [])
+    const weekdays = w.split(',').reduce( (a,s) => ZCron.addSequence(a,s,7,0), <number[]> [])
     if( months.includes(month+1) && days.includes(day) && weekdays.includes(weekday) ) return true
     return false
   }

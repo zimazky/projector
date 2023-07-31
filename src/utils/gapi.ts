@@ -1,5 +1,5 @@
-const API_KEY: string = process.env.API_KEY
-const CLIENT_ID: string = process.env.CLIENT_ID
+const API_KEY: string = process.env.API_KEY ?? ''
+const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 const SCOPES = 'https://www.googleapis.com/auth/drive.appfolder'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
@@ -164,7 +164,7 @@ export default class GAPI {
 
   /** Получение списка файлов, соответствующих запросу query */
   static async find(query: string) {
-    let ret = []
+    let ret: any[] = []
     let token: any
     do {
       const resp = await prom(gapi.client.drive.files.list, {
@@ -189,7 +189,7 @@ export default class GAPI {
     try {
       await prom(gapi.client.drive.files.delete, { fileId: fileId })
       return true
-    } catch (err) {
+    } catch (err: any) {
       if (err.status === 404) return false
       throw err
     }

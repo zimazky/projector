@@ -36,7 +36,7 @@ export class EventsCache {
     this.cachedPlannedBalance = []
     this.lastActualBalance = this.calculateActualBalance()
     this.lastActualBalanceDate = this.eventsStore.completed.length ? 
-      this.eventsStore.completed.at(-1).start : 0
+      this.eventsStore.completed[this.eventsStore.completed.length-1].start : 0
     this.firstActualBalanceDate = this.eventsStore.completed.length?
       this.eventsStore.completed[0].start : 0
   }
@@ -51,25 +51,25 @@ export class EventsCache {
     if(this.cachedEvents[date] !== undefined) return this.cachedEvents[date]
     const events: EventCacheStructure[] = this.eventsStore.planned.reduce( (a,e) => {
       if(date < e.start || date >= e.end) return a
-      const color = this.projectsStore.getById(e.projectId).color
-      const background = this.projectsStore.getById(e.projectId).background
+      const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+      const background = this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
       a.push(singleEventToEventCache(e, date, false, color, background))
       return a
-    }, [])
+    }, [] as EventCacheStructure[])
     this.eventsStore.plannedRepeatable.reduce( (a,e) => {
       if(date < e.start) return a
-      if(e.end && date+e.time >= e.end) return a
+      if(e.end && date + (e.time===null?0:e.time) >= e.end) return a
       if(ZCron.isMatch(e.repeat, e.start, date)) {
-        const color = this.projectsStore.getById(e.projectId).color
-        const background = this.projectsStore.getById(e.projectId).background
+        const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+        const background = this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
         a.push(repeatableEventToEventCache(e, date, false, color, background))
       }
       return a
     }, events)
     this.eventsStore.completed.reduce( (a,e) => {
       if(date >= e.start && date < e.end) {
-        const color = this.projectsStore.getById(e.projectId).color
-        const background = this.projectsStore.getById(e.projectId).background
+        const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+        const background = this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
         a.push(singleEventToEventCache(e,date,true, color, background))
       }
       return a
@@ -82,7 +82,7 @@ export class EventsCache {
       if(d) return d
       d = (b.end-b.start)-(a.end-a.start)
       if(d) return d
-      return a.time-b.time
+      return (a.time===null?0:a.time) - (b.time===null?0:b.time)
     })
     this.cachedEvents[date] = events
     return events
@@ -104,13 +104,13 @@ export class EventsCache {
    * @returns 
    */
   getEventsWithPlaceholders(
-    date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]
+    date: timestamp, skip: EventsCacheSkipStructure[] = [], events: EventCacheStructure[] = []
     ): EventCacheStructure[] {
     // очистка стека
     while(skip.length>0) {
       // в стеке skip последний элемент может блокировать очищение стека если его действие не завершено
       // очищаем если последний элемент завершил действие
-      if(date < skip.at(-1).end) break
+      if(date < skip[skip.length-1].end) break
       skip.pop()
     }
     // добавление плейсхолдеров
@@ -133,10 +133,10 @@ export class EventsCache {
    * @param events - начальный список событий для возможности получения сквозного списка в цепочке вызовов за несколько дней
    */
   getPlannedEventsFilteredBySkip(
-    date: timestamp, skip: {id: number, end: timestamp}[]=[], events: EventCacheStructure[]=[]
+    date: timestamp, skip: EventsCacheSkipStructure[] = [], events: EventCacheStructure[] = []
     ): EventCacheStructure[] {
     while(skip.length>0) {
-      if(date < skip.at(-1).end) break
+      if(date < skip[skip.length-1].end) break
       skip.pop()
     }
     this.getEvents(date).reduce((a,e)=>{
@@ -176,7 +176,7 @@ export class EventsCache {
     if(date > this.lastActualBalanceDate) return this.lastActualBalance
     if(this.cachedActualBalance[date] !== undefined) return this.cachedActualBalance[date]
     const balance = this.eventsStore.completed.reduce((a,e)=>{
-      if(date > e.start+e.time) a += e.credit - e.debit
+      if(date > e.start+(e.time===null?0:e.time)) a += e.credit - e.debit
       return a
     }, 0)
     this.cachedActualBalance[date] = balance
@@ -217,3 +217,5 @@ export class EventsCache {
     return first
   }
 }
+
+export type EventsCacheSkipStructure = {id: number, end: timestamp}
