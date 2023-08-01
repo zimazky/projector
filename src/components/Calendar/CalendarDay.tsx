@@ -1,20 +1,20 @@
 import React from 'react'
-import styles from './CalendarDay.module.css'
-import DateTime, { timestamp } from 'src/utils/DateTime'
-import { plus } from 'src/utils/utils'
 import { dayListStore, eventFormStore, mainStore } from 'src/stores/MainStore'
+import DateTime, { timestamp } from 'src/utils/DateTime'
+import { kilo, plus } from 'src/utils/utils'
 import { CalendarDayStructure } from 'src/stores/Calendar/CalendarStore'
+import styles from './CalendarDay.module.css'
 
-function minimize(d: number) { return (d/1000).toFixed(1) }
-
-type CalendarDayProperties = {
+type CalendarDayProps = {
+  /** Отображаемые данные календарного дня */
   data: CalendarDayStructure
+  /** Признак сегодняшнего дня */
   isToday: boolean
   onDragDrop: (e: React.DragEvent<HTMLElement>) => void
-  children: any
+  children: React.ReactNode
 }
 
-export default function CalendarDay(props: CalendarDayProperties) {
+const CalendarDay: React.FC<CalendarDayProps> = (props) => {
   const {data, isToday, onDragDrop, children = null} = props
   const {timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style} = data
   const inputElementRef = React.useRef<HTMLDivElement>(null)
@@ -68,12 +68,14 @@ export default function CalendarDay(props: CalendarDayProperties) {
           + (weather.isThunderstorm ? '\nThunderstorm' : '')
         }><sup>{'🌡️'+plus(weather.temperatureMax)}</sup><sub>{plus(weather.temperatureMin)}</sub><sup>{weather.emoji}</sup></div>: null}
       </div>
-      <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{minimize(plannedBalance) + 
+      <div className={styles.balance} title={'planned: '+plannedBalance.toFixed(2)+plus(plannedBalanceChange,2)+'\nactual: '+actualBalance.toFixed(2)}>{kilo(plannedBalance, 1) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000, 1)+'k') +
-        ' ' + minimize(actualBalance)}</div>
+        ' ' + kilo(actualBalance, 1)}</div>
       {children}
       <div ref={inputElementRef} className={styles.input} contentEditable='true' suppressContentEditableWarning={true}
       onBlur={onBlurHandle} onKeyDown={onKeyDownHandle}></div>
     </div> 
   )
 }
+
+export default CalendarDay

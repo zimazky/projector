@@ -1,17 +1,20 @@
 import React from 'react'
 import DateTime, { timestamp } from 'src/utils/DateTime'
-import styles from './CalendarEventItem.module.css'
 import { eventFormStore, eventsStore } from 'src/stores/MainStore'
 import { EventCacheStructure } from 'src/stores/EventsCache/EventCacheStructure'
+import styles from './CalendarEventItem.module.css'
 
-type EventItemProps = {
+type CalendarEventItemProps = {
+  /** Данные события из кэша */
   event: EventCacheStructure,
+  /** Метка времени дня, unixtime */
   timestamp: timestamp,
-  days: number
+  /** Продолжительность события в днях, ограниченная концом недели */
+  daysToWeekEnd: number
 }
 
-export default function EventItem(props: EventItemProps) {
-  const {timestamp} = props
+const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
+  const {timestamp, daysToWeekEnd} = props
   const {id, name, completed, background, color, repeatable, start, time, end, credit, debit, days} = props.event
 
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
@@ -33,7 +36,7 @@ export default function EventItem(props: EventItemProps) {
   <div className={completed?styles.completed:repeatable?styles.repeatable:styles.item}
     draggable={true} onDragStart={onDragStart}
     style={{
-      width: props.days==1?'calc(100% + 2px)':'calc(' +props.days +' * (100% + 1px) + 1px )',
+      width: props.daysToWeekEnd==1?'calc(100% + 2px)':'calc(' +props.daysToWeekEnd +' * (100% + 1px) + 1px )',
       backgroundColor: background,
       color: color
     }} 
@@ -48,8 +51,10 @@ export default function EventItem(props: EventItemProps) {
         timestamp-start === 0 ? name : `${(timestamp-start)/86400+1}/${(end-start)/86400} ${name}`
         }</div> <div className={styles.time}>{
         time === null ?
-        (days-props.days>0?` ${(timestamp-start)/86400+props.days}/${(end-start)/86400}`:'')
+        (days-daysToWeekEnd>0?` ${(timestamp-start)/86400+props.daysToWeekEnd}/${(end-start)/86400}`:'')
         : DateTime.secondsToHMM(time)
       }</div>
   </div>)
 }
+
+export default CalendarEventItem

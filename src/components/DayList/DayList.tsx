@@ -1,11 +1,11 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
 
-import styles from './DayList.module.css'
 import DateTime from 'src/utils/DateTime'
 import {dayListStore, mainStore} from 'src/stores/MainStore'
-import { plus } from 'src/utils/utils'
+import { kilo, plus } from 'src/utils/utils'
 import DayListEventItem from './DayListEventItem'
+import styles from './DayList.module.css'
 
 const DayList: React.FC = observer(() => {
 
@@ -30,8 +30,6 @@ const DayList: React.FC = observer(() => {
     //e.currentTarget.innerText = ''
   } 
 
-  const minimize = (d: number) => (d/1000).toFixed(1)
-
   return (
     <div className={styles.day}
     onClick={onClickHandle}>
@@ -42,9 +40,9 @@ const DayList: React.FC = observer(() => {
         <div onClick={e=>dayListStore.setDate(timestamp+86400)}>Next</div>
       </div>
       <div className={styles.balance}>
-        {minimize(plannedBalance) + 
+        {kilo(plannedBalance, 1) + 
         (plannedBalanceChange==0?'k':plus(plannedBalanceChange/1000, 1)+'k') +
-        ' ' + minimize(actualBalance)}
+        ' ' + kilo(actualBalance, 1)}
       </div>
       <div>
         <div className={styles.start}>start</div>

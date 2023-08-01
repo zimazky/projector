@@ -15,3 +15,11 @@ export function max(a: number, b: number) { return a > b ? a : b }
 export function plus(d: number, n: number = 0): string {
   return d > 0 ? '+' + d.toFixed(n) : d.toFixed(n)
 }
+
+/**
+ * Представление числа в кило-единицах
+ * @param d - число
+ * @param n - точность округления, по умолчанию 0
+ * @returns 
+ */
+export function kilo(d: number, n: number = 0) { (d/1000).toFixed(n) }

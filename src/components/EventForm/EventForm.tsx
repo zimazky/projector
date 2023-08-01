@@ -1,13 +1,14 @@
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
-import Button from 'src/components/Common/Button'
-import styles from './EventForm.module.css'
-import Calc from 'src/utils/Calc'
-import TextField from 'src/components/ui/TextField/TextField'
-import ZCron from 'src/utils/ZCron'
-import Select from 'src/components/ui/Select/Select'
 import { EventData } from 'src/stores/Events/EventData'
+import ZCron from 'src/utils/ZCron'
+import Calc from 'src/utils/Calc'
+
+import Button from 'src/components/Common/Button'
+import TextField from 'src/components/ui/TextField/TextField'
+import Select from 'src/components/ui/Select/Select'
+import styles from './EventForm.module.css'
 
 interface Fields {
   name: string
@@ -22,7 +23,7 @@ interface Fields {
   debit: string
 }
 
-export default function EventForm(): React.JSX.Element {
+const EventForm: React.FC = () => {
 
   const {register, watch, formState: {errors}} = useForm<Fields>({mode: 'onChange'})
 
@@ -125,3 +126,5 @@ export default function EventForm(): React.JSX.Element {
   </form>
   )
 }
+
+export default EventForm

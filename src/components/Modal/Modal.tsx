@@ -6,7 +6,7 @@ type ModalProps = {
   children: React.ReactNode
 }
 
-export default function({onCancel = ()=>{}, children = null}: ModalProps) {
+const Modal: React.FC<ModalProps> = ({onCancel = ()=>{}, children = null}) => {
   return (
     <div className={styles.modalOverlay} onClick={onCancel}>
       <div className={styles.modalWindow} onClick={e=>e.stopPropagation()}>
@@ -17,3 +17,5 @@ export default function({onCancel = ()=>{}, children = null}: ModalProps) {
     </div>
   )
 }
+
+export default Modal

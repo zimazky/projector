@@ -4,9 +4,12 @@ import { calendarStore } from 'src/stores/MainStore'
 import Time from 'src/components/Time/Time'
 import styles from './Navbar.module.css'
 
+export type NavbarMenuItem = { name: string, fn: () => void }
+export type NavbarIconItem = { jsx: React.JSX.Element } & NavbarMenuItem
+
 type NavbarProps = {
-  menuItems: { name: string, fn: () => void }[],
-  iconItems: { name: string, jsx: React.JSX.Element, fn: () => void }[]
+  menuItems: NavbarMenuItem[],
+  iconItems: NavbarIconItem[]
 }
 
 const Navbar: React.FC<NavbarProps> = observer(function({ menuItems = [], iconItems=[] }) {

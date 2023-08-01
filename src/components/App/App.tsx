@@ -1,10 +1,11 @@
 import React from 'react'
+import { observer } from 'mobx-react-lite'
 import useUpdate from 'src/hooks/useUpdate'
+import { mainStore, weatherStore } from 'src/stores/MainStore'
+
+import Navbar, { NavbarIconItem, NavbarMenuItem } from 'src/components/Navbar/Navbar'
 import Calendar from 'src/components/Calendar/Calendar'
 import DayList from 'src/components/DayList/DayList'
-import Navbar from 'src/components/Navbar/Navbar'
-import { mainStore, weatherStore } from 'src/stores/MainStore'
-import { observer } from 'mobx-react-lite'
 import './App.css'
 
 function fullScreen() { 
@@ -16,8 +17,8 @@ const App: React.FC = observer(function() {
   React.useEffect(mainStore.gapiInit, [])
   React.useEffect(forceUpdate, [mainStore.mustForceUpdate])
   
-  let menu = []
-  let icons = []
+  let menu: NavbarMenuItem[] = []
+  let icons: NavbarIconItem[] = []
 
   menu.push({ name: 'Save to LocalStorage', fn: mainStore.saveToLocalStorage })
   icons.push({
