@@ -30,6 +30,8 @@ export class CalendarStore {
   eventsCache: EventsCache
   /** Ссылка на хранилище данных погоды */
   weatherStore: WeatherStore
+  /** Метка времени отображаемой недели в области видимости */
+  week: timestamp
   /** Год видимой области (для вывода в заголовке) */
   year: number
   /** Месяц видимой области (для вывода в заголовке) */
@@ -43,11 +45,14 @@ export class CalendarStore {
   constructor(eventsCache: EventsCache, weatherStore: WeatherStore) {
     this.eventsCache = eventsCache
     this.weatherStore = weatherStore
-    const {year, month} = DateTime.getYearMonthDay(Date.now()/1000)
+    this.week = DateTime.getBegintWeekTimestamp(Date.now()/1000)
+    const {year, month} = DateTime.getYearMonthDay(this.week)
     this.year = year
     this.month = month
     makeAutoObservable(this)
   }
+
+  setWeek(timestamp: timestamp) { this.week = DateTime.getBegintWeekTimestamp(timestamp) }
 
   setMonthYear(month: number, year: number) {
     this.month = month

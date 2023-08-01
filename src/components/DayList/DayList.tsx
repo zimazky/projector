@@ -1,29 +1,21 @@
 import React from 'react'
+import { observer } from 'mobx-react-lite'
+
 import styles from './DayList.module.css'
-import DateTime, { timestamp } from 'src/utils/DateTime'
-import {eventsCache, mainStore} from 'src/stores/MainStore'
+import DateTime from 'src/utils/DateTime'
+import {dayListStore, mainStore} from 'src/stores/MainStore'
 import { plus } from 'src/utils/utils'
 import DayListEventItem from './DayListEventItem'
 
-type DayListProps = {
-  timestamp: timestamp
-}
+const DayList: React.FC = observer(() => {
 
-const DayList: React.FC<DayListProps> = (props) => {
-
-  const {timestamp} = props
   const inputElementRef = React.useRef<HTMLDivElement>(null)
 
+  const timestamp = dayListStore.date
   const today = DateTime.isToday(timestamp)
-  const events = eventsCache.getEvents(timestamp)
-  const actualBalance = eventsCache.getActualBalance(timestamp)
-  //const lastActualBalanceDate = eventsCache.lastActualBalanceDate
-  const plannedBalance = eventsCache.getPlannedBalance(timestamp)
-  const plannedBalanceChange = eventsCache.getPlannedBalanceChange(timestamp)
+  const { events, actualBalance, plannedBalance, plannedBalanceChange } = dayListStore.getDayListStructure()
 
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
-
-  const onCalendarOpen = () => { mainStore.changeViewMode({mode: 'Calendar'}) }
 
   function onClickHandle(e: React.MouseEvent) {
     if(inputElementRef) inputElementRef.current?.focus()
@@ -44,10 +36,10 @@ const DayList: React.FC<DayListProps> = (props) => {
     <div className={styles.day}
     onClick={onClickHandle}>
       <div>
-        <div onClick={onCalendarOpen}>Calendar</div>
-        <div onClick={e=>mainStore.setCurrentDay(timestamp-86400)}>Prev</div>
+        <div onClick={()=>mainStore.changeViewMode({mode: 'Calendar'})}>Calendar</div>
+        <div onClick={e=>dayListStore.setDate(timestamp-86400)}>Prev</div>
         <div className={today?styles.today:styles.header}>{day+' '+DateTime.MONTHS[month]}</div>
-        <div onClick={e=>mainStore.setCurrentDay(timestamp+86400)}>Next</div>
+        <div onClick={e=>dayListStore.setDate(timestamp+86400)}>Next</div>
       </div>
       <div className={styles.balance}>
         {minimize(plannedBalance) + 
@@ -71,6 +63,6 @@ const DayList: React.FC<DayListProps> = (props) => {
       </div>
     </div> 
   )
-}
+})
 
 export default DayList

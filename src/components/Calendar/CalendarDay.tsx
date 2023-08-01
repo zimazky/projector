@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './CalendarDay.module.css'
 import DateTime, { timestamp } from 'src/utils/DateTime'
 import { plus } from 'src/utils/utils'
-import { eventFormStore, mainStore } from 'src/stores/MainStore'
+import { dayListStore, eventFormStore, mainStore } from 'src/stores/MainStore'
 import { CalendarDayStructure } from 'src/stores/Calendar/CalendarStore'
 
 function minimize(d: number) { return (d/1000).toFixed(1) }
@@ -21,7 +21,7 @@ export default function CalendarDay(props: CalendarDayProperties) {
   const {day, month} = DateTime.getDayMonthWeekday(timestamp)
 
   const onDayOpen = (timestamp: timestamp) => {
-    mainStore.setCurrentDay(timestamp)
+    dayListStore.setDate(timestamp)
     mainStore.changeViewMode({mode: 'Day'})
   }
 

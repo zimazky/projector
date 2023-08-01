@@ -4,10 +4,10 @@ import { EventsStore, EventsStoreData } from "src/stores/Events/EventsStore"
 import RemoteStorage from "src/services/remoteStorage"
 import { makeAutoObservable, runInAction } from "mobx"
 import GAPI from "src/services/gapi"
-import DateTime, { timestamp } from "src/utils/DateTime"
 import { WeatherStore } from "./Weather/WeatherStore"
 import { CalendarStore } from "./Calendar/CalendarStore"
 import { EventFormStore } from "./EventForm/EventFormStore"
+import { DayListStore } from "./DayListStore/DayListStore"
 
 /** Тип данных приложения для сохранения во внешнем хранилище */
 type MainStoreData = {
@@ -34,14 +34,11 @@ class MainStore {
   mustForceUpdate: {} = {}
   /** Режим отображения */
   viewMode: ViewMode = 'Calendar'
-  /** Метка времени выбранного дня для отображения */
-  currentDay: timestamp
 
   constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, eventsCache: EventsCache) {
     this.projectsStore = projectsStore
     this.eventsStore = eventsStore
     this.eventsCache = eventsCache
-    this.currentDay = Date.now()/1000
     makeAutoObservable(this)
   }
 
@@ -67,25 +64,8 @@ class MainStore {
   }
 
   /** Изменить режим просмотра приложения */
-  changeViewMode(props : {mode?: ViewMode/*, timestamp?: timestamp*/}) {
+  changeViewMode(props : {mode?: ViewMode}) {
     if(props.mode) this.viewMode = props.mode
-    /*
-    if(props.timestamp) { 
-      calendarStore.resetShift()
-      this.currentDay = props.timestamp
-    }
-    */
-  }
-
-  /** Установить текущий день */
-  setCurrentDay(t: timestamp) {
-    calendarStore.resetShift()
-    this.currentDay = t
-  }
-
-  /** Метка времени текущей недели */
-  get currentWeek() {
-    return DateTime.getBegintWeekTimestamp(this.currentDay)
   }
 
   /** Установить флаги рассинхронизации данных с внешними хранилищами */
@@ -190,6 +170,9 @@ export const weatherStore = new WeatherStore;
 
 /** Синглтон-экземпляр хранилища календаря */
 export const calendarStore = new CalendarStore(eventsCache, weatherStore)
+
+/** Синглтон-экземпляр хранилища компонента DayList */
+export const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
 
 /** Синглтон-экземпляр хранилища формы события */
 export const eventFormStore = new EventFormStore

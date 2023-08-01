@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { observer } from 'mobx-react-lite'
 import useUpdate from 'src/hooks/useUpdate'
 
@@ -7,23 +7,23 @@ import DateTime, { timestamp } from 'src/utils/DateTime'
 import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/MainStore'
 
 import CalendarDay from "./CalendarDay"
+import CalendarEventItem from './CalendarEventItem'
 import Modal from 'src/components/Modal/Modal'
 import EventForm from 'src/components/EventForm/EventForm'
 
 import styles from './Calendar.module.css'
-import CalendarEventItem from 'src/components/Calendar/CalendarEventItem'
 
 const Calendar: React.FC = observer(function() {
 
   const forceUpdate = useUpdate()
 
-  useEffect(()=>{
-    const weekDiv = document.getElementById(mainStore.currentWeek.toString())
+  React.useEffect(()=>{
+    const weekDiv = document.getElementById(calendarStore.week.toString())
     weekDiv?.scrollIntoView(true)
-  }, [mainStore.currentWeek, mainStore.mustForceUpdate])
+  }, [calendarStore.week, mainStore.mustForceUpdate])
 
   const today = DateTime.getBeginDayTimestamp(Date.now()/1000)
-  const zeroPoint  = mainStore.currentWeek
+  const zeroPoint  = calendarStore.week
 
   const calendarWeeks = calendarStore.getCalendarDataStructure(zeroPoint)
   

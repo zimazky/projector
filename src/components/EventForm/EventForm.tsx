@@ -1,12 +1,12 @@
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
-import Button from '../Common/Button'
+import Button from 'src/components/Common/Button'
 import styles from './EventForm.module.css'
 import Calc from 'src/utils/Calc'
-import TextField from '../ui/TextField/TextField'
+import TextField from 'src/components/ui/TextField/TextField'
 import ZCron from 'src/utils/ZCron'
-import Select from '../ui/Select/Select'
+import Select from 'src/components/ui/Select/Select'
 import { EventData } from 'src/stores/Events/EventData'
 
 interface Fields {

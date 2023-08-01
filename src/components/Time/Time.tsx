@@ -1,5 +1,5 @@
 import React from 'react'
-import { mainStore } from 'src/stores/MainStore'
+import { calendarStore, mainStore } from 'src/stores/MainStore'
 import DateTime from 'src/utils/DateTime'
 import styles from './Time.module.css'
 
@@ -12,7 +12,7 @@ export default function Time() {
   return <span 
     className={styles.time} 
     onClick={()=>{
-      mainStore.setCurrentDay(DateTime.getBeginDayTimestamp(Date.now()/1000))
+      calendarStore.setWeek(Date.now()/1000)
       mainStore.forceUpdate()
     }}>
       {time}
