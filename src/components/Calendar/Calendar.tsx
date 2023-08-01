@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite'
 import useUpdate from 'src/hooks/useUpdate'
 
 import { max, min } from 'src/utils/utils'
-import DateTime, { timestamp } from 'src/utils/datetime'
+import DateTime, { timestamp } from 'src/utils/DateTime'
 import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/MainStore'
 
 import CalendarDay from "./CalendarDay"

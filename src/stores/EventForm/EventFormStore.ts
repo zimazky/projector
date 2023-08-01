@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx"
 import { EventData } from "src/stores/Events/EventData"
-import { timestamp } from "src/utils/datetime"
+import { timestamp } from "src/utils/DateTime"
 
 type EventFormStructure = {
   /** Идентификатор события (если не указан, то новое событие) */

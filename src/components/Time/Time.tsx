@@ -1,6 +1,6 @@
 import React from 'react'
 import { mainStore } from 'src/stores/MainStore'
-import DateTime from 'src/utils/datetime'
+import DateTime from 'src/utils/DateTime'
 import styles from './Time.module.css'
 
 export default function Time() {

@@ -1,4 +1,4 @@
-import ZCron from './zcron'
+import ZCron from './ZCron'
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов

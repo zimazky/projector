@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx"
-import DateTime, { timestamp } from "src/utils/datetime"
+import DateTime, { timestamp } from "src/utils/DateTime"
 import { max } from "src/utils/utils"
 import { EventsCache, EventsCacheSkipStructure } from "src/stores/EventsCache/EventsCache"
 import { ForecastData1d, WeatherStore } from "src/stores/Weather/WeatherStore"

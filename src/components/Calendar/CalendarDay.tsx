@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './CalendarDay.module.css'
-import DateTime, { timestamp } from 'src/utils/datetime'
+import DateTime, { timestamp } from 'src/utils/DateTime'
 import { plus } from 'src/utils/utils'
 import { eventFormStore, mainStore } from 'src/stores/MainStore'
 import { CalendarDayStructure } from 'src/stores/Calendar/CalendarStore'

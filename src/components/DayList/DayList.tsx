@@ -1,6 +1,6 @@
 import React from 'react'
 import styles from './DayList.module.css'
-import DateTime, { timestamp } from 'src/utils/datetime'
+import DateTime, { timestamp } from 'src/utils/DateTime'
 import {eventsCache, mainStore} from 'src/stores/MainStore'
 import { plus } from 'src/utils/utils'
 import DayListEventItem from './DayListEventItem'

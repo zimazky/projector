@@ -1,4 +1,4 @@
-import calculate from './calculate'
+import Calc from './Calc'
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов
@@ -91,7 +91,7 @@ describe('calculate', ()=>{
   ]  
   for(let i=0;i<testset.length;i++) {
     it(`test string='${testset[i]}', `, callf( (s)=>{
-      const r = calculate(s)
+      const r = Calc.calculate(s)
       expect(r).toEqual(ev(s))
     }, testset[i])
     )

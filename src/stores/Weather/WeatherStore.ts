@@ -1,6 +1,6 @@
 import {makeAutoObservable, runInAction} from 'mobx'
-import DateTime from 'src/utils/datetime';
-import OpenWeatherMap from 'src/utils/openweathermap';
+import DateTime from 'src/utils/DateTime';
+import OpenWeatherMap from 'src/services/openweathermap';
 import { max, min } from 'src/utils/utils';
 
 /** Погодные условия, аггрегированные за день */

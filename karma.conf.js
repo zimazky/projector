@@ -17,9 +17,9 @@ module.exports = function(config) {
 
     // list of files / patterns to exclude
     exclude: [
-      //'./src/**/datetime.spec.ts',
-      //'./src/**/calculate.spec.ts',
-      //'./src/**/zcron.spec.ts'
+      //'./src/**/DateTime.spec.ts',
+      //'./src/**/Calc.spec.ts',
+      //'./src/**/ZCron.spec.ts'
     ],
 
 

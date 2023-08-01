@@ -3,9 +3,9 @@ import { useForm } from 'react-hook-form'
 import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/stores/MainStore'
 import Button from '../Common/Button'
 import styles from './EventForm.module.css'
-import calculate from 'src/utils/calculate'
+import Calc from 'src/utils/Calc'
 import TextField from '../ui/TextField/TextField'
-import ZCron from 'src/utils/zcron'
+import ZCron from 'src/utils/ZCron'
 import Select from '../ui/Select/Select'
 import { EventData } from 'src/stores/Events/EventData'
 
@@ -41,8 +41,8 @@ export default function EventForm(): React.JSX.Element {
       end: e.end,
       time: e.time,
       duration: e.duration,
-      credit: calculate(e.credit),
-      debit: calculate(e.debit)
+      credit: Calc.calculate(e.credit),
+      debit: Calc.calculate(e.debit)
     }
     if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventData.id, eventData)
     else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventData)
@@ -68,8 +68,8 @@ export default function EventForm(): React.JSX.Element {
       end: e.end,
       time: e.time,
       duration: e.duration,
-      credit: calculate(e.credit),
-      debit: calculate(e.debit)
+      credit: Calc.calculate(e.credit),
+      debit: Calc.calculate(e.debit)
     }
     eventsStore.updateEvent(id, eventData)
     eventFormStore.hideForm()
@@ -86,8 +86,8 @@ export default function EventForm(): React.JSX.Element {
       end: e.end,
       time: e.time,
       duration: e.duration,
-      credit: calculate(e.credit),
-      debit: calculate(e.debit)
+      credit: Calc.calculate(e.credit),
+      debit: Calc.calculate(e.debit)
     }
     eventsStore.addPlannedEventData(eventData)
     eventsCache.init()
@@ -119,9 +119,9 @@ export default function EventForm(): React.JSX.Element {
     <TextField label='End date' value={eventFormStore.eventData.end ?? ''} error={!!errors.end}
       {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}></TextField>
     <TextField label='Credit' value={eventFormStore.eventData.credit?.toString() ?? ''} error={!!errors.credit}
-      {...register('credit', {pattern: /^\d*[\.,]?\d{0,2}$/})}></TextField>
+      {...register('credit', {validate: Calc.validate})}></TextField>
     <TextField label='Debit' value={eventFormStore.eventData.debit?.toString() ?? ''} error={!!errors.debit}
-      {...register('debit', {pattern: /^\d*[\.,]?\d{0,2}$/})}></TextField> {/* поправить с учетом выражений */}
+      {...register('debit', {validate: Calc.validate})}></TextField> {/* поправить с учетом выражений */}
   </form>
   )
 }

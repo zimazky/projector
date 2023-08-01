@@ -1,4 +1,4 @@
-import DateTime from './datetime'
+import DateTime from './DateTime'
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов

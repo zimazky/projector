@@ -1,6 +1,6 @@
-import DateTime, { timestamp } from "src/utils/datetime"
+import DateTime, { timestamp } from "src/utils/DateTime"
 import { EventData } from "./EventData"
-import ZCron from "src/utils/zcron"
+import ZCron from "src/utils/ZCron"
 
 /** Базовый интерфейс структуры события, общий для одиночных и повторяемых событий */
 export interface IEventStructure {

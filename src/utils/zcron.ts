@@ -1,4 +1,4 @@
-import DateTime, { timestamp } from "./datetime"
+import DateTime, { timestamp } from "./DateTime"
 
 // Библиотека методов для обработки строк в cron-подобном синтаксисе
 //

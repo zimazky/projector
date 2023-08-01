@@ -1,7 +1,7 @@
-import ZCron from 'src/utils/zcron'
+import ZCron from 'src/utils/ZCron'
 import { EventData } from './EventData'
 import { IEventStructure, RepeatableEventStructure, SingleEventStructure, eventDataToIEventStructure, repeatableEventStructureToEventData, singleEventStructureToEventData } from './EventStructure'
-import { timestamp } from 'src/utils/datetime'
+import { timestamp } from 'src/utils/DateTime'
 import { ProjectsStore } from 'src/stores/Projects/ProjectsStore'
 
 export type EventsStoreData = {

@@ -1,5 +1,5 @@
-import { timestamp } from 'src/utils/datetime'
-import ZCron from 'src/utils/zcron'
+import { timestamp } from 'src/utils/DateTime'
+import ZCron from 'src/utils/ZCron'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
 import { EventsStore } from 'src/stores/Events/EventsStore'
 import { ProjectsStore } from 'src/stores/Projects/ProjectsStore'

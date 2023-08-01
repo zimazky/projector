@@ -1,6 +1,6 @@
 import React from "react"
 import { EventCacheStructure } from "src/stores/EventsCache/EventCacheStructure"
-import DateTime, { timestamp } from "src/utils/datetime"
+import DateTime, { timestamp } from "src/utils/DateTime"
 import styles from './DayListEventItem.module.css'
 
 type DayListEventItemProps = {

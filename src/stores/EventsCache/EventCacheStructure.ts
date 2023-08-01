@@ -1,4 +1,4 @@
-import { timestamp } from "src/utils/datetime"
+import { timestamp } from "src/utils/DateTime"
 import { RepeatableEventStructure, SingleEventStructure } from "src/stores/Events/EventStructure"
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
