@@ -7,11 +7,11 @@ import DateTime, { timestamp } from 'src/utils/datetime'
 import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/MainStore'
 
 import CalendarDay from "./CalendarDay"
-import EventItem from 'src/components/EventItem/EventItem'
 import Modal from 'src/components/Modal/Modal'
 import EventForm from 'src/components/EventForm/EventForm'
 
 import styles from './Calendar.module.css'
+import CalendarEventItem from 'src/components/Calendar/CalendarEventItem'
 
 const Calendar: React.FC = observer(function() {
 
@@ -73,7 +73,7 @@ const Calendar: React.FC = observer(function() {
                 key={d.timestamp} isToday={today===d.timestamp} 
                 onDragDrop={e=>dragDrop(e,d.timestamp)}
                 >
-                { d.events.map((t,i)=>(<EventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}/>))}
+                { d.events.map((t,i)=>(<CalendarEventItem key={i} event={t} days={min(t.days,7-j)} timestamp={d.timestamp}/>))}
               </CalendarDay>
             ))}
           </div>

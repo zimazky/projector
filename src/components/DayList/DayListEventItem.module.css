@@ -1,0 +1,58 @@
+.item, .completed, .repeatable, .selected{
+  position: relative;
+  width: 100%;
+  height: 1.5em;
+  overflow: hidden;
+  margin: 0;
+  padding: 0.2em 0.3em;
+  background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  cursor: pointer;
+}
+.completed {
+  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
+  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+  color: gray;
+}
+.repeatable {
+  background-image: 
+    repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
+    linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+}
+.name {
+  display: inline-block;
+  text-align: left;
+  width: 42%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
+}
+.time, .start, .startplaceholder, .end, .credit, .debit {
+  display: inline-block;
+  vertical-align: top;
+}
+.time {
+  width: 10%;
+}
+.start, .startplaceholder, .end {
+  width: 12%;
+}
+.credit, .debit {
+  text-align: center;
+  width: 12%;
+}
+.completed .name, .completed .time {
+  text-decoration: line-through;
+  color: gray;
+}
+
+
+.day {
+  /*display: inline-block;*/
+  width: 100%;
+  height: 100%;
+  border-left:  1px solid lightgray;
+  vertical-align: top;
+  background-color: rgb(245, 245, 245);
+}
+

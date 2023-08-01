@@ -92,14 +92,10 @@ const App: React.FC = observer(function() {
   return <>
     <Navbar menuItems={menu} iconItems={icons}/>
     { mainStore.viewMode === 'Calendar' ? <Calendar/> : null }
-    { /*
+    { 
       mainStore.viewMode === 'Day' ?
-      <DayList timestamp={mainStore.currentDay} 
-      onChangeDate={t=> mainStore.setCurrentDay(t)}
-      onCalendarOpen={()=> mainStore.changeViewMode({mode: 'Calendar'})}
-      />
+      <DayList timestamp={mainStore.currentDay} />
       :null
-      */
     }
   </>
 })
