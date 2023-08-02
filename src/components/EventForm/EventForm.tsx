@@ -25,15 +25,27 @@ interface Fields {
 
 const EventForm: React.FC = () => {
 
-  const {register, watch, formState: {errors}} = useForm<Fields>({mode: 'onChange'})
-
-  //const submit: SubmitHandler<Fields> = (data)=>{console.log(data)}
+  const {register, watch, handleSubmit, formState: {errors}} = useForm<Fields>({
+    mode: 'onChange',
+    defaultValues: {
+      name: eventFormStore.eventData.name,
+      comment: eventFormStore.eventData.comment,
+      project: eventFormStore.eventData.project,
+      repeat: eventFormStore.eventData.repeat,
+      start: eventFormStore.eventData.start,
+      time: eventFormStore.eventData.time,
+      duration: eventFormStore.eventData.duration,
+      end: eventFormStore.eventData.end,
+      credit: eventFormStore.eventData.credit?.toString(),
+      debit: eventFormStore.eventData.debit?.toString()
+    }
+  })
 
   const isNew = eventFormStore.eventData.id !== null ? false : true
 
-  const onCompleteHandle = (isCompleted?: boolean) => {
-    if(isCompleted===undefined) return
-    const e = watch()
+  const onCompleteHandle = handleSubmit((e) => {
+    const isCompleted = eventFormStore.eventData.completed
+    if(isCompleted === undefined) return
     const eventData: EventData = {
       name: e.name,
       comment: e.comment,
@@ -48,18 +60,19 @@ const EventForm: React.FC = () => {
     if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventData.id, eventData)
     else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventData)
     eventFormStore.hideForm()
-  }
+  })
 
-  const onDeleteHandle = (id: number | null) => {
+  const onDeleteHandle = () => {
+    const id = eventFormStore.eventData.id
     if(id === null) return
     eventsStore.deleteEvent(id)
     eventFormStore.hideForm()
   }
 
   // Изменение параметров события, для всех если событие повторяемое
-  const onChangeEventHandle = (id: number | null) => {
+  const onChangeEventHandle = handleSubmit((e) => {
+    const id = eventFormStore.eventData.id
     if(id === null) return
-    const e = watch()
     const eventData: EventData = {
       name: e.name,
       comment: e.comment,
@@ -74,10 +87,9 @@ const EventForm: React.FC = () => {
     }
     eventsStore.updateEvent(id, eventData)
     eventFormStore.hideForm()
-  }
+  })
 
-  const onAddHandle = () => {
-    const e = watch()
+  const onAddHandle = handleSubmit((e) => {
     const eventData: EventData = {
       name: e.name,
       comment: e.comment,
@@ -93,36 +105,37 @@ const EventForm: React.FC = () => {
     eventsStore.addPlannedEventData(eventData)
     eventsCache.init()
     eventFormStore.hideForm()
-  }
+  })
 
   return (
   <form className={styles.form}>
-    {!isNew && <Button onClick={()=>onCompleteHandle(eventFormStore.eventData.completed)}>{eventFormStore.eventData.completed?'Mark uncompleted':'Complete'}</Button>}
-    {!isNew && <Button onClick={()=>onDeleteHandle(eventFormStore.eventData.id)}>Delete</Button>}
-    {!isNew && <Button onClick={()=>onChangeEventHandle(eventFormStore.eventData.id)}>{eventFormStore.eventData.repeat?'Change All':'Change'}</Button>}
+    {!isNew && <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Mark uncompleted':'Complete'}</Button>}
+    {!isNew && <Button onClick={onDeleteHandle}>Delete</Button>}
+    {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Change All':'Change'}</Button>}
     {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
     <Button onClick={eventFormStore.hideForm}>Cancel</Button>
 
-    <TextField label='Name' value={eventFormStore.eventData.name ?? ''} error={!!errors.name}
+    <TextField label='Name' error={!!errors.name}
       {...register('name', {required: true})}></TextField>
-    <TextField label='Comment' value={eventFormStore.eventData.comment ?? ''} {...register('comment')}></TextField>
-    <Select label='Project' defaultValue={eventFormStore.eventData.project} error={!!errors.project}
+    <TextField label='Comment'
+      {...register('comment')}></TextField>
+    <Select label='Project' error={!!errors.project}
       options={projectsStore.list.map((p,i)=>{ return {value: p.name, label: p.name} })}
       {...register('project', {required: true})} />
-    <TextField label='Repeat' value={eventFormStore.eventData.repeat ?? ''} error={!!errors.repeat} 
+    <TextField label='Repeat' error={!!errors.repeat} 
       {...register('repeat', {validate: ZCron.validate})}></TextField>
-    <TextField label='Start date' value={eventFormStore.eventData.start ?? ''} error={!!errors.start}
+    <TextField label='Start date' error={!!errors.start}
       {...register('start', {required: true, pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}></TextField>
-    <TextField label='Time' value={eventFormStore.eventData.time ?? ''} error={!!errors.time}
+    <TextField label='Time' error={!!errors.time}
       {...register('time', {pattern: /^([0-1]?\d|2[0-3]):[0-5]\d$/})}></TextField>
-    <TextField label='Duration' value={eventFormStore.eventData.duration ?? ''} error={!!errors.duration}
+    <TextField label='Duration' disabled={!!watch().end} error={!!errors.duration}
       {...register('duration', {pattern: /^(\d+d ?)?\d*(:\d\d)?$/})}></TextField> {/* поправить с учетом ограничения часов при указании дней*/}
-    <TextField label='End date' value={eventFormStore.eventData.end ?? ''} error={!!errors.end}
+    <TextField label='End date' disabled={!!watch().duration} error={!!errors.end}
       {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}></TextField>
-    <TextField label='Credit' value={eventFormStore.eventData.credit?.toString() ?? ''} error={!!errors.credit}
+    <TextField label={'Credit'} error={!!errors.credit}
       {...register('credit', {validate: Calc.validate})}></TextField>
-    <TextField label='Debit' value={eventFormStore.eventData.debit?.toString() ?? ''} error={!!errors.debit}
-      {...register('debit', {validate: Calc.validate})}></TextField> {/* поправить с учетом выражений */}
+    <TextField label='Debit' error={!!errors.debit}
+      {...register('debit', {validate: Calc.validate})}></TextField>
   </form>
   )
 }

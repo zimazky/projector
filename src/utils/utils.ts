@@ -22,4 +22,4 @@ export function plus(d: number, n: number = 0): string {
  * @param n - точность округления, по умолчанию 0
  * @returns 
  */
-export function kilo(d: number, n: number = 0) { (d/1000).toFixed(n) }
+export function kilo(d: number, n: number = 0): string { return (d/1000).toFixed(n) }

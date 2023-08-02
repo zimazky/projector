@@ -73,7 +73,7 @@ const Calendar: React.FC = observer(function() {
                 key={d.timestamp} isToday={today===d.timestamp} 
                 onDragDrop={e=>dragDrop(e,d.timestamp)}
                 >
-                { d.events.map((t,i)=>(<CalendarEventItem key={i} event={t} daysToWeekEnd={min(t.days,7-j)} timestamp={d.timestamp}/>))}
+                { d.events.map((t,i)=>(<CalendarEventItem key={i} event={t} daysInCurrentWeek={min(t.days,7-j)} timestamp={d.timestamp}/>))}
               </CalendarDay>
             ))}
           </div>
