@@ -5,14 +5,15 @@ interface Props {
   label: string
   options: {value: string, label:string}[]
   defaultValue?: string
+  disabled?: boolean
   error?: boolean
 }
 
 const Select = React.forwardRef<HTMLSelectElement, Props>(function (props, ref) {
-  const {label, options, defaultValue, error, ...rest} = props
+  const {label, options, defaultValue, disabled, error, ...rest} = props
   return (
   <div className={styles.container + (error?' '+styles.error:'')}>
-    <select className={styles.select} ref={ref} defaultValue={defaultValue} placeholder=' ' {...rest}>
+    <select className={styles.select} ref={ref} disabled={disabled} defaultValue={defaultValue} placeholder=' ' {...rest}>
       {options.map((o,i) => <option key={i} value={o.value}>{o.label}</option>)}
     </select>
     <label className={styles.label}>{label}</label>
