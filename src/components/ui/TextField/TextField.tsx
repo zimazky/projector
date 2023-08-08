@@ -1,7 +1,7 @@
 import React from 'react'
 import styles from './TextField.module.css'
 
-interface Props {
+interface TextFieldProps {
   /** Ярлык */
   label: string
   /** Значение */
@@ -12,7 +12,7 @@ interface Props {
   disabled?: boolean
 }
 
-const TextField = React.forwardRef<HTMLInputElement, Props>(function (props, ref) {
+const TextField = React.forwardRef<HTMLInputElement, TextFieldProps>(function (props, ref) {
   const {label, value, disabled, error, ...rest} = props
   return (
   <div className={styles.container + (error?' '+styles.error:'')}>
