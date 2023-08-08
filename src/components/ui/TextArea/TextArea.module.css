@@ -5,7 +5,7 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
   border-radius: 4px;
   margin: 10px 0;
-  padding: 0;
+  padding: 8px 14px;
   background-color: var(--ui-backgroung-color);
   font-size: 1rem;
   display: grid;
@@ -16,7 +16,7 @@
 .container::after {
   content: attr(data-replicated-value) " ";
   white-space: pre-wrap;
-  /*visibility: hidden;*/
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -70,12 +70,13 @@
 
 .container::after, .input {
   grid-area: 1 / 1 / 2 / 2;
-  padding: 8px 14px;
+  padding: 0;
   background-color: transparent;
   font-size: inherit;
   font-family: inherit;
   /*overflow: hidden;*/
-  max-height: 150px;
+  overflow-y: auto;
+  max-height: 133px;
   word-wrap: break-word;
 }
 
