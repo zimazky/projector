@@ -118,7 +118,7 @@ const EventForm: React.FC = () => {
 
     <TextField label='Name' error={!!errors.name}
       {...register('name', {required: true})}/>
-    <TextArea label='Comment' value={eventFormStore.eventData.comment}
+    <TextArea label='Comment'
       {...register('comment')}/>
     <Select label='Project' error={!!errors.project}
       options={projectsStore.list.map((p,i)=>{ return {value: p.name, label: p.name} })}
