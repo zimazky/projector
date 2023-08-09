@@ -5,7 +5,7 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
   border-radius: 4px;
   margin: 10px 0;
-  padding: 8px 14px;
+  padding: 10px 14px;
   background-color: var(--ui-backgroung-color);
   font-size: 1rem;
   display: grid;
@@ -74,8 +74,8 @@
   background-color: transparent;
   font-size: inherit;
   font-family: inherit;
-  /*overflow: hidden;*/
-  overflow-y: auto;
+  overflow: hidden;
+  /*overflow-y: auto;*/
   max-height: 133px;
   word-wrap: break-word;
 }

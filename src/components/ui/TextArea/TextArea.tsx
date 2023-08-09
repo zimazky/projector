@@ -17,13 +17,11 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(function (
 
   return (
   <div className={styles.container + (error?' '+styles.error:'')} data-replicated-value={value}>
-    <textarea className={styles.input} ref={ref} defaultValue={value} placeholder=' ' disabled={disabled} 
+    <textarea rows={1} className={styles.input} ref={ref} defaultValue={value} placeholder=' ' disabled={disabled} 
     {...rest}
     onInput={ e => {
       const parent = e.currentTarget.parentNode as HTMLElement
-      if(parent !== null) {
-        parent.dataset.replicatedValue = e.currentTarget.value
-      }
+      parent.dataset.replicatedValue = e.currentTarget.value
     }}/>
     <label className={styles.label}>{label}</label>
   </div>
