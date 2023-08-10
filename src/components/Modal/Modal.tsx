@@ -8,11 +8,9 @@ type ModalProps = {
 
 const Modal: React.FC<ModalProps> = ({onCancel = ()=>{}, children = null}) => {
   return (
-    <div className={styles.modalOverlay} onClick={onCancel}>
-      <div className={styles.modalWindow} onClick={e=>e.stopPropagation()}>
-        <div className={styles.modalBody}>
+    <div className={styles.overlay} onClick={onCancel}>
+      <div className={styles.window} onClick={e=>e.stopPropagation()}>
           {children}
-        </div>
       </div>
     </div>
   )

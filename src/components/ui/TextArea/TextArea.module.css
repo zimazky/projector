@@ -1,10 +1,8 @@
 .container {
   position: relative;
-  /*height: fit-content;*/
-  /*width: 100%;*/
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
   border-radius: 4px;
-  margin: 10px 0;
+  margin: 10px 2px 2px 2px;
   padding: 10px 14px;
   background-color: var(--ui-backgroung-color);
   font-size: 1rem;
@@ -76,7 +74,7 @@
   font-family: inherit;
   overflow: hidden;
   /*overflow-y: auto;*/
-  max-height: 133px;
+  /*max-height: 133px;*/
   word-wrap: break-word;
 }
 

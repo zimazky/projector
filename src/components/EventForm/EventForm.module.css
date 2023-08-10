@@ -1,49 +1,17 @@
 .form {
   text-align: left;
+  overflow: auto;
+  min-width: 380px;
+  width: 50vw;
+  max-height: 80vh;
 }
 
-.value {
-  font-size: 20px;
-  outline-width: 0;
-  border: 1px solid lightgray;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-.color, .completed {
-  display: inline-block;
-  min-width: 65px;
-  height: 20px;
-  font-size: 16px;
-  border: 1px solid gray;
-  margin-left: -1px;
-}
-.completed {
-  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.6) 0 100%);
-  color: gray;
-  text-decoration: line-through;
-}
-.select {
-  font-size: 16px;
-}
-.name {
-  font-size: 20px;
-  outline-width: 0;
-  white-space: pre-wrap;
-  overflow-wrap: break-word;
-}
-.parameter {
-  display: inline-block;
+.header {
   text-align: left;
-  padding: 2px 0;
 }
 
-
-
-
-
-.input {
-  display: block;
-  width: 100%;
-  font-size: 20px;
-  resize: none;
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 10px;
 }
