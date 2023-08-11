@@ -9,7 +9,9 @@ import Button from 'src/components/Common/Button'
 import TextField from 'src/components/ui/TextField/TextField'
 import Select from 'src/components/ui/Select/Select'
 import styles from './EventForm.module.css'
-import TextArea from '../ui/TextArea/TextArea'
+import TextArea from 'src/components/ui/TextArea/TextArea'
+import Tabs from 'src/components/ui/Tabs/Tabs'
+import TabPanel from 'src/components/ui/Tabs/TabPanel'
 
 interface Fields {
   name: string
@@ -25,6 +27,8 @@ interface Fields {
 }
 
 const EventForm: React.FC = () => {
+
+  const [tab, setTab] = React.useState(0)
 
   const {register, watch, handleSubmit, formState: {errors}} = useForm<Fields>({
     mode: 'onChange',
@@ -115,8 +119,10 @@ const EventForm: React.FC = () => {
     {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Change All':'Change'}</Button>}
     {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
     <Button onClick={eventFormStore.hideForm}>Cancel</Button>
+    <Tabs value={tab} labels={['Main', 'Repeat', 'Location']} onChange={(e,tab)=>{setTab(tab)}}></Tabs>
   </header>
   <form className={styles.form}>
+  <TabPanel value={tab} index={0}>
     <TextField label='Name' error={!!errors.name}
       {...register('name', {required: true})}/>
     <TextArea label='Comment'
@@ -124,8 +130,6 @@ const EventForm: React.FC = () => {
     <Select label='Project' error={!!errors.project}
       options={projectsStore.list.map((p,i)=>{ return {value: p.name, label: p.name} })}
       {...register('project', {required: true})} />
-    <TextField label='Repeat' error={!!errors.repeat} 
-      {...register('repeat', {validate: ZCron.validate})}/>
     <div className={styles.grid}>
       <TextField label='Start date' error={!!errors.start}
         {...register('start', {required: true, pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
@@ -140,6 +144,11 @@ const EventForm: React.FC = () => {
       <TextField label='Debit' error={!!errors.debit}
         {...register('debit', {validate: Calc.validate})}/>
     </div>
+  </TabPanel>
+  <TabPanel value={tab} index={1}>
+    <TextField label='Template string' error={!!errors.repeat} 
+        {...register('repeat', {validate: ZCron.validate})}/>
+  </TabPanel>
   </form>
   </>
   )
