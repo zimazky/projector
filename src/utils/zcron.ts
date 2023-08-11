@@ -108,7 +108,7 @@ export default class ZCron {
   }
 
   /** Валидация шаблона */
-  static validate(scheduleString: string): boolean {
+  static validate(scheduleString: string = ''): boolean {
     if(scheduleString === '') return true
     const arr = scheduleString.split(' ')
     if(arr.length > 3) return false

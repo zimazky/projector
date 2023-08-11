@@ -134,7 +134,7 @@ export default class Calc {
     return numstack.pop()
   }
 
-  static validate(s: string): boolean {
+  static validate(s: string = ''): boolean {
     const res = Calc.calculate(s)
     return !isNaN(res ?? 0)
   }

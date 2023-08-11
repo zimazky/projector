@@ -146,8 +146,14 @@ const EventForm: React.FC = () => {
     </div>
   </TabPanel>
   <TabPanel value={tab} index={1}>
-    <TextField label='Template string' error={!!errors.repeat} 
-        {...register('repeat', {validate: ZCron.validate})}/>
+    <TextField label='Name' error={!!errors.name} disabled
+      {...register('name', {required: true})}/>
+    <TextField label='Repeat template' error={!!errors.repeat} 
+      {...register('repeat', {validate: ZCron.validate})}/>
+    <TextField label='Template start date' error={!!errors.start}
+      {...register('start', {required: true, pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
+    <TextField label='Template end date' disabled={!!watch().duration} error={!!errors.end}
+      {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
   </TabPanel>
   </form>
   </>
