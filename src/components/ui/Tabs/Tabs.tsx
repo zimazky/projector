@@ -10,7 +10,7 @@ interface TabsProps {
   onChange?: (event: React.SyntheticEvent, newValue: number)=>void
 }
 
-function createRipple(event: React.MouseEvent) {
+function createRipple(event: React.MouseEvent, isSelected: boolean) {
   const tab = event.currentTarget as HTMLElement
 
   let offsetLeft = tab.offsetLeft
@@ -29,29 +29,42 @@ function createRipple(event: React.MouseEvent) {
   circle.style.width = circle.style.height = `${diameter}px`
   circle.style.left = `${event.clientX - offsetLeft - radius}px`
   circle.style.top = `${event.clientY - offsetTop - radius}px`
-  circle.classList.add(styles.ripple)
+  circle.classList.add(styles.ripple, styles.click)
+  if(isSelected) circle.classList.add(styles.selected)
+
+  const ripple = tab.getElementsByClassName(styles.ripple)[0]
+  if(ripple) ripple.remove()
 
   tab.appendChild(circle)
 }
 
 function removeRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement;
+  const tab = event.currentTarget as HTMLElement
   const ripple = tab.getElementsByClassName(styles.ripple)[0]
-  if (ripple) ripple.remove()
+  if(ripple) {
+    ripple.classList.replace(styles.click, styles.release)
+    setTimeout(()=>{ if(ripple) ripple.remove() }, 5000)
+  }
 }
 
 const Tabs = (props: TabsProps) => {
   const {value = 0, labels, onChange = ()=>{}} = props
   const selectedTabRef = React.useRef<HTMLDivElement | null>(null)
   const [state, setState] = React.useState<TabPosition>({left: 0, width: 0})
+  const [clicked, setClicked] = React.useState<number | null>(null)
   React.useEffect(() => {
     setState({left: selectedTabRef.current?.offsetLeft ?? 0, width: selectedTabRef.current?.clientWidth ?? 0})
   }, [])
 
   const changeTabHandler = (event: React.SyntheticEvent, tab: number) => {
     const node = event.currentTarget as HTMLDivElement
-    setState({left: node.offsetLeft, width: node.clientWidth})
-    onChange(event, tab)
+    if(clicked === tab) {
+      const ripple = node.getElementsByClassName(styles.ripple)[0]
+      ripple?.classList.add(styles.selected)
+      setState({left: node.offsetLeft, width: node.clientWidth})
+      onChange(event, tab)
+    }
+    setClicked(null)
   }
 
   return (
@@ -61,11 +74,15 @@ const Tabs = (props: TabsProps) => {
         <div className={styles.tab + (value === i ? ' '+styles.selected : '')}
           ref={value === i ? selectedTabRef : undefined}
           key={i}
-          onMouseDown={e=>createRipple(e)}
+          onMouseDown={e=>{
+            createRipple(e, value === i)
+            setClicked(i)
+          }}
           onMouseUp={e=>{
             changeTabHandler(e,i)
             removeRipple(e)
           }}
+          onMouseLeave={removeRipple}
           >{l}</div>
       ))}
     </div>
