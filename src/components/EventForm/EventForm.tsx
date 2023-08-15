@@ -113,7 +113,7 @@ const EventForm: React.FC = () => {
   })
 
   return ( <>
-    <header className={styles.header}>
+  <header className={styles.header}>
     {!isNew && <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Mark uncompleted':'Complete'}</Button>}
     {!isNew && <Button onClick={onDeleteHandle}>Delete</Button>}
     {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Change All':'Change'}</Button>}
