@@ -5,7 +5,7 @@ import { EventData } from 'src/stores/Events/EventData'
 import ZCron from 'src/utils/ZCron'
 import Calc from 'src/utils/Calc'
 
-import Button from 'src/components/Common/Button'
+import Button from 'src/components/ui/Button/Button'
 import TextField from 'src/components/ui/TextField/TextField'
 import Select from 'src/components/ui/Select/Select'
 import styles from './EventForm.module.css'
@@ -115,12 +115,14 @@ const EventForm: React.FC = () => {
   const isRepeat = watch().repeat ? true : false
 
   return ( <>
-  <header className={styles.header}>
-    {!isNew && <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Mark uncompleted':'Complete'}</Button>}
-    {!isNew && <Button onClick={onDeleteHandle}>Delete</Button>}
-    {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Change All':'Change'}</Button>}
-    {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
-    <Button onClick={eventFormStore.hideForm}>Cancel</Button>
+  <header>
+    <div className={styles.buttonGroup}>
+      {!isNew && <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Do'}</Button>}
+      {!isNew && <Button onClick={onDeleteHandle}>Delete</Button>}
+      {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</Button>}
+      {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
+      <Button onClick={eventFormStore.hideForm}>Cancel</Button>
+    </div>
     <Tabs value={tab} labels={['Main', isRepeat?'Repeating':'Repeat', 'Location']} onChange={(e,tab)=>{setTab(tab)}}></Tabs>
   </header>
   <form className={styles.form}>

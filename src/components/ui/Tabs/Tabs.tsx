@@ -10,40 +10,7 @@ interface TabsProps {
   onChange?: (event: React.SyntheticEvent, newValue: number)=>void
 }
 
-function createRipple(event: React.MouseEvent, isSelected: boolean) {
-  const tab = event.currentTarget as HTMLElement
-
-  let offsetLeft = tab.offsetLeft
-  let offsetTop = tab.offsetTop
-  let parent: HTMLElement | null = tab.offsetParent as HTMLElement
-  while(parent) {
-    offsetLeft += parent.offsetLeft
-    offsetTop += parent.offsetTop
-    parent = parent.offsetParent as HTMLElement
-  }
-
-  const circle = document.createElement("span")
-  const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
-
-  circle.style.width = circle.style.height = `${2*radius}px`
-  circle.style.left = `${event.clientX - offsetLeft - radius}px`
-  circle.style.top = `${event.clientY - offsetTop - radius}px`
-  circle.classList.add(styles.ripple, styles.clicked)
-  if(isSelected) circle.classList.add(styles.selected)
-
-  tab.appendChild(circle)
-}
-
-function removeRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement
-  const ripple = tab.getElementsByClassName(styles.clicked)[0]
-  if(ripple) {
-    ripple.classList.remove(styles.clicked)
-    setTimeout(()=>{ ripple?.remove() }, 5000)
-  }
-}
-
-const Tabs = (props: TabsProps) => {
+const Tabs: React.FC<TabsProps> = (props) => {
   const {value = 0, labels, onChange = ()=>{}} = props
   const selectedTabRef = React.useRef<HTMLDivElement | null>(null)
   const [state, setState] = React.useState<TabPosition>({left: 0, width: 0})
@@ -89,4 +56,36 @@ export default Tabs
 type TabPosition = {
   left: number
   width: number
+}
+
+function createRipple(event: React.MouseEvent, isSelected: boolean) {
+  const tab = event.currentTarget as HTMLElement
+
+  let offsetLeft = tab.offsetLeft
+  let offsetTop = tab.offsetTop
+  let parent: HTMLElement | null = tab.offsetParent as HTMLElement
+  while(parent) {
+    offsetLeft += parent.offsetLeft
+    offsetTop += parent.offsetTop
+    parent = parent.offsetParent as HTMLElement
+  }
+  const circle = document.createElement('span')
+  const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
+
+  circle.style.width = circle.style.height = `${2*radius}px`
+  circle.style.left = `${event.clientX - offsetLeft - radius}px`
+  circle.style.top = `${event.clientY - offsetTop - radius}px`
+  circle.classList.add(styles.ripple, styles.clicked)
+  if(isSelected) circle.classList.add(styles.selected)
+
+  tab.appendChild(circle)
+}
+
+function removeRipple(event: React.MouseEvent) {
+  const tab = event.currentTarget as HTMLElement
+  const ripple = tab.getElementsByClassName(styles.clicked)[0]
+  if(ripple) {
+    ripple.classList.remove(styles.clicked)
+    setTimeout(()=>{ ripple?.remove() }, 5000)
+  }
 }

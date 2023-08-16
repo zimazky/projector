@@ -1,3 +1,7 @@
+.buttonGroup {
+  padding-bottom: 10px;
+}
+
 .form {
   text-align: left;
   overflow: auto;
@@ -5,10 +9,6 @@
   min-height: 150px;
   width: 50vw;
   max-height: calc(80vh - 100px);
-}
-
-.header {
-  text-align: left;
 }
 
 .grid {
