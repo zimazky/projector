@@ -38,7 +38,7 @@
   animation: ripple 500ms linear;
 }
 
-.ripple.click {
+.ripple.clicked {
   opacity: 0.3;
 }
 

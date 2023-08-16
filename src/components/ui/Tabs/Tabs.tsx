@@ -28,20 +28,17 @@ function createRipple(event: React.MouseEvent, isSelected: boolean) {
   circle.style.width = circle.style.height = `${2*radius}px`
   circle.style.left = `${event.clientX - offsetLeft - radius}px`
   circle.style.top = `${event.clientY - offsetTop - radius}px`
-  circle.classList.add(styles.ripple, styles.click)
+  circle.classList.add(styles.ripple, styles.clicked)
   if(isSelected) circle.classList.add(styles.selected)
-
-  const ripple = tab.getElementsByClassName(styles.ripple)[0]
-  ripple?.remove()
 
   tab.appendChild(circle)
 }
 
 function removeRipple(event: React.MouseEvent) {
   const tab = event.currentTarget as HTMLElement
-  const ripple = tab.getElementsByClassName(styles.ripple)[0]
+  const ripple = tab.getElementsByClassName(styles.clicked)[0]
   if(ripple) {
-    ripple.classList.remove(styles.click)
+    ripple.classList.remove(styles.clicked)
     setTimeout(()=>{ ripple?.remove() }, 5000)
   }
 }
@@ -55,15 +52,16 @@ const Tabs = (props: TabsProps) => {
     setState({left: selectedTabRef.current?.offsetLeft ?? 0, width: selectedTabRef.current?.clientWidth ?? 0})
   }, [])
 
-  const changeTabHandler = (event: React.SyntheticEvent, tab: number) => {
+  const changeTabHandler = (event: React.MouseEvent, tab: number) => {
     const node = event.currentTarget as HTMLDivElement
     if(clicked === tab) {
-      const ripple = node.getElementsByClassName(styles.ripple)[0]
+      const ripple = node.getElementsByClassName(styles.clicked)[0]
       ripple?.classList.add(styles.selected)
       setState({left: node.offsetLeft, width: node.clientWidth})
       onChange(event, tab)
     }
     setClicked(null)
+    removeRipple(event)
   }
 
   return (
@@ -77,10 +75,7 @@ const Tabs = (props: TabsProps) => {
             createRipple(e, value === i)
             setClicked(i)
           }}
-          onMouseUp={e=>{
-            changeTabHandler(e,i)
-            removeRipple(e)
-          }}
+          onMouseUp={e=>changeTabHandler(e,i)}
           onMouseLeave={removeRipple}
           >{l}</div>
       ))}
