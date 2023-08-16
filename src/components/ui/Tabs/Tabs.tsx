@@ -23,17 +23,16 @@ function createRipple(event: React.MouseEvent, isSelected: boolean) {
   }
 
   const circle = document.createElement("span")
-  const diameter = Math.max(tab.clientWidth, tab.clientHeight)
-  const radius = diameter / 2
+  const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
 
-  circle.style.width = circle.style.height = `${diameter}px`
+  circle.style.width = circle.style.height = `${2*radius}px`
   circle.style.left = `${event.clientX - offsetLeft - radius}px`
   circle.style.top = `${event.clientY - offsetTop - radius}px`
   circle.classList.add(styles.ripple, styles.click)
   if(isSelected) circle.classList.add(styles.selected)
 
   const ripple = tab.getElementsByClassName(styles.ripple)[0]
-  if(ripple) ripple.remove()
+  ripple?.remove()
 
   tab.appendChild(circle)
 }
@@ -42,8 +41,8 @@ function removeRipple(event: React.MouseEvent) {
   const tab = event.currentTarget as HTMLElement
   const ripple = tab.getElementsByClassName(styles.ripple)[0]
   if(ripple) {
-    ripple.classList.replace(styles.click, styles.release)
-    setTimeout(()=>{ if(ripple) ripple.remove() }, 5000)
+    ripple.classList.remove(styles.click)
+    setTimeout(()=>{ ripple?.remove() }, 5000)
   }
 }
 
