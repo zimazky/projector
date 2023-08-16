@@ -464,12 +464,14 @@
 }
 
 .tab_b418629 {
+  position: relative;
   text-transform: uppercase;
   padding: 10px 16px;
   cursor: pointer;
+  overflow: hidden;
 }
 
-.selected_ae8240d {
+.tab_b418629.selected_ae8240d {
   color: #1976d2;
 }
 
@@ -479,6 +481,33 @@
   bottom: 0;
   background-color: #1976d2;
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+.ripple_cc3bf12 {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  background-color: dimgray;
+  pointer-events: none;
+  transition: opacity 500ms linear;
+  animation: ripple_cc3bf12 500ms linear;
+}
+
+.ripple_cc3bf12.click_b59503e {
+  opacity: 0.3;
+}
+
+.ripple_cc3bf12.selected_ae8240d {
+  background-color: #1976d2;
+}
+
+@keyframes ripple_cc3bf12 {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 .wrapper_ad3ef96 {
   font-size: 16px;
