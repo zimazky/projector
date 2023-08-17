@@ -8,7 +8,7 @@ import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/stores/
 
 import CalendarDay from "./CalendarDay"
 import CalendarEventItem from './CalendarEventItem'
-import Modal from 'src/components/Modal/Modal'
+import Modal from 'src/ui/Modal/Modal'
 import EventForm from 'src/components/EventForm/EventForm'
 
 import styles from './Calendar.module.css'

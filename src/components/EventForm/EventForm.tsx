@@ -5,13 +5,13 @@ import { EventData } from 'src/stores/Events/EventData'
 import ZCron from 'src/utils/ZCron'
 import Calc from 'src/utils/Calc'
 
-import Button from 'src/components/ui/Button/Button'
-import TextField from 'src/components/ui/TextField/TextField'
-import Select from 'src/components/ui/Select/Select'
+import Button from 'src/ui/Button/Button'
+import TextField from 'src/ui/TextField/TextField'
+import Select from 'src/ui/Select/Select'
 import styles from './EventForm.module.css'
-import TextArea from 'src/components/ui/TextArea/TextArea'
-import Tabs from 'src/components/ui/Tabs/Tabs'
-import TabPanel from 'src/components/ui/Tabs/TabPanel'
+import TextArea from 'src/ui/TextArea/TextArea'
+import Tabs from 'src/ui/Tabs/Tabs'
+import TabPanel from 'src/ui/Tabs/TabPanel'
 
 interface Fields {
   name: string
