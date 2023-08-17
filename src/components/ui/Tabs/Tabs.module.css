@@ -47,10 +47,6 @@
 }
 
 @keyframes ripple {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }

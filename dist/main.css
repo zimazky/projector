@@ -179,6 +179,7 @@
   display: grid;
   grid-template-columns: minmax(0, 25%) max-content minmax(0, 25%);
   grid-template-rows: minmax(0, 10%) max-content minmax(0, 10%);
+  animation: open-modal_ba97456 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 }
 
 .window_e9f40a2 {
@@ -186,6 +187,15 @@
   background-color: #FFF;
   border-radius: 4px;
   padding: 10px 10px;
+  box-shadow: 
+    rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
+    rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
+    rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+}
+
+@keyframes open-modal_ba97456 {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 .button_d2933b2 {
 	display: inline-block;
@@ -525,12 +535,8 @@
 }
 
 @keyframes ripple_cc3bf12 {
-  from {
-    transform: scale(0);
-  }
-  to {
-    transform: scale(1);
-  }
+  from { transform: scale(0); }
+  to { transform: scale(1); }
 }
 .wrapper_ad3ef96 {
   font-size: 16px;
