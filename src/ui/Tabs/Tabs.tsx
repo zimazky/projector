@@ -38,12 +38,20 @@ const Tabs: React.FC<TabsProps> = (props) => {
         <div className={styles.tab + (value === i ? ' '+styles.selected : '')}
           ref={value === i ? selectedTabRef : undefined}
           key={i}
-          onMouseDown={e=>{
+          onPointerDown={e=>{
+            if(!e.isPrimary) return
             createRipple(e, value === i)
             setClicked(i)
           }}
-          onMouseUp={e=>changeTabHandler(e,i)}
-          onMouseLeave={removeRipple}
+          onPointerUp={e=>{
+            if(e.isPrimary) changeTabHandler(e,i)
+          }}
+          onPointerLeave={e=>{
+            if(e.isPrimary) removeRipple(e)
+          }}
+          onPointerCancel={e=>{
+            if(e.isPrimary) removeRipple(e)
+          }}
           >{l}</div>
       ))}
     </div>

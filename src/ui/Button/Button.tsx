@@ -15,16 +15,24 @@ const Button: React.FC<ButtonProps> = (props) => {
   return (
     <button className={styles.button + (active?' '+styles.active:'')} {...rest}
       tabIndex={-1}
-      onMouseDown={e => {
+      onPointerDown={e => {
+        if(!e.isPrimary) return
         createRipple(e)
         setClicked(true)
       }}
-      onMouseUp={e => {
+      onPointerUp={e => {
+        if(!e.isPrimary) return
         if(clicked) onClick(e)
         setClicked(false)
         removeRipple(e)
       }}
-      onMouseLeave={e=>{
+      onPointerLeave={e=>{
+        if(!e.isPrimary) return
+        setClicked(false)
+        removeRipple(e)
+      }}
+      onPointerCancel={e=>{
+        if(!e.isPrimary) return
         setClicked(false)
         removeRipple(e)
       }}

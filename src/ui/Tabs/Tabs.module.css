@@ -13,6 +13,8 @@
   text-transform: uppercase;
   padding: 10px 16px;
   cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
   overflow: hidden;
 }
 

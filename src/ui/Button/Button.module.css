@@ -15,6 +15,8 @@
 	padding: 8px 15px;
 	cursor: pointer;
 	outline: 0;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: none;
 }
 
 .button + .button {
