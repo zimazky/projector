@@ -5,7 +5,7 @@ interface TabsProps {
   /** Выбранный таб */
   value?: number
   /** Массив ярлыков */
-  labels: string[]
+  labels: Array<string|null>
   /** Колбэк-функция изменения таба */
   onChange?: (event: React.SyntheticEvent, newValue: number)=>void
 }
@@ -34,7 +34,7 @@ const Tabs: React.FC<TabsProps> = (props) => {
   return (
   <div className={styles.wrapper}>
     <div className={styles.container}>{
-      labels.map((l,i) => (
+      labels.map((l,i) => ( l===null ? null :
         <div className={styles.tab + (value === i ? ' '+styles.selected : '')}
           ref={value === i ? selectedTabRef : undefined}
           key={i}

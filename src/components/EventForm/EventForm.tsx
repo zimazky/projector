@@ -113,17 +113,18 @@ const EventForm: React.FC = () => {
   })
 
   const isRepeat = watch().repeat ? true : false
+  const isCompleted = eventFormStore.eventData.completed
 
   return ( <>
   <header>
     <div className={styles.buttonGroup}>
-      {!isNew && <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Do'}</Button>}
-      {!isNew && <Button onClick={onDeleteHandle}>Delete</Button>}
-      {!isNew && <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</Button>}
-      {isNew && <Button onClick={onAddHandle}>Add Event</Button>}
-      <Button onClick={eventFormStore.hideForm}>Cancel</Button>
+      {!isNew && <>
+        <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Done'}</Button>
+        {isRepeat && <Button>Delete</Button>}
+        <Button onClick={onDeleteHandle}>{isRepeat ? 'Delete All' : 'Delete'}</Button>
+      </>}
     </div>
-    <Tabs value={tab} labels={['Main', isRepeat?'Repeating':'Repeat', 'Location']} onChange={(e,tab)=>{setTab(tab)}}></Tabs>
+    <Tabs value={tab} labels={['Main', isCompleted ? null : (isRepeat ? 'Repeating' : 'Repeat'), 'Location']} onChange={(e,tab)=>{setTab(tab)}}></Tabs>
   </header>
   <form className={styles.form}>
   <TabPanel value={tab} index={0}>
@@ -164,6 +165,16 @@ const EventForm: React.FC = () => {
       {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
   </TabPanel>
   </form>
+  <footer className={styles.footer}>{
+    isNew 
+    ? <Button onClick={onAddHandle}>Add Event</Button>
+    : <>
+      <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</Button>
+      {isRepeat && <Button>Save single</Button>}
+      </>
+  }
+  {<Button onClick={eventFormStore.hideForm}>Cancel</Button>}
+  </footer>
   </>
   )
 }

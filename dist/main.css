@@ -405,6 +405,11 @@
   grid-template-columns: 1fr 1fr;
   column-gap: 10px;
 }
+
+.footer_d399e34 {
+  padding-top: 10px;
+  text-align: right;
+}
 .container_aff9728 {
   position: relative;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);

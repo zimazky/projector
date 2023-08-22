@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './Modal.module.css'
 
 type ModalProps = {
-  onCancel: () => void
+  onCancel?: () => void
   children: React.ReactNode
 }
 
