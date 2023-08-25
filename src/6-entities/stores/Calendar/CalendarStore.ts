@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 
-import DateTime, { timestamp } from 'src/7-shared/helpers/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { max } from 'src/7-shared/helpers/utils'
 
 import { EventsCache, EventsCacheSkipStructure } from 'src/6-entities/stores/EventsCache/EventsCache'

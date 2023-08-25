@@ -2,7 +2,7 @@ import React from 'react'
 import { observer } from 'mobx-react-lite'
 
 import { max, min } from 'src/7-shared/helpers/utils'
-import DateTime, { timestamp } from 'src/7-shared/helpers/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import useUpdate from 'src/7-shared/hooks/useUpdate'
 import Modal from 'src/7-shared/ui/Modal/Modal'
 

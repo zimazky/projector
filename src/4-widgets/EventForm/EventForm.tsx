@@ -1,8 +1,8 @@
 import React from 'react'
 import { useForm } from 'react-hook-form'
 
-import ZCron from 'src/7-shared/helpers/ZCron'
-import Calc from 'src/7-shared/helpers/Calc'
+import ZCron from 'src/7-shared/libs/ZCron/ZCron'
+import Calc from 'src/7-shared/libs/Calc/Calc'
 import Button from 'src/7-shared/ui/Button/Button'
 import TextField from 'src/7-shared/ui/TextField/TextField'
 import Select from 'src/7-shared/ui/Select/Select'

@@ -1,7 +1,7 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
 
-import DateTime from 'src/7-shared/helpers/DateTime'
+import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
 import {dayListStore, mainStore} from 'src/6-entities/stores/MainStore'

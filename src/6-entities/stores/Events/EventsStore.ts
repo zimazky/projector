@@ -1,5 +1,5 @@
-import ZCron from 'src/7-shared/helpers/ZCron'
-import { timestamp } from 'src/7-shared/helpers/DateTime'
+import ZCron from 'src/7-shared/libs/ZCron/ZCron'
+import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore'
 

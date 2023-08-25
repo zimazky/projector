@@ -1,6 +1,6 @@
 import React from 'react'
 
-import DateTime from 'src/7-shared/helpers/DateTime'
+import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 
 import { calendarStore, mainStore } from 'src/6-entities/stores/MainStore'
 

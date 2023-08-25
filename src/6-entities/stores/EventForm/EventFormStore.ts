@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 
-import { timestamp } from 'src/7-shared/helpers/DateTime'
+import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { EventData } from 'src/6-entities/stores/Events/EventData'
 

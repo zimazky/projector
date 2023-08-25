@@ -1,4 +1,4 @@
-import { timestamp } from 'src/7-shared/helpers/DateTime'
+import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { RepeatableEventStructure, SingleEventStructure } from 'src/6-entities/stores/Events/EventStructure'
 

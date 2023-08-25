@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 
-import DateTime, { timestamp } from 'src/7-shared/helpers/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { ForecastData3h, WeatherStore } from 'src/6-entities/stores/Weather/WeatherStore'
 import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'

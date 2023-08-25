@@ -1,6 +1,6 @@
 import {makeAutoObservable, runInAction} from 'mobx'
 
-import DateTime from 'src/7-shared/helpers/DateTime'
+import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { max, min } from 'src/7-shared/helpers/utils'
 import OpenWeatherMap from 'src/7-shared/services/openweathermap'
 

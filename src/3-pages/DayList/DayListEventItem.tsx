@@ -1,6 +1,6 @@
 import React from 'react'
 
-import DateTime, { timestamp } from 'src/7-shared/helpers/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
 

@@ -1,6 +1,6 @@
 import React from 'react'
 
-import DateTime, { timestamp } from 'src/7-shared/helpers/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
 import { dayListStore, eventFormStore, mainStore } from 'src/6-entities/stores/MainStore'
