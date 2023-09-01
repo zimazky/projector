@@ -1,18 +1,18 @@
 import React from 'react'
-import styles from './Button.module.css'
+import styles from './IconButton.module.css'
 
-type ButtonProps = {
+type IconButtonProps = {
+  title: string
   disabled?: boolean
   onClick?: React.MouseEventHandler
   children?: React.ReactNode
 }
 
-const Button: React.FC<ButtonProps> = (props) => {
+const IconButton: React.FC<IconButtonProps> = (props) => {
   const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
 
   return (
     <button className={styles.button} {...rest}
-      tabIndex={-1}
       onPointerDown={e => {
         if(!e.isPrimary) return
         createRipple(e)
@@ -34,33 +34,33 @@ const Button: React.FC<ButtonProps> = (props) => {
   )
 }
 
-export default Button
+export default IconButton
 
 function createRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement
+  const el = event.currentTarget as HTMLElement
 
-  let offsetLeft = tab.offsetLeft
-  let offsetTop = tab.offsetTop
-  let parent: HTMLElement | null = tab.offsetParent as HTMLElement
+  let offsetLeft = el.offsetLeft
+  let offsetTop = el.offsetTop
+  let parent: HTMLElement | null = el.offsetParent as HTMLElement
   while(parent) {
     offsetLeft += parent.offsetLeft
     offsetTop += parent.offsetTop
     parent = parent.offsetParent as HTMLElement
   }
   const circle = document.createElement('span')
-  const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
+  const radius = Math.ceil(Math.hypot(el.clientWidth, el.clientHeight))
 
   circle.style.width = circle.style.height = `${2*radius}px`
   circle.style.left = `${event.clientX - offsetLeft - radius}px`
   circle.style.top = `${event.clientY - offsetTop - radius}px`
   circle.classList.add(styles.ripple, styles.clicked)
 
-  tab.appendChild(circle)
+  el.appendChild(circle)
 }
 
 function removeRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement
-  const ripple = tab.getElementsByClassName(styles.clicked)[0]
+  const el = event.currentTarget as HTMLElement
+  const ripple = el.getElementsByClassName(styles.clicked)[0]
   if(ripple) {
     ripple.classList.remove(styles.clicked)
     setTimeout(()=>{ ripple?.remove() }, 5000)

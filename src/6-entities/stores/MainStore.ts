@@ -37,6 +37,8 @@ class MainStore {
   mustForceUpdate: {} = {}
   /** Режим отображения */
   viewMode: ViewMode = 'Calendar'
+  /** Признак открытого сайдбара с меню */
+  isMenuOpen: boolean = false
 
   constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, eventsCache: EventsCache) {
     this.projectsStore = projectsStore
@@ -156,6 +158,10 @@ class MainStore {
 
   forceUpdate() {
     this.mustForceUpdate = {}
+  }
+
+  toggleMenu(isOpen: boolean) {
+    this.isMenuOpen = isOpen
   }
 }
 

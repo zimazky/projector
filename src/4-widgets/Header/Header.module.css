@@ -1,68 +1,24 @@
-:root{
-  --ui-nav-background-color: white;
-  --ui-nav-color: gray;
-}
-
-.navigationbar {
+.header {
   font-size: 22px;
-  height: 1.6em;
   width: 100%;
-  background-color: var(--ui-nav-background-color);
+  background-color: white;
   vertical-align: baseline;
-  padding: 0.3em 8px;
+  padding: 2px 8px;
   border-bottom: 1px solid lightgray;
-  color: var(--ui-nav-color);
-  display: grid;
-  grid-template-columns: 1fr min-content 1fr;
-  column-gap: 1em;
+  color: gray;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
-}
-
-.navbar__icon_list {
-  white-space: nowrap;
-}
-
-.burgermenu, .icons {
-  display: inline-block;
-  height: 100%;
-  margin-right: 0.6em;
-  color: var(--ui-nav-color);
-}
-
-.burgermenu {
-  height: 1em;
-  width: 1em;
-  fill: var(--ui-nav-color);
-}
-.burgermenu:focus {
-  fill: black;
-}
-.menu {
-  display: block;
-  position: fixed;
-  left: 0;
-  top: 1.5em;
-  z-index: 1;
-  background-color: var(--ui-nav-background-color);
-  border: 1px solid lightgray;
-}
-.menu div {
-  padding: 0.5em;
-  color: var(--ui-nav-color);
-}
-.menu div:hover {
-  background-color: lightgray;
-}
-
-.icons {
-  height: 1em;
-  width: 1em;
-  stroke: var(--ui-nav-color);
-}
-.icons:hover {
-  stroke: black;
 }
 
 .caption {
   white-space: nowrap;
 }
+/*
+@media (max-width: 440px) { 
+	.caption {
+    order: 3;
+	}
+}
+*/

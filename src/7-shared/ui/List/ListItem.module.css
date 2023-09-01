@@ -1,0 +1,42 @@
+.item {
+	display: flex;
+	position: relative;
+	overflow: hidden;
+	font-family: 'Roboto', sans-serif;
+	font-size: 1rem;
+	font-weight: 500;
+	color: rgba(0, 0, 0, 0.7);
+	background-color: transparent;
+	padding: 8px 16px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: none;
+}
+
+.item:hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.item[disabled] {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  background-color: dimgray;
+  pointer-events: none;
+  transition: opacity 500ms linear;
+  animation: ripple 300ms linear;
+}
+
+.ripple.clicked {
+  opacity: 0.3;
+}
+
+@keyframes ripple {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}

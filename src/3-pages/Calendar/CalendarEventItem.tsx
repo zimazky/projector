@@ -20,8 +20,6 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
   const {timestamp, daysInCurrentWeek: daysInCurrentWeek} = props
   const {id, name, completed, background, color, repeatable, start, time, end, credit, debit, days} = props.event
 
-  const [isPointerDown, setIsPointerDown] = React.useState(false)
-
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
     const s = eventsStore.getEventData(id)
@@ -45,18 +43,8 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
       backgroundColor: background,
       color: color
     }}
-    onPointerDown={e=>{
-      if(e.isPrimary) setIsPointerDown(true)
-    }}
-    onPointerLeave={e=>{
-      if(e.isPrimary) setIsPointerDown(false)
-    }}
-    onPointerCancel={e=>{
-      if(e.isPrimary) setIsPointerDown(false)
-    }}
-    onPointerUp={e=>{
-      if(e.isPrimary && isPointerDown) openEventForm(e)
-    }}
+    onClick={openEventForm}
+
     title={
       name+
       (time!==null?'\ntime: ' + DateTime.secondsToHMM(time) : '')

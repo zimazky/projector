@@ -1,18 +1,17 @@
 import React from 'react'
-import styles from './Button.module.css'
+import styles from './ListItem.module.css'
 
-type ButtonProps = {
+type ListItemProps = {
   disabled?: boolean
   onClick?: React.MouseEventHandler
   children?: React.ReactNode
 }
 
-const Button: React.FC<ButtonProps> = (props) => {
-  const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
+const ListItem: React.FC<ListItemProps> = (props) => {
+  const {disabled=false, children='ListItem', onClick = ()=>{}, ...rest} = props
 
   return (
-    <button className={styles.button} {...rest}
-      tabIndex={-1}
+    <li className={styles.item} {...rest}
       onPointerDown={e => {
         if(!e.isPrimary) return
         createRipple(e)
@@ -30,11 +29,11 @@ const Button: React.FC<ButtonProps> = (props) => {
         if(!e.isPrimary) return
         removeRipple(e)
       }}
-    >{children}</button>
+    >{children}</li>
   )
 }
 
-export default Button
+export default ListItem
 
 function createRipple(event: React.MouseEvent) {
   const tab = event.currentTarget as HTMLElement
