@@ -1,0 +1,35 @@
+.time {
+  text-align: right;
+  position: relative;
+	overflow: hidden;
+  font-size: 23px;
+	color: rgba(0, 0, 0, 0.7);
+	background-color: transparent;
+	padding: 6px 12px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: none;
+}
+
+.time:hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  background-color: dimgray;
+  pointer-events: none;
+  transition: opacity 500ms linear;
+  animation: ripple 300ms linear;
+}
+
+.ripple.clicked {
+  opacity: 0.3;
+}
+
+@keyframes ripple {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}

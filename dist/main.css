@@ -1,3 +1,38 @@
+.time_eacf88c {
+  text-align: right;
+  position: relative;
+	overflow: hidden;
+  font-size: 23px;
+	color: rgba(0, 0, 0, 0.7);
+	background-color: transparent;
+	padding: 6px 12px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	touch-action: none;
+}
+
+.time_eacf88c:hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+.ripple_b874328 {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  background-color: dimgray;
+  pointer-events: none;
+  transition: opacity 500ms linear;
+  animation: ripple_b874328 300ms linear;
+}
+
+.ripple_b874328.clicked_b09bb79 {
+  opacity: 0.3;
+}
+
+@keyframes ripple_b874328 {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
 .button_e4c95d0 {
 	display: inline-flex;
 	position: relative;
@@ -163,16 +198,12 @@
   from { transform: scale(0); }
   to { transform: scale(1); }
 }
-.time_adb8d46 {
-  text-align: right;
-}
-
 .header_fc851ac {
   font-size: 22px;
   width: 100%;
   background-color: white;
   vertical-align: baseline;
-  padding: 2px 8px;
+  padding: 2px 2px;
   border-bottom: 1px solid lightgray;
   color: gray;
   display: flex;
