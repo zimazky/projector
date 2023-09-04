@@ -7,9 +7,14 @@ import { calendarStore, mainStore } from 'src/6-entities/stores/MainStore'
 import styles from './Time.module.css'
 
 export default function Time() {
-  const [time, setTime] = React.useState('')
+  const t = Date.now()/1000
+  const s = 60 - t%60
+  const [time, setTime] = React.useState(DateTime.getHHMM(t))
   React.useEffect(() => {
-    setInterval(()=>{ setTime(DateTime.getHHMMSS(Date.now()/1000)) }, 1000)
+    setTimeout(()=>{
+      setTime(DateTime.getHHMM(Date.now()/1000))
+      setInterval(()=>{ setTime(DateTime.getHHMM(Date.now()/1000)) }, 60000)
+    }, s*1000)
   }, [])
 
   return <span 

@@ -1,12 +1,12 @@
-import React from "react"
-import { observer } from "mobx-react-lite"
+import React from 'react'
+import { observer } from 'mobx-react-lite'
 
-import IconBar, { IconItem } from "src/7-shared/ui/IconBar/IconBar"
+import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
+import Drawer from 'src/7-shared/ui/Drawer/Drawer'
+import List from 'src/7-shared/ui/List/List'
+import ListItem from 'src/7-shared/ui/List/ListItem'
 
-import { mainStore, weatherStore } from "src/6-entities/stores/MainStore"
-import Drawer from "src/7-shared/ui/Drawer/Drawer"
-import List from "src/7-shared/ui/List/List"
-import ListItem from "src/7-shared/ui/List/ListItem"
+import { mainStore, weatherStore } from 'src/6-entities/stores/MainStore'
 
 function fullScreen() { 
   document.getElementById('root')?.requestFullscreen() 

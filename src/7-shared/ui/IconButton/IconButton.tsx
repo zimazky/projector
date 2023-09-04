@@ -63,6 +63,6 @@ function removeRipple(event: React.MouseEvent) {
   const ripple = el.getElementsByClassName(styles.clicked)[0]
   if(ripple) {
     ripple.classList.remove(styles.clicked)
-    setTimeout(()=>{ ripple?.remove() }, 5000)
+    setTimeout(()=>{ ripple?.remove() }, 500)
   }
 }
