@@ -13,8 +13,7 @@ type state = 'hidden' | 'open' | 'closing'
 
 const Modal: React.FC<ModalProps> = ({open = false, onClose = ()=>{}, children = null}) => {
 
-  const [state, setState] = React.useState<state>(open?'open':'hidden')
-  //console.log('modal', open, state)
+  const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
   React.useEffect(()=>{
     if(open) setState('open')
     else if(state==='open') {
@@ -24,12 +23,12 @@ const Modal: React.FC<ModalProps> = ({open = false, onClose = ()=>{}, children =
   }, [open])
 
   return state==='hidden' ? null :
-    <div className={styles.overlay + ' ' + styles[state]}
-      onClick={onClose}>
-      <div className={styles.window} onClick={e=>e.stopPropagation()}>
-        {children}
-      </div>
+  <div className={styles.overlay + ' ' + styles[state]}
+    onClick={onClose}>
+    <div className={styles.window} onClick={e=>e.stopPropagation()}>
+      {children}
     </div>
+  </div>
 }
 
 export default Modal

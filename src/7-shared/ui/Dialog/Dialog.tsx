@@ -9,20 +9,26 @@ type DialogProps = {
   children?: React.ReactNode
 }
 
+type state = 'hidden' | 'open' | 'closing'
+
 const Dialog: React.FC<DialogProps> = ({open = false, onClose = ()=>{}, children = null}) => {
-  return ( open?
-    <div className={styles.overlay + (open?' '+styles.open:'')}
-      onClick={e=>{
-        const el = e.currentTarget as HTMLElement
-        el.classList.replace(styles.open, styles.closing)
-        setTimeout(onClose, 225)
-      }}>
-      <div className={styles.window} onClick={e=>e.stopPropagation()}>
-        {children}
-      </div>
+
+  const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
+  React.useEffect(()=>{
+    if(open) setState('open')
+    else if(state==='open') {
+      setState('closing')
+      setTimeout(()=>{ setState('hidden') }, 300)
+    }
+  }, [open])
+
+  return state==='hidden' ? null :
+  <div className={styles.overlay + ' ' + styles[state]}
+    onClick={onClose}>
+    <div className={styles.window} onClick={e=>e.stopPropagation()}>
+      {children}
     </div>
-    : null
-  )
+  </div>
 }
 
 export default Dialog
