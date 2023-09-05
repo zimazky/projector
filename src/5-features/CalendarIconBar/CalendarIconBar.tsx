@@ -7,6 +7,7 @@ import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
 
 import { mainStore, weatherStore } from 'src/6-entities/stores/MainStore'
+import Spinner from 'src/7-shared/ui/Spinner/Spinner'
 
 function fullScreen() { 
   document.getElementById('root')?.requestFullscreen() 
