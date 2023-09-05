@@ -2,18 +2,34 @@ import React from 'react'
 import styles from './Modal.module.css'
 
 type ModalProps = {
-  onCancel?: () => void
-  children: React.ReactNode
+  /** Признак открытого окна */
+  open: boolean
+  /** Функция, вызываемая при закрытии сайдбара */
+  onClose?: () => void
+  children?: React.ReactNode
 }
 
-const Modal: React.FC<ModalProps> = ({onCancel = ()=>{}, children = null}) => {
-  return (
-    <div className={styles.overlay} onClick={onCancel}>
+type state = 'hidden' | 'open' | 'closing'
+
+const Modal: React.FC<ModalProps> = ({open = false, onClose = ()=>{}, children = null}) => {
+
+  const [state, setState] = React.useState<state>(open?'open':'hidden')
+  //console.log('modal', open, state)
+  React.useEffect(()=>{
+    if(open) setState('open')
+    else if(state==='open') {
+      setState('closing')
+      setTimeout(()=>{ setState('hidden') }, 300)
+    }
+  }, [open])
+
+  return state==='hidden' ? null :
+    <div className={styles.overlay + ' ' + styles[state]}
+      onClick={onClose}>
       <div className={styles.window} onClick={e=>e.stopPropagation()}>
-          {children}
+        {children}
       </div>
     </div>
-  )
 }
 
 export default Modal

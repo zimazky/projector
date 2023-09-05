@@ -1,7 +1,6 @@
 .wrapper {
   position: relative;
   border-bottom: 1px solid rgba(0, 0, 0, 0.15);
-  font-size: 0.875rem;
 }
 
 .container {
@@ -10,6 +9,10 @@
 
 .tab {
   position: relative;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.02857em;
   text-transform: uppercase;
   padding: 10px 16px;
   cursor: pointer;

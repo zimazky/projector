@@ -1,0 +1,7 @@
+.actions {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}

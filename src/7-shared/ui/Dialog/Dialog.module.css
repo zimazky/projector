@@ -4,11 +4,12 @@
   inset: 0;
   cursor: default;
   user-select: none;
-  z-index: 1;
+  z-index: 2;
+  visibility: hidden;
   opacity: 0;
   transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-  padding-top: 10vh;
-  animation: opening 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  padding-top: 20vh;
+  animation: open 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 }
 
 .overlay.open {
@@ -21,32 +22,25 @@
   opacity: 0;
 }
 
-.overlay.hidden {
-  visibility: hidden;
-}
-
 .window {
-  background-color: #FFF;
+  background-color: rgb(255, 255, 255);
   color: rgba(0, 0, 0, 0.87);
   border-radius: 4px;
-  padding: 10px 10px;
-  box-shadow: 
+  box-shadow:
     rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
     rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
     rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
   position: relative;
   margin: 0px auto;
   overflow-y: auto;
-  width: fit-content;
-  min-width: 400px;
-  max-width: calc(100% - 20vw);
-  max-height: calc(100% - 20vh);
   display: flex;
   flex-direction: column;
   width: fit-content;
+  max-height: calc(100% - 64px);
+  max-width: 600px;
 }
 
-@keyframes opening {
+@keyframes open {
   from { opacity: 0; }
   to { opacity: 1; }
 }

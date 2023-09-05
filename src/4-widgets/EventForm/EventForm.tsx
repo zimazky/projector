@@ -3,17 +3,18 @@ import { useForm } from 'react-hook-form'
 
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 import Calc from 'src/7-shared/libs/Calc/Calc'
-import Button from 'src/7-shared/ui/Button/Button'
 import TextField from 'src/7-shared/ui/TextField/TextField'
 import Select from 'src/7-shared/ui/Select/Select'
 import TextArea from 'src/7-shared/ui/TextArea/TextArea'
 import Tabs from 'src/7-shared/ui/Tabs/Tabs'
 import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
+import TextButton from 'src/7-shared/ui/Button/TextButton'
 
 import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/6-entities/stores/MainStore'
 import { EventData } from 'src/6-entities/stores/Events/EventData'
 
 import styles from './EventForm.module.css'
+import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
 
 interface Fields {
   name: string
@@ -31,6 +32,18 @@ interface Fields {
 const EventForm: React.FC = () => {
 
   const [tab, setTab] = React.useState(0)
+  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = React.useState(false)
+  const [isDeleteAllConfirmationOpen, setIsDeleteAllConfirmationOpen] = React.useState(false)
+
+  const handleConfirmDelete = () => {
+    setIsDeleteConfirmationOpen(false)
+    //onDeleteHandle()
+  }
+
+  const handleConfirmDeleteAll = () => {
+    setIsDeleteAllConfirmationOpen(false)
+    //onDeleteHandle()
+  }
 
   const {register, watch, handleSubmit, formState: {errors}} = useForm<Fields>({
     mode: 'onChange',
@@ -121,10 +134,18 @@ const EventForm: React.FC = () => {
   <header>
     <div className={styles.buttonGroup}>
       {!isNew && <>
-        <Button onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Done'}</Button>
-        {isRepeat && <Button>Delete</Button>}
-        <Button onClick={onDeleteHandle}>{isRepeat ? 'Delete All' : 'Delete'}</Button>
+        <TextButton onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Done'}</TextButton>
+        {isRepeat && <TextButton onClick={()=>setIsDeleteConfirmationOpen(true)}>Delete</TextButton>}
+        <TextButton onClick={onDeleteHandle}>{isRepeat ? 'Delete All' : 'Delete'}</TextButton>
       </>}
+      
+      <YesCancelConfirmation open={isDeleteConfirmationOpen} onClose={handleConfirmDelete}>
+        Are you sure you want to delete this single event?
+      </YesCancelConfirmation>
+      <YesCancelConfirmation open={isDeleteAllConfirmationOpen} onClose={handleConfirmDeleteAll}>
+        Are you sure you want to delete all repeatable events?
+      </YesCancelConfirmation>
+
       <TextField label='Name' error={!!errors.name}
         {...register('name', {required: true})}/>
     </div>
@@ -167,13 +188,13 @@ const EventForm: React.FC = () => {
   </form>
   <footer className={styles.footer}>{
     isNew 
-    ? <Button onClick={onAddHandle}>Add Event</Button>
+    ? <TextButton onClick={onAddHandle}>Add Event</TextButton>
     : <>
-      <Button onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</Button>
-      {isRepeat && <Button>Save single</Button>}
+      <TextButton onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</TextButton>
+      {isRepeat && <TextButton>Save single</TextButton>}
       </>
   }
-  {<Button onClick={eventFormStore.hideForm}>Cancel</Button>}
+  {<TextButton onClick={eventFormStore.hideForm}>Cancel</TextButton>}
   </footer>
   </>
   )

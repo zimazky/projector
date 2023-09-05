@@ -8,12 +8,12 @@
 	font-weight: 500;
 	letter-spacing: 0.02857em;
 	text-transform: uppercase;
-	border: 1px solid rgba(25, 118, 210, 0.5);
+	border: none;
 	border-radius: 4px;
 	color: rgb(25, 118, 210);
 	background-color: transparent;
 	white-space: nowrap;
-	padding: 8px 15px;
+	padding: 6px 8px;
 	cursor: pointer;
 	outline: 0;
 	-webkit-tap-highlight-color: transparent;
@@ -25,8 +25,7 @@
 }
 
 .button:hover {
-	background-color: rgba(25, 118, 210, 0.04);
-	border: 1px solid rgb(25, 118, 210);
+	background-color: rgba(25, 118, 210, 0.08);
 }
 
 .button[disabled] {

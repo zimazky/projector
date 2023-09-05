@@ -81,11 +81,9 @@ const Calendar: React.FC = observer(function() {
           </div>
         ))}
       </div>
-      { eventFormStore.isShow &&
-      <Modal onCancel={eventFormStore.hideForm}>
+      <Modal open={eventFormStore.isShow} onClose={eventFormStore.hideForm}>
         <EventForm/>
       </Modal>
-      }
     </div>
   )
 })

@@ -1,16 +1,16 @@
 import React from 'react'
-import styles from './Drawer.module.css'
+import styles from './Dialog.module.css'
 
-type DrawerProps = {
-  /** Признак открытого сайдбара */
-  open?: boolean
+type DialogProps = {
+  /** Признак открытого окна */
+  open: boolean
   /** Функция, вызываемая при закрытии сайдбара */
   onClose?: () => void
   children?: React.ReactNode
 }
 
-const Drawer: React.FC<DrawerProps> = ({open = false, onClose = ()=>{}, children = null}) => {
-  return (
+const Dialog: React.FC<DialogProps> = ({open = false, onClose = ()=>{}, children = null}) => {
+  return ( open?
     <div className={styles.overlay + (open?' '+styles.open:'')}
       onClick={e=>{
         const el = e.currentTarget as HTMLElement
@@ -21,7 +21,8 @@ const Drawer: React.FC<DrawerProps> = ({open = false, onClose = ()=>{}, children
         {children}
       </div>
     </div>
+    : null
   )
 }
 
-export default Drawer
+export default Dialog

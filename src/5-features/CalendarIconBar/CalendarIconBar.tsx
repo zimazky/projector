@@ -94,7 +94,7 @@ const CalendarIconBar: React.FC = observer(function() {
   return <>
     <IconBar icons={icons}/>
     <Drawer open={mainStore.isMenuOpen} onClose={()=>mainStore.toggleMenu(false)}>
-      <List>{ menu.map((m)=><ListItem onClick={m.fn}>{m.name}</ListItem>)}</List>
+      <List>{ menu.map((m, i)=><ListItem key={i} onClick={m.fn}>{m.name}</ListItem>)}</List>
     </Drawer>
   </>
 })
