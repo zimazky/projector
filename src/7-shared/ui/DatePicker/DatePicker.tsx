@@ -10,7 +10,7 @@ import styles from './DatePicker.module.css'
 
 type DatePickerProps = {
   label: string
-  value: string
+  value?: string
   onChange?: () => void
 }
 

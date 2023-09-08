@@ -11,7 +11,7 @@ const TextButton: React.FC<TextButtonProps> = (props) => {
   const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
 
   return (
-    <button className={styles.button} {...rest}
+    <button className={styles.button} type='button' {...rest}
       tabIndex={-1}
       onPointerDown={e => {
         if(!e.isPrimary) return

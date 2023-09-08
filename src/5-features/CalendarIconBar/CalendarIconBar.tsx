@@ -90,7 +90,7 @@ const CalendarIconBar: React.FC = observer(function() {
     fn: fullScreen
   })
 
-  menu.push({ name: 'Projects', fn: ()=>{} })
+  menu.push({ name: 'Projects', fn: ()=>{mainStore.changeViewMode({mode: 'Projects'})} })
 
   return <>
     <IconBar icons={icons}/>

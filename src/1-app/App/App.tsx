@@ -11,6 +11,7 @@ import Calendar from 'src/3-pages/Calendar/Calendar'
 import DayList from 'src/3-pages/DayList/DayList'
 
 import './App.css'
+import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
 
 const App: React.FC = observer(function() {
   const forceUpdate = useUpdate()
@@ -23,6 +24,7 @@ const App: React.FC = observer(function() {
     <Header/>
     { mainStore.viewMode === 'Calendar' ? <Calendar/> : null }
     { mainStore.viewMode === 'Day' ? <DayList/> : null }
+    { mainStore.viewMode === 'Projects' ? <ProjectsForm/> : null }
   </>
 })
 
