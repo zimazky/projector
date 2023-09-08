@@ -9,12 +9,14 @@ import TextArea from 'src/7-shared/ui/TextArea/TextArea'
 import Tabs from 'src/7-shared/ui/Tabs/Tabs'
 import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
+import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
 import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/6-entities/stores/MainStore'
 import { EventData } from 'src/6-entities/stores/Events/EventData'
 
-import styles from './EventForm.module.css'
 import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
+
+import styles from './EventForm.module.css'
 
 interface Fields {
   name: string
@@ -29,21 +31,13 @@ interface Fields {
   debit: string
 }
 
+type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
+
 const EventForm: React.FC = () => {
 
   const [tab, setTab] = React.useState(0)
-  const [isDeleteConfirmationOpen, setIsDeleteConfirmationOpen] = React.useState(false)
-  const [isDeleteAllConfirmationOpen, setIsDeleteAllConfirmationOpen] = React.useState(false)
-
-  const handleConfirmDelete = () => {
-    setIsDeleteConfirmationOpen(false)
-    //onDeleteHandle()
-  }
-
-  const handleConfirmDeleteAll = () => {
-    setIsDeleteAllConfirmationOpen(false)
-    //onDeleteHandle()
-  }
+  const [deleteState, setDeleteState] = React.useState<DeleteState>(null)
+  const [saveAsSingle, setSaveAsSingle] = React.useState(false)
 
   const {register, watch, handleSubmit, formState: {errors}} = useForm<Fields>({
     mode: 'onChange',
@@ -63,6 +57,38 @@ const EventForm: React.FC = () => {
 
   const isNew = eventFormStore.eventData.id !== null ? false : true
 
+  const handleConfirmDelete = () => {
+    if(deleteState === null) return
+    if(deleteState === 'DeleteCurrentRepeatable') {
+      eventsStore.deleteCurrentRepeatableEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp)
+      eventFormStore.hideForm()
+    }
+    else {
+      eventsStore.deleteEvent(eventFormStore.eventData.id)
+      eventFormStore.hideForm()
+    }
+    setDeleteState(null)
+  }
+
+  const handleSaveAsSingle = handleSubmit((e) => {
+    const id = eventFormStore.eventData.id
+    if(id === null) return
+    const eventData: EventData = {
+      name: e.name,
+      comment: e.comment,
+      project: e.project,
+      repeat: e.repeat,
+      start: e.start,
+      end: e.end,
+      time: e.time,
+      duration: e.duration,
+      credit: Calc.calculate(e.credit),
+      debit: Calc.calculate(e.debit)
+    }
+    eventsStore.saveAsSingleEvent(id, eventFormStore.eventData.timestamp, eventData)
+    eventFormStore.hideForm()
+  })
+
   const onCompleteHandle = handleSubmit((e) => {
     const isCompleted = eventFormStore.eventData.completed
     if(isCompleted === undefined) return
@@ -81,13 +107,6 @@ const EventForm: React.FC = () => {
     else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventData)
     eventFormStore.hideForm()
   })
-
-  const onDeleteHandle = () => {
-    const id = eventFormStore.eventData.id
-    if(id === null) return
-    eventsStore.deleteEvent(id)
-    eventFormStore.hideForm()
-  }
 
   // Изменение параметров события, для всех если событие повторяемое
   const onChangeEventHandle = handleSubmit((e) => {
@@ -133,19 +152,34 @@ const EventForm: React.FC = () => {
   return ( <>
   <header>
     <div className={styles.buttonGroup}>
-      {!isNew && <>
-        <TextButton onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Done'}</TextButton>
-        {isRepeat && <TextButton onClick={()=>setIsDeleteConfirmationOpen(true)}>Delete</TextButton>}
-        <TextButton onClick={onDeleteHandle}>{isRepeat ? 'Delete All' : 'Delete'}</TextButton>
-      </>}
+      {!isNew && (
+        isRepeat
+        ? 
+        <>
+          <TextButton onClick={onCompleteHandle}>Complete</TextButton>
+          <TextButton onClick={()=>setDeleteState('DeleteCurrentRepeatable')}>Delete</TextButton>
+          <TextButton onClick={()=>setDeleteState('Delete')}>Delete All</TextButton>
+          <YesCancelConfirmation open={deleteState!==null}
+            onConfirm={handleConfirmDelete}
+            onClose={()=>setDeleteState(null)}>{
+              deleteState === 'DeleteCurrentRepeatable'
+              ? 'Are you sure you want to delete this single event?' 
+              : 'Are you sure you want to delete all repeatable events?'
+            }
+          </YesCancelConfirmation>
+        </>
+        :
+        <>
+          <TextButton onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Complete'}</TextButton>
+          <TextButton onClick={()=>setDeleteState('Delete')}>Delete</TextButton>
+          <YesCancelConfirmation open={deleteState!==null}
+            onConfirm={handleConfirmDelete}
+            onClose={()=>setDeleteState(null)}>
+              Are you sure you want to delete this event?
+          </YesCancelConfirmation>
+        </>
+      )}
       
-      <YesCancelConfirmation open={isDeleteConfirmationOpen} onClose={handleConfirmDelete}>
-        Are you sure you want to delete this single event?
-      </YesCancelConfirmation>
-      <YesCancelConfirmation open={isDeleteAllConfirmationOpen} onClose={handleConfirmDeleteAll}>
-        Are you sure you want to delete all repeatable events?
-      </YesCancelConfirmation>
-
       <TextField label='Name' error={!!errors.name}
         {...register('name', {required: true})}/>
     </div>
@@ -175,6 +209,7 @@ const EventForm: React.FC = () => {
         {...register('credit', {validate: Calc.validate})}/>
       <TextField label='Debit' error={!!errors.debit}
         {...register('debit', {validate: Calc.validate})}/>
+      <DatePicker label='test' value='test'></DatePicker>
     </div>
   </TabPanel>
   <TabPanel value={tab} index={1}>
@@ -189,10 +224,18 @@ const EventForm: React.FC = () => {
   <footer className={styles.footer}>{
     isNew 
     ? <TextButton onClick={onAddHandle}>Add Event</TextButton>
-    : <>
-      <TextButton onClick={onChangeEventHandle}>{eventFormStore.eventData.repeat?'Save All':'Save'}</TextButton>
-      {isRepeat && <TextButton>Save single</TextButton>}
+    : isRepeat ? 
+      <>
+        <TextButton onClick={onChangeEventHandle}>Save All</TextButton>
+        <TextButton onClick={()=>setSaveAsSingle(true)}>Save as single</TextButton>
+        <YesCancelConfirmation open={saveAsSingle}
+          onConfirm={handleSaveAsSingle}
+          onClose={()=>setSaveAsSingle(false)}>
+            Are you sure you want to save this event as single?
+        </YesCancelConfirmation>
       </>
+      :
+      <TextButton onClick={onChangeEventHandle}>Save</TextButton>
   }
   {<TextButton onClick={eventFormStore.hideForm}>Cancel</TextButton>}
   </footer>

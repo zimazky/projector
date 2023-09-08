@@ -162,11 +162,39 @@ export class EventsStore {
    * @param id Идентификатор события
    * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
    */
-  deleteEvent(id: number, isFinal: boolean = true) {
+  deleteEvent(id: number | null, isFinal: boolean = true) {
     this.completed = this.completed.filter(e=>e.id!==id)
     this.planned = this.planned.filter(e=>e.id!==id)
     this.plannedRepeatable = this.plannedRepeatable.filter(e=>e.id!==id)
     if(isFinal) this.onChangeList()
+  }
+
+  /**
+   * Удаление текущего повторяемого события
+   * @param id Идентификатор события
+   * @param currentdate Текущая дата повторяемого события
+   */
+  deleteCurrentRepeatableEvent(id: number | null, currentdate: timestamp) {
+    let revent = this.plannedRepeatable.find(e => e.id===id)
+    if(revent === undefined) return
+    // При удалении одного из периодических событий перед ним могут остаться незавершенные события.
+    // В этом случае добавляем еще одно периодическое событие, задающий шаблон для этих незавершенных 
+    // событий в предшествующем интервале
+    if(ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, currentdate)) {
+      const first = {...revent, end: currentdate, id: this.lastId++}
+      this.plannedRepeatable.push(first)
+    }
+    if(revent.repeat[0]=='/') { // Для повторяемых в днях относительно начала шаблона пересчитываем начальную дату
+      const d = +revent.repeat.substring(1)
+      revent.start = currentdate + d*86400
+    }
+    // Определяем первое повторяемое событие после удаленного
+    else revent.start = ZCron.first(revent.repeat, currentdate + 86400)
+    // Удаляем, если в оставшемся интервале нет событий
+    if(revent.end && !ZCron.ariseInInterval(revent.repeat,revent.start,revent.start,revent.end)) {
+      this.deleteEvent(revent.id, false)
+    }
+    this.onChangeList()
   }
 
   /**
@@ -327,12 +355,12 @@ export class EventsStore {
    * Модификация затрагивает только текущее событие.
    * @param id Идентификатор события
    * @param currentdate Текущая дата для уточнения события среди повторяемых
-   * @param raw Модифицированное событие
+   * @param e Модифицированное событие
    */
-  transformToSingleEvent(id: number, currentdate: timestamp, raw: EventData) {
+  saveAsSingleEvent(id: number, currentdate: timestamp, e: EventData) {
     let revent = this.plannedRepeatable.find(e=>e.id===id)
     if(revent !== undefined) {
-      this.addPlannedEventStructure({...eventDataToIEventStructure(raw), repeat: undefined, start: currentdate, end: currentdate + 86400}, false)
+      this.addPlannedEventStructure({...eventDataToIEventStructure(e), repeat: undefined, start: currentdate, end: currentdate + 86400}, false)
       // При превращении одного из периодических событий перед ним могли остаться незавершенные события.
       // В этом случае добавляем еще одно периодическое событие, задающий шаблон для этих незавершенных 
       // событий в предшествующем интервале

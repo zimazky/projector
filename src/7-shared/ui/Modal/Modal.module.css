@@ -39,7 +39,7 @@
   overflow-y: auto;
   width: fit-content;
   min-width: 400px;
-  max-width: calc(100% - 20vw);
+  /*max-width: calc(100% - 20vw);*/
   max-height: calc(100% - 20vh);
   display: flex;
   flex-direction: column;
