@@ -63,7 +63,7 @@ export class CalendarStore {
 
   /** Строка заголовка, представляющая год и месяц отображаемой области */
   get caption(): string {
-    return this.year + ' ' + DateTime.MONTHS_FULL[this.month]
+    return this.year + ' ' + DateTime.getMonthNamesArray()[this.month]
   }
 
   /**

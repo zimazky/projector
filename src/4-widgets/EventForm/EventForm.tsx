@@ -149,7 +149,7 @@ const EventForm: React.FC = () => {
   const isRepeat = watch().repeat ? true : false
   const isCompleted = eventFormStore.eventData.completed
 
-  return ( <>
+  return <>
   <header>
     <div className={styles.buttonGroup}>
       {!isNew && (
@@ -209,7 +209,7 @@ const EventForm: React.FC = () => {
         {...register('credit', {validate: Calc.validate})}/>
       <TextField label='Debit' error={!!errors.debit}
         {...register('debit', {validate: Calc.validate})}/>
-      <DatePicker label='test' value='test'></DatePicker>
+      <DatePicker label='test' value='2023.09.01'></DatePicker>
     </div>
   </TabPanel>
   <TabPanel value={tab} index={1}>
@@ -228,19 +228,18 @@ const EventForm: React.FC = () => {
       <>
         <TextButton onClick={onChangeEventHandle}>Save All</TextButton>
         <TextButton onClick={()=>setSaveAsSingle(true)}>Save as single</TextButton>
-        <YesCancelConfirmation open={saveAsSingle}
-          onConfirm={handleSaveAsSingle}
-          onClose={()=>setSaveAsSingle(false)}>
-            Are you sure you want to save this event as single?
-        </YesCancelConfirmation>
       </>
       :
       <TextButton onClick={onChangeEventHandle}>Save</TextButton>
   }
   {<TextButton onClick={eventFormStore.hideForm}>Cancel</TextButton>}
   </footer>
+  <YesCancelConfirmation open={saveAsSingle}
+    onConfirm={handleSaveAsSingle}
+    onClose={()=>setSaveAsSingle(false)}>
+      Are you sure you want to save this event as single?
+  </YesCancelConfirmation>
   </>
-  )
 }
 
 export default EventForm

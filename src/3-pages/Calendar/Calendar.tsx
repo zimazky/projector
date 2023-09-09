@@ -62,7 +62,7 @@ const Calendar: React.FC = observer(function() {
   return (
     <div className={styles.wrapper}>
       <div className={styles.dayOfWeekLabels}>
-        { DateTime.WEEKDAYS.map( (d,i) => <div key={i}>{d}</div> ) }
+        { DateTime.getWeekdaysArray().map( d => <div key={d}>{d}</div> ) }
       </div>
       <div className={styles.CalendarBody} onScroll={onScrollHandle}>
         { calendarWeeks.map( week => (

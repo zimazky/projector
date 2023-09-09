@@ -7,7 +7,6 @@ import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
 
 import { mainStore, weatherStore } from 'src/6-entities/stores/MainStore'
-import Spinner from 'src/7-shared/ui/Spinner/Spinner'
 
 function fullScreen() { 
   document.getElementById('root')?.requestFullscreen() 
@@ -90,7 +89,11 @@ const CalendarIconBar: React.FC = observer(function() {
     fn: fullScreen
   })
 
-  menu.push({ name: 'Projects', fn: ()=>{mainStore.changeViewMode({mode: 'Projects'})} })
+  if(mainStore.viewMode !== 'Calendar')
+    menu.push({ name: 'Calendar', fn: ()=>{mainStore.changeViewMode({mode: 'Calendar'})} })
+
+  if(mainStore.viewMode !== 'Projects')
+    menu.push({ name: 'Projects', fn: ()=>{mainStore.changeViewMode({mode: 'Projects'})} })
 
   return <>
     <IconBar icons={icons}/>

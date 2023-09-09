@@ -13,28 +13,56 @@ function mNN(n: number): string { return (n<10 ? '-0' : '-') + n }
 /** Представление числа со стартовым T и нулем */
 function TNN(n: number): string { return (n<10 ? 'T0' : 'T') + n }
 
+const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+let WEEKDAYS_CACHE: string[] | null = null
+const MONTH_SHORT_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+
 /** 
  * Класс статических методов для работы с timestamp в формате unixtime в секундах с 01.01.1970.
- * timestamp может использоваться в диапазоне -2^42...+2^42 (±4398046511104) (диапазон дат -16.06.137399...19.07.141338)
+ * timestamp может использоваться в диапазоне -2^42...+2^42 (±4398046511104)
+ * (диапазон дат -16.06.137399...19.07.141338)
  * Конвертация к датам производится по Григорианскому календарю с учетом временной зоны, заданной в поле timezone.
  * В отличие от класса Date, исторические изменения временной зоны не учитываются.
  * Начало недели задается в поле startWeek.
-*/
+ */
 export default class DateTime {
 
-  static WEEKDAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-  static MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  static MONTHS_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+  /** Начало недели: 0 - Вс, 1 - Пн, 2 - Вт, 3 - Ср, 4 - Чт, 5 - Пт, 6 - Сб */
   static startWeek = 1
+  /** Часовой пояс локального времени */
   static timezone = 3
 
   /** Инициализация параметров локальной таймзоны */
   static initLocale(timezone=3, startWeek=1) {
     DateTime.timezone = timezone
     DateTime.startWeek = startWeek%7
+    WEEKDAYS_CACHE = [0,1,2,3,4,5,6].map(i=>WEEKDAYS[(i+DateTime.startWeek)%7])
   }
 
-  /** Функция определения года, месяца, дня месяца таймстемпа (unixtime) по времени UTC [tested]*/
+  /** 
+   * Получение массива дней недели с учетом заданного начала недели
+   * и с учетом настройки локализации (сейчас только английский язык) 
+   * */
+  static getWeekdaysArray() {
+    if(WEEKDAYS_CACHE === null) WEEKDAYS_CACHE = [0,1,2,3,4,5,6].map(i=>WEEKDAYS[(i+DateTime.startWeek)%7])
+    return WEEKDAYS_CACHE
+  }
+
+  /** Получение массива коротких имен месяцев с учетом настройки локализации (сейчас только английский язык) */
+  static getMonthShortNamesArray() {
+    return MONTH_SHORT_NAMES
+  }
+
+  /** Получение массива полных имен месяцев с учетом настройки локализации (сейчас только английский язык) */
+  static getMonthNamesArray() {
+    return MONTH_NAMES
+  }
+
+  /**
+   * Функция определения года, месяца (0..11), дня месяца (1..31) таймстемпа (unixtime) по времени UTC [tested]
+   * */
   static getUTCYearMonthDay(t: timestamp): {year:number, month:number, day:number} {
     const days = Math.floor(t/86400)                // количество дней с 01.01.1970
     const years = Math.floor((days*400+200)/146097) // количество лет с 01.01.1970 (365*400+97)=146097
@@ -43,25 +71,33 @@ export default class DateTime {
     const y2k = year - 2000 - 1                     // разница в годах от 2001 года
     let yday = days - Math.floor((1461*years+1)/4)  // день года без учета високосных годов при переходе столетий
     yday += Math.floor(y2k/100)-Math.floor(y2k/400) // коррекция високосных дней при переходе столетий
-    const leap = ((!(year%4) && (year%100)) || !(year%400)) ? 1 : 0   // определение високосного года
+    const leap = +(!(year%4) && !!(year%100) || !(year%400)) // определение високосного года
     // високосный год тот который делится на 4 (это Юлианский принцип, он работает с 1901 по 2099 годы)
     // для Григорианского календаря требуется проверять делится ли год на 100 и на 400. 
     // 1700,1800,1900,2100,2200,2300 - не високосные т.к. не делятся на 400, 2000 - високосный, т.к делится и на 100, и на 400)
-
-    //console.log(`timestamp: ${t}, locale: ${locale} locale/86400=${locale/86400}`)
-    //console.log(`days: ${days}, years: ${years}, year: ${year}, yday: ${yday}, leap: ${leap}`)
 
     if(yday > 58 + leap) yday += 2 - leap           // приводим к системе с 30-дневным февралем
     let month = Math.floor(((yday * 12) + 6)/367)   // определение месяца исходя из количества дней с начала года (0-11)
     const mday = yday - Math.floor(((month*367) + 5)/12)  // определение дня в месяце (0-30)
     
-    //console.log(`yday2: ${yday}, month: ${month}, mday: ${mday}`)
     if(month<0) { year--; month += 12 }
     if(month>11) { year++; month -= 12 }
     return {year, month, day: mday+1}  
   }
 
-  /** Функция определения года, месяца, дня месяца таймстемпа (unixtime) по локальному времени [tested]*/
+  /** 
+   * Определение числа дней в месяце года 
+   * @param year - год
+   * @param month - месяц (0..11)
+   * */
+  static getDaysInMonth(year: number, month: number) {
+    const leap = +(!(year%4) && !!(year%100) || !(year%400)) // определение високосного года
+    return 28 + ((leap << 2 | 0xEEFBB3) >> (month << 1) & 3)
+  }
+
+  /** 
+   * Функция определения года, месяца (0..11), дня месяца (1..31) таймстемпа (unixtime) по локальному времени [tested]
+   * */
   static getYearMonthDay(t: timestamp): {year:number, month:number, day:number} {
     return DateTime.getUTCYearMonthDay(t + 3600*DateTime.timezone)
   }
@@ -72,7 +108,7 @@ export default class DateTime {
     if(m === undefined) [y, m, d] = s.split('-',3)                  // добавлено чтение формата YYYY-MM-DD
     const year = +y
     const month = +m - 1
-    const leap = ((!(year%4) && (year%100)) || !(year%400)) ? 1 : 0 // Определение високосного года
+    const leap = +(!(year%4) && !!(year%100) || !(year%400))        // Определение високосного года
     let yday = Math.floor(((month*367) + 5)/12) + +d - 1            // Количество дней с начала года 
                                                                     // (февраль считается 30-дневным)
     if(yday > 59 + leap) yday -= 2 - leap                           // Корректировка количества дней по високосному году
@@ -95,7 +131,10 @@ export default class DateTime {
     return DateTime.YYYYMMDDToTimestampUTC(s) - DateTime.timezone*3600
   }
   
-  /** Получить день недели по таймстемпу (unixtime) [tested]*/
+  /** 
+   * Получить день недели по таймстемпу (unixtime) [tested]
+   * @returns день недели (0 - Вс, 1 - Пн, 2 - Вт, 3 - Ср, 4 - Чт, 5 - Пт, 6 - Сб)
+  */
   static getWeekday(t: timestamp): number {
     const a = (4 + Math.floor((t + DateTime.timezone*3600)/86400))%7
     return t < 0 ? (a == 0 ? 0 : a + 7) : a

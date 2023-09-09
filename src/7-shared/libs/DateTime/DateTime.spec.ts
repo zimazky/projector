@@ -58,6 +58,39 @@ describe('DateTime getYearMonthDay set of predefinded timestamps', ()=>{
   }
 })
 
+/******************************************************************************
+ * getDaysInMonth
+ ******************************************************************************/
+describe('DateTime getDaysInMonth', ()=>{
+  const data = [
+    [1900,1,28],
+    [2000,1,29],
+    [2024,1,29],
+    [2023,0,31],
+    [2023,1,28],
+    [2023,2,31],
+    [2023,3,30],
+    [2023,4,31],
+    [2023,5,30],
+    [2023,6,31],
+    [2023,7,31],
+    [2023,8,30],
+    [2023,9,31],
+    [2023,10,30],
+    [2023,11,31],
+    [1800,1,28],
+    [1700,1,28],
+    [1600,1,29],
+  ]
+  for(let i=0; i<data.length; i++) {
+    const [y,m,r] = data[i]
+    test((year,month,res)=>{
+      const ex = DateTime.getDaysInMonth(year,month)
+      expect(res).toEqual(ex)
+    },y, m, r)
+  }
+})
+
 describe('DateTime getYearMonthDay short test of set random positive timestamps in range less then 2100 year', ()=>{
   for(let i = 0; i < 100; i++) {
     const timestamp = Math.floor(Math.random()*4294967296)

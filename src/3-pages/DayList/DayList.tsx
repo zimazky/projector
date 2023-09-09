@@ -38,7 +38,7 @@ const DayList: React.FC = observer(() => {
       <div>
         <div onClick={()=>mainStore.changeViewMode({mode: 'Calendar'})}>Calendar</div>
         <div onClick={e=>dayListStore.setDate(timestamp-86400)}>Prev</div>
-        <div className={today?styles.today:styles.header}>{day+' '+DateTime.MONTHS[month]}</div>
+        <div className={today?styles.today:styles.header}>{day+' '+DateTime.getMonthShortNamesArray()[month]}</div>
         <div onClick={e=>dayListStore.setDate(timestamp+86400)}>Next</div>
       </div>
       <div className={styles.balance}>

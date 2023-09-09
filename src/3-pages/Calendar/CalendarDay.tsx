@@ -60,7 +60,7 @@ const CalendarDay: React.FC<CalendarDayProps> = (props) => {
     <div className={style==='normal' ? styles.day : (style==='uncompleted' ? styles.between_firstplanned_and_actual : styles.before_actual_date) } 
       onClick={onClickHandle} onDrop={onDragDrop} onDragOver={dragOver}>
       <div className={isToday?styles.today:styles.header} onClick={e=>{onDayOpen(timestamp)}}>
-        {day + (day==1?' '+DateTime.MONTHS[month]:'')}
+        {day + (day==1?' '+DateTime.getMonthShortNamesArray()[month]:'')}
         {weather ? <div className={styles.weather} title={
           'temperature: '+ plus(weather.temperatureMax)+'/'+plus(weather.temperatureMin)
           + '\nclouds: ' + weather.clouds.toFixed(0)
