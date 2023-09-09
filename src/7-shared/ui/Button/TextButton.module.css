@@ -2,7 +2,7 @@
 	display: inline-block;
 	position: relative;
 	overflow: hidden;
-	min-width: 64px;
+	min-width: 40px;
 	font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
 	font-size: 0.875rem;
 	font-weight: 500;

@@ -1,7 +1,8 @@
 import React from 'react'
 import styles from './TextField.module.css'
 
-interface TextFieldProps {
+interface TextFieldProps extends React.HTMLProps<HTMLInputElement> {
+
   /** Ярлык */
   label: string
   /** Значение */

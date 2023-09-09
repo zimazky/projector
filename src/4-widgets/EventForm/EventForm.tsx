@@ -194,7 +194,7 @@ const EventForm: React.FC = () => {
       {...register('project', {required: true})} />
     <div className={styles.grid}>
       {isRepeat ||
-      <TextField label='Start date' error={!!errors.start}
+      <DatePicker label='Start date' error={!!errors.start}
         {...register('start', {required: true, pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
       }
       <TextField label='Time' error={!!errors.time}
@@ -202,14 +202,14 @@ const EventForm: React.FC = () => {
       <TextField label='Duration' disabled={!!watch().end} error={!!errors.duration}
         {...register('duration', {pattern: /^(\d+d ?)?\d*(:\d\d)?$/})}/> {/* поправить с учетом ограничения часов при указании дней*/}
       {isRepeat ||
-      <TextField label='End date' disabled={!!watch().duration} error={!!errors.end}
+      <DatePicker label='End date' disabled={!!watch().duration} error={!!errors.end}
         {...register('end', {pattern: /^20\d{2}\.(0[1-9]|1[0-2]).(0[1-9]|[1-2]\d|3[01])$/})}/>
       }
       <TextField label={'Credit'} error={!!errors.credit}
         {...register('credit', {validate: Calc.validate})}/>
       <TextField label='Debit' error={!!errors.debit}
         {...register('debit', {validate: Calc.validate})}/>
-      <DatePicker label='test' value='2023.09.01'></DatePicker>
+      <DatePicker label='test'></DatePicker>
     </div>
   </TabPanel>
   <TabPanel value={tab} index={1}>

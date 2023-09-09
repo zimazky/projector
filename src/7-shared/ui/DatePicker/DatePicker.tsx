@@ -8,26 +8,178 @@ import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 
 import styles from './DatePicker.module.css'
+import DayButton from './DayButton'
 
-type DatePickerProps = {
+interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
+  /** Ярлык */
   label: string
+  /** Значение */
   value?: string
-  onChange?: () => void
+  /** Признак ошибки валидации */
+  error?: boolean
 }
 
-const DatePicker: React.FC<DatePickerProps> = ({label, value, onChange = ()=>{}}) => {
+type DatePickerState = {
+  year: number
+  month: number
+  selectedTS: number
+}
+
+function getDatePickerState(s: string, todayTS: number): DatePickerState {
+  const selectedTS = s!==''
+    ? DateTime.YYYYMMDDToTimestamp(s) 
+    : todayTS
+  const {year, month} = DateTime.getYearMonthDay(selectedTS)
+  return {year, month, selectedTS}
+}
+
+const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
+  const {label, value = '', error, onChange = ()=>{}, ...r} = props
   const [open, setOpen] = React.useState(false)
-  const rest = {onSelect: ()=>{setOpen(true)}}
+  const rest = {...r, onSelect: ()=>{setOpen(true)}}
 
   const todayTS = DateTime.getBeginDayTimestamp(Date.now()/1000)
-  const selectedTS = value!==undefined
-    ? DateTime.YYYYMMDDToTimestamp(value) 
-    : todayTS
+  const [state, setState] = React.useState<DatePickerState>(getDatePickerState(value, todayTS))
+  const inputRef = React.useRef<HTMLInputElement|null>(null)
 
-  const monthStructure = getMonthStructure(selectedTS)
+  const onChangeRef = React.useCallback((node: HTMLInputElement) => {
+    const orignode = node
+    if(node !== null) {
+      node = new Proxy<HTMLInputElement>(node, {
+        set: (target: any, prop, value)=>{
+          if(prop === 'value') setState(getDatePickerState(value, todayTS))
+          target[prop] = value
+          return true
+        },
+        get: (target: any, prop)=>{
+          if(typeof target[prop] === 'function') {
+            return target[prop].bind(target)
+          } else {
+            return target[prop]
+          }
+        }
+      })
+      inputRef.current = node
+    }
+    if(!ref) return
+    if(typeof ref === 'function') ref(node)
+    else ref.current = node
+  }, [])
+
+  const closeHandle = ()=>{
+    if(inputRef.current !== null) setState(getDatePickerState(inputRef.current.value, todayTS))
+    setOpen(false)
+  }
+
+  const clearHandle = ()=>{
+    if(inputRef.current !== null) {
+      inputRef.current.value = ''
+      //inputRef.current.focus()
+      //inputRef.current.blur()
+
+      onChange({
+        currentTarget: inputRef.current,
+        target: inputRef.current,
+        bubbles: true,
+        cancelable: false,
+        defaultPrevented: false,
+        eventPhase: 3,
+        isTrusted: true,
+        preventDefault: ()=>{},
+        isDefaultPrevented: ()=>false,
+        stopPropagation: ()=>{},
+        isPropagationStopped: ()=>false,
+        persist: ()=>{},
+        timeStamp: 0,
+        type: 'change',
+        nativeEvent: {
+          currentTarget: null,
+          target: inputRef.current,
+          bubbles: true,
+          cancelBubble: false,
+          cancelable: false,
+          composed: false,
+          defaultPrevented: false,
+          eventPhase: 0,
+          isTrusted: true,
+          returnValue: true,
+          srcElement: inputRef.current,
+          timeStamp: 0,
+          type: 'change',
+          composedPath: ()=>[],
+          initEvent: ()=>{},
+          preventDefault: ()=>{},
+          stopImmediatePropagation: ()=>{},
+          stopPropagation: ()=>{},
+          NONE: 0,
+          CAPTURING_PHASE: 1,
+          AT_TARGET: 2,
+          BUBBLING_PHASE: 3
+        }
+      })
+
+    }
+    setOpen(false)
+  }
+
+  const changeHandle: React.MouseEventHandler = (e)=>{
+    
+    if(inputRef.current !== null) {
+      inputRef.current.value = DateTime.getYYYYMMDD(state.selectedTS)
+      //inputRef.current.focus()
+      //inputRef.current.blur()
+      
+      onChange({
+        currentTarget: inputRef.current,
+        target: inputRef.current,
+        bubbles: true,
+        cancelable: false,
+        defaultPrevented: false,
+        eventPhase: 3,
+        isTrusted: true,
+        preventDefault: ()=>{},
+        isDefaultPrevented: ()=>false,
+        stopPropagation: ()=>{},
+        isPropagationStopped: ()=>false,
+        persist: ()=>{},
+        timeStamp: 0,
+        type: 'change',
+        nativeEvent: {
+          currentTarget: null,
+          target: inputRef.current,
+          bubbles: true,
+          cancelBubble: false,
+          cancelable: false,
+          composed: false,
+          defaultPrevented: false,
+          eventPhase: 0,
+          isTrusted: true,
+          returnValue: true,
+          srcElement: inputRef.current,
+          timeStamp: 0,
+          type: 'change',
+          composedPath: ()=>[],
+          initEvent: ()=>{},
+          preventDefault: ()=>{},
+          stopImmediatePropagation: ()=>{},
+          stopPropagation: ()=>{},
+          NONE: 0,
+          CAPTURING_PHASE: 1,
+          AT_TARGET: 2,
+          BUBBLING_PHASE: 3
+        }
+      })
+      
+    }
+    setOpen(false)
+  }
+
+  const monthStructure = getMonthStructure(state.selectedTS)
+
   return <>
-  <TextField label={label} value={value} {...rest}></TextField>
-  <Dialog open={open} onClose={()=>setOpen(false)}>
+  <TextField label={label} value={value} error={error} //readOnly
+    {...rest} ref={onChangeRef}></TextField>
+  <Dialog open={open} onClose={closeHandle}>
     <DialogContent>
       <div className={styles.weekdays}>
         {DateTime.getWeekdaysArray().map(d=><div className={styles.weekday} key={d}>{d[0]}</div>)}
@@ -35,21 +187,25 @@ const DatePicker: React.FC<DatePickerProps> = ({label, value, onChange = ()=>{}}
       {monthStructure.map((week,i)=>(
         <div key={i} className={styles.week}>
           {week.map((d,i)=>d.day
-          ? <div key={d.timestamp} className={styles.day 
-            + (d.timestamp===todayTS?' '+styles.today:'') 
-            + (d.timestamp===selectedTS?' '+styles.selected:'')}>{d.day}</div>
+          ? <DayButton key={d.timestamp} today={d.timestamp===todayTS} selected={d.timestamp===state.selectedTS}
+            onClick={()=>{
+              //if(inputRef.current !== null) inputRef.current.value = DateTime.getYYYYMMDD(d.timestamp)
+              setState(s=>{return {...s, selectedTS:d.timestamp}})
+            }}>
+            {d.day}</DayButton>
           : <div key={i} className={styles.placeholder}></div>
           )}
         </div>
       ))}
     </DialogContent>
     <DialogActions>
-      <TextButton onClick={()=>setOpen(false)}>Cancel</TextButton>
-      <TextButton>Ok</TextButton>
+      <TextButton onClick={closeHandle}>Cancel</TextButton>
+      <TextButton onClick={clearHandle}>Clear</TextButton>
+      <TextButton onClick={changeHandle}>Ok</TextButton>
     </DialogActions>
   </Dialog>
   </>
-}
+})
 
 export default DatePicker
 

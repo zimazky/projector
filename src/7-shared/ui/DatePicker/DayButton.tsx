@@ -1,18 +1,20 @@
 import React from 'react'
-import styles from './IconButton.module.css'
+import styles from './DayButton.module.css'
 
-type IconButtonProps = {
-  title: string
-  disabled?: boolean
+type DayButtonProps = {
+  today?: boolean
+  selected?: boolean
   onClick?: React.MouseEventHandler
   children?: React.ReactNode
 }
 
-const IconButton: React.FC<IconButtonProps> = (props) => {
-  const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
+const DayButton: React.FC<DayButtonProps> = (props) => {
+  const {today, selected, children, onClick = ()=>{}, ...rest} = props
 
   return (
-    <button type='button' className={styles.button} {...rest}
+    <button type='button' 
+      className={styles.day + (today?' '+styles.today:'') + (selected?' '+styles.selected:'')}
+      {...rest}
       onPointerDown={e => {
         if(!e.isPrimary) return
         createRipple(e)
@@ -34,7 +36,7 @@ const IconButton: React.FC<IconButtonProps> = (props) => {
   )
 }
 
-export default IconButton
+export default DayButton
 
 function createRipple(event: React.MouseEvent) {
   const el = event.currentTarget as HTMLElement
