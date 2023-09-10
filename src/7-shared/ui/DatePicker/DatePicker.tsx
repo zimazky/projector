@@ -10,6 +10,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import styles from './DatePicker.module.css'
 import DayButton from './DayButton'
 import { fakeEvent } from './fakeEvent'
+import IconButton from '../IconButton/IconButton'
 
 interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
   /** Ярлык */
@@ -96,7 +97,26 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
   <TextField label={label} value={value} error={error} //readOnly
     {...rest} ref={onChangeRef}></TextField>
   <Dialog open={open} onClose={closeHandle}>
-    <DialogContent>
+    <div className={styles.title}>
+      <span>Select date</span>
+      <h4>{DateTime.getWeekdayMonthDayString(state.selectedTS)}</h4>
+    </div>
+    <div className={styles.header}>
+      <div className={styles.label}>{DateTime.getMonthNamesArray()[state.month] + ' ' + state.year}</div>
+      <div className={styles.buttons}>
+        <IconButton>
+          <svg focusable='false' viewBox='0 0 24 24'>
+            <path d='M15 6 9 12 15 18' strokeWidth={2.5} fill='none'></path>
+          </svg>
+        </IconButton>
+        <IconButton>
+          <svg focusable='false' viewBox='0 0 24 24'>
+            <path d='M9 6 15 12 9 18' strokeWidth={2.5} fill='none'></path>
+          </svg>
+        </IconButton>
+      </div>
+    </div>
+    <div className={styles.calendar}>
       <div className={styles.weekdays}>
         {DateTime.getWeekdaysArray().map(d=><div className={styles.weekday} key={d}>{d[0]}</div>)}
       </div>
@@ -113,7 +133,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
           )}
         </div>
       ))}
-    </DialogContent>
+    </div>
     <DialogActions>
       <TextButton onClick={closeHandle}>Cancel</TextButton>
       <TextButton onClick={clearHandle}>Clear</TextButton>

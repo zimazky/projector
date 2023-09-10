@@ -22,10 +22,6 @@
 	touch-action: none;
 }
 
-.today {
-  border: 1px solid rgba(0, 0, 0, 0.6);
-}
-
 .day:focus {
   background-color: rgba(25, 118, 210, 0.12);
 }
@@ -42,6 +38,10 @@
 
 .day:hover {
   background-color: rgba(25, 118, 210, 0.06);
+}
+
+.today {
+  border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
 .ripple {

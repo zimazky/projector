@@ -650,12 +650,6 @@
   from { opacity: 0; }
   to { opacity: 1; }
 }
-.content_da64c49 {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  padding: 20px 24px;
-  font-size: 1rem;
-}
 .actions_af363a2 {
   display: flex;
   align-items: center;
@@ -663,6 +657,59 @@
   justify-content: flex-end;
   flex: 0 0 auto;
 }
+.title_b071411 {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 20px 24px;
+}
+
+.title_b071411 span {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 0.75rem;
+  line-height: 2.66;
+  letter-spacing: 0.08333em;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.title_b071411 h4 {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 2.125rem;
+  line-height: 1.235;
+  letter-spacing: 0.00735em;
+  text-align: center;
+}
+
+.header_d029db2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  padding-left: 24px;
+  padding-right: 12px;
+}
+
+.label_cded99e {
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  line-height: 1.5;
+  letter-spacing: 0.00938em;
+}
+
+.buttons_d015bd8 {
+  display: flex;
+  justify-content: space-between;
+}
+
+.calendar_c604577 {
+  padding: 8px 20px 24px 20px;
+}
+
 .weekdays_f9a6b11 {
   display: flex;
   justify-content: flex-start;
@@ -728,10 +775,6 @@
 	touch-action: none;
 }
 
-.today_ea5a6b6 {
-  border: 1px solid rgba(0, 0, 0, 0.6);
-}
-
 .day_c25a32d:focus {
   background-color: rgba(25, 118, 210, 0.12);
 }
@@ -748,6 +791,10 @@
 
 .day_c25a32d:hover {
   background-color: rgba(25, 118, 210, 0.06);
+}
+
+.today_ea5a6b6 {
+  border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
 .ripple_eac860f {
@@ -768,6 +815,12 @@
 @keyframes ripple_eac860f {
   from { transform: scale(0); }
   to { transform: scale(1); }
+}
+.content_da64c49 {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 20px 24px;
+  font-size: 1rem;
 }
 .buttonGroup_e3d372f {
   padding-bottom: 10px;

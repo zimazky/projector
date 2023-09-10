@@ -139,6 +139,12 @@ export default class DateTime {
     const a = (4 + Math.floor((t + DateTime.timezone*3600)/86400))%7
     return t < 0 ? (a == 0 ? 0 : a + 7) : a
   }
+
+  /** Получить строковое представление даты в виде "WWW, MMM DD" */
+  static getWeekdayMonthDayString(t: timestamp) {
+    const {day, month, weekday} = DateTime.getDayMonthWeekday(t)
+    return WEEKDAYS[weekday] + ', ' + MONTH_SHORT_NAMES[month] + ' ' + day
+  }
   
   /** Получить день, месяц (0-11), день недели (0-6) по таймстемпу (unixtime) [tested]*/
   static getDayMonthWeekday(t: timestamp): {day:number, month:number, weekday:number} {

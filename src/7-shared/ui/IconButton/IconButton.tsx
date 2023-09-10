@@ -2,7 +2,7 @@ import React from 'react'
 import styles from './IconButton.module.css'
 
 type IconButtonProps = {
-  title: string
+  title?: string
   disabled?: boolean
   onClick?: React.MouseEventHandler
   children?: React.ReactNode
