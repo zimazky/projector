@@ -3,14 +3,15 @@ import React from 'react'
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import Dialog from 'src/7-shared/ui/Dialog/Dialog'
 import TextField from 'src/7-shared/ui/TextField/TextField'
-import DialogContent from 'src/7-shared/ui/Dialog/DialogContent'
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
+import IconButton from 'src/7-shared/ui/IconButton/IconButton'
+import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
+import { ArrowBackIos, ArrowForwardIos } from 'src/7-shared/ui/Icons/Icons'
 
 import styles from './DatePicker.module.css'
 import DayButton from './DayButton'
 import { fakeEvent } from './fakeEvent'
-import IconButton from '../IconButton/IconButton'
 
 interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
   /** Ярлык */
@@ -104,16 +105,8 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
     <div className={styles.header}>
       <div className={styles.label}>{DateTime.getMonthNamesArray()[state.month] + ' ' + state.year}</div>
       <div className={styles.buttons}>
-        <IconButton>
-          <svg focusable='false' viewBox='0 0 24 24'>
-            <path d='M15 6 9 12 15 18' strokeWidth={2.5} fill='none'></path>
-          </svg>
-        </IconButton>
-        <IconButton>
-          <svg focusable='false' viewBox='0 0 24 24'>
-            <path d='M9 6 15 12 9 18' strokeWidth={2.5} fill='none'></path>
-          </svg>
-        </IconButton>
+        <IconButton><SwgIcon><ArrowBackIos/></SwgIcon></IconButton>
+        <IconButton><SwgIcon><ArrowForwardIos/></SwgIcon></IconButton>
       </div>
     </div>
     <div className={styles.calendar}>
@@ -125,7 +118,6 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
           {week.map((d,i)=>d.day
           ? <DayButton key={d.timestamp} today={d.timestamp===todayTS} selected={d.timestamp===state.selectedTS}
             onClick={()=>{
-              //if(inputRef.current !== null) inputRef.current.value = DateTime.getYYYYMMDD(d.timestamp)
               setState(s=>{return {...s, selectedTS:d.timestamp}})
             }}>
             {d.day}</DayButton>
