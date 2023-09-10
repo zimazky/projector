@@ -23,7 +23,10 @@ const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(function (
           target[prop] = value
           return true
         },
-        get(target: any, prop) { return target[prop] }
+        get(target: any, prop) { 
+          if(typeof target[prop] === 'function') return target[prop].bind(target)
+          else return target[prop]
+        }
       })
     }
     if(!ref) return

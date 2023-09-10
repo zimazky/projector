@@ -9,6 +9,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 
 import styles from './DatePicker.module.css'
 import DayButton from './DayButton'
+import { fakeEvent } from './fakeEvent'
 
 interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
   /** Ярлык */
@@ -52,11 +53,8 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
           return true
         },
         get: (target: any, prop)=>{
-          if(typeof target[prop] === 'function') {
-            return target[prop].bind(target)
-          } else {
-            return target[prop]
-          }
+          if(typeof target[prop] === 'function') return target[prop].bind(target)
+          else return target[prop]
         }
       })
       inputRef.current = node
@@ -74,50 +72,9 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
   const clearHandle = ()=>{
     if(inputRef.current !== null) {
       inputRef.current.value = ''
-      //inputRef.current.focus()
-      //inputRef.current.blur()
-
-      onChange({
-        currentTarget: inputRef.current,
-        target: inputRef.current,
-        bubbles: true,
-        cancelable: false,
-        defaultPrevented: false,
-        eventPhase: 3,
-        isTrusted: true,
-        preventDefault: ()=>{},
-        isDefaultPrevented: ()=>false,
-        stopPropagation: ()=>{},
-        isPropagationStopped: ()=>false,
-        persist: ()=>{},
-        timeStamp: 0,
-        type: 'change',
-        nativeEvent: {
-          currentTarget: null,
-          target: inputRef.current,
-          bubbles: true,
-          cancelBubble: false,
-          cancelable: false,
-          composed: false,
-          defaultPrevented: false,
-          eventPhase: 0,
-          isTrusted: true,
-          returnValue: true,
-          srcElement: inputRef.current,
-          timeStamp: 0,
-          type: 'change',
-          composedPath: ()=>[],
-          initEvent: ()=>{},
-          preventDefault: ()=>{},
-          stopImmediatePropagation: ()=>{},
-          stopPropagation: ()=>{},
-          NONE: 0,
-          CAPTURING_PHASE: 1,
-          AT_TARGET: 2,
-          BUBBLING_PHASE: 3
-        }
-      })
-
+//////////////////////////////////////
+      onChange(fakeEvent(inputRef.current,'change'))
+//////////////////////////////////////
     }
     setOpen(false)
   }
@@ -126,50 +83,9 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
     
     if(inputRef.current !== null) {
       inputRef.current.value = DateTime.getYYYYMMDD(state.selectedTS)
-      //inputRef.current.focus()
-      //inputRef.current.blur()
-      
-      onChange({
-        currentTarget: inputRef.current,
-        target: inputRef.current,
-        bubbles: true,
-        cancelable: false,
-        defaultPrevented: false,
-        eventPhase: 3,
-        isTrusted: true,
-        preventDefault: ()=>{},
-        isDefaultPrevented: ()=>false,
-        stopPropagation: ()=>{},
-        isPropagationStopped: ()=>false,
-        persist: ()=>{},
-        timeStamp: 0,
-        type: 'change',
-        nativeEvent: {
-          currentTarget: null,
-          target: inputRef.current,
-          bubbles: true,
-          cancelBubble: false,
-          cancelable: false,
-          composed: false,
-          defaultPrevented: false,
-          eventPhase: 0,
-          isTrusted: true,
-          returnValue: true,
-          srcElement: inputRef.current,
-          timeStamp: 0,
-          type: 'change',
-          composedPath: ()=>[],
-          initEvent: ()=>{},
-          preventDefault: ()=>{},
-          stopImmediatePropagation: ()=>{},
-          stopPropagation: ()=>{},
-          NONE: 0,
-          CAPTURING_PHASE: 1,
-          AT_TARGET: 2,
-          BUBBLING_PHASE: 3
-        }
-      })
-      
+//////////////////////////////////////
+      onChange(fakeEvent(inputRef.current,'change'))
+//////////////////////////////////////
     }
     setOpen(false)
   }

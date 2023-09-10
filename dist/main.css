@@ -705,6 +705,7 @@
   pointer-events: none;
 }
 .day_c25a32d {
+  will-change: background-color;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -731,9 +732,17 @@
   border: 1px solid rgba(0, 0, 0, 0.6);
 }
 
+.day_c25a32d:focus {
+  background-color: rgba(25, 118, 210, 0.12);
+}
+
+.day_c25a32d:focus.selected_a2f885d {
+  background-color: rgb(21, 101, 192);
+}
+
 .day_c25a32d.selected_a2f885d, .day_c25a32d.selected_a2f885d:hover {
   color: #fff;
-  background-color: #1976d2;
+  background-color: rgb(25, 118, 210);
   font-weight: 500;
 }
 
@@ -745,15 +754,15 @@
   position: absolute;
   border-radius: 50%;
   opacity: 0;
-	background-color: #1976d2;
-	/*background-color: rgba(0, 0, 0, 0.3);*/
+	background-color: rgba(0, 0, 0, 0.3);
   pointer-events: none;
-  transition: opacity 500ms linear;
-  animation: ripple_eac860f 300ms linear;
+  transition: opacity 300ms linear;
+  animation: ripple_eac860f 500ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ripple_eac860f.clicked_c13ad26 {
   opacity: 0.3;
+  background-color: currentColor;
 }
 
 @keyframes ripple_eac860f {
