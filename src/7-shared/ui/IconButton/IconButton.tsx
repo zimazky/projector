@@ -9,12 +9,12 @@ type IconButtonProps = {
 }
 
 const IconButton: React.FC<IconButtonProps> = (props) => {
-  const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
+  const {disabled, children='Button', onClick = ()=>{}, ...rest} = props
 
   return (
-    <button type='button' className={styles.button} {...rest}
+    <button type='button' className={styles.button} disabled={disabled} {...rest}
       onPointerDown={e => {
-        if(!e.isPrimary) return
+        if(!e.isPrimary || e.currentTarget.disabled) return
         createRipple(e)
       }}
       onPointerUp={e => {

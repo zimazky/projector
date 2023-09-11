@@ -20,6 +20,8 @@ interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
   value?: string
   /** Признак ошибки валидации */
   error?: boolean
+  /** Признак выключения ввода */
+  disabled?: boolean
 }
 
 type DatePickerState = {
@@ -37,10 +39,8 @@ function getDatePickerState(s: string, todayTS: number): DatePickerState {
 }
 
 const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
-  const {label, value = '', error, onChange = ()=>{}, ...rest} = props
+  const {label, value = '', error, disabled, onChange = ()=>{}, ...rest} = props
   const [open, setOpen] = React.useState(false)
-  //const rest = {...r, onSelect: ()=>{setOpen(true)}}
-
   const todayTS = DateTime.getBeginDayTimestamp(Date.now()/1000)
   const [state, setState] = React.useState<DatePickerState>(getDatePickerState(value, todayTS))
   const inputRef = React.useRef<HTMLInputElement|null>(null)
@@ -91,9 +91,9 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
   }
 
   return <>
-  <TextField label={label} value={value} error={error} onChange={onChange}
-    {...rest} ref={onChangeRef}>
-      <IconButton onClick={()=>{setOpen(true)}}><SwgIcon><Calendar/></SwgIcon></IconButton>
+  <TextField label={label} value={value} error={error} disabled={disabled}
+    onChange={onChange} {...rest} ref={onChangeRef}>
+    <IconButton disabled={disabled} onClick={()=>{setOpen(true)}}><SwgIcon><Calendar/></SwgIcon></IconButton>
   </TextField>
   <Dialog open={open} onClose={closeHandle}>
     <div className={styles.title}>
@@ -103,8 +103,12 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
     <div className={styles.header}>
       <div className={styles.label}>{DateTime.getMonthNamesArray()[state.month] + ' ' + state.year}</div>
       <div className={styles.buttons}>
-        <IconButton><SwgIcon><ArrowBackIos/></SwgIcon></IconButton>
-        <IconButton><SwgIcon><ArrowForwardIos/></SwgIcon></IconButton>
+        <IconButton onClick={()=>setState(s=>({...s, ...prevMonth(s.year, s.month)}))}>
+          <SwgIcon><ArrowBackIos/></SwgIcon>
+        </IconButton>
+        <IconButton onClick={()=>setState(s=>({...s, ...nextMonth(s.year, s.month)}))}>
+          <SwgIcon><ArrowForwardIos/></SwgIcon>
+        </IconButton>
       </div>
     </div>
     <div className={styles.weekdays}>
@@ -121,3 +125,12 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
 })
 
 export default DatePicker
+
+function nextMonth(year: number, month: number): {year: number, month: number} {
+  if(++month > 11) { year++; month = 0}
+  return {year, month}
+}
+function prevMonth(year: number, month: number): {year: number, month: number} {
+  if(--month < 0) { year--; month = 11}
+  return {year, month}
+}
