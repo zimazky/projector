@@ -7,11 +7,11 @@ import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import IconButton from 'src/7-shared/ui/IconButton/IconButton'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
-import { ArrowBackIos, ArrowForwardIos } from 'src/7-shared/ui/Icons/Icons'
+import { ArrowBackIos, ArrowForwardIos, Calendar } from 'src/7-shared/ui/Icons/Icons'
 
 import styles from './DatePicker.module.css'
-import DayButton from './DayButton'
 import { fakeEvent } from './fakeEvent'
+import DatePickerCalendar from './DatePickerCalendar'
 
 interface DatePickerProps extends React.HTMLProps<HTMLInputElement> {
   /** Ярлык */
@@ -37,16 +37,15 @@ function getDatePickerState(s: string, todayTS: number): DatePickerState {
 }
 
 const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, ref) => {
-  const {label, value = '', error, onChange = ()=>{}, ...r} = props
+  const {label, value = '', error, onChange = ()=>{}, ...rest} = props
   const [open, setOpen] = React.useState(false)
-  const rest = {...r, onSelect: ()=>{setOpen(true)}}
+  //const rest = {...r, onSelect: ()=>{setOpen(true)}}
 
   const todayTS = DateTime.getBeginDayTimestamp(Date.now()/1000)
   const [state, setState] = React.useState<DatePickerState>(getDatePickerState(value, todayTS))
   const inputRef = React.useRef<HTMLInputElement|null>(null)
 
   const onChangeRef = React.useCallback((node: HTMLInputElement) => {
-    const orignode = node
     if(node !== null) {
       node = new Proxy<HTMLInputElement>(node, {
         set: (target: any, prop, value)=>{
@@ -82,7 +81,6 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
   }
 
   const changeHandle: React.MouseEventHandler = (e)=>{
-    
     if(inputRef.current !== null) {
       inputRef.current.value = DateTime.getYYYYMMDD(state.selectedTS)
 //////////////////////////////////////
@@ -92,11 +90,11 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
     setOpen(false)
   }
 
-  const monthStructure = getMonthStructure(state.selectedTS)
-
   return <>
-  <TextField label={label} value={value} error={error} //readOnly
-    {...rest} ref={onChangeRef}></TextField>
+  <TextField label={label} value={value} error={error} onChange={onChange}
+    {...rest} ref={onChangeRef}>
+      <IconButton onClick={()=>{setOpen(true)}}><SwgIcon><Calendar/></SwgIcon></IconButton>
+  </TextField>
   <Dialog open={open} onClose={closeHandle}>
     <div className={styles.title}>
       <span>Select date</span>
@@ -109,23 +107,10 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
         <IconButton><SwgIcon><ArrowForwardIos/></SwgIcon></IconButton>
       </div>
     </div>
-    <div className={styles.calendar}>
-      <div className={styles.weekdays}>
-        {DateTime.getWeekdaysArray().map(d=><div className={styles.weekday} key={d}>{d[0]}</div>)}
-      </div>
-      {monthStructure.map((week,i)=>(
-        <div key={i} className={styles.week}>
-          {week.map((d,i)=>d.day
-          ? <DayButton key={d.timestamp} today={d.timestamp===todayTS} selected={d.timestamp===state.selectedTS}
-            onClick={()=>{
-              setState(s=>{return {...s, selectedTS:d.timestamp}})
-            }}>
-            {d.day}</DayButton>
-          : <div key={i} className={styles.placeholder}></div>
-          )}
-        </div>
-      ))}
+    <div className={styles.weekdays}>
+      {DateTime.getWeekdaysArray().map(d=><div className={styles.weekday} key={d}>{d[0]}</div>)}
     </div>
+    <DatePickerCalendar {...state} onSelect={(timestamp)=>setState(s=>({...s, selectedTS:timestamp}))}/>
     <DialogActions>
       <TextButton onClick={closeHandle}>Cancel</TextButton>
       <TextButton onClick={clearHandle}>Clear</TextButton>
@@ -136,23 +121,3 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
 })
 
 export default DatePicker
-
-type DayStructure = {
-  timestamp: number
-  day: number
-}
-
-function getMonthStructure(timestamp: number): DayStructure[][] {
-  const {year, month, day} = DateTime.getYearMonthDay(timestamp)
-  const daysInMonth = DateTime.getDaysInMonth(year, month)
-  const weekday = DateTime.getWeekday(timestamp)
-  const firstWeekday = (43 + weekday - DateTime.startWeek - day)%7
-
-  const dayStructures: DayStructure[] = []
-
-  for(let i=0; i<firstWeekday; i++) dayStructures.push({timestamp:0, day:0})
-  for(let i=1, t=timestamp+86400-day*86400; i<=daysInMonth; i++, t+=86400) dayStructures.push({timestamp:t, day:i})
-  const monthStructure: DayStructure[][] = []
-  for(let i=0; i<dayStructures.length; i+=7) monthStructure.push(dayStructures.slice(i, i+7))
-  return monthStructure
-}

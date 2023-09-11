@@ -70,10 +70,9 @@
 }
 
 .button_e4c95d0 svg {
-	width: 1em;
-	height: 1em;
+	width: 24px;
+	height: 24px;
 	stroke: currentColor;
-	display: inline-block;
 }
 
 .ripple_a1e2030 {
@@ -277,9 +276,12 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
   border-radius: 4px;
   margin: 10px 2px 2px 2px;
-  padding: 10px;
+  padding: 0 2px;
   background-color: var(--ui-backgroung-color);
   font-size: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .container_b5797bd:hover {
@@ -327,14 +329,13 @@
 
 .input_c8d5a5e {
   display: block;
-  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
+  width: calc(100% - 60px);
   height: 100%;
   font-size: inherit;
   font-family: inherit;
-  padding: 8px 14px;
+  margin-left: 12px;
   background-color: transparent;
   text-overflow: ellipsis;
 }
@@ -687,8 +688,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 16px;
-  margin-bottom: 8px;
   padding-left: 24px;
   padding-right: 12px;
 }
@@ -706,19 +705,16 @@
   justify-content: space-between;
 }
 
-.calendar_c604577 {
-  padding: 8px 20px 24px 20px;
-}
-
 .weekdays_f9a6b11 {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  font-family: 'Roboto','Helvetica','Arial',sans-serif;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
   font-weight: 400;
-  font-size: 0.875rem;
+  font-size: 0.750rem;
   line-height: 1.66;
   letter-spacing: 0.03333em;
+  padding: 8px 20px 0px 20px;
 }
 
 .weekday_baf6df9 {
@@ -730,26 +726,6 @@
   justify-content: center;
   align-items: center;
   color: rgba(0, 0, 0, 0.6);
-}
-
-.week_bf7787b {
-  margin: 2px 0;
-  display: flex;
-  justify-content: flex-start;
-  font-family: 'Roboto','Helvetica','Arial',sans-serif;
-  font-weight: 400;
-  font-size: 0.875rem;
-  line-height: 1.66;
-  letter-spacing: 0.03333em;
-}
-
-.placeholder_aa89ba9 {
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background-color: transparent;
-  margin: 0 2px;
-  pointer-events: none;
 }
 .day_c25a32d {
   will-change: background-color;
@@ -815,6 +791,30 @@
 @keyframes ripple_eac860f {
   from { transform: scale(0); }
   to { transform: scale(1); }
+}
+.calendar_da9895b {
+  padding: 0px 20px 24px 20px;
+  height: 254px;
+}
+
+.week_afa5eb4 {
+  margin: 2px 0;
+  display: flex;
+  justify-content: flex-start;
+  font-family: Roboto, Helvetica, Arial, sans-serif;
+  font-weight: 400;
+  font-size: 0.875rem;
+  line-height: 1.66;
+  letter-spacing: 0.03333em;
+}
+
+.placeholder_ae20735 {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background-color: transparent;
+  margin: 0 2px;
+  pointer-events: none;
 }
 .content_da64c49 {
   flex: 1 1 auto;

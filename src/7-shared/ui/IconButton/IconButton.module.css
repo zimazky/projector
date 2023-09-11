@@ -35,10 +35,9 @@
 }
 
 .button svg {
-	width: 1em;
-	height: 1em;
+	width: 24px;
+	height: 24px;
 	stroke: currentColor;
-	display: inline-block;
 }
 
 .ripple {

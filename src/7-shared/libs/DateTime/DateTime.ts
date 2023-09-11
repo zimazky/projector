@@ -102,6 +102,27 @@ export default class DateTime {
     return DateTime.getUTCYearMonthDay(t + 3600*DateTime.timezone)
   }
   
+  /** Преобразовать дату в виде значений (год, месяц, день) в таймстемп по времени UTC (unixtime) */
+  static YearMonthDayToTimestampUTC(year: number, month: number, day: number): timestamp {
+    const leap = +(!(year%4) && !!(year%100) || !(year%400))        // Определение високосного года
+    let yday = Math.floor(((month*367) + 5)/12) + day - 1           // Количество дней с начала года 
+                                                                    // (февраль считается 30-дневным)
+    if(yday > 59 + leap) yday -= 2 - leap                           // Корректировка количества дней по високосному году
+    const years = year - 1970
+    const y2k = year - 2000 - 1
+    let days = Math.floor((1461*years+1)/4)                         // Количество дней от 01-01-1970 до начала года
+                                                                    // По Юлианскому принципу
+    days -= Math.floor(y2k/100)-Math.floor(y2k/400)                 // Корректировка по Григорианскому принципу
+                                                                    // (с учетом переходов через столетия)
+    days += yday
+    return days*86400
+  }
+
+  /** Преобразовать дату в виде значений (год, месяц, день) в таймстемп по локальному времени (unixtime) */
+  static YearMonthDayToTimestamp(year: number, month: number, day: number): timestamp {
+    return DateTime.YearMonthDayToTimestampUTC(year, month, day) - DateTime.timezone*3600
+  }
+
   /** Преобразовать строку даты формата YYYY.MM.DD в таймстемп по времени UTC [tested]*/
   static YYYYMMDDToTimestampUTC(s: string): timestamp {
     let [y, m, d] = s.split('.',3)

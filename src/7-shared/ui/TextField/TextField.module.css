@@ -4,9 +4,12 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
   border-radius: 4px;
   margin: 10px 2px 2px 2px;
-  padding: 10px;
+  padding: 0 2px;
   background-color: var(--ui-backgroung-color);
   font-size: 1rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .container:hover {
@@ -54,14 +57,13 @@
 
 .input {
   display: block;
-  position: absolute;
   left: 0;
   top: 0;
-  width: 100%;
+  width: calc(100% - 60px);
   height: 100%;
   font-size: inherit;
   font-family: inherit;
-  padding: 8px 14px;
+  margin-left: 12px;
   background-color: transparent;
   text-overflow: ellipsis;
 }

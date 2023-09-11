@@ -209,7 +209,6 @@ const EventForm: React.FC = () => {
         {...register('credit', {validate: Calc.validate})}/>
       <TextField label='Debit' error={!!errors.debit}
         {...register('debit', {validate: Calc.validate})}/>
-      <DatePicker label='test'></DatePicker>
     </div>
   </TabPanel>
   <TabPanel value={tab} index={1}>
