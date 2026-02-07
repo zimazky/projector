@@ -31,7 +31,7 @@ const CalendarDay: React.FC<CalendarDayProps> = (props) => {
 
   const openEventFormWithNewEvent = (name: string) => {
     if(name==='') return
-    eventFormStore.setEventData({
+    eventFormStore.setEventDto({
       id: null, name, timestamp,
       start: DateTime.getYYYYMMDD(timestamp)
     })

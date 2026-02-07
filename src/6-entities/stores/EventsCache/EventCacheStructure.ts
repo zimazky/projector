@@ -1,6 +1,6 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { RepeatableEventStructure, SingleEventStructure } from 'src/6-entities/stores/Events/EventStructure'
+import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/stores/Events/EventModel'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type EventCacheStructure = {
@@ -37,7 +37,7 @@ export type EventCacheStructure = {
  * Функция преобразования одиночного события в компактное представление для отображения и кэширования. 
  * Многодневные события представлены отдельными событиями на каждый день.
  */
-export function singleEventToEventCache(e: SingleEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): EventCacheStructure {
+export function singleEventToEventCache(e: SingleEventModel, currentDate: timestamp, completed: boolean, color: string, background: string): EventCacheStructure {
   const c: EventCacheStructure = {
     id: e.id,
     name: e.name,
@@ -59,7 +59,7 @@ export function singleEventToEventCache(e: SingleEventStructure, currentDate: ti
  * Функция преобразования повторяемого события в компактное представление для отображения и кэширования. 
  * Повторяемых событий нет, они представляются одиночными.
  */
-export function repeatableEventToEventCache(e: RepeatableEventStructure, currentDate: timestamp, completed: boolean, color: string, background: string): EventCacheStructure {
+export function repeatableEventToEventCache(e: RepeatableEventModel, currentDate: timestamp, completed: boolean, color: string, background: string): EventCacheStructure {
   const c: EventCacheStructure = {
     id: e.id,
     name: e.name,

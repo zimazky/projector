@@ -20,9 +20,9 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
 
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
-    const s = eventsStore.getEventData(id)
+    const s = eventsStore.getEventDto(id)
     if(s === undefined) return
-    eventFormStore.setEventData({...s, id, completed, timestamp: start})
+    eventFormStore.setEventDto({...s, id, completed, timestamp: start})
     eventFormStore.showForm()
   }
 

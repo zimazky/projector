@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx'
 
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { EventData } from 'src/6-entities/stores/Events/EventData'
+import { EventDto } from 'src/6-entities/stores/Events/EventDto'
 
 type EventFormStructure = {
   /** Идентификатор события (если не указан, то новое событие) */
@@ -11,13 +11,13 @@ type EventFormStructure = {
   completed?: boolean 
   /** Метка времени дня */
   timestamp: timestamp
-} & EventData
+} & EventDto
 
 export class EventFormStore {
   /** Признак отображения модальной формы на экране */
   isShow: boolean = false
   /** Данные отображаемого события */
-  eventData: EventFormStructure = {
+  eventDto: EventFormStructure = {
     id: null,
     timestamp: 0,
     name: '',
@@ -32,8 +32,8 @@ export class EventFormStore {
 
   hideForm = () => { this.isShow = false }
 
-  setEventData = (e: EventFormStructure) => {
-    this.eventData = e
+  setEventDto = (e: EventFormStructure) => {
+    this.eventDto = e
   }
 
 }
