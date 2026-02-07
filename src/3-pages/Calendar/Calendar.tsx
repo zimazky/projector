@@ -4,9 +4,10 @@ import { observer } from 'mobx-react-lite'
 import { max, min } from 'src/7-shared/helpers/utils'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import useUpdate from 'src/7-shared/hooks/useUpdate'
+
 import Modal from 'src/7-shared/ui/Modal/Modal'
 
-import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/6-entities/stores/MainStore'
+import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/root'
 
 import EventForm from 'src/4-widgets/EventForm/EventForm'
 
@@ -16,8 +17,9 @@ import CalendarEventItem from './CalendarEventItem'
 import styles from './Calendar.module.css'
 
 const Calendar: React.FC = observer(function() {
-
   const forceUpdate = useUpdate()
+
+
 
   React.useEffect(()=>{
     const weekDiv = document.getElementById(calendarStore.week.toString())

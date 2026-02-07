@@ -1,10 +1,7 @@
 import React from 'react'
-
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-
-import { eventFormStore, eventsStore } from 'src/6-entities/stores/MainStore'
+import { eventFormStore, eventsStore } from 'src/root'
 import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
-
 import styles from './CalendarEventItem.module.css'
 
 type CalendarEventItemProps = {

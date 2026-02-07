@@ -3,7 +3,7 @@ import { observer } from 'mobx-react-lite'
 
 import Time from 'src/7-shared/ui/Time/Time'
 
-import { calendarStore, mainStore } from 'src/6-entities/stores/MainStore'
+import { calendarStore, mainStore } from 'src/root'
 
 import CalendarIconBar from 'src/5-features/CalendarIconBar/CalendarIconBar'
 

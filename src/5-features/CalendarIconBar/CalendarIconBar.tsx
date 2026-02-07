@@ -8,7 +8,7 @@ import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
 
-import { mainStore, weatherStore } from 'src/6-entities/stores/MainStore'
+import { uiStore, googleApiService, storageService, weatherStore } from 'src/root'
 
 function fullScreen() { 
   document.getElementById('root')?.requestFullscreen() 
@@ -19,39 +19,39 @@ const CalendarIconBar: React.FC = observer(function() {
   let icons: IconItem[] = []
   let menu: MenuItem[] = []
 
-  menu.push({ name: 'Save to LocalStorage', fn: mainStore.saveToLocalStorage })
+  menu.push({ name: 'Save to LocalStorage', fn: storageService.saveToLocalStorage })
   icons.push({
     name: '',
     jsx: <SwgIcon><Menu/></SwgIcon>,
-    fn: ()=>{mainStore.toggleMenu(true)}
+    fn: ()=>{uiStore.toggleMenu(true)}
   })
   icons.push({
     name: 'Save to LocalStorage', 
     jsx: <SwgIcon><Diskette/>
-      {mainStore.isSyncWithLocalstorage || <ModifiedAsterisk/>}
+      {storageService.isSyncWithLocalstorage || <ModifiedAsterisk/>}
       </SwgIcon>, 
-    fn: mainStore.saveToLocalStorage
+    fn: storageService.saveToLocalStorage
   })
 
   icons.push({
     name: 'Load from Google Drive', 
     jsx: <SwgIcon><Google/><DownloadSign/></SwgIcon>, 
-    fn: mainStore.loadFromGoogleDrive
+    fn: storageService.loadFromGoogleDrive
   })
-  if(mainStore.isGoogleLoggedIn) {
-    menu.push({ name: 'Logout', fn: mainStore.logOut })
-    menu.push({ name: 'Save to Google Drive', fn: mainStore.saveToGoogleDrive })
-    menu.push({ name: 'Load from Google Drive', fn: mainStore.loadFromGoogleDrive })
+  if(googleApiService.isGoogleLoggedIn) {
+    menu.push({ name: 'Logout', fn: googleApiService.logOut })
+    menu.push({ name: 'Save to Google Drive', fn: storageService.saveToGoogleDrive })
+    menu.push({ name: 'Load from Google Drive', fn: storageService.loadFromGoogleDrive })
     icons.push({
       name: 'Save to Google Drive', 
       jsx: <SwgIcon><Google/><UploadSign/>
-        { mainStore.isSyncWithGoogleDrive || <ModifiedAsterisk/> }
+        { storageService.isSyncWithGoogleDrive || <ModifiedAsterisk/> }
         </SwgIcon>, 
-      fn: mainStore.saveToGoogleDrive
+      fn: storageService.saveToGoogleDrive
     })
   }
   else {
-    menu.push({ name: 'Login', fn: mainStore.logIn })
+    menu.push({ name: 'Login', fn: googleApiService.logIn })
   }
   icons.push({
     name: 'Load weather forecast',
@@ -64,15 +64,15 @@ const CalendarIconBar: React.FC = observer(function() {
     fn: fullScreen
   })
 
-  if(mainStore.viewMode !== 'Calendar')
-    menu.push({ name: 'Calendar', fn: ()=>{mainStore.changeViewMode({mode: 'Calendar'})} })
+  if(uiStore.viewMode !== 'Calendar')
+    menu.push({ name: 'Calendar', fn: ()=>{uiStore.changeViewMode({mode: 'Calendar'})} })
 
-  if(mainStore.viewMode !== 'Projects')
-    menu.push({ name: 'Projects', fn: ()=>{mainStore.changeViewMode({mode: 'Projects'})} })
+  if(uiStore.viewMode !== 'Projects')
+    menu.push({ name: 'Projects', fn: ()=>{uiStore.changeViewMode({mode: 'Projects'})} })
 
   return <>
     <IconBar icons={icons}/>
-    <Drawer open={mainStore.isMenuOpen} onClose={()=>mainStore.toggleMenu(false)}>
+    <Drawer open={uiStore.isMenuOpen} onClose={()=>uiStore.toggleMenu(false)}>
       <List>{ menu.map((m, i)=><ListItem key={i} onClick={m.fn}>{m.name}</ListItem>)}</List>
     </Drawer>
   </>

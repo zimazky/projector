@@ -11,7 +11,7 @@ import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
-import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/6-entities/stores/MainStore'
+import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/root'
 import { EventData } from 'src/6-entities/stores/Events/EventData'
 
 import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
