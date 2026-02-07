@@ -1,15 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { dayListStore, uiStore } from 'src/root'
+import { StoreContext } from 'src/contexts/StoreContext'
 
 import DayListEventItem from './DayListEventItem'
 import styles from './DayList.module.css'
 
 const DayList: React.FC = observer(() => {
+  const { dayListStore, uiStore } = useContext(StoreContext)
 
   const inputElementRef = React.useRef<HTMLDivElement>(null)
 

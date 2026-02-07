@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import { max, min } from 'src/7-shared/helpers/utils'
@@ -7,7 +7,7 @@ import useUpdate from 'src/7-shared/hooks/useUpdate'
 
 import Modal from 'src/7-shared/ui/Modal/Modal'
 
-import {calendarStore, eventFormStore, eventsStore, mainStore} from 'src/root'
+import { StoreContext } from 'src/contexts/StoreContext'
 
 import EventForm from 'src/4-widgets/EventForm/EventForm'
 
@@ -18,6 +18,7 @@ import styles from './Calendar.module.css'
 
 const Calendar: React.FC = observer(function() {
   const forceUpdate = useUpdate()
+  const { calendarStore, eventFormStore, eventsStore, mainStore } = useContext(StoreContext)
 
 
 

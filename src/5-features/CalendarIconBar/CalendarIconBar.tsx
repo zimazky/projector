@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
@@ -8,13 +8,14 @@ import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
 
-import { uiStore, googleApiService, storageService, weatherStore } from 'src/root'
+import { StoreContext } from 'src/contexts/StoreContext'
 
 function fullScreen() { 
   document.getElementById('root')?.requestFullscreen() 
 }
 
 const CalendarIconBar: React.FC = observer(function() {
+  const { uiStore, googleApiService, storageService, weatherStore } = useContext(StoreContext)
  
   let icons: IconItem[] = []
   let menu: MenuItem[] = []

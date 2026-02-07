@@ -5,7 +5,26 @@ import App from './1-app/App/App'
 
 import './index.css'
 
+import { mainStore, projectsStore, eventsStore, eventsCache, weatherStore, calendarStore, dayListStore, eventFormStore, uiStore, googleApiService, storageService } from './root'
+import StoreProvider from './components/StoreProvider'
+
 const rootElement = document.getElementById('root')
 if(rootElement === null) throw new Error('Не найден DOM элемент #root')
 const root = createRoot(rootElement)
-root.render(<App />)
+root.render(
+  <StoreProvider
+    mainStore={mainStore}
+    projectsStore={projectsStore}
+    eventsStore={eventsStore}
+    eventsCache={eventsCache}
+    weatherStore={weatherStore}
+    calendarStore={calendarStore}
+    dayListStore={dayListStore}
+    eventFormStore={eventFormStore}
+    uiStore={uiStore}
+    googleApiService={googleApiService}
+    storageService={storageService}
+  >
+    <App />
+  </StoreProvider>
+)

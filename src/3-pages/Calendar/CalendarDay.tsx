@@ -1,10 +1,9 @@
-import React from 'react'
+import React, { useContext } from 'react'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { dayListStore, eventFormStore } from 'src/root'
-import { uiStore } from 'src/root'
+import { StoreContext } from 'src/contexts/StoreContext'
 import { CalendarDayStructure } from 'src/6-entities/stores/Calendar/CalendarStore'
 
 import styles from './CalendarDay.module.css'
@@ -19,6 +18,7 @@ type CalendarDayProps = {
 }
 
 const CalendarDay: React.FC<CalendarDayProps> = (props) => {
+  const { dayListStore, eventFormStore, uiStore } = useContext(StoreContext)
   const {data, isToday, onDragDrop, children = null} = props
   const {timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style} = data
   const inputElementRef = React.useRef<HTMLDivElement>(null)
