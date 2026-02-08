@@ -4,7 +4,7 @@ import { observer } from 'mobx-react-lite'
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { StoreContext } from 'src/contexts/StoreContext'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
 import DayListEventItem from './DayListEventItem'
 import styles from './DayList.module.css'

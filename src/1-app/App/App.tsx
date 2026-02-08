@@ -2,7 +2,7 @@ import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 import useUpdate from 'src/7-shared/hooks/useUpdate'
 
-import { StoreContext } from 'src/contexts/StoreContext'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
 import Header from 'src/4-widgets/Header/Header'
 import Calendar from 'src/3-pages/Calendar/Calendar'

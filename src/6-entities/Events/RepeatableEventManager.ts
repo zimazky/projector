@@ -1,4 +1,4 @@
-import { ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore';
+import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore';
 import { RepeatableEventModel, IEventModel } from './EventModel';
 import { eventDtoToIEventModel } from './EventMappers';
 import { EventDto } from './EventDto';

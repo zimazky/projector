@@ -1,7 +1,7 @@
 import React, { useContext } from 'react'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-import { StoreContext } from 'src/contexts/StoreContext'
-import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import styles from './CalendarEventItem.module.css'
 
 type CalendarEventItemProps = {

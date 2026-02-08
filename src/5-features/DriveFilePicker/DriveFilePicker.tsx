@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { observer } from 'mobx-react-lite';
 import Modal from 'src/7-shared/ui/Modal/Modal';
 import TextButton from 'src/7-shared/ui/Button/TextButton';
@@ -9,9 +9,9 @@ import DialogActions from 'src/7-shared/ui/Dialog/DialogActions';
 import List from 'src/7-shared/ui/List/List';
 import ListItem from 'src/7-shared/ui/List/ListItem';
 import Spinner from 'src/7-shared/ui/Spinner/Spinner';
-import { DrivePickerStore } from 'src/6-entities/stores/DrivePicker/DrivePickerStore';
+import { DrivePickerStore } from 'src/5-features/DriveFilePicker/DrivePickerStore';
 import { DriveFileMetadata } from 'src/7-shared/services/gapi';
-import { StoreContext } from 'src/contexts/StoreContext';
+import { StoreContext } from 'src/1-app/Providers/StoreContext';
 import styles from './DriveFilePicker.module.css';
 
 interface DriveFilePickerProps {

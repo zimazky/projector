@@ -1,12 +1,12 @@
 import React from 'react'
 import {createRoot} from "react-dom/client"
 
-import App from './1-app/App/App'
+import App from './App/App'
 
 import './index.css'
 
 import { mainStore, projectsStore, eventsStore, eventsCache, weatherStore, calendarStore, dayListStore, eventFormStore, uiStore, googleApiService, storageService } from './root'
-import StoreProvider from './components/StoreProvider'
+import StoreProvider from './Providers/StoreProvider'
 
 const rootElement = document.getElementById('root')
 if(rootElement === null) throw new Error('Не найден DOM элемент #root')

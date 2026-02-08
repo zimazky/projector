@@ -1,5 +1,5 @@
 import React from 'react';
-import { StoreContext, IRootStore } from 'src/contexts/StoreContext';
+import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext';
 
 // Define props for StoreProvider to accept all store instances
 interface StoreProviderProps extends IRootStore {

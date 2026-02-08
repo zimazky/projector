@@ -11,8 +11,8 @@ import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
-import { StoreContext } from 'src/contexts/StoreContext'
-import { EventDto } from 'src/6-entities/stores/Events/EventDto'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { EventDto } from 'src/6-entities/Events/EventDto'
 
 import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
 

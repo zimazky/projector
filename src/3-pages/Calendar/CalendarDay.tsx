@@ -3,8 +3,8 @@ import React, { useContext } from 'react'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { StoreContext } from 'src/contexts/StoreContext'
-import { CalendarDayStructure } from 'src/6-entities/stores/Calendar/CalendarStore'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { CalendarDayStructure } from 'src/3-pages/Calendar/CalendarStore'
 
 import styles from './CalendarDay.module.css'
 

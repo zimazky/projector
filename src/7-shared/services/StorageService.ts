@@ -1,10 +1,10 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import RemoteStorage from './remoteStorage'
-import { ProjectData, ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore'
-import { EventsStore, EventsStoreData } from 'src/6-entities/stores/Events/EventsStore'
+import { ProjectData, ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { EventsStore, EventsStoreData } from 'src/6-entities/Events/EventsStore'
 import { GoogleApiService } from './GoogleApiService' // Import the type
-import { mainStore } from 'src/root' 
+import { mainStore } from 'src/1-app/root' 
 
 /** Тип данных приложения для сохранения во внешнем хранилище */
 type MainStoreData = {

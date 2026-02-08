@@ -3,9 +3,9 @@ import { observer } from 'mobx-react-lite'
 
 import Time from 'src/7-shared/ui/Time/Time'
 
-import { StoreContext } from 'src/contexts/StoreContext'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
-import CalendarIconBar from 'src/5-features/CalendarIconBar/CalendarIconBar'
+import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
 
 import styles from './Header.module.css'
 

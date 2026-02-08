@@ -2,7 +2,7 @@ import { makeAutoObservable } from 'mobx'
 
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { EventDto } from 'src/6-entities/stores/Events/EventDto'
+import { EventDto } from 'src/6-entities/Events/EventDto'
 
 type EventFormStructure = {
   /** Идентификатор события (если не указан, то новое событие) */

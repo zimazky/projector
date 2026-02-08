@@ -3,9 +3,9 @@ import { makeAutoObservable } from 'mobx'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { max } from 'src/7-shared/helpers/utils'
 
-import { EventsCache, EventsCacheSkipStructure } from 'src/6-entities/stores/EventsCache/EventsCache'
-import { ForecastData1d, WeatherStore } from 'src/6-entities/stores/Weather/WeatherStore'
-import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
+import { EventsCache, EventsCacheSkipStructure } from 'src/6-entities/EventsCache/EventsCache'
+import { ForecastData1d, WeatherStore } from 'src/5-features/Weather/WeatherStore'
+import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 
 /** Минимальный размер буфера в неделях */
 const minBufferSize = 4

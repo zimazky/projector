@@ -1,8 +1,8 @@
 import { makeAutoObservable } from 'mobx'
 
-import { ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore'
-import { EventsCache } from 'src/6-entities/stores/EventsCache/EventsCache'
-import { EventsStore } from 'src/6-entities/stores/Events/EventsStore'
+import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
+import { EventsStore } from 'src/6-entities/Events/EventsStore'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService' // Import the type
 import { StorageService } from 'src/7-shared/services/StorageService' // Import the type

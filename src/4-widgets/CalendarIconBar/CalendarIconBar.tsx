@@ -8,8 +8,8 @@ import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
 
-import { StoreContext } from 'src/contexts/StoreContext'
-import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import DriveFilePicker from 'src/5-features/DriveFilePicker/DriveFilePicker'
 import { DriveFileMetadata } from 'src/7-shared/services/gapi'
 
 function fullScreen() { 

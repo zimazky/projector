@@ -2,7 +2,7 @@ import React from 'react'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
+import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 
 import styles from './DayListEventItem.module.css'
 

@@ -2,10 +2,10 @@ import { makeAutoObservable } from 'mobx'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { ForecastData3h, WeatherStore } from 'src/6-entities/stores/Weather/WeatherStore'
-import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
-import { EventsCache } from 'src/6-entities/stores/EventsCache/EventsCache'
-import { CalendarStore } from 'src/6-entities/stores/Calendar/CalendarStore'
+import { ForecastData3h, WeatherStore } from 'src/5-features/Weather/WeatherStore'
+import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
+import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
+import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
 
 export class DayListStore {
   /** Метка времени отображаемого дня, unixtime */

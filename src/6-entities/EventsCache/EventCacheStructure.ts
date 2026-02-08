@@ -1,6 +1,6 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/stores/Events/EventModel'
+import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/Events/EventModel'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type EventCacheStructure = {

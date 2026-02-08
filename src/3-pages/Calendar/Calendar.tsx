@@ -7,7 +7,7 @@ import useUpdate from 'src/7-shared/hooks/useUpdate'
 
 import Modal from 'src/7-shared/ui/Modal/Modal'
 
-import { StoreContext } from 'src/contexts/StoreContext'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
 import EventForm from 'src/4-widgets/EventForm/EventForm'
 

@@ -1,6 +1,6 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 
 import { IEventModel, SingleEventModel, RepeatableEventModel } from './EventModel'
 import { eventDtoToIEventModel, repeatableEventModelToEventDto, singleEventModelToEventDto } from './EventMappers'

@@ -1,14 +1,14 @@
-import { ProjectsStore } from 'src/6-entities/stores/Projects/ProjectsStore'
-import { EventsStore } from 'src/6-entities/stores/Events/EventsStore'
-import { EventsCache } from 'src/6-entities/stores/EventsCache/EventsCache'
-import { WeatherStore } from 'src/6-entities/stores/Weather/WeatherStore'
-import { CalendarStore } from 'src/6-entities/stores/Calendar/CalendarStore'
-import { DayListStore } from 'src/6-entities/stores/DayListStore/DayListStore'
-import { EventFormStore } from 'src/6-entities/stores/EventForm/EventFormStore'
-import { UIStore } from 'src/6-entities/stores/UIStore/UIStore'
+import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { EventsStore } from 'src/6-entities/Events/EventsStore'
+import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
+import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
+import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
+import { DayListStore } from 'src/3-pages/DayList/DayListStore'
+import { EventFormStore } from 'src/4-widgets/EventForm/EventFormStore'
+import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
-import { MainStore } from 'src/6-entities/stores/MainStore'
+import { MainStore } from 'src/1-app/Stores/MainStore'
 
 
 // 1. Инстанцирование основных доменных хранилищ
