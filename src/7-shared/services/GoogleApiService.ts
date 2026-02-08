@@ -101,7 +101,17 @@ export class GoogleApiService {
         throw new Error("User not logged in to Google.");
       }
     }
-    return GAPI.createFileOrFolder(name, 'application/vnd.google-apps.folder', parentFolderId);
+    return GAPI.createFileOrFolder(name, 'application/vnd.google-apps.folder', [parentFolderId]);
+  }
+
+  async deleteItem(itemId: string): Promise<boolean> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+    return GAPI.deleteFile(itemId);
   }
 }
 

@@ -37,11 +37,12 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
 
 
   const handleItemClick = (item: DriveFileMetadata) => {
-    // When clicking an item, the currentSpace from the store should be used for subfolder navigation
+    drivePickerStore.setSelectedItem(item); // Always select on single click
+  };
+
+  const handleItemDoubleClick = (item: DriveFileMetadata) => {
     if (item.mimeType === 'application/vnd.google-apps.folder') {
-      drivePickerStore.loadFolder(item.id); // No need to pass currentSpace explicitly here, it's stored
-    } else {
-      drivePickerStore.setSelectedItem(item);
+      drivePickerStore.loadFolder(item.id); // Navigate on double click for folders
     }
   };
 
@@ -110,13 +111,25 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
             </div>
           ) : (
             <div className={styles.scrollableListContainer}>
+              <div className={styles.listActions}>
+                <>
+                  <TextButton
+                    onClick={() => drivePickerStore.startCreatingFolder()}
+                  ><span className={styles.itemIcon}>➕</span><span className={styles.itemName}>Создать папку</span></TextButton>
+                  <TextButton
+                    onClick={() => drivePickerStore.startDeletingItem(drivePickerStore.selectedItem!)}
+                    disabled={!drivePickerStore.selectedItem}
+                  > Удалить </TextButton>
+                </>
+              </div>
               <List>
-                <ListItem onClick={() => drivePickerStore.startCreatingFolder()}>
-                  <span className={styles.itemIcon}>➕</span>
-                  <span className={styles.itemName}>Создать папку</span>
-                </ListItem>
                 {drivePickerStore.items.map((item) => (
-                  <ListItem key={item.id} onClick={() => handleItemClick(item)}>
+                  <ListItem
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    onDoubleClick={item.mimeType === 'application/vnd.google-apps.folder' ? () => handleItemDoubleClick(item) : undefined}
+                    selected={drivePickerStore.selectedItem?.id === item.id}
+                  >
                     <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
                     <span className={styles.itemName}>{item.name}</span>
                   </ListItem>
@@ -159,13 +172,25 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
             </div>
           ) : (
             <div className={styles.scrollableListContainer}>
+              <div className={styles.listActions}>
+                <>
+                  <TextButton
+                    onClick={() => drivePickerStore.startCreatingFolder()}
+                  ><span className={styles.itemIcon}>➕</span><span className={styles.itemName}>Создать папку</span></TextButton>
+                  <TextButton
+                    onClick={() => drivePickerStore.startDeletingItem(drivePickerStore.selectedItem!)}
+                    disabled={!drivePickerStore.selectedItem}
+                  > Удалить </TextButton>
+                </>
+              </div>
               <List>
-                <ListItem onClick={() => drivePickerStore.startCreatingFolder()}>
-                  <span className={styles.itemIcon}>➕</span>
-                  <span className={styles.itemName}>Создать папку</span>
-                </ListItem>
                 {drivePickerStore.items.map((item) => (
-                  <ListItem key={item.id} onClick={() => handleItemClick(item)}>
+                  <ListItem
+                    key={item.id}
+                    onClick={() => handleItemClick(item)}
+                    onDoubleClick={item.mimeType === 'application/vnd.google-apps.folder' ? () => handleItemDoubleClick(item) : undefined}
+                    selected={drivePickerStore.selectedItem?.id === item.id}
+                  >
                     <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
                     <span className={styles.itemName}>{item.name}</span>
                   </ListItem>
@@ -180,6 +205,16 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
           <TextButton onClick={handleSelectClick} disabled={!drivePickerStore.selectedItem}>Выбрать</TextButton>
         </div>
       </div>
+
+      <Modal open={drivePickerStore.isConfirmingDelete} onClose={drivePickerStore.cancelDeletingItem}>
+        <div className={styles.deleteConfirmationContainer}>
+          <p>Вы действительно хотите удалить {drivePickerStore.itemToDelete?.name}?</p>
+          <DialogActions>
+            <TextButton onClick={() => drivePickerStore.cancelDeletingItem()}>Нет</TextButton>
+            <TextButton onClick={() => drivePickerStore.deleteItem()}>Да</TextButton>
+          </DialogActions>
+        </div>
+      </Modal>
     </Modal>
   );
 });

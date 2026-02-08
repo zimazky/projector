@@ -17,6 +17,8 @@ export class DrivePickerStore {
   isCreatingFolder: boolean = false;
   newFolderName: string = '';
   currentFolderMetadata: DriveFileMetadata | null = null;
+  isConfirmingDelete: boolean = false;
+  itemToDelete: DriveFileMetadata | null = null;
   currentSpace: string = 'drive'; // 'drive' or 'appDataFolder'
   lastVisitedFolders: Map<string, { folderId: string, path: PathSegment[] }>;
 
@@ -64,6 +66,38 @@ export class DrivePickerStore {
     }
   }
 
+  startDeletingItem(item: DriveFileMetadata) {
+    this.isConfirmingDelete = true;
+    this.itemToDelete = item;
+  }
+
+  cancelDeletingItem() {
+    this.isConfirmingDelete = false;
+    this.itemToDelete = null;
+  }
+
+  async deleteItem() {
+    if (!this.itemToDelete) return;
+
+    this.isLoading = true;
+    this.error = null;
+    try {
+      await this.googleApiService.deleteItem(this.itemToDelete.id);
+      runInAction(() => {
+        this.isConfirmingDelete = false;
+        this.itemToDelete = null;
+        this.isLoading = false; // Reset isLoading before loading the folder
+        this.loadFolder(this.currentFolderId, this.currentSpace);
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message || 'Ошибка при удалении элемента.';
+        console.error('Error deleting item:', err);
+        this.isLoading = false; // Ensure isLoading is reset on error
+      });
+    }
+  }
+
   /**
    * Загружает содержимое папки с Google Drive.
    * @param folderId ID папки для загрузки.
@@ -79,6 +113,7 @@ export class DrivePickerStore {
       this.isLoading = true;
       this.error = null;
       this.items = [];
+      this.selectedItem = null; // Очищаем выбранный элемент при загрузке новой папки
       this.currentSpace = targetSpace; // Update current space
     });
 

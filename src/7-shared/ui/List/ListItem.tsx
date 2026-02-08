@@ -4,14 +4,16 @@ import styles from './ListItem.module.css'
 type ListItemProps = {
   disabled?: boolean
   onClick?: React.MouseEventHandler
+  onDoubleClick?: React.MouseEventHandler
   children?: React.ReactNode
+  selected?: boolean
 }
 
 const ListItem: React.FC<ListItemProps> = (props) => {
-  const {disabled=false, children='ListItem', onClick = ()=>{}, ...rest} = props
+  const {disabled=false, children='ListItem', onClick = ()=>{}, onDoubleClick = ()=>{}, selected=false, ...rest} = props
 
   return (
-    <li className={styles.item} {...rest}
+    <li className={`${styles.item} ${selected ? styles.selected : ''}`} {...rest}
       onPointerDown={e => {
         if(!e.isPrimary) return
         createRipple(e)
@@ -21,6 +23,7 @@ const ListItem: React.FC<ListItemProps> = (props) => {
         removeRipple(e)
       }}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       onPointerLeave={e=>{
         if(!e.isPrimary) return
         removeRipple(e)

@@ -40,3 +40,7 @@
   from { transform: scale(0); }
   to { transform: scale(1); }
 }
+
+.item.selected {
+  background-color: var(--color-primary-light);
+}

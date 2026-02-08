@@ -11,7 +11,7 @@ const TextButton: React.FC<TextButtonProps> = (props) => {
   const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
 
   return (
-    <button className={styles.button} type='button' {...rest}
+    <button className={styles.button} type='button' disabled={disabled} {...rest}
       tabIndex={-1}
       onPointerDown={e => {
         if(!e.isPrimary) return
@@ -21,7 +21,11 @@ const TextButton: React.FC<TextButtonProps> = (props) => {
         if(!e.isPrimary) return
         removeRipple(e)
       }}
-      onClick={onClick}
+      onClick={(e) => {
+        if (!disabled) {
+          onClick(e);
+        }
+      }}
       onPointerLeave={e=>{
         if(!e.isPrimary) return
         removeRipple(e)

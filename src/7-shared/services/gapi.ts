@@ -123,12 +123,12 @@ export default class GAPI {
     return google.accounts.oauth2.hasGrantedAllScopes(gapi.client.getToken() as google.accounts.oauth2.TokenResponse, scope, ...scopes)
   }
 
-  static async createFileOrFolder(name: string, mimeType: string = 'text/plain', parentFolderId: string = 'appDataFolder') {
+  static async createFileOrFolder(name: string, mimeType: string = 'text/plain', parents: string[]) {
     const resp = await prom(gapi.client.drive.files.create, {
       resource: {
         name: name,
         mimeType: mimeType,
-        parents: [parentFolderId]
+        parents: parents
       },
       fields: 'id, name, mimeType, parents, iconLink, webViewLink'
     })
@@ -172,13 +172,9 @@ export default class GAPI {
     // Build the effective query string
     let effectiveQueryParts: string[] = ['trashed = false']; // Always filter out trashed files
 
-    if (folderId && folderId !== 'appDataFolder' && (spaces === 'drive' || spaces === 'appDataFolder')) {
+    if (folderId) { // If a specific folderId is provided (could be 'root', 'appDataFolder', or a subfolder ID)
       effectiveQueryParts.unshift(`'${folderId}' in parents`);
     }
-    // If spaces is 'appDataFolder', we do NOT add 'in parents' for the appDataFolder itself.
-    // If folderId is provided when spaces is 'appDataFolder', it would imply a subfolder,
-    // which is not directly supported by current listFolderContents for appDataFolder.
-    // So for appDataFolder, 'folderId' (if 'appDataFolder' itself) won't be used in 'q'.
 
     if (query) {
       effectiveQueryParts.push(`(${query})`); // Add additional query if present
@@ -207,12 +203,8 @@ export default class GAPI {
     spaces: string = 'drive' // Add spaces parameter here
   ): Promise<DriveFileMetadata[]> {
     const query = ''; // Пустой запрос, если нужно просто получить все
-    // If folderId is 'appDataFolder', then we search in 'appDataFolder' space.
-    // We pass null for folderId in GAPI.find to prevent adding 'appDataFolder' in parents clause in 'q'.
-    if (folderId === 'appDataFolder') {
-        return GAPI.find(query, null, fields, 'appDataFolder'); // Explicitly set spaces
-    }
-    return GAPI.find(query, folderId, fields, spaces); // Pass spaces
+    // Always pass folderId to GAPI.find, it will handle construction of 'q'
+    return GAPI.find(query, folderId, fields, spaces);
   }
 
   /** Получение метаданных файла или папки по его ID */

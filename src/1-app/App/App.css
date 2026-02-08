@@ -13,4 +13,5 @@
 :root{
   --ui-backgroung-color: white;
   --ui-border-focus-color: #1976d2;
+  --color-primary-light: #BBDEFB; /* Light blue for selected items */
 }

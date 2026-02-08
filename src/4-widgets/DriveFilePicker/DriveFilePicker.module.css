@@ -84,3 +84,31 @@
   justify-content: flex-end;
   width: 100%;
 }
+
+.deleteConfirmationContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  min-width: 300px;
+  align-items: center;
+}
+
+.listActions {
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between buttons */
+  margin-bottom: 10px; /* Space below actions */
+  padding: 5px;
+  border-bottom: 1px solid #eee; /* Separator for the action buttons */
+}
+
+.createFolderButton {
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 5px;
+}
+
+.selectedItem {
+  background-color: #e0e0e0; /* A subtle grey to indicate selection */
+}
