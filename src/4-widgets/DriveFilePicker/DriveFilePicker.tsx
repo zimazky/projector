@@ -23,29 +23,21 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
   const [drivePickerStore] = React.useState(() => new DrivePickerStore(googleApiService));
   const [activeTab, setActiveTab] = React.useState(0); // 0 for My Drive, 1 for App Data Folder
 
-  const loadContentForTab = (tabIndex: number) => {
-    if (tabIndex === 0) {
-      drivePickerStore.loadFolder('root', 'drive');
-    } else {
-      drivePickerStore.loadFolder('appDataFolder', 'appDataFolder');
-    }
-  };
-
   React.useEffect(() => {
     if (isOpen) {
       if (activeTab === 0) {
-        drivePickerStore.reset('drive', 'root', 'Мой диск');
+        drivePickerStore.reset('drive');
       } else {
-        drivePickerStore.reset('appDataFolder', 'appDataFolder', 'Раздел приложения');
+        drivePickerStore.reset('appDataFolder');
       }
-      loadContentForTab(activeTab);
     }
   }, [isOpen, drivePickerStore, activeTab]);
+
 
   const handleItemClick = (item: DriveFileMetadata) => {
     // When clicking an item, the currentSpace from the store should be used for subfolder navigation
     if (item.mimeType === 'application/vnd.google-apps.folder') {
-      drivePickerStore.loadFolder(item.id, drivePickerStore.currentSpace);
+      drivePickerStore.loadFolder(item.id); // No need to pass currentSpace explicitly here, it's stored
     } else {
       drivePickerStore.selectFile(item);
     }
@@ -59,17 +51,16 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
   };
 
   const handleBreadcrumbClick = (folderId: string) => {
-    drivePickerStore.loadFolder(folderId, drivePickerStore.currentSpace);
+    drivePickerStore.loadFolder(folderId); // No need to pass currentSpace explicitly here, it's stored
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     if (newValue === 0) {
-      drivePickerStore.reset('drive', 'root', 'Мой диск');
+      drivePickerStore.reset('drive');
     } else {
-      drivePickerStore.reset('appDataFolder', 'appDataFolder', 'Раздел приложения');
+      drivePickerStore.reset('appDataFolder');
     }
-    // loadContentForTab will be called by useEffect due to activeTab change
   };
 
   return (
