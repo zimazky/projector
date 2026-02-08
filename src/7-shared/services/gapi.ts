@@ -1,6 +1,7 @@
 const API_KEY: string = process.env.API_KEY ?? ''
 const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
-const SCOPES = 'https://www.googleapis.com/auth/drive.appfolder'
+
+const SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.appfolder'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
 /** Хелпер-функция, оборачиваюая в Promise вызовы Google API */
@@ -15,14 +16,6 @@ function prom(gapiCall: (arg: any)=>Promise<any>, argObj: any) {
         gapi.client.setToken(null) // Сброс токена
         expiredTokenHandle()
         reject(err)
-        /*
-        GAPI.logIn('consent').then(()=>{
-          console.log('retry') 
-          gapiCall(argObj)
-          .then(resp => resolve(resp))
-          .catch(err => reject(err))
-        })
-        */
       } else reject(err)
     })
   })
@@ -44,6 +37,15 @@ function loadScriptPromise(url: string) {
 let onLogIn = (value?: unknown)=>{}
 
 let expiredTokenHandle = ()=>{}
+
+export interface DriveFileMetadata {
+  id: string;
+  name: string;
+  mimeType: string;
+  parents?: string[];
+  iconLink?: string;
+  webViewLink?: string;
+}
 
 /** Класс статических методов для работы с Google API */
 export default class GAPI {
@@ -163,25 +165,62 @@ export default class GAPI {
   }
 
   /** Получение списка файлов, соответствующих запросу query */
-  static async find(query: string) {
-    let ret: any[] = []
-    let token: any
+  static async find(
+    query: string,
+    folderId: string | null = null, // null означает не фильтровать по родителям
+    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink', // Default fields without 'files()' wrapper
+    spaces: string = 'drive' // По умолчанию искать в основном диске пользователя
+  ): Promise<DriveFileMetadata[]> {
+    let ret: DriveFileMetadata[] = []
+    let token: string | undefined
+
+    // Build the effective query string
+    let effectiveQueryParts: string[] = ['trashed = false']; // Always filter out trashed files
+
+    if (folderId) {
+      effectiveQueryParts.unshift(`'${folderId}' in parents`); // 'in parents' clause should usually come first
+    }
+
+    if (query) {
+      effectiveQueryParts.push(`(${query})`); // Add additional query if present
+    }
+    const effectiveQuery = effectiveQueryParts.join(' and ');
+
+    // Determine the final 'spaces' parameter
+    // If folderId is 'root', force spaces to 'drive'. Otherwise, use provided 'spaces' or 'drive'.
+    const finalSpaces = (folderId === 'root' || folderId === null) ? 'drive' : spaces;
+
     do {
       const resp = await prom(gapi.client.drive.files.list, {
-        // вместо 'appDataFolder' можно использовать ID папки
-        spaces: 'appDataFolder',
-        fields: 'files(id, name), nextPageToken',
+        q: effectiveQuery,
+        spaces: finalSpaces, // Use the dynamically determined spaces
+        fields: `nextPageToken, files(${fields})`, // Explicitly wrap fields with 'files()'
         pageSize: 100,
         pageToken: token,
-        orderBy: 'createdTime',
-        q: query
+        orderBy: 'folder,name asc' // Сортировка сначала папки, потом по имени
       })
-      ret = ret.concat(resp.result.files)
+      ret = ret.concat(resp.result.files as DriveFileMetadata[])
       token = resp.result.nextPageToken
     } while (token)
-    // результат: массив объектов вида [{id: '...', name: '...'}], 
-    // отсортированных по времени создания
     return ret
+  }
+
+  /** Получение содержимого папки */
+  static async listFolderContents(
+    folderId: string = 'root',
+    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink' // Pass the same raw fields
+  ): Promise<DriveFileMetadata[]> {
+    const query = ''; // Пустой запрос, если нужно просто получить все
+    return GAPI.find(query, folderId, fields);
+  }
+
+  /** Получение метаданных файла или папки по его ID */
+  static async getFileMetadata(fileId: string): Promise<DriveFileMetadata> {
+    const resp = await prom(gapi.client.drive.files.get, {
+      fileId: fileId,
+      fields: 'id, name, mimeType, parents, iconLink, webViewLink'
+    });
+    return resp.result as DriveFileMetadata;
   }
 
   /** Удаление файла */

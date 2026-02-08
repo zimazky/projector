@@ -1,4 +1,4 @@
-import GAPI from './gapi'
+import GAPI, { DriveFileMetadata } from './gapi'
 import { makeAutoObservable, runInAction } from 'mobx'
 
 /**
@@ -56,6 +56,38 @@ export class GoogleApiService {
    */
   isLoggedIn = (): boolean => {
     return GAPI.isLoggedIn()
+  }
+
+  /**
+   * Получает содержимое указанной папки Google Drive.
+   * Если пользователь не авторизован, попытается авторизоваться.
+   * @param folderId ID папки для получения содержимого. По умолчанию 'root'.
+   * @returns Promise с массивом метаданных файлов.
+   */
+  async listDriveFolderContents(folderId: string = 'root'): Promise<DriveFileMetadata[]> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+    return GAPI.listFolderContents(folderId);
+  }
+
+  /**
+   * Получает метаданные файла или папки по его ID.
+   * Если пользователь не авторизован, попытается авторизоваться.
+   * @param fileId ID файла или папки.
+   * @returns Promise с метаданными файла.
+   */
+  async getFileMetadata(fileId: string): Promise<DriveFileMetadata> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+    return GAPI.getFileMetadata(fileId);
   }
 }
 

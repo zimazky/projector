@@ -1,0 +1,61 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 380px;
+  min-height: 150px;
+  width: 50vw;
+  /*height: 80vh; /*calc(80vh - 100px);*/
+  padding: 10px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.9em;
+  color: #666;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.breadcrumbItem {
+  cursor: pointer;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.breadcrumbItem:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbSeparator {
+  margin: 0 5px;
+  color: #aaa;
+}
+
+.error {
+  color: red;
+  padding: 10px;
+  border: 1px solid red;
+  background-color: #ffebeb;
+  margin-bottom: 10px;
+}
+
+.itemIcon {
+  margin-right: 10px;
+}
+
+.itemName {
+  flex-grow: 1;
+}
+
+.scrollableListContainer {
+  height: 60vh;
+  overflow-y: auto;
+}
+
+.actions {
+  padding-top: 10px;
+  text-align: right;
+}
