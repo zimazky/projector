@@ -6,7 +6,10 @@ async function getCachedFileId(filename: string): Promise<string | null> {
   if(fileId !== null) return fileId
   const files = await GAPI.find(`name = "${filename}"`)
   if(files.length > 0) fileId = files[0].id
-  else fileId = await GAPI.createEmptyFile(filename)
+  else {
+    const newFile = await GAPI.createFileOrFolder(filename, 'text/plain');
+    fileId = newFile.id;
+  }
   if(fileId === null) return null
   localStorage.setItem(filename, fileId)
   return fileId

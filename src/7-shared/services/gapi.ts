@@ -1,7 +1,7 @@
 const API_KEY: string = process.env.API_KEY ?? ''
 const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
-const SCOPES = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.appfolder'
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.appfolder'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
 /** Хелпер-функция, оборачиваюая в Promise вызовы Google API */
@@ -123,21 +123,16 @@ export default class GAPI {
     return google.accounts.oauth2.hasGrantedAllScopes(gapi.client.getToken() as google.accounts.oauth2.TokenResponse, scope, ...scopes)
   }
 
-  /** Создание файла в папке приложения appDataFolder */
-  static async createEmptyFile(name: string, mimeType: string = 'text/plain') {
+  static async createFileOrFolder(name: string, mimeType: string = 'text/plain', parentFolderId: string = 'appDataFolder') {
     const resp = await prom(gapi.client.drive.files.create, {
       resource: {
         name: name,
-        // для создания папки используйте
-        // mimeType = 'application/vnd.google-apps.folder'
         mimeType: mimeType,
-        // вместо 'appDataFolder' можно использовать ID папки
-        parents: ['appDataFolder']
+        parents: [parentFolderId]
       },
-      fields: 'id'
+      fields: 'id, name, mimeType, parents, iconLink, webViewLink'
     })
-    // функция возвращает строку — идентификатор нового файла
-    return resp.result.id
+    return resp.result as DriveFileMetadata
   }
 
   /** Запись содержимого content в файл, заданный идентификатором fileId */
@@ -177,7 +172,7 @@ export default class GAPI {
     // Build the effective query string
     let effectiveQueryParts: string[] = ['trashed = false']; // Always filter out trashed files
 
-    if (spaces === 'drive' && folderId) { // Only add 'in parents' if in 'drive' space and folderId is provided
+    if (folderId && folderId !== 'appDataFolder' && (spaces === 'drive' || spaces === 'appDataFolder')) {
       effectiveQueryParts.unshift(`'${folderId}' in parents`);
     }
     // If spaces is 'appDataFolder', we do NOT add 'in parents' for the appDataFolder itself.

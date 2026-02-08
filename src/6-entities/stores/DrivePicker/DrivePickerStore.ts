@@ -13,7 +13,10 @@ export class DrivePickerStore {
   items: DriveFileMetadata[] = []; // Массив объектов, представляющих файлы и папки в текущей папке
   isLoading: boolean = false; // Флаг состояния загрузки
   error: string | null = null; // Сообщение об ошибке, если есть
-  selectedFile: DriveFileMetadata | null = null; // Выбранный файл
+  selectedItem: DriveFileMetadata | null = null; // Выбранный элемент (файл или папка)
+  isCreatingFolder: boolean = false;
+  newFolderName: string = '';
+  currentFolderMetadata: DriveFileMetadata | null = null;
   currentSpace: string = 'drive'; // 'drive' or 'appDataFolder'
   lastVisitedFolders: Map<string, { folderId: string, path: PathSegment[] }>;
 
@@ -25,6 +28,40 @@ export class DrivePickerStore {
     this.lastVisitedFolders = new Map();
     this.lastVisitedFolders.set('drive', { folderId: 'root', path: [{ id: 'root', name: 'Мой диск' }] });
     this.lastVisitedFolders.set('appDataFolder', { folderId: 'appDataFolder', path: [{ id: 'appDataFolder', name: 'Раздел приложения' }] });
+  }
+
+  setNewFolderName(name: string) {
+    this.newFolderName = name;
+  }
+
+  startCreatingFolder() {
+    this.isCreatingFolder = true;
+    this.newFolderName = ''; // Clear previous name
+  }
+
+  cancelCreatingFolder() {
+    this.isCreatingFolder = false;
+    this.newFolderName = '';
+  }
+
+  async createFolder() {
+    this.isLoading = true;
+    this.error = null;
+    try {
+      const newFolder = await this.googleApiService.createFolder(this.newFolderName, this.currentFolderId);
+      runInAction(() => {
+        this.isCreatingFolder = false;
+        this.newFolderName = '';
+        this.isLoading = false; // Reset isLoading before loading the folder
+        this.loadFolder(this.currentFolderId, this.currentSpace);
+      });
+    } catch (err: any) {
+      runInAction(() => {
+        this.error = err.message || 'Ошибка при создании папки.';
+        console.error('Error creating folder:', err);
+        this.isLoading = false; // Ensure isLoading is reset on error
+      });
+    }
   }
 
   /**
@@ -47,10 +84,13 @@ export class DrivePickerStore {
 
     try {
       const driveItems = await this.googleApiService.listDriveFolderContents(folderId, undefined, targetSpace);
+      const currentFolderMetadata = await this.googleApiService.getFileMetadata(folderId);
 
       runInAction(() => {
         this.currentFolderId = folderId;
+        this.currentFolderMetadata = currentFolderMetadata;
         this.items = driveItems;
+
 
         // Обновляем currentPath
         // Если это первая загрузка для пространства или переключение вкладок,
@@ -120,11 +160,11 @@ export class DrivePickerStore {
   }
 
   /**
-   * Выбирает файл.
-   * @param file Выбранный файл.
+   * Устанавливает выбранный элемент (файл или папку).
+   * @param item Выбранный элемент.
    */
-  selectFile(file: DriveFileMetadata) {
-    this.selectedFile = file;
+  setSelectedItem(item: DriveFileMetadata) {
+    this.selectedItem = item;
   }
 
   /**
@@ -143,7 +183,7 @@ export class DrivePickerStore {
         this.items = [];
         this.isLoading = false;
         this.error = null;
-        this.selectedFile = null;
+        this.selectedItem = null;
     });
 
     // Загружаем содержимое последней посещенной папки

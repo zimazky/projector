@@ -93,6 +93,16 @@ export class GoogleApiService {
     }
     return GAPI.getFileMetadata(fileId);
   }
+
+  async createFolder(name: string, parentFolderId: string): Promise<DriveFileMetadata> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+    return GAPI.createFileOrFolder(name, 'application/vnd.google-apps.folder', parentFolderId);
+  }
 }
 
 

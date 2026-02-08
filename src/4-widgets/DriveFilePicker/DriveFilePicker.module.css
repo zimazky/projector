@@ -70,3 +70,17 @@
   padding-top: 10px;
   text-align: right;
 }
+
+.createFolderContainer {
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+  align-items: center;
+  min-height: 150px;
+}
+
+.createFolderContainer .dialogActions {
+  padding-top: 15px;
+  justify-content: flex-end;
+  width: 100%;
+}

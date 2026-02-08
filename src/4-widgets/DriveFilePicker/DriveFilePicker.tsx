@@ -4,6 +4,8 @@ import Modal from 'src/7-shared/ui/Modal/Modal';
 import TextButton from 'src/7-shared/ui/Button/TextButton';
 import Tabs from 'src/7-shared/ui/Tabs/Tabs';
 import TabPanel from 'src/7-shared/ui/Tabs/TabPanel';
+import TextField from 'src/7-shared/ui/TextField/TextField';
+import DialogActions from 'src/7-shared/ui/Dialog/DialogActions';
 import List from 'src/7-shared/ui/List/List';
 import ListItem from 'src/7-shared/ui/List/ListItem';
 import Spinner from 'src/7-shared/ui/Spinner/Spinner';
@@ -39,13 +41,13 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
     if (item.mimeType === 'application/vnd.google-apps.folder') {
       drivePickerStore.loadFolder(item.id); // No need to pass currentSpace explicitly here, it's stored
     } else {
-      drivePickerStore.selectFile(item);
+      drivePickerStore.setSelectedItem(item);
     }
   };
 
   const handleSelectClick = () => {
-    if (drivePickerStore.selectedFile) {
-      onSelect(drivePickerStore.selectedFile);
+    if (drivePickerStore.selectedItem) {
+      onSelect(drivePickerStore.selectedItem);
       onClose();
     }
   };
@@ -89,16 +91,39 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
               </React.Fragment>
             ))}
           </div>
-          <div className={styles.scrollableListContainer}>
-            <List>
-              {drivePickerStore.items.map((item) => (
-                <ListItem key={item.id} onClick={() => handleItemClick(item)}>
-                  <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
-                  <span className={styles.itemName}>{item.name}</span>
+          {drivePickerStore.isCreatingFolder ? (
+            <div className={styles.createFolderContainer}>
+              <TextField
+                label="Имя новой папки"
+                value={drivePickerStore.newFolderName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => drivePickerStore.setNewFolderName(e.target.value)}
+              />
+              <DialogActions>
+                <TextButton onClick={() => drivePickerStore.cancelCreatingFolder()}>Отмена</TextButton>
+                <TextButton
+                  onClick={() => drivePickerStore.createFolder()}
+                  disabled={!drivePickerStore.newFolderName.trim()}
+                >
+                  Создать
+                </TextButton>
+              </DialogActions>
+            </div>
+          ) : (
+            <div className={styles.scrollableListContainer}>
+              <List>
+                <ListItem onClick={() => drivePickerStore.startCreatingFolder()}>
+                  <span className={styles.itemIcon}>➕</span>
+                  <span className={styles.itemName}>Создать папку</span>
                 </ListItem>
-              ))}
-            </List>
-          </div>
+                {drivePickerStore.items.map((item) => (
+                  <ListItem key={item.id} onClick={() => handleItemClick(item)}>
+                    <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
+                    <span className={styles.itemName}>{item.name}</span>
+                  </ListItem>
+                ))}
+              </List>
+            </div>
+          )}
         </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
@@ -115,21 +140,44 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
               </React.Fragment>
             ))}
           </div>
-          <div className={styles.scrollableListContainer}>
-            <List>
-              {drivePickerStore.items.map((item) => (
-                <ListItem key={item.id} onClick={() => handleItemClick(item)}>
-                  <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
-                  <span className={styles.itemName}>{item.name}</span>
+          {drivePickerStore.isCreatingFolder ? (
+            <div className={styles.createFolderContainer}>
+              <TextField
+                label="Имя новой папки"
+                value={drivePickerStore.newFolderName}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => drivePickerStore.setNewFolderName(e.target.value)}
+              />
+              <DialogActions>
+                <TextButton onClick={() => drivePickerStore.cancelCreatingFolder()}>Отмена</TextButton>
+                <TextButton
+                  onClick={() => drivePickerStore.createFolder()}
+                  disabled={!drivePickerStore.newFolderName.trim()}
+                >
+                  Создать
+                </TextButton>
+              </DialogActions>
+            </div>
+          ) : (
+            <div className={styles.scrollableListContainer}>
+              <List>
+                <ListItem onClick={() => drivePickerStore.startCreatingFolder()}>
+                  <span className={styles.itemIcon}>➕</span>
+                  <span className={styles.itemName}>Создать папку</span>
                 </ListItem>
-              ))}
-            </List>
-          </div>
+                {drivePickerStore.items.map((item) => (
+                  <ListItem key={item.id} onClick={() => handleItemClick(item)}>
+                    <span className={styles.itemIcon}>{item.mimeType === 'application/vnd.google-apps.folder' ? '📁' : '📄'}</span>
+                    <span className={styles.itemName}>{item.name}</span>
+                  </ListItem>
+                ))}
+              </List>
+            </div>
+          )}
         </TabPanel>
 
         <div className={styles.actions}>
           <TextButton onClick={onClose}>Отмена</TextButton>
-          <TextButton onClick={handleSelectClick} disabled={!drivePickerStore.selectedFile}>Выбрать</TextButton>
+          <TextButton onClick={handleSelectClick} disabled={!drivePickerStore.selectedItem}>Выбрать</TextButton>
         </div>
       </div>
     </Modal>
