@@ -38,20 +38,13 @@ export default ListItem
 function createRipple(event: React.MouseEvent) {
   const tab = event.currentTarget as HTMLElement
 
-  let offsetLeft = tab.offsetLeft
-  let offsetTop = tab.offsetTop
-  let parent: HTMLElement | null = tab.offsetParent as HTMLElement
-  while(parent) {
-    offsetLeft += parent.offsetLeft
-    offsetTop += parent.offsetTop
-    parent = parent.offsetParent as HTMLElement
-  }
+  const rect = tab.getBoundingClientRect()
   const circle = document.createElement('span')
   const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
 
   circle.style.width = circle.style.height = `${2*radius}px`
-  circle.style.left = `${event.clientX - offsetLeft - radius}px`
-  circle.style.top = `${event.clientY - offsetTop - radius}px`
+  circle.style.left = `${event.clientX - rect.left - radius}px`
+  circle.style.top = `${event.clientY - rect.top - radius}px`
   circle.classList.add(styles.ripple, styles.clicked)
 
   tab.appendChild(circle)

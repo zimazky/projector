@@ -64,14 +64,18 @@ export class GoogleApiService {
    * @param folderId ID папки для получения содержимого. По умолчанию 'root'.
    * @returns Promise с массивом метаданных файлов.
    */
-  async listDriveFolderContents(folderId: string = 'root'): Promise<DriveFileMetadata[]> {
+  async listDriveFolderContents(
+    folderId: string = 'root',
+    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink',
+    spaces: string = 'drive'
+  ): Promise<DriveFileMetadata[]> {
     if (!this.isGoogleLoggedIn) {
       await this.logIn();
       if (!this.isGoogleLoggedIn) {
         throw new Error("User not logged in to Google.");
       }
     }
-    return GAPI.listFolderContents(folderId);
+    return GAPI.listFolderContents(folderId, fields, spaces);
   }
 
   /**

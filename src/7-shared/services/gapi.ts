@@ -169,7 +169,7 @@ export default class GAPI {
     query: string,
     folderId: string | null = null, // null означает не фильтровать по родителям
     fields: string = 'id, name, mimeType, parents, iconLink, webViewLink', // Default fields without 'files()' wrapper
-    spaces: string = 'drive' // По умолчанию искать в основном диске пользователя
+    spaces: string = 'drive' // spaces parameter now passed directly from listFolderContents
   ): Promise<DriveFileMetadata[]> {
     let ret: DriveFileMetadata[] = []
     let token: string | undefined
@@ -177,23 +177,23 @@ export default class GAPI {
     // Build the effective query string
     let effectiveQueryParts: string[] = ['trashed = false']; // Always filter out trashed files
 
-    if (folderId) {
-      effectiveQueryParts.unshift(`'${folderId}' in parents`); // 'in parents' clause should usually come first
+    if (spaces === 'drive' && folderId) { // Only add 'in parents' if in 'drive' space and folderId is provided
+      effectiveQueryParts.unshift(`'${folderId}' in parents`);
     }
+    // If spaces is 'appDataFolder', we do NOT add 'in parents' for the appDataFolder itself.
+    // If folderId is provided when spaces is 'appDataFolder', it would imply a subfolder,
+    // which is not directly supported by current listFolderContents for appDataFolder.
+    // So for appDataFolder, 'folderId' (if 'appDataFolder' itself) won't be used in 'q'.
 
     if (query) {
       effectiveQueryParts.push(`(${query})`); // Add additional query if present
     }
     const effectiveQuery = effectiveQueryParts.join(' and ');
 
-    // Determine the final 'spaces' parameter
-    // If folderId is 'root', force spaces to 'drive'. Otherwise, use provided 'spaces' or 'drive'.
-    const finalSpaces = (folderId === 'root' || folderId === null) ? 'drive' : spaces;
-
     do {
       const resp = await prom(gapi.client.drive.files.list, {
         q: effectiveQuery,
-        spaces: finalSpaces, // Use the dynamically determined spaces
+        spaces: spaces, // Use the provided spaces directly
         fields: `nextPageToken, files(${fields})`, // Explicitly wrap fields with 'files()'
         pageSize: 100,
         pageToken: token,
@@ -208,10 +208,16 @@ export default class GAPI {
   /** Получение содержимого папки */
   static async listFolderContents(
     folderId: string = 'root',
-    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink' // Pass the same raw fields
+    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink',
+    spaces: string = 'drive' // Add spaces parameter here
   ): Promise<DriveFileMetadata[]> {
     const query = ''; // Пустой запрос, если нужно просто получить все
-    return GAPI.find(query, folderId, fields);
+    // If folderId is 'appDataFolder', then we search in 'appDataFolder' space.
+    // We pass null for folderId in GAPI.find to prevent adding 'appDataFolder' in parents clause in 'q'.
+    if (folderId === 'appDataFolder') {
+        return GAPI.find(query, null, fields, 'appDataFolder'); // Explicitly set spaces
+    }
+    return GAPI.find(query, folderId, fields, spaces); // Pass spaces
   }
 
   /** Получение метаданных файла или папки по его ID */

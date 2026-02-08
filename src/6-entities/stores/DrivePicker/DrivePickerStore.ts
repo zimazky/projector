@@ -14,6 +14,7 @@ export class DrivePickerStore {
   isLoading: boolean = false; // Флаг состояния загрузки
   error: string | null = null; // Сообщение об ошибке, если есть
   selectedFile: DriveFileMetadata | null = null; // Выбранный файл
+  currentSpace: string = 'drive'; // 'drive' or 'appDataFolder'
 
   private googleApiService: GoogleApiService;
 
@@ -25,31 +26,42 @@ export class DrivePickerStore {
   /**
    * Загружает содержимое папки с Google Drive.
    * @param folderId ID папки для загрузки.
+   * @param space Пространство Google Drive (например, 'drive' или 'appDataFolder').
    */
-  async loadFolder(folderId: string) {
+  async loadFolder(folderId: string, space?: string) {
     if (this.isLoading) return;
+
+    // Use the explicitly passed space, or currentSpace, or default to drive
+    const targetSpace = space || this.currentSpace;
 
     runInAction(() => {
       this.isLoading = true;
       this.error = null;
       this.items = [];
+      this.currentSpace = targetSpace; // Update current space
     });
 
     try {
-      const driveItems = await this.googleApiService.listDriveFolderContents(folderId);
+      const driveItems = await this.googleApiService.listDriveFolderContents(folderId, undefined, targetSpace);
 
       runInAction(() => {
         this.currentFolderId = folderId;
         this.items = driveItems;
 
         // Обновляем currentPath
-        if (folderId === 'root') {
-          this.currentPath = [{ id: 'root', name: 'Мой диск' }];
+        // Если это первая загрузка для пространства или переключение вкладок,
+        // инициализируем путь
+        const isInitialLoadForSpace = (folderId === 'root' && targetSpace === 'drive') || (folderId === 'appDataFolder' && targetSpace === 'appDataFolder');
+
+        if (isInitialLoadForSpace) {
+          this.currentPath = [{ 
+            id: folderId, 
+            name: targetSpace === 'drive' ? 'Мой диск' : 'Раздел приложения' 
+          }];
         } else {
           const existingPathIndex = this.currentPath.findIndex(segment => segment.id === folderId);
           if (existingPathIndex === -1) {
-            // Если папка не 'root' и не в пути, получаем ее имя и добавляем в путь
-            // Это требует получения метаданных самой папки
+            // Если папка не 'root'/'appDataFolder' и не в пути, получаем ее имя и добавляем в путь
             this.googleApiService.getFileMetadata(folderId)
               .then(metadata => {
                 runInAction(() => {
@@ -86,7 +98,7 @@ export class DrivePickerStore {
   async navigateUp() {
     if (this.currentPath.length > 1) {
       const parentFolder = this.currentPath[this.currentPath.length - 2];
-      await this.loadFolder(parentFolder.id);
+      await this.loadFolder(parentFolder.id, this.currentSpace); // Pass currentSpace
       runInAction(() => {
         this.currentPath.pop(); // Удаляем текущую папку из пути
       });
@@ -103,10 +115,14 @@ export class DrivePickerStore {
 
   /**
    * Сбрасывает состояние пикера.
+   * @param initialSpace Пространство для инициализации (например, 'drive' или 'appDataFolder').
+   * @param initialFolderId ID начальной папки.
+   * @param initialFolderName Имя начальной папки.
    */
-  reset() {
-    this.currentFolderId = 'root';
-    this.currentPath = [{ id: 'root', name: 'Мой диск' }];
+  reset(initialSpace: string = 'drive', initialFolderId: string = 'root', initialFolderName: string = 'Мой диск') {
+    this.currentSpace = initialSpace;
+    this.currentFolderId = initialFolderId;
+    this.currentPath = [{ id: initialFolderId, name: initialFolderName }];
     this.items = [];
     this.isLoading = false;
     this.error = null;
