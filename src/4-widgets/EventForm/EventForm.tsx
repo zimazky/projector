@@ -44,36 +44,36 @@ const EventForm: React.FC = () => {
   const {register, watch, handleSubmit, formState: {errors}} = useForm<Fields>({
     mode: 'onChange',
     defaultValues: {
-      name: eventFormStore.eventDto.name,
-      comment: eventFormStore.eventDto.comment,
-      project: eventFormStore.eventDto.project,
-      repeat: eventFormStore.eventDto.repeat,
-      start: eventFormStore.eventDto.start,
-      time: eventFormStore.eventDto.time,
-      duration: eventFormStore.eventDto.duration,
-      end: eventFormStore.eventDto.end,
-      credit: eventFormStore.eventDto.credit?.toString(),
-      debit: eventFormStore.eventDto.debit?.toString()
+      name: eventFormStore.eventData.name,
+      comment: eventFormStore.eventData.comment,
+      project: eventFormStore.eventData.project,
+      repeat: eventFormStore.eventData.repeat,
+      start: eventFormStore.eventData.start,
+      time: eventFormStore.eventData.time,
+      duration: eventFormStore.eventData.duration,
+      end: eventFormStore.eventData.end,
+      credit: eventFormStore.eventData.credit?.toString(),
+      debit: eventFormStore.eventData.debit?.toString()
     }
   })
 
-  const isNew = eventFormStore.eventDto.id !== null ? false : true
+  const isNew = eventFormStore.eventData.id !== null ? false : true
 
   const handleConfirmDelete = () => {
     if(deleteState === null) return
     if(deleteState === 'DeleteCurrentRepeatable') {
-      eventsStore.deleteCurrentRepeatableEvent(eventFormStore.eventDto.id, eventFormStore.eventDto.timestamp)
+      eventsStore.deleteCurrentRepeatableEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp)
       eventFormStore.hideForm()
     }
     else {
-      eventsStore.deleteEvent(eventFormStore.eventDto.id)
+      eventsStore.deleteEvent(eventFormStore.eventData.id)
       eventFormStore.hideForm()
     }
     setDeleteState(null)
   }
 
   const handleSaveAsSingle = handleSubmit((e) => {
-    const id = eventFormStore.eventDto.id
+    const id = eventFormStore.eventData.id
     if(id === null) return
     const eventDto: EventDto = {
       name: e.name,
@@ -87,12 +87,12 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    eventsStore.saveAsSingleEvent(id, eventFormStore.eventDto.timestamp, eventDto)
+    eventsStore.saveAsSingleEvent(id, eventFormStore.eventData.timestamp, eventDto)
     eventFormStore.hideForm()
   })
 
   const onCompleteHandle = handleSubmit((e) => {
-    const isCompleted = eventFormStore.eventDto.completed
+    const isCompleted = eventFormStore.eventData.completed
     if(isCompleted === undefined) return
     const eventDto: EventDto = {
       name: e.name,
@@ -105,14 +105,14 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventDto.id, eventDto)
-    else eventsStore.completeEvent(eventFormStore.eventDto.id, eventFormStore.eventDto.timestamp, eventDto)
+    if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventData.id, eventDto)
+    else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventDto)
     eventFormStore.hideForm()
   })
 
   // Изменение параметров события, для всех если событие повторяемое
   const onChangeEventHandle = handleSubmit((e) => {
-    const id = eventFormStore.eventDto.id
+    const id = eventFormStore.eventData.id
     if(id === null) return
     const eventDto: EventDto = {
       name: e.name,
@@ -149,7 +149,7 @@ const EventForm: React.FC = () => {
   })
 
   const isRepeat = watch().repeat ? true : false
-  const isCompleted = eventFormStore.eventDto.completed
+  const isCompleted = eventFormStore.eventData.completed
 
   return <>
   <header>
@@ -172,7 +172,7 @@ const EventForm: React.FC = () => {
         </>
         :
         <>
-          <TextButton onClick={onCompleteHandle}>{eventFormStore.eventDto.completed?'Undo':'Complete'}</TextButton>
+          <TextButton onClick={onCompleteHandle}>{eventFormStore.eventData.completed?'Undo':'Complete'}</TextButton>
           <TextButton onClick={()=>setDeleteState('Delete')}>Delete</TextButton>
           <YesCancelConfirmation open={deleteState!==null}
             onConfirm={handleConfirmDelete}

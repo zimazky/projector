@@ -17,7 +17,7 @@ export class EventFormStore {
   /** Признак отображения модальной формы на экране */
   isShow: boolean = false
   /** Данные отображаемого события */
-  eventDto: EventFormStructure = {
+  eventData: EventFormStructure = {
     id: null,
     timestamp: 0,
     name: '',
@@ -33,7 +33,7 @@ export class EventFormStore {
   hideForm = () => { this.isShow = false }
 
   setEventDto = (e: EventFormStructure) => {
-    this.eventDto = e
+    this.eventData = e
   }
 
 }
