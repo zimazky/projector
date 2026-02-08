@@ -52,7 +52,11 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
   return (
     <Modal open={isOpen} onClose={onClose}>
       <div className={styles.container}>
-        {drivePickerStore.isLoading && <Spinner />}
+        {drivePickerStore.isLoading && (
+          <div className={styles.spinnerOverlay}>
+            <Spinner />
+          </div>
+        )}
         {drivePickerStore.error && <div className={styles.error}>{drivePickerStore.error}</div>}
 
         <div className={styles.breadcrumb}>
