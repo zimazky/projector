@@ -3,13 +3,14 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService';
 import { DriveFileMetadata } from 'src/7-shared/services/gapi';
 import { IDriveItem } from 'src/7-shared/types/IDriveItem'; // Новый импорт
 import { createDriveItem } from 'src/7-shared/adapters/GoogleDriveItemAdapter'; // Новый импорт
+import { MainStore } from 'src/1-app/Stores/MainStore'; // Import MainStore
 
 export interface PathSegment {
   id: string;
   name: string;
 }
 
-export class DriveContentExplorerStore {
+export class DriveFileListStore {
   currentFolderId: string = 'root'; // ID текущей отображаемой папки, 'root' для корневой
   currentPath: PathSegment[] = [{ id: 'root', name: 'Мой диск' }]; // Массив объектов для отображения "хлебных крошек" и навигации вверх
   items: IDriveItem[] = []; // Изменено
@@ -22,16 +23,14 @@ export class DriveContentExplorerStore {
   isConfirmingDelete: boolean = false;
   itemToDelete: IDriveItem | null = null; // Изменено
   currentSpace: string = 'drive'; // 'drive' or 'appDataFolder'
-  lastVisitedFolders: Map<string, { folderId: string, path: PathSegment[] }>;
 
   private googleApiService: GoogleApiService;
+  private mainStore: MainStore; // Reference to MainStore
 
-  constructor(googleApiService: GoogleApiService) {
+  constructor(googleApiService: GoogleApiService, mainStore: MainStore) {
     makeAutoObservable(this);
     this.googleApiService = googleApiService;
-    this.lastVisitedFolders = new Map();
-    this.lastVisitedFolders.set('drive', { folderId: 'root', path: [{ id: 'root', name: 'Мой диск' }] });
-    this.lastVisitedFolders.set('appDataFolder', { folderId: 'appDataFolder', path: [{ id: 'appDataFolder', name: 'Раздел приложения' }] });
+    this.mainStore = mainStore;
   }
 
   setNewFolderName = (name: string) => {
@@ -163,11 +162,8 @@ export class DriveContentExplorerStore {
         }
       });
 
-      // Сохраняем последнее посещенное место для текущего пространства
-      this.lastVisitedFolders.set(this.currentSpace, {
-        folderId: this.currentFolderId,
-        path: this.currentPath,
-      });
+        // Сохраняем последнее посещенное место для текущего пространства
+        this.mainStore.updateDriveExplorerPersistentState(this.currentSpace, this.currentFolderId, this.currentPath);
 
     } catch (err: any) {
       runInAction(() => {
@@ -190,7 +186,7 @@ export class DriveContentExplorerStore {
       await this.loadFolder(parentFolder.id); // 'space' не передаем, используем this.currentSpace
     } else if (this.currentPath.length === 1) {
         // Если уже в корне текущего пространства, сбрасываем до его корня
-        const initialInfo = this.lastVisitedFolders.get(this.currentSpace);
+        const initialInfo = this.mainStore.getDriveExplorerPersistentState(this.currentSpace);
         if (initialInfo) {
             await this.loadFolder(initialInfo.folderId, this.currentSpace);
         }
@@ -210,14 +206,13 @@ export class DriveContentExplorerStore {
    * @param targetSpace Пространство для инициализации (например, 'drive' или 'appDataFolder').
    */
   reset = (targetSpace: string = 'drive') => {
-    const lastVisit = this.lastVisitedFolders.get(targetSpace);
+    const lastVisit = this.mainStore.getDriveExplorerPersistentState(targetSpace);
     
     // Инициализация currentPath, currentFolderId, currentSpace
     runInAction(() => {
         this.currentSpace = targetSpace;
-        this.currentFolderId = lastVisit ? lastVisit.folderId : (targetSpace === 'drive' ? 'root' : 'appDataFolder');
-        this.currentPath = lastVisit ? [...lastVisit.path] : 
-                          [{ id: this.currentFolderId, name: targetSpace === 'drive' ? 'Мой диск' : 'Раздел приложения' }];
+        this.currentFolderId = lastVisit.folderId;
+        this.currentPath = [...lastVisit.path]; 
         this.items = [];
         this.isLoading = false;
         this.error = null;

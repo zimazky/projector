@@ -9,7 +9,7 @@ import Button from 'src/7-shared/ui/Button/Button';
 import Spinner from 'src/7-shared/ui/Spinner/Spinner';
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions';
 import DialogContent from 'src/7-shared/ui/Dialog/DialogContent';
-import DriveContentExplorer from 'src/5-features/DriveContentExplorer/DriveContentExplorer'; // Updated import path
+import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer';
 
 import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext';
 import { IDriveItem } from 'src/7-shared/types/IDriveItem';
@@ -57,7 +57,6 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
-            showCreateDeleteButtons={false}
           />
         </div>
       </DialogContent>

@@ -5,16 +5,16 @@ import List from 'src/7-shared/ui/List/List';
 import ListItem from 'src/7-shared/ui/List/ListItem';
 import { IDriveItem } from 'src/7-shared/types/IDriveItem';
 
-import styles from './DrivePureFileList.module.css';
+import styles from './FileList.module.css';
 
-interface DrivePureFileListProps {
+interface FileListProps {
   items: IDriveItem[];
   selectedItem: IDriveItem | null;
   onItemClick: (item: IDriveItem) => void;
   onItemDoubleClick: (item: IDriveItem) => void;
 }
 
-const DrivePureFileList: React.FC<DrivePureFileListProps> = observer(
+const FileList: React.FC<FileListProps> = observer(
   ({ items, selectedItem, onItemClick, onItemDoubleClick }) => {
     return (
       <List>
@@ -34,4 +34,4 @@ const DrivePureFileList: React.FC<DrivePureFileListProps> = observer(
   }
 );
 
-export default DrivePureFileList;
+export default FileList;

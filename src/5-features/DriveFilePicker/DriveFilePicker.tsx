@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { observer } from 'mobx-react-lite';
 
-import DriveContentExplorer from 'src/5-features/DriveContentExplorer/DriveContentExplorer';
+import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer';
 
 import Modal from 'src/7-shared/ui/Modal/Modal';
 import TextButton from 'src/7-shared/ui/Button/TextButton';
@@ -29,13 +29,11 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
   return (
     <Modal open={isOpen} onClose={onClose}>
       <div className={styles.container}>
-        <DriveContentExplorer
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
-          showCreateDeleteButtons={true}
-        />
-        <div className={styles.actions}>
+                  <DriveContentExplorer
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
+                  />        <div className={styles.actions}>
           <TextButton onClick={onClose}>Отмена</TextButton>
           <TextButton onClick={handleSelectClick} disabled={!selectedExplorerItem || selectedExplorerItem.isFolder()}>Выбрать</TextButton>
         </div>
