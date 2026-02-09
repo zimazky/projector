@@ -5,7 +5,7 @@
   border-radius: 4px;
   margin: 10px 2px 2px 2px;
   padding: 10px;
-  background-color: var(--ui-backgroung-color);
+  background-color: var(--color-background-surface);
   font-size: 1rem;
 }
 
@@ -14,11 +14,11 @@
 }
 
 .container:focus-within {
-  box-shadow: 0 0 0 2px var(--ui-border-focus-color);
+  box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
 .container:focus-within .label {
-  color: var(--ui-border-focus-color);
+  color: var(--color-border-focus);
   transform: translate(9px, -7px) scale(0.75);
 }
 
@@ -29,13 +29,13 @@
 
 .label {
   pointer-events: none;
-  color: rgba(0, 0, 0, 0.3);
+  color: var(--color-text-disabled);
   padding: 0 7px;
   position: absolute;
   left: 0;
   top: 0;
   z-index: 1;
-  background-color: var(--ui-backgroung-color);
+  background-color: var(--color-background-surface);
   transform-origin: top left;
   transform: translate(7px, 8px) scale(1);
   transition: 

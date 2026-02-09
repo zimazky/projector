@@ -3,7 +3,7 @@
   position: relative;
 	overflow: hidden;
   font-size: 23px;
-	color: rgba(0, 0, 0, 0.7);
+	color: var(--color-text-secondary);
 	background-color: transparent;
 	padding: 6px 12px;
 	cursor: pointer;
@@ -12,14 +12,14 @@
 }
 
 .time:hover {
-	background-color: rgba(0, 0, 0, 0.05);
+	background-color: var(--color-background-secondary-hover);
 }
 
 .ripple {
   position: absolute;
   border-radius: 50%;
   opacity: 0;
-  background-color: dimgray;
+  background-color: var(--color-background-secondary-ripple);
   pointer-events: none;
   transition: opacity 500ms linear;
   animation: ripple 300ms linear;

@@ -1,4 +1,4 @@
-@import 'variables.css';
+@import 'src/1-app/variables.css';
 
 #root {
   position: fixed;
@@ -10,11 +10,3 @@
   grid-template-columns: 1fr;
   grid-template-rows: max-content 1fr;
 }
-
-/*
-:root{
-  --ui-backgroung-color: white;
-  --ui-border-focus-color: #1976d2;
-  --color-primary-light: #BBDEFB;
-}
-*/

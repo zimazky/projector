@@ -10,7 +10,7 @@
 	text-transform: uppercase;
 	border: none;
 	border-radius: 4px;
-	color: rgb(25, 118, 210);
+	color: var(--color-primary);
 	background-color: transparent;
 	white-space: nowrap;
 	padding: 6px 8px;
@@ -25,7 +25,7 @@
 }
 
 .button:hover {
-	background-color: rgba(25, 118, 210, 0.08);
+	background-color: var(--color-background-hover);
 }
 
 .button[disabled] {
@@ -37,7 +37,7 @@
   position: absolute;
   border-radius: 50%;
   opacity: 0;
-  background-color: #1976d2;
+  background-color: var(--color-primary);
   pointer-events: none;
   transition: opacity 500ms linear;
   animation: ripple 300ms linear;

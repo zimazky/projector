@@ -1,8 +1,6 @@
-/* src/1-app/styles/variables.css */
-
 :root {
   /* Brand Colors */
-  --color-primary: #1976d2; /* Используется для кнопок, акцентов, основной синий */
+  --color-primary: rgb(25, 118, 210); /* Используется для кнопок, акцентов, основной синий */
   --color-primary-light: #42a5f5; /* Более светлый оттенок primary */
   --color-primary-dark: #0d47a1; /* Более темный оттенок primary */
   --color-secondary: #dc004e; /* Второстепенный акцентный цвет (например, красный) */
@@ -19,8 +17,11 @@
   /* Background Colors */
   --color-background-page: #f5f5f5; /* Фон страницы (светло-серый) */
   --color-background-surface: #ffffff; /* Фон для карточек, модальных окон (белый) */
-  --color-background-hover: rgba(0, 0, 0, 0.05); /* Фон при наведении */
+  --color-background-hover: rgba(25, 118, 210, 0.08); /* Фон при наведении */
   --color-background-overlay: rgba(0, 0, 0, 0.5); /* Фон для оверлеев (модальных окон) */
+
+  --color-background-secondary-hover: rgba(0, 0, 0, 0.05); /* Фон при наведении второстепенный */
+  --color-background-secondary-ripple: rgba(0, 0, 0, 0.3); /* Фон ряби второстепенный */
 
   /* Border Colors */
   --color-border-default: rgba(0, 0, 0, 0.12); /* Цвет границ по умолчанию */
@@ -31,10 +32,6 @@
   --color-warning: #ffc107; /* Оранжевый */
   --color-error: #f44336; /* Красный */
   --color-info: #2196f3; /* Синий */
-
-  /* Общие UI переменные, которые могут быть переопределены новыми семантическими */
-  /* --ui-backgroung-color: var(--color-background-surface); */
-  /* --ui-border-focus-color: var(--color-border-focus); */
 }
 
 /* Пример для темной темы */

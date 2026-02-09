@@ -8,9 +8,9 @@
 	font-weight: 500;
 	letter-spacing: 0.02857em;
 	text-transform: uppercase;
-	border: 1px solid rgba(25, 118, 210, 0.5);
+	border: 1px solid color-mix(in srgb, var(--color-primary) 50%, transparent);
 	border-radius: 4px;
-	color: rgb(25, 118, 210);
+	color: var(--color-primary);
 	background-color: transparent;
 	white-space: nowrap;
 	padding: 8px 15px;
@@ -25,8 +25,8 @@
 }
 
 .button:hover {
-	background-color: rgba(25, 118, 210, 0.04);
-	border: 1px solid rgb(25, 118, 210);
+	background-color: var(--color-background-hover);
+	border: 1px solid var(--color-primary);
 }
 
 .button[disabled] {
@@ -38,7 +38,7 @@
   position: absolute;
   border-radius: 50%;
   opacity: 0;
-  background-color: #1976d2;
+  background-color: var(--color-primary);
   pointer-events: none;
   transition: opacity 500ms linear;
   animation: ripple 300ms linear;
