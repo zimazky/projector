@@ -1,24 +1,26 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService';
 import { DriveFileMetadata } from 'src/7-shared/services/gapi';
+import { IDriveItem } from 'src/7-shared/types/IDriveItem'; // Новый импорт
+import { createDriveItem } from 'src/7-shared/adapters/GoogleDriveItemAdapter'; // Новый импорт
 
-interface PathSegment {
+export interface PathSegment {
   id: string;
   name: string;
 }
 
-export class DrivePickerStore {
+export class DriveContentExplorerStore {
   currentFolderId: string = 'root'; // ID текущей отображаемой папки, 'root' для корневой
   currentPath: PathSegment[] = [{ id: 'root', name: 'Мой диск' }]; // Массив объектов для отображения "хлебных крошек" и навигации вверх
-  items: DriveFileMetadata[] = []; // Массив объектов, представляющих файлы и папки в текущей папке
+  items: IDriveItem[] = []; // Изменено
   isLoading: boolean = false; // Флаг состояния загрузки
   error: string | null = null; // Сообщение об ошибке, если есть
-  selectedItem: DriveFileMetadata | null = null; // Выбранный элемент (файл или папка)
+  selectedItem: IDriveItem | null = null; // Изменено
   isCreatingFolder: boolean = false;
   newFolderName: string = '';
-  currentFolderMetadata: DriveFileMetadata | null = null;
+  currentFolderMetadata: DriveFileMetadata | null = null; // Здесь остается DriveFileMetadata
   isConfirmingDelete: boolean = false;
-  itemToDelete: DriveFileMetadata | null = null;
+  itemToDelete: IDriveItem | null = null; // Изменено
   currentSpace: string = 'drive'; // 'drive' or 'appDataFolder'
   lastVisitedFolders: Map<string, { folderId: string, path: PathSegment[] }>;
 
@@ -32,21 +34,21 @@ export class DrivePickerStore {
     this.lastVisitedFolders.set('appDataFolder', { folderId: 'appDataFolder', path: [{ id: 'appDataFolder', name: 'Раздел приложения' }] });
   }
 
-  setNewFolderName(name: string) {
+  setNewFolderName = (name: string) => {
     this.newFolderName = name;
   }
 
-  startCreatingFolder() {
+  startCreatingFolder = () => {
     this.isCreatingFolder = true;
     this.newFolderName = ''; // Clear previous name
   }
 
-  cancelCreatingFolder() {
+  cancelCreatingFolder = () => {
     this.isCreatingFolder = false;
     this.newFolderName = '';
   }
 
-  async createFolder() {
+  createFolder = async () => {
     this.isLoading = true;
     this.error = null;
     try {
@@ -66,17 +68,17 @@ export class DrivePickerStore {
     }
   }
 
-  startDeletingItem(item: DriveFileMetadata) {
+  startDeletingItem = (item: IDriveItem) => {
     this.isConfirmingDelete = true;
     this.itemToDelete = item;
   }
 
-  cancelDeletingItem() {
+  cancelDeletingItem = () => {
     this.isConfirmingDelete = false;
     this.itemToDelete = null;
   }
 
-  async deleteItem() {
+  deleteItem = async () => {
     if (!this.itemToDelete) return;
 
     this.isLoading = true;
@@ -103,7 +105,7 @@ export class DrivePickerStore {
    * @param folderId ID папки для загрузки.
    * @param space Пространство Google Drive (например, 'drive' или 'appDataFolder').
    */
-  async loadFolder(folderId: string, space?: string) {
+  loadFolder = async (folderId: string, space?: string) => {
     if (this.isLoading) return;
 
     // Use the explicitly passed space, or currentSpace, or default to drive
@@ -124,7 +126,8 @@ export class DrivePickerStore {
       runInAction(() => {
         this.currentFolderId = folderId;
         this.currentFolderMetadata = currentFolderMetadata;
-        this.items = driveItems;
+        // Преобразуем DriveFileMetadata в IDriveItem
+        this.items = driveItems.map(item => createDriveItem(item));
 
 
         // Обновляем currentPath
@@ -181,7 +184,7 @@ export class DrivePickerStore {
   /**
    * Переходит на уровень выше в иерархии папок.
    */
-  async navigateUp() {
+  navigateUp = async () => {
     if (this.currentPath.length > 1) {
       const parentFolder = this.currentPath[this.currentPath.length - 2];
       await this.loadFolder(parentFolder.id); // 'space' не передаем, используем this.currentSpace
@@ -198,7 +201,7 @@ export class DrivePickerStore {
    * Устанавливает выбранный элемент (файл или папку).
    * @param item Выбранный элемент.
    */
-  setSelectedItem(item: DriveFileMetadata) {
+  setSelectedItem = (item: IDriveItem) => {
     this.selectedItem = item;
   }
 
@@ -206,7 +209,7 @@ export class DrivePickerStore {
    * Сбрасывает состояние пикера, загружая последнее посещенное место для данного пространства.
    * @param targetSpace Пространство для инициализации (например, 'drive' или 'appDataFolder').
    */
-  reset(targetSpace: string = 'drive') {
+  reset = (targetSpace: string = 'drive') => {
     const lastVisit = this.lastVisitedFolders.get(targetSpace);
     
     // Инициализация currentPath, currentFolderId, currentSpace

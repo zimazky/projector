@@ -47,6 +47,7 @@ export interface DriveFileMetadata {
   webViewLink?: string;
 }
 
+
 /** Класс статических методов для работы с Google API */
 export default class GAPI {
   /** Экземпляр клиента, для запроса на аутентификацию */

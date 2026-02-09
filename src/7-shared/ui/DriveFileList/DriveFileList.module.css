@@ -1,0 +1,21 @@
+/* src/7-shared/ui/DriveFileList/DriveFileList.module.css */
+.createFolderContainer {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.scrollableListContainer {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  margin: 10px;
+}
+
+.listActions {
+  padding: 8px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  gap: 10px;
+}

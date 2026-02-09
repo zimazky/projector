@@ -113,6 +113,24 @@ export class GoogleApiService {
     }
     return GAPI.deleteFile(itemId);
   }
+
+  async saveFile(name: string, content: string | Blob, mimeType: string, parentFolderId: string): Promise<DriveFileMetadata> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+
+    // 1. Create an empty file (or get its ID if we implement overwrite logic)
+    const createdFileMetadata = await GAPI.createFileOrFolder(name, mimeType, [parentFolderId]);
+
+    // 2. Upload content to the newly created file
+    await GAPI.upload(createdFileMetadata.id, content);
+
+    // 3. Return the metadata of the created file
+    return createdFileMetadata;
+  }
 }
 
 

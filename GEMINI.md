@@ -6,6 +6,10 @@ Projector is a web application designed for planning events and managing resourc
 
 The application structure appears to follow a feature-sliced design, organizing code into layers such as `app`, `pages`, `widgets`, `features`, `entities`, and `shared`.
 
+## Documentation
+
+Project documentation is located in the `docs` folder. All documentation must be written in Russian.
+
 ## Building and Running
 
 The project includes several npm scripts to facilitate development, building, and serving the application.
@@ -45,8 +49,9 @@ The project includes several npm scripts to facilitate development, building, an
 *   **State Management:** MobX
 *   **Bundler:** Webpack
 *   **Styling:** CSS Modules (`.module.css` files)
-*   **Code Structure:** Feature-sliced design, organizing components and logic by domain and layer (`1-app`, `3-pages`, `4-widgets`, `5-features`, `6-entities`, `7-shared`).
+*   **Code Structure:** Feature-Sliced Design (FSD) - the project MUST adhere to this architecture, organizing components and logic by domain and layer (`1-app`, `3-pages`, `4-widgets`, `5-features`, `6-entities`, `7-shared`).
 *   **Testing Frameworks:** Karma (test runner), Jasmine (behavior-driven development framework).
 *   **Environment Variables:** Uses `dotenv-webpack` for managing environment variables.
+*   **Code Documentation:** When generating code, types and functions must be thoroughly documented with comments in Russian.
 
 This `GEMINI.md` file provides a comprehensive overview for anyone looking to understand, build, or contribute to the Projector application.

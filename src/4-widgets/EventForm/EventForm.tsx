@@ -193,6 +193,7 @@ const EventForm: React.FC = () => {
       {...register('comment')}/>
     <Select label='Project' error={!!errors.project}
       options={projectsStore.list.map((p,i)=>{ return {value: p.name, label: p.name} })}
+      value={watch('project')}
       {...register('project', {required: true})} />
     <div className={styles.grid}>
       {isRepeat ||

@@ -9,6 +9,7 @@ import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
+import { SaveToDriveStore } from 'src/5-features/SaveToDrive/model/SaveToDriveStore';
 
 
 // 1. Инстанцирование основных доменных хранилищ
@@ -26,6 +27,7 @@ export const eventFormStore = new EventFormStore()
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(projectsStore, eventsStore, googleApiService)
+export const saveToDriveStore = new SaveToDriveStore(googleApiService);
 
 // 4. Инстанцирование MainStore (оркестратора) с его основными зависимостями
 export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache, googleApiService, storageService)
@@ -46,4 +48,5 @@ export {
   CalendarStore,
   DayListStore,
   EventFormStore,
+  // saveToDriveStore // REMOVE THIS LINE
 }

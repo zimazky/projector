@@ -1,0 +1,34 @@
+.dialogTitle {
+  /* Basic dialog styling */
+}
+
+.fileNameInput {
+  margin-bottom: 20px; /* Добавим отступ снизу */
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
+
+.driveContentExplorerContainer {
+  position: relative;
+  height: 400px; /* Задаем фиксированную высоту для проводника */
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden; /* Чтобы скролл внутри проводника работал */
+}
+
+.loadingSpinnerOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}

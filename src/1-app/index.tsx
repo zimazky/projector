@@ -5,7 +5,7 @@ import App from './App/App'
 
 import './index.css'
 
-import { mainStore, projectsStore, eventsStore, eventsCache, weatherStore, calendarStore, dayListStore, eventFormStore, uiStore, googleApiService, storageService } from './root'
+import { mainStore, projectsStore, eventsStore, eventsCache, weatherStore, calendarStore, dayListStore, eventFormStore, uiStore, googleApiService, storageService, saveToDriveStore } from './root'
 import StoreProvider from './Providers/StoreProvider'
 
 const rootElement = document.getElementById('root')
@@ -24,6 +24,7 @@ root.render(
     uiStore={uiStore}
     googleApiService={googleApiService}
     storageService={storageService}
+    saveToDriveStore={saveToDriveStore}
   >
     <App />
   </StoreProvider>
