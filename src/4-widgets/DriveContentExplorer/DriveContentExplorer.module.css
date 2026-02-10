@@ -2,7 +2,7 @@
   position: relative; /* Для позиционирования оверлея спиннера */
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: calc(100% - 38px);
 }
 
 .spinnerOverlay {
