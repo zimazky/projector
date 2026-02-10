@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx';
 import { GoogleApiService, SaveFileResult } from 'src/7-shared/services/GoogleApiService';
 import { DriveFileMetadata } from 'src/7-shared/services/gapi'; // Import DriveFileMetadata
+import { MainStore } from 'src/1-app/Stores/MainStore'; // Import MainStore
 
 export class SaveToDriveStore {
   isOpen: boolean = false;
@@ -16,7 +17,7 @@ export class SaveToDriveStore {
   conflictingFiles: DriveFileMetadata[] = [];
   newFileNameForConflict: string = ''; // For the rename option
 
-  constructor(private googleApiService: GoogleApiService) {
+  constructor(private googleApiService: GoogleApiService, private mainStore: MainStore) {
     makeAutoObservable(this);
   }
 
@@ -77,7 +78,7 @@ export class SaveToDriveStore {
         runInAction(() => {
           if (result.status === 'success') {
             console.log("Файл успешно сохранен:", result.file);
-            this.close(); // Close dialog on success
+            this.mainStore.fileSavedNotifier.fire();
           } else if (result.status === 'conflict') {
             this.conflictingFiles = result.existingFiles;
             this.newFileNameForConflict = this.generateUniqueFileName(currentFileName, result.existingFiles); // Suggest a new name

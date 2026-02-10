@@ -31,6 +31,12 @@ export class DriveFileListStore {
     makeAutoObservable(this);
     this.googleApiService = googleApiService;
     this.mainStore = mainStore;
+
+    // Subscribe to file saved notifications
+    this.mainStore.fileSavedNotifier.subscribe(() => {
+      // Refresh the current folder when a file is saved
+      this.loadFolder(this.currentFolderId, this.currentSpace);
+    });
   }
 
   setNewFolderName = (name: string) => {

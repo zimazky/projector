@@ -7,6 +7,7 @@ import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService' // Import the type
 import { StorageService } from 'src/7-shared/services/StorageService' // Import the type
 import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListStore'; // Import PathSegment
+import { Observable } from 'src/7-shared/libs/Observable/Observable';
 
 /** Класс главного хранилища приложения */
 export class MainStore {
@@ -23,6 +24,9 @@ export class MainStore {
 
   // New property for Drive Explorer persistence
   driveExplorerPersistentState = new Map<string, { folderId: string; path: PathSegment[] }>();
+
+  /** Уведомитель об успешном сохранении файла на Google Диске */
+  fileSavedNotifier = new Observable<void>();
 
 
   constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, eventsCache: EventsCache, googleApiService: GoogleApiService, storageService: StorageService) {

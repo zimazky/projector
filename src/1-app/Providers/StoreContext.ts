@@ -12,6 +12,7 @@ import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { SaveToDriveStore } from 'src/5-features/SaveToDrive/model/SaveToDriveStore';
+import { Observable } from 'src/7-shared/libs/Observable/Observable';
 
 export interface IRootStore {
   mainStore: MainStore;
@@ -26,6 +27,7 @@ export interface IRootStore {
   googleApiService: GoogleApiService;
   storageService: StorageService;
   saveToDriveStore: SaveToDriveStore;
+  fileSavedNotifier: Observable<void>;
 }
 
 export const StoreContext = React.createContext<IRootStore>({} as IRootStore);

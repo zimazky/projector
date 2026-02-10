@@ -27,10 +27,12 @@ export const eventFormStore = new EventFormStore()
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(projectsStore, eventsStore, googleApiService)
-export const saveToDriveStore = new SaveToDriveStore(googleApiService);
 
 // 4. Инстанцирование MainStore (оркестратора) с его основными зависимостями
 export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache, googleApiService, storageService)
+
+// 5. Инстанцирование SaveToDriveStore (зависит от GoogleApiService и MainStore)
+export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore);
 
 // 5. Инициализация главного хранилища, которое в свою очередь инициализирует другие сервисы/хранилища
 mainStore.init()

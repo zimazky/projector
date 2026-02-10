@@ -25,6 +25,7 @@ root.render(
     googleApiService={googleApiService}
     storageService={storageService}
     saveToDriveStore={saveToDriveStore}
+    fileSavedNotifier={mainStore.fileSavedNotifier}
   >
     <App />
   </StoreProvider>
