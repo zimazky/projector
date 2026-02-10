@@ -1,0 +1,10 @@
+.dialogTitle {
+  margin-bottom: 20px;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+.fileNameInput {
+  margin-top: 15px;
+  width: 100%;
+}
