@@ -4,7 +4,7 @@ import { StoreContext } from 'src/1-app/Providers/StoreContext';
 import { IDriveItem } from 'src/7-shared/types/IDriveItem';
 import FileList from 'src/7-shared/ui/FileList/FileList';
 import Breadcrumbs from 'src/7-shared/ui/Breadcrumbs/Breadcrumbs';
-import { DriveFileListStore } from './model/DriveFileListStore';
+import { DriveFileListStore, PathSegment } from './model/DriveFileListStore'; // Import PathSegment
 import styles from './DriveFileList.module.css';
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions';
 import TextButton from 'src/7-shared/ui/Button/TextButton';
@@ -14,11 +14,12 @@ import Spinner from 'src/7-shared/ui/Spinner/Spinner';
 
 interface DriveFileListFeatureProps {
   space: string; // 'drive' or 'appDataFolder'
-  onItemSelected: (item: IDriveItem | null) => void;
+  onItemSelected?: (item: IDriveItem | null) => void;
+  onCurrentFolderChange?: (folderId: string, path: PathSegment[]) => void;
 }
 
 const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
-  ({ space, onItemSelected }) => {
+  ({ space, onItemSelected, onCurrentFolderChange }) => {
     const { googleApiService, mainStore } = React.useContext(StoreContext);
     const [driveFileListStore] = React.useState(() => new DriveFileListStore(googleApiService, mainStore));
 
@@ -27,8 +28,16 @@ const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
     }, [space, driveFileListStore]);
 
     useEffect(() => {
-      onItemSelected(driveFileListStore.selectedItem);
+      if (onItemSelected) {
+        onItemSelected(driveFileListStore.selectedItem);
+      }
     }, [driveFileListStore.selectedItem, onItemSelected]);
+
+    useEffect(() => {
+      if (onCurrentFolderChange) {
+        onCurrentFolderChange(driveFileListStore.currentFolderId, driveFileListStore.currentPath);
+      }
+    }, [driveFileListStore.currentFolderId, driveFileListStore.currentPath, onCurrentFolderChange]);
 
     const handleItemDoubleClickInternal = (item: IDriveItem) => {
       if (item.isFolder()) {

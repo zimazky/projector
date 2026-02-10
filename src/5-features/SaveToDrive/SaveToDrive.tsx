@@ -12,7 +12,7 @@ import DialogContent from 'src/7-shared/ui/Dialog/DialogContent';
 import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer';
 
 import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext';
-import { IDriveItem } from 'src/7-shared/types/IDriveItem';
+
 
 interface SaveToDriveProps {
   // Define props if any needed to initialize the store or pass data
@@ -22,22 +22,24 @@ interface SaveToDriveProps {
 const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
   const { saveToDriveStore } = React.useContext(StoreContext) as IRootStore;
   const [activeTab, setActiveTab] = useState(0); // 0 for My Drive, 1 for App Data Folder
-  const [selectedExplorerItem, setSelectedExplorerItem] = useState<IDriveItem | null>(null);
+  const [currentOpenedFolderId, setCurrentOpenedFolderId] = useState<string | null>(null);
+  const handleCurrentFolderChange = (folderId: string) => {
+    setCurrentOpenedFolderId(folderId);
+  };
 
   const handleSave = () => {
-    if (selectedExplorerItem && selectedExplorerItem.isFolder()) {
-      saveToDriveStore.saveFile(selectedExplorerItem.id);
+    if (currentOpenedFolderId) {
+      saveToDriveStore.saveFile(currentOpenedFolderId);
     } else {
       saveToDriveStore.error = "Пожалуйста, выберите папку для сохранения файла.";
     }
   };
 
-  // Кнопка "Сохранить" должна быть активна, если выбрана папка и введено имя файла
+  // Кнопка "Сохранить" должна быть активна, если открыта папка и введено имя файла
   const isSaveButtonDisabled =
     saveToDriveStore.isSaving ||
     !saveToDriveStore.fileName.trim() ||
-    !selectedExplorerItem ||
-    !selectedExplorerItem.isFolder();
+    !currentOpenedFolderId;
 
   return (
     <Dialog open={saveToDriveStore.isOpen} onClose={saveToDriveStore.close}>
@@ -50,13 +52,11 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
           className={styles.fileNameInput}
           disabled={saveToDriveStore.isSaving}
         />
-
-        {/* Интегрируем DriveContentExplorer */}
         <div className={styles.driveContentExplorerContainer}>
           <DriveContentExplorer
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
+            onCurrentFolderChange={handleCurrentFolderChange}
           />
         </div>
       </DialogContent>

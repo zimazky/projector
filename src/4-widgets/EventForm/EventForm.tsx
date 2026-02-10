@@ -14,7 +14,7 @@ import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import { EventDto } from 'src/6-entities/Events/EventDto'
 
-import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
+import YesCancelConfirmation from 'src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation'
 
 import styles from './EventForm.module.css'
 
