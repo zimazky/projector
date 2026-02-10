@@ -29,11 +29,14 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
   return (
     <Modal open={isOpen} onClose={onClose}>
       <div className={styles.container}>
-                  <DriveContentExplorer
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                    onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
-                  />        <div className={styles.actions}>
+        <div className={styles.driveContentExplorerWrapper}>
+          <DriveContentExplorer
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            onItemSelected={setSelectedExplorerItem} // DriveContentExplorer reports its selected item
+          />
+        </div>
+        <div className={styles.actions}>
           <TextButton onClick={onClose}>Отмена</TextButton>
           <TextButton onClick={handleSelectClick} disabled={!selectedExplorerItem || selectedExplorerItem.isFolder()}>Выбрать</TextButton>
         </div>

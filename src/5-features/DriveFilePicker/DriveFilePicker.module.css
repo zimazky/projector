@@ -6,8 +6,13 @@
   min-width: 380px;
   min-height: 150px;
   width: 50vw;
-  /*height: 80vh; /*calc(80vh - 100px);*/
+  height: 80vh; /*calc(80vh - 100px);*/
   padding: 10px;
+}
+
+.driveContentExplorerWrapper {
+  flex: 1;
+  height: 30vh;
 }
 
 .actions {

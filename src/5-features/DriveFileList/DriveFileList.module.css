@@ -41,3 +41,8 @@
   padding: 20px;
   text-align: center;
 }
+
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+}

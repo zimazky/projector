@@ -60,12 +60,14 @@ const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
             Удалить
           </TextButton>
         </div>
-        <FileList
-          items={driveFileListStore.items}
-          selectedItem={driveFileListStore.selectedItem}
-          onItemClick={driveFileListStore.setSelectedItem}
-          onItemDoubleClick={handleItemDoubleClickInternal}
-        />
+        <div className={styles.scrollableContent}>
+          <FileList
+            items={driveFileListStore.items}
+            selectedItem={driveFileListStore.selectedItem}
+            onItemClick={driveFileListStore.setSelectedItem}
+            onItemDoubleClick={handleItemDoubleClickInternal}
+          />
+        </div>
       </>
     );
 
