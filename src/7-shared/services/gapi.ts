@@ -163,9 +163,9 @@ export default class GAPI {
   /** Получение списка файлов, соответствующих запросу query */
   static async find(
     query: string,
-    folderId: string | null = null, // null означает не фильтровать по родителям
-    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink', // Default fields without 'files()' wrapper
-    spaces: string = 'drive' // spaces parameter now passed directly from listFolderContents
+    folderId: string | null = null,
+    fields: string = 'id, name, mimeType, parents, iconLink, webViewLink',
+    spaces: string = 'drive'
   ): Promise<DriveFileMetadata[]> {
     let ret: DriveFileMetadata[] = []
     let token: string | undefined
@@ -185,13 +185,15 @@ export default class GAPI {
     do {
       const resp = await prom(gapi.client.drive.files.list, {
         q: effectiveQuery,
-        spaces: spaces, // Use the provided spaces directly
-        fields: `nextPageToken, files(${fields})`, // Explicitly wrap fields with 'files()'
+        spaces: spaces,
+        fields: `nextPageToken, files(${fields})`,
         pageSize: 100,
         pageToken: token,
-        orderBy: 'folder,name asc' // Сортировка сначала папки, потом по имени
+        orderBy: 'folder,name asc'
       })
-      ret = ret.concat(resp.result.files as DriveFileMetadata[])
+      if (resp.result && resp.result.files) {
+        ret = ret.concat(resp.result.files as DriveFileMetadata[])
+      }
       token = resp.result.nextPageToken
     } while (token)
     return ret
