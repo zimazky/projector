@@ -49,6 +49,14 @@ export class StorageService {
     this.isSyncWithLocalstorage = true
   }
 
+  /** Получить данные для сохранения */
+  getContentToSave = () => {
+    const data: MainStoreData = {
+      projectsList: this.projectsStore.getList(), ...this.eventsStore.prepareToSave()
+    }
+    return data;
+  }
+
   /** Сохранить данные в Google Drive */
   saveToGoogleDrive = async () => {
     const data: MainStoreData = {
@@ -73,6 +81,28 @@ export class StorageService {
         console.log('login ok')
       }
       const obj = await RemoteStorage.loadFile('data.json')
+      this.projectsStore.init(obj.projectsList)
+      this.eventsStore.init(obj)
+      runInAction(() => {
+        this.isSyncWithLocalstorage = false
+        this.isSyncWithGoogleDrive = true
+        mainStore.mustForceUpdate = {}
+      })
+    } catch(e) {
+      console.log('Load error', e)
+      alert('Load error') // TODO: Replace with proper error handling
+    }
+  }
+
+  /** Загрузить данные из файла с Google Drive по идентификатору файла */
+  loadFromGoogleDriveByFileId = async (fileId: string) => {
+    try {
+      if(!this.googleApiService.isLoggedIn()) {
+        console.log('logging...')
+        await this.googleApiService.logIn()
+        console.log('login ok')
+      }
+      const obj = await RemoteStorage.loadFileById(fileId)
       this.projectsStore.init(obj.projectsList)
       this.eventsStore.init(obj)
       runInAction(() => {

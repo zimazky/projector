@@ -35,4 +35,13 @@ export default class RemoteStorage {
     return await GAPI.download(fileId)
   }
 
+
+  static async loadFileById(fileId: string) {
+    if(fileId===null) {
+      throw new Error('Не определен fileId')
+    }
+    return await GAPI.download(fileId)
+  }
+
+
 }

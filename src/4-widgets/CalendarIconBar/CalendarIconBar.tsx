@@ -22,15 +22,16 @@ const CalendarIconBar: React.FC = observer(function() {
   const { uiStore, googleApiService, storageService, weatherStore, saveToDriveStore } = useContext(StoreContext)
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const handleSaveToDrive = () => {
-    const dataToSave = {
-      title: "Calendar Events Export",
-      date: new Date().toISOString(),
-      eventsCount: 123, // Example data
-      events: [ // Just a placeholder, replace with actual event data
-        { id: '1', name: 'Meeting', date: '2026-02-08', time: '10:00' },
-        { id: '2', name: 'Presentation', date: '2026-02-09', time: '14:00' },
-      ]
-    };
+    // const dataToSave = {
+    //   title: "Calendar Events Export",
+    //   date: new Date().toISOString(),
+    //   eventsCount: 123, // Example data
+    //   events: [ // Just a placeholder, replace with actual event data
+    //     { id: '1', name: 'Meeting', date: '2026-02-08', time: '10:00' },
+    //     { id: '2', name: 'Presentation', date: '2026-02-09', time: '14:00' },
+    //   ]
+    // };
+    const dataToSave = storageService.getContentToSave();
     const fileName = `calendar_data_${new Date().toISOString().slice(0, 10)}.json`;
     const mimeType = 'application/json';
     saveToDriveStore.open(fileName, JSON.stringify(dataToSave, null, 2), mimeType);
@@ -107,6 +108,8 @@ const CalendarIconBar: React.FC = observer(function() {
 
   const handleFileSelect = (file: IDriveItem) => { // Изменено
     console.log('Selected file:', file);
+    if (file.isFolder()) return;
+    storageService.loadFromGoogleDriveByFileId(file.id);
     // Here you would typically integrate with storageService to load the file
     // For example: storageService.loadFileFromGoogleDrive(file.id);
   };
