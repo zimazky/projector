@@ -1,0 +1,22 @@
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+}
+
+.breadcrumbItem {
+  cursor: pointer;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.breadcrumbItem:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbSeparator {
+  margin: 0 5px;
+  color: var(--color-primary);
+}

@@ -5,7 +5,7 @@
 	font-size: 1.5rem;
 	border: none;
 	border-radius: 50%;
-	color: rgba(0, 0, 0, 0.54);
+	color: var(--color-text-secondary);
 	background-color: transparent;
 	white-space: nowrap;
 	padding: 8px;
@@ -25,7 +25,7 @@
 */
 
 .button:hover {
-	background-color: rgba(0, 0, 0, 0.05);
+	background-color: var(--color-background-secondary-hover);
 	color: black;
 }
 
@@ -46,7 +46,7 @@
   position: absolute;
   border-radius: 50%;
   opacity: 0;
-	background-color: rgba(0, 0, 0, 0.3);
+	background-color: var(--color-background-secondary-ripple);
   pointer-events: none;
   transition: opacity 500ms linear;
   animation: ripple 300ms linear;

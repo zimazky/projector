@@ -1,15 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import {dayListStore, mainStore} from 'src/6-entities/stores/MainStore'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
 import DayListEventItem from './DayListEventItem'
 import styles from './DayList.module.css'
 
 const DayList: React.FC = observer(() => {
+  const { dayListStore, uiStore } = useContext(StoreContext)
 
   const inputElementRef = React.useRef<HTMLDivElement>(null)
 
@@ -36,7 +37,7 @@ const DayList: React.FC = observer(() => {
     <div className={styles.day}
     onClick={onClickHandle}>
       <div>
-        <div onClick={()=>mainStore.changeViewMode({mode: 'Calendar'})}>Calendar</div>
+        <div onClick={()=>uiStore.changeViewMode({mode: 'Calendar'})}>Calendar</div>
         <div onClick={e=>dayListStore.setDate(timestamp-86400)}>Prev</div>
         <div className={today?styles.today:styles.header}>{day+' '+DateTime.getMonthShortNamesArray()[month]}</div>
         <div onClick={e=>dayListStore.setDate(timestamp+86400)}>Next</div>

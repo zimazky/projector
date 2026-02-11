@@ -1,15 +1,16 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import Time from 'src/7-shared/ui/Time/Time'
 
-import { calendarStore, mainStore } from 'src/6-entities/stores/MainStore'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
-import CalendarIconBar from 'src/5-features/CalendarIconBar/CalendarIconBar'
+import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
 
 import styles from './Header.module.css'
 
 const Header: React.FC = observer(function() {
+  const { calendarStore, mainStore } = useContext(StoreContext)
 
   return <header className={styles.header}>
     <CalendarIconBar/>

@@ -1,0 +1,7 @@
+.itemIcon {
+  margin-right: 8px;
+}
+
+.itemName {
+  flex-grow: 1;
+}

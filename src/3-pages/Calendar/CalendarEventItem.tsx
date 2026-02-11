@@ -1,10 +1,7 @@
-import React from 'react'
-
+import React, { useContext } from 'react'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-
-import { eventFormStore, eventsStore } from 'src/6-entities/stores/MainStore'
-import { EventCacheStructure } from 'src/6-entities/stores/EventsCache/EventCacheStructure'
-
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import styles from './CalendarEventItem.module.css'
 
 type CalendarEventItemProps = {
@@ -17,14 +14,15 @@ type CalendarEventItemProps = {
 }
 
 const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
+  const { eventFormStore, eventsStore } = useContext(StoreContext)
   const {timestamp, daysInCurrentWeek: daysInCurrentWeek} = props
   const {id, name, completed, background, color, repeatable, start, time, end, credit, debit, days} = props.event
 
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
-    const s = eventsStore.getEventData(id)
+    const s = eventsStore.getEventDto(id)
     if(s === undefined) return
-    eventFormStore.setEventData({...s, id, completed, timestamp: start})
+    eventFormStore.setEventDto({...s, id, completed, timestamp: start})
     eventFormStore.showForm()
   }
 

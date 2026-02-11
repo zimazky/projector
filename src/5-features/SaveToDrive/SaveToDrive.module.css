@@ -1,0 +1,22 @@
+.container {
+  position: relative; /* Needed to contain the absolutely positioned spinner overlay */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 380px;
+  min-height: 150px;
+  width: 50vw;
+  height: 80vh; /*calc(80vh - 100px);*/
+  padding: 10px;
+}
+
+.driveContentExplorerWrapper {
+  flex: 1;
+  height: 30vh;
+}
+
+.actions {
+  padding-top: 10px;
+  text-align: right;
+}
+

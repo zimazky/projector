@@ -1,10 +1,10 @@
-import React from 'react'
+import React, { useContext } from 'react'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { dayListStore, eventFormStore, mainStore } from 'src/6-entities/stores/MainStore'
-import { CalendarDayStructure } from 'src/6-entities/stores/Calendar/CalendarStore'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { CalendarDayStructure } from 'src/3-pages/Calendar/CalendarStore'
 
 import styles from './CalendarDay.module.css'
 
@@ -18,6 +18,7 @@ type CalendarDayProps = {
 }
 
 const CalendarDay: React.FC<CalendarDayProps> = (props) => {
+  const { dayListStore, eventFormStore, uiStore } = useContext(StoreContext)
   const {data, isToday, onDragDrop, children = null} = props
   const {timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style} = data
   const inputElementRef = React.useRef<HTMLDivElement>(null)
@@ -25,12 +26,12 @@ const CalendarDay: React.FC<CalendarDayProps> = (props) => {
 
   const onDayOpen = (timestamp: timestamp) => {
     dayListStore.setDate(timestamp)
-    mainStore.changeViewMode({mode: 'Day'})
+    uiStore.changeViewMode({mode: 'Day'})
   }
 
   const openEventFormWithNewEvent = (name: string) => {
     if(name==='') return
-    eventFormStore.setEventData({
+    eventFormStore.setEventDto({
       id: null, name, timestamp,
       start: DateTime.getYYYYMMDD(timestamp)
     })

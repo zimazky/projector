@@ -1,5 +1,5 @@
 .overlay {
-  background-color: rgba(0,0,0,0.5);
+  background-color: var(--color-background-overlay);
   position: fixed;
   inset: 0;
   cursor: default;
@@ -29,7 +29,7 @@
   left: 0px;
   top: 0px;
   width: 300px;
-  background-color: #FFF;
+  background-color:var(--color-background-surface);
   padding: 10px 10px;
   box-shadow: 
     rgba(0, 0, 0, 0.2) 0px 8px 10px -5px,

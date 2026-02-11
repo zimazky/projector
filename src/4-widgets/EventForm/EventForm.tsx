@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { useForm } from 'react-hook-form'
 
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
@@ -11,10 +11,10 @@ import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
-import { eventFormStore, eventsCache, eventsStore, projectsStore } from 'src/6-entities/stores/MainStore'
-import { EventData } from 'src/6-entities/stores/Events/EventData'
+import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { EventDto } from 'src/6-entities/Events/EventDto'
 
-import YesCancelConfirmation from 'src/5-features/YesCancelConfirmation/YesCancelConfirmation'
+import YesCancelConfirmation from 'src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation'
 
 import styles from './EventForm.module.css'
 
@@ -34,6 +34,8 @@ interface Fields {
 type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
 
 const EventForm: React.FC = () => {
+
+  const { eventFormStore, eventsCache, eventsStore, projectsStore } = useContext(StoreContext)
 
   const [tab, setTab] = React.useState(0)
   const [deleteState, setDeleteState] = React.useState<DeleteState>(null)
@@ -73,7 +75,7 @@ const EventForm: React.FC = () => {
   const handleSaveAsSingle = handleSubmit((e) => {
     const id = eventFormStore.eventData.id
     if(id === null) return
-    const eventData: EventData = {
+    const eventDto: EventDto = {
       name: e.name,
       comment: e.comment,
       project: e.project,
@@ -85,14 +87,14 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    eventsStore.saveAsSingleEvent(id, eventFormStore.eventData.timestamp, eventData)
+    eventsStore.saveAsSingleEvent(id, eventFormStore.eventData.timestamp, eventDto)
     eventFormStore.hideForm()
   })
 
   const onCompleteHandle = handleSubmit((e) => {
     const isCompleted = eventFormStore.eventData.completed
     if(isCompleted === undefined) return
-    const eventData: EventData = {
+    const eventDto: EventDto = {
       name: e.name,
       comment: e.comment,
       project: e.project,
@@ -103,8 +105,8 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventData.id, eventData)
-    else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventData)
+    if(isCompleted) eventsStore.uncompleteEvent(eventFormStore.eventData.id, eventDto)
+    else eventsStore.completeEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp, eventDto)
     eventFormStore.hideForm()
   })
 
@@ -112,7 +114,7 @@ const EventForm: React.FC = () => {
   const onChangeEventHandle = handleSubmit((e) => {
     const id = eventFormStore.eventData.id
     if(id === null) return
-    const eventData: EventData = {
+    const eventDto: EventDto = {
       name: e.name,
       comment: e.comment,
       project: e.project,
@@ -124,12 +126,12 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    eventsStore.updateEvent(id, eventData)
+    eventsStore.updateEvent(id, eventDto)
     eventFormStore.hideForm()
   })
 
   const onAddHandle = handleSubmit((e) => {
-    const eventData: EventData = {
+    const eventDto: EventDto = {
       name: e.name,
       comment: e.comment,
       project: e.project,
@@ -141,7 +143,7 @@ const EventForm: React.FC = () => {
       credit: Calc.calculate(e.credit),
       debit: Calc.calculate(e.debit)
     }
-    eventsStore.addPlannedEventData(eventData)
+    eventsStore.addPlannedEventDto(eventDto)
     eventsCache.init()
     eventFormStore.hideForm()
   })
@@ -191,6 +193,7 @@ const EventForm: React.FC = () => {
       {...register('comment')}/>
     <Select label='Project' error={!!errors.project}
       options={projectsStore.list.map((p,i)=>{ return {value: p.name, label: p.name} })}
+      value={watch('project')}
       {...register('project', {required: true})} />
     <div className={styles.grid}>
       {isRepeat ||
