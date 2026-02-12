@@ -9,7 +9,7 @@ import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
-import { SaveToDriveStore } from 'src/5-features/SaveToDrive/model/SaveToDriveStore';
+import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore';
 
 
 // 1. Инстанцирование основных доменных хранилищ

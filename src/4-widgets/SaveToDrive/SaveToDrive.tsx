@@ -10,7 +10,7 @@ import Spinner from 'src/7-shared/ui/Spinner/Spinner';
 import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer';
 
 import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext';
-import ConflictResolutionDialog from '../FileConflictResolver/ConflictResolutionDialog';
+import ConflictResolutionDialog from 'src/5-features/FileConflictResolver/ConflictResolutionDialog';
 
 
 interface SaveToDriveProps {
