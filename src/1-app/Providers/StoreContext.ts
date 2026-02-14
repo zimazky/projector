@@ -11,7 +11,7 @@ import { EventFormStore } from 'src/4-widgets/EventForm/EventFormStore'
 import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
-import { SaveToDriveStore } from 'src/5-features/SaveToDrive/model/SaveToDriveStore';
+import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore';
 import { Observable } from 'src/7-shared/libs/Observable/Observable';
 
 export interface IRootStore {

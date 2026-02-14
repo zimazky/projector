@@ -9,10 +9,10 @@ import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
-import DriveFilePicker from 'src/5-features/DriveFilePicker/DriveFilePicker'
+import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
 import { IDriveItem } from 'src/7-shared/types/IDriveItem' // Изменено с DriveFileMetadata
 
-import SaveToDrive from 'src/5-features/SaveToDrive/SaveToDrive';
+import SaveToDrive from 'src/4-widgets/SaveToDrive/SaveToDrive';
 
 function fullScreen() {
   document.getElementById('root')?.requestFullscreen()

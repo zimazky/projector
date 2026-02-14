@@ -7,7 +7,7 @@ import DialogActions from 'src/7-shared/ui/Dialog/DialogActions';
 import DialogContent from 'src/7-shared/ui/Dialog/DialogContent';
 import styles from './FileConflictResolver.module.css'; // Will create this later
 
-interface ConflictResolutionDialogProps {
+interface FileConflictResolverProps {
   isOpen: boolean;
   onClose: () => void;
   conflictingFileName: string;
@@ -17,7 +17,7 @@ interface ConflictResolutionDialogProps {
   onResolve: (resolution: 'overwrite' | 'rename' | 'cancel') => void;
 }
 
-const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = observer(
+const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
   ({
     isOpen,
     onClose,
@@ -81,4 +81,4 @@ const ConflictResolutionDialog: React.FC<ConflictResolutionDialogProps> = observ
   }
 );
 
-export default ConflictResolutionDialog;
+export default FileConflictResolver;

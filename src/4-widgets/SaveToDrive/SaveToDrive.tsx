@@ -10,7 +10,7 @@ import Spinner from 'src/7-shared/ui/Spinner/Spinner';
 import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer';
 
 import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext';
-import ConflictResolutionDialog from '../FileConflictResolver/ConflictResolutionDialog';
+import FileConflictResolver from 'src/5-features/FileConflictResolver/FileConflictResolver';
 
 
 interface SaveToDriveProps {
@@ -86,7 +86,7 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
         </div>
       </Modal>
 
-      <ConflictResolutionDialog
+      <FileConflictResolver
         isOpen={saveToDriveStore.showConflictDialog}
         onClose={saveToDriveStore.closeConflictDialog}
         conflictingFileName={conflictingFileName}
