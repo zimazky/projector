@@ -271,9 +271,11 @@ export class DocumentSessionStore {
     if (!snapshot) return false
 
     if (snapshot.fileId) {
+      const isLoggedIn = this.googleApiService.isGoogleLoggedIn === true
+
       // Важно: не инициируем login-flow автоматически на старте приложения.
       // Иначе браузер блокирует popup как не связанный с пользовательским действием.
-      if (!this.googleApiService.isGoogleLoggedIn) {
+      if (!isLoggedIn) {
         this.setError('Для восстановления документа требуется вход в Google.')
         return false
       }
