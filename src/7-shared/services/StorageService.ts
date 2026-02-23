@@ -1,9 +1,7 @@
 ﻿import { makeAutoObservable, runInAction } from 'mobx'
 
-import RemoteStorage from './remoteStorage'
 import { ProjectData, ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore, EventsStoreData } from 'src/6-entities/Events/EventsStore'
-import { GoogleApiService } from './GoogleApiService'
 import { mainStore } from 'src/1-app/root'
 
 /** Сериализуемая структура данных приложения */
@@ -75,12 +73,10 @@ export class StorageService {
 
   private projectsStore: ProjectsStore
   private eventsStore: EventsStore
-  private googleApiService: GoogleApiService
 
-  constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, googleApiService: GoogleApiService) {
+  constructor(projectsStore: ProjectsStore, eventsStore: EventsStore) {
     this.projectsStore = projectsStore
     this.eventsStore = eventsStore
-    this.googleApiService = googleApiService
     makeAutoObservable(this)
   }
 
@@ -88,6 +84,11 @@ export class StorageService {
   desyncWithStorages = () => {
     this.isSyncWithGoogleDrive = false
     this.isSyncWithLocalstorage = false
+  }
+
+  /** Отметить, что текущее состояние синхронизировано с Google Drive */
+  markGoogleDriveSynced = () => {
+    this.isSyncWithGoogleDrive = true
   }
 
   /** Сохранить текущее состояние приложения в localStorage */
@@ -121,53 +122,6 @@ export class StorageService {
       this.isSyncWithGoogleDrive = true
       mainStore.mustForceUpdate = {}
     })
-  }
-
-  /** Legacy-сценарий: сохранить данные в фиксированный файл data.json */
-  saveToGoogleDrive = async () => {
-    const data: MainStoreData = {
-      projectsList: this.projectsStore.getList(), ...this.eventsStore.prepareToSave()
-    }
-    try {
-      await RemoteStorage.saveFile('data.json', data)
-      console.log('save ok')
-      runInAction(() => { this.isSyncWithGoogleDrive = true })
-    }
-    catch(e) {
-      alert('Save error')
-    }
-  }
-
-  /** Legacy-сценарий: загрузить данные из фиксированного файла data.json */
-  loadFromGoogleDrive = async () => {
-    try {
-      if(!this.googleApiService.isLoggedIn()) {
-        console.log('logging...')
-        await this.googleApiService.logIn()
-        console.log('login ok')
-      }
-      const obj = await RemoteStorage.loadFile('data.json')
-      this.applyContent(obj)
-    } catch(e) {
-      console.log('Load error', e)
-      alert('Load error')
-    }
-  }
-
-  /** Загрузить и применить данные из файла Google Drive по fileId */
-  loadFromGoogleDriveByFileId = async (fileId: string) => {
-    try {
-      if(!this.googleApiService.isLoggedIn()) {
-        console.log('logging...')
-        await this.googleApiService.logIn()
-        console.log('login ok')
-      }
-      const obj = await RemoteStorage.loadFileById(fileId)
-      this.applyContent(obj)
-    } catch(e) {
-      console.log('Load error', e)
-      alert('Load error')
-    }
   }
 
   /** Инициализация состояния приложения из localStorage с fallback на пустые данные */

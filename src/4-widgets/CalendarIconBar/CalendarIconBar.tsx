@@ -38,17 +38,32 @@ const CalendarIconBar: React.FC = observer(function() {
   }
 
   const handleSaveCurrentDocument = async () => {
-    if (documentSessionStore.state.ref?.fileId) {
-      const isSaved = await documentSessionStore.saveToCurrentFile()
-      if (!isSaved && documentSessionStore.state.error) {
-        alert(documentSessionStore.state.error)
-      }
+    if (!documentSessionStore.state.ref?.fileId) {
+      alert('Нет открытого документа для сохранения. Используйте "Save to Google Drive As...".')
       return
     }
-    handleSaveAsToDrive()
+
+    const isSaved = await documentSessionStore.saveToCurrentFile()
+    if (!isSaved && documentSessionStore.state.error) {
+      alert(documentSessionStore.state.error)
+    }
   }
 
   const handleLoadLastOpenedDocument = async () => {
+    if (!googleApiService.isGoogleLoggedIn) {
+      try {
+        await googleApiService.logIn()
+      } catch (e) {
+        alert('Не удалось выполнить вход в Google.')
+        return
+      }
+    }
+
+    if (!googleApiService.isGoogleLoggedIn) {
+      alert('Для загрузки документа требуется вход в Google.')
+      return
+    }
+
     const restored = await documentSessionStore.restoreLastOpenedDocument()
     if (!restored) {
       const message = documentSessionStore.state.error || 'В localStorage нет последнего открытого документа.'
@@ -89,7 +104,7 @@ const CalendarIconBar: React.FC = observer(function() {
     icons.push({
       name: 'Save to Google Drive',
       jsx: <SwgIcon><Google/><UploadSign/>
-        {storageService.isSyncWithGoogleDrive || <ModifiedAsterisk/>}
+        {documentSessionStore.state.isDirty ? <ModifiedAsterisk/> : null}
         </SwgIcon>,
       fn: handleSaveCurrentDocument
     })

@@ -77,7 +77,12 @@ export class MainStore {
     this.storageService.init()
     this.eventsCache.init()
     this.googleApiService.initGapi()
-    void this.documentSessionStore.restoreLastOpenedDocument()
+    void this.googleApiService
+      .waitForGapiReady()
+      .then(() => this.documentSessionStore.restoreLastOpenedDocument())
+      .catch((e) => {
+        console.error('GAPI init failed, skip restoring last opened document:', e)
+      })
   }
 
   /** Триггернуть обновление UI */

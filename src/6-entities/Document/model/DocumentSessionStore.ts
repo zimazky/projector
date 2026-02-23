@@ -217,6 +217,7 @@ export class DocumentSessionStore {
     this.state.isDirty = false
     this.state.error = null
     this.state.lastSavedAt = Date.now()
+    this.storageService.markGoogleDriveSynced()
     this.persistSessionToLocalStorage()
   }
 
@@ -270,11 +271,17 @@ export class DocumentSessionStore {
     if (!snapshot) return false
 
     if (snapshot.fileId) {
-      await this.openFromDriveFile(snapshot.fileId, { space: snapshot.space ?? undefined })
-      if (this.state.error) {
-        this.clearPersistedSession()
+      // Важно: не инициируем login-flow автоматически на старте приложения.
+      // Иначе браузер блокирует popup как не связанный с пользовательским действием.
+      if (!this.googleApiService.isGoogleLoggedIn) {
+        this.setError('Для восстановления документа требуется вход в Google.')
         return false
       }
+
+      await this.openFromDriveFile(snapshot.fileId, { space: snapshot.space ?? undefined })
+      // Не удаляем snapshot на временных ошибках (например, GAPI еще не инициализирован).
+      // Иначе lastOpenedDocument будет теряться после перезагрузки приложения.
+      if (this.state.error) return false
       return true
     }
 

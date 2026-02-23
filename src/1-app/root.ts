@@ -26,7 +26,7 @@ export const eventFormStore = new EventFormStore()
 // 3. Инфраструктурные сервисы
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
-export const storageService = new StorageService(projectsStore, eventsStore, googleApiService)
+export const storageService = new StorageService(projectsStore, eventsStore)
 
 // 4. Сессия активного документа (Google Drive/local state)
 export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)

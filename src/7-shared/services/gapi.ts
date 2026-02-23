@@ -1,28 +1,30 @@
-const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
+﻿const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
 const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.appfolder'
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
-/** Хелпер-функция, оборачиваюая в Promise вызовы Google API */
-function prom(gapiCall: (arg: any)=>Promise<any>, argObj: any) {
+/** Обертка gapi-вызова в Promise с обработкой ошибок авторизации. */
+function prom(gapiCall: (arg: any) => Promise<any>, argObj: any) {
   return new Promise<any>((resolve, reject) => {
     gapiCall(argObj)
-    .then(resp => resolve(resp))
-    .catch(err => {
-      console.log('GAPI call failed', err)
-      if(err.result.error.code == 401 || (err.result.error.code == 403) && (err.result.error.status == "PERMISSION_DENIED")) {
-        console.log('401 denied')
-        gapi.client.setToken(null) // Сброс токена
-        expiredTokenHandle()
-        reject(err)
-      } else reject(err)
-    })
+      .then(resp => resolve(resp))
+      .catch(err => {
+        console.log('GAPI call failed', err)
+        if (err.result.error.code == 401 || (err.result.error.code == 403) && (err.result.error.status == 'PERMISSION_DENIED')) {
+          console.log('401 denied')
+          gapi.client.setToken(null)
+          expiredTokenHandle()
+          reject(err)
+        } else {
+          reject(err)
+        }
+      })
   })
 }
 
-/** Promise-функция загрузки скрипта */
+/** Загрузка внешнего скрипта через Promise. */
 function loadScriptPromise(url: string) {
-  return new Promise((resolve, reject)=>{
+  return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     script.src = url
     script.async = true
@@ -32,10 +34,27 @@ function loadScriptPromise(url: string) {
   })
 }
 
-/** Обработчик события ауторизации пользователя */
-let onLogIn = (value?: unknown)=>{}
+/** Очередь ожидающих завершения текущего login-flow. */
+let loginWaiters: Array<{ resolve: () => void; reject: (reason?: unknown) => void }> = []
+/** Текущий in-flight промис авторизации (дедупликация параллельных logIn). */
+let pendingLoginPromise: Promise<void> | null = null
 
-let expiredTokenHandle = ()=>{}
+function resolveLoginWaiters() {
+  const waiters = loginWaiters
+  loginWaiters = []
+  waiters.forEach(w => w.resolve())
+  pendingLoginPromise = null
+}
+
+function rejectLoginWaiters(reason?: unknown) {
+  const waiters = loginWaiters
+  loginWaiters = []
+  waiters.forEach(w => w.reject(reason))
+  pendingLoginPromise = null
+}
+
+/** Колбэк при истечении токена. */
+let expiredTokenHandle = () => {}
 
 export interface DriveFileMetadata {
   id: string;
@@ -46,14 +65,13 @@ export interface DriveFileMetadata {
   webViewLink?: string;
 }
 
-
-/** Класс статических методов для работы с Google API */
+/** Класс статических методов для работы с Google API. */
 export default class GAPI {
-  /** Экземпляр клиента, для запроса на аутентификацию */
+  /** Экземпляр OAuth token client. */
   static tokenClient: google.accounts.oauth2.TokenClient
 
-  /** Асинхронная функция инициализации модулей Google API */
-  static async init({onSuccess = ()=>{}, onFailure = ()=>{}, onSignIn = ()=>{}, onExpiredToken = ()=>{}}) {
+  /** Инициализация GIS + GAPI. */
+  static async init({ onSuccess = () => {}, onFailure = () => {}, onSignIn = () => {}, onExpiredToken = () => {} }) {
     expiredTokenHandle = onExpiredToken
     try {
       const _gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
@@ -65,60 +83,80 @@ export default class GAPI {
         prompt: '',
         callback: (tokenResponse) => {
           console.log('tokenResponse', tokenResponse)
+          if (tokenResponse?.error) {
+            rejectLoginWaiters(tokenResponse)
+            return
+          }
           onSignIn()
-          onLogIn()
+          resolveLoginWaiters()
         }
       })
       console.log('gis inited')
       await _gapi
-      gapi.load('client', ()=>{
+      gapi.load('client', () => {
         gapi.client.init({
           apiKey: getKey(),
-          discoveryDocs: [DISCOVERY_DOC],
-          // NOTE: OAuth2 'scope' and 'client_id' parameters have moved to initTokenClient().
+          discoveryDocs: [DISCOVERY_DOC]
         })
-        .then(function() {
-          console.log('gapi inited')
-          onSuccess()
-        })
-        .catch(()=>{
-          console.log('gapi init error')
-          onFailure()
-        })
+          .then(() => {
+            console.log('gapi inited')
+            onSuccess()
+          })
+          .catch(() => {
+            console.log('gapi init error')
+            onFailure()
+          })
       })
     }
-    catch(error) {
+    catch (error) {
       console.log('error gapi or gis load')
       onFailure()
     }
   }
 
-  /** Функция-промис авторизации в системе Google, делает запрос токена авторизации*/
+  /**
+   * Запрос токена авторизации.
+   * Параллельные вызовы используют один общий in-flight промис.
+   */
   static logIn(prompt = '') {
-    return new Promise((resolve, reject)=>{
-      GAPI.tokenClient?.requestAccessToken({prompt})
-      onLogIn = resolve
+    if (!GAPI.tokenClient) {
+      return Promise.reject(new Error('Google token client is not initialized'))
+    }
+
+    if (pendingLoginPromise) {
+      return pendingLoginPromise
+    }
+
+    pendingLoginPromise = new Promise<void>((resolve, reject) => {
+      loginWaiters.push({ resolve, reject })
+      try {
+        GAPI.tokenClient.requestAccessToken({ prompt })
+      } catch (e) {
+        rejectLoginWaiters(e)
+      }
     })
+
+    return pendingLoginPromise
   }
 
-  /** Функция отзыва токена ауторизации */
+  /** Отзыв токена и выход из аккаунта. */
   static logOut() {
     const token = gapi.client.getToken()
     if (token !== null) {
-      google.accounts.oauth2.revoke(token.access_token,()=>{
+      google.accounts.oauth2.revoke(token.access_token, () => {
         console.log('revoke', token.access_token)
         gapi.client.setToken(null)
       })
     }
   }
 
-  /** Функция проверки ауторизации в системе Google*/
+  /** Проверка, авторизован ли пользователь. */
   static isLoggedIn() {
     const token = gapi.client.getToken()
     return token !== null
   }
 
-  /** Функция проверки выданных приложению разрешений тем, которые перечислены в параметрах scope и scopes */
+  /** Проверка выданных приложению scope-разрешений. */
   static isGranted(scope: string, ...scopes: string[]) {
     return google.accounts.oauth2.hasGrantedAllScopes(gapi.client.getToken() as google.accounts.oauth2.TokenResponse, scope, ...scopes)
   }
@@ -135,31 +173,26 @@ export default class GAPI {
     return resp.result as DriveFileMetadata
   }
 
-  /** Запись содержимого content в файл, заданный идентификатором fileId */
+  /** Запись контента в файл по его fileId. */
   static async upload(fileId: string, content: string | object) {
-    // функция принимает либо строку, либо объект, который можно сериализовать в JSON
     return prom(gapi.client.request, {
       path: `/upload/drive/v3/files/${fileId}`,
       method: 'PATCH',
-      params: {uploadType: 'media'},
+      params: { uploadType: 'media' },
       body: typeof content === 'string' ? content : JSON.stringify(content)
     })
   }
 
-  /** Получение содержимого файла, заданного идентификатором fileId */
+  /** Чтение содержимого файла по fileId. */
   static async download(fileId: string) {
     const resp = await prom(gapi.client.drive.files.get, {
       fileId: fileId,
       alt: 'media'
     })
-    // resp.body хранит ответ в виде строки
-    // resp.result — это попытка интерпретировать resp.body как JSON.
-    // Если она провалилась, значение resp.result будет false
-    // Т.о. функция возвращает либо объект, либо строку
     return resp.result || resp.body
   }
 
-  /** Получение списка файлов, соответствующих запросу query */
+  /** Поиск файлов и папок по query в указанном пространстве Drive. */
   static async find(
     query: string,
     folderId: string | null = null,
@@ -169,17 +202,16 @@ export default class GAPI {
     let ret: DriveFileMetadata[] = []
     let token: string | undefined
 
-    // Build the effective query string
-    let effectiveQueryParts: string[] = ['trashed = false']; // Always filter out trashed files
+    const effectiveQueryParts: string[] = ['trashed = false']
 
-    if (folderId) { // If a specific folderId is provided (could be 'root', 'appDataFolder', or a subfolder ID)
-      effectiveQueryParts.unshift(`'${folderId}' in parents`);
+    if (folderId) {
+      effectiveQueryParts.unshift(`'${folderId}' in parents`)
     }
 
     if (query) {
-      effectiveQueryParts.push(`(${query})`); // Add additional query if present
+      effectiveQueryParts.push(`(${query})`)
     }
-    const effectiveQuery = effectiveQueryParts.join(' and ');
+    const effectiveQuery = effectiveQueryParts.join(' and ')
 
     do {
       const resp = await prom(gapi.client.drive.files.list, {
@@ -195,30 +227,30 @@ export default class GAPI {
       }
       token = resp.result.nextPageToken
     } while (token)
+
     return ret
   }
 
-  /** Получение содержимого папки */
+  /** Получение содержимого папки. */
   static async listFolderContents(
     folderId: string = 'root',
     fields: string = 'id, name, mimeType, parents, iconLink, webViewLink',
-    spaces: string = 'drive' // Add spaces parameter here
+    spaces: string = 'drive'
   ): Promise<DriveFileMetadata[]> {
-    const query = ''; // Пустой запрос, если нужно просто получить все
-    // Always pass folderId to GAPI.find, it will handle construction of 'q'
-    return GAPI.find(query, folderId, fields, spaces);
+    const query = ''
+    return GAPI.find(query, folderId, fields, spaces)
   }
 
-  /** Получение метаданных файла или папки по его ID */
+  /** Получение метаданных файла/папки по ID. */
   static async getFileMetadata(fileId: string): Promise<DriveFileMetadata> {
     const resp = await prom(gapi.client.drive.files.get, {
       fileId: fileId,
       fields: 'id, name, mimeType, parents, iconLink, webViewLink'
-    });
-    return resp.result as DriveFileMetadata;
+    })
+    return resp.result as DriveFileMetadata
   }
 
-  /** Удаление файла */
+  /** Удаление файла по ID. */
   static async deleteFile(fileId: string) {
     try {
       await prom(gapi.client.drive.files.delete, { fileId: fileId })
@@ -231,131 +263,13 @@ export default class GAPI {
 }
 
 function getKey(): string {
-    // В браузере нет Buffer, используем atob/btoa
-    const e = 'cn1LBTIfdmVjcV0Pf3VYSHpXXw4MDC9nIk4JDQhDE0J7WQIhGSNV';
-    const de = atob(e);
-    const k = process.env.OPEN_WEATHER_KEY ?? '';
-    let output = '';
-    for (let i = 0; i < de.length; i++) {
-        const charCode = de.charCodeAt(i) ^ k.charCodeAt(i % k.length);
-        output += String.fromCharCode(charCode);
-    }
-    return output;
+  const e = 'cn1LBTIfdmVjcV0Pf3VYSHpXXw4MDC9nIk4JDQhDE0J7WQIhGSNV'
+  const de = atob(e)
+  const k = process.env.OPEN_WEATHER_KEY ?? ''
+  let output = ''
+  for (let i = 0; i < de.length; i++) {
+    const charCode = de.charCodeAt(i) ^ k.charCodeAt(i % k.length)
+    output += String.fromCharCode(charCode)
+  }
+  return output
 }
-
-/*
-
-///////////////////////////////////////////////////////////////////////////////
-// Пример синхронизации данных
-
-// Интервал между синхронизациями конфига
-const SYNC_PERIOD = 1000 * 60 * 3     // 3 минуты
-// Конфигурация по умолчанию
-const DEFAULT_CONFIG = {
-    // ...
-}
-
-// храним ID таймера синхронизации, чтобы иметь возможность его сбросить
-let configSyncTimeoutId
-
-async function getConfigFileId() {
-    // берем configFileId
-    let configFileId = localStorage.getItem('configFileId')
-    if (!configFileId) {
-        // ищем нужный файл на Google Drive
-        const configFiles = await find('name = "config.json"')
-        if (configFiles.length > 0) {
-            // берем первый (раньше всех созданный) файл
-            configFileId = configFiles[0].id
-        } else {
-            // создаем новый
-            configFileId = await createEmptyFile('config.json')
-        }
-        // сохраняем ID
-        localStorage.setItem('configFileId', configFileId)
-    }
-    return configFileId
-}
-
-async function onSignIn() {
-    // обработчик события логина/логаута (см. выше)
-    if (isLoggedIn()) {
-        // пользователь зашел
-        // шедулим (как это по-русски?) немедленную синхронизацию конфига
-        scheduleConfigSync(0)
-    } else {
-        // пользователь вышел
-        // в следующий раз пользователь может зайти под другим аккаунтом
-        // поэтому забываем config file ID
-        localStorage.removeItem('configFileId')
-        // в localStorage лежит актуальный конфиг, дальше пользуемся им
-    }
-}
-
-function getConfig() {
-    let ret
-    try {
-        ret = JSON.parse(localStorage.getItem('config'))
-    } catch(e) {}
-    // если сохраненного конфига нет, возвращаем копию дефолтного
-    return ret || {...DEFAULT_CONFIG}
-}
-
-async function saveConfig(newConfig) {
-    // эту функцию зовем всегда, когда надо изменить конфиг
-    localStorage.setItem('config', JSON.stringify(newConfig))
-    if (isLoggedIn()) {
-        // получаем config file ID
-        const configFileId = await getConfigFileId()
-        // заливаем новый конфиг в Google Drive
-        upload(configFileId, newConfig)
-    }
-}
-
-async function syncConfig() {
-    if (!isLoggedIn()) {
-        return
-    }
-    // получаем config file ID
-    const configFileId = await getConfigFileId()
-    try {
-        // загружаем конфиг
-        const remoteConfig = await download(configFileId)
-        if (!remoteConfig || typeof remoteConfig !== 'object') {
-            // пустой или испорченный конфиг, перезаписываем текущим
-            upload(configFileId, getConfig())
-        } else {
-            // сохраняем локально, перезаписывая существующие данные
-            localStorage.setItem('config', JSON.stringify(remoteConfig))
-        }
-        // синхронизация завершена, в localStorage актуальный конфиг
-    } catch(e) {
-        if (e.status === 404) {
-            // кто-то удалил наш конфиг, забываем неверный fileID и пробуем еще раз
-            localStorage.removeItem('configFileId')
-            syncConfig()
-        } else {
-            throw e
-        }
-    }
-}
-
-function scheduleConfigSync(delay) {
-    // сбрасываем старый таймер, если он был
-    if (configSyncTimeoutId) {
-        clearTimeout(configSyncTimeoutId)
-    }
-    configSyncTimeoutId = setTimeout(() => {
-        // выполняем синхронизацию и шедулим снова
-        syncConfig()
-            .catch(e => console.log('Failed to synchronize config', e))
-            .finally(() => scheduleSourcesSync())
-    }, typeof delay === 'undefined' ? SYNC_PERIOD : delay)
-}
-
-function initApp() {
-    // запускаем синхронизацию при старте приложения
-    scheduleConfigSync()
-}
-
-*/

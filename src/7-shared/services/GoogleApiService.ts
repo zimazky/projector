@@ -12,9 +12,20 @@ export type SaveFileResult =
  */
 export class GoogleApiService {
   isGoogleLoggedIn: boolean = false
+  private isGapiInitStarted: boolean = false
+  private gapiReadyPromise: Promise<void> | null = null
+  private resolveGapiReady: (() => void) | null = null
+  private rejectGapiReady: ((reason?: unknown) => void) | null = null
 
   constructor() {
     makeAutoObservable(this)
+  }
+
+  private resetGapiReadyPromise() {
+    this.gapiReadyPromise = new Promise<void>((resolve, reject) => {
+      this.resolveGapiReady = resolve
+      this.rejectGapiReady = reject
+    })
   }
 
   /**
@@ -22,9 +33,18 @@ export class GoogleApiService {
    * Устанавливает обработчики для успешной инициализации, входа и истечения токена.
    */
   initGapi = () => {
+    if (this.isGapiInitStarted) return
+    this.isGapiInitStarted = true
+    this.resetGapiReadyPromise()
+
     GAPI.init({
       onSuccess: () => {
         runInAction(() => { this.isGoogleLoggedIn = GAPI.isLoggedIn() })
+        this.resolveGapiReady?.()
+      },
+      onFailure: () => {
+        this.isGapiInitStarted = false
+        this.rejectGapiReady?.(new Error('Failed to initialize Google API'))
       },
       onSignIn: () => {
         runInAction(() => {
@@ -38,11 +58,20 @@ export class GoogleApiService {
     })
   }
 
+  /** Дождаться завершения инициализации GAPI */
+  waitForGapiReady = async () => {
+    if (!this.gapiReadyPromise) {
+      throw new Error('GAPI initialization has not been started')
+    }
+    await this.gapiReadyPromise
+  }
+
   /**
    * Авторизоваться в Google сервисах.
    * @returns Promise<void>
    */
   logIn = async () => {
+    await this.waitForGapiReady()
     await GAPI.logIn()
     runInAction(() => { this.isGoogleLoggedIn = GAPI.isLoggedIn() })
   }
