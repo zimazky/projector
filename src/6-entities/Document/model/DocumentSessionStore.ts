@@ -5,9 +5,41 @@ import { StorageService } from 'src/7-shared/services/StorageService'
 import {
   createInitialOpenDocumentState,
   DriveSpace,
+  LastOpenedDocumentSnapshot,
   OpenDocumentRef,
   OpenDocumentState
 } from './types'
+
+const LAST_OPENED_DOCUMENT_KEY = 'lastOpenedDocument'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function isDriveSpace(value: unknown): value is DriveSpace | null {
+  return value === null || value === 'drive' || value === 'appDataFolder'
+}
+
+function toSnapshot(value: unknown): LastOpenedDocumentSnapshot | null {
+  if (!isRecord(value)) return null
+
+  const { fileId, name, mimeType, space, parentFolderId, updatedAt } = value
+  if (fileId !== null && typeof fileId !== 'string') return null
+  if (typeof name !== 'string') return null
+  if (typeof mimeType !== 'string') return null
+  if (!isDriveSpace(space)) return null
+  if (parentFolderId !== null && typeof parentFolderId !== 'string') return null
+  if (typeof updatedAt !== 'number') return null
+
+  return {
+    fileId,
+    name,
+    mimeType,
+    space,
+    parentFolderId,
+    updatedAt
+  }
+}
 
 /**
  * Store-сессия документа.
@@ -35,6 +67,7 @@ export class DocumentSessionStore {
     }
     this.state.isDirty = false
     this.state.error = null
+    this.persistSessionToLocalStorage()
   }
 
   /** Открыть документ по уже известной ссылке/метаданным */
@@ -43,6 +76,7 @@ export class DocumentSessionStore {
     this.state.isDirty = false
     this.state.error = null
     this.state.lastLoadedAt = Date.now()
+    this.persistSessionToLocalStorage()
   }
 
   /**
@@ -52,10 +86,10 @@ export class DocumentSessionStore {
   async openFromDriveFile(fileId: string, options?: { space?: DriveSpace }) {
     this.startLoading()
     try {
-      const [metadata, content] = await Promise.all([
-        this.googleApiService.getFileMetadata(fileId),
-        this.googleApiService.downloadFileContent(fileId)
-      ])
+      // Важно: выполняем последовательно, чтобы не запускать параллельный login-flow.
+      // Иначе оба запроса могут одновременно вызвать logIn(), что вызывает гонку колбэка в gapi.ts.
+      const metadata = await this.googleApiService.getFileMetadata(fileId)
+      const content = await this.googleApiService.downloadFileContent(fileId)
 
       this.storageService.applyContent(content)
 
@@ -119,6 +153,7 @@ export class DocumentSessionStore {
   /** Закрыть текущий документ и сбросить состояние сессии */
   close() {
     this.state = createInitialOpenDocumentState()
+    this.clearPersistedSession()
   }
 
   /** Частично обновить метаданные текущего документа */
@@ -170,6 +205,7 @@ export class DocumentSessionStore {
     this.state.isDirty = false
     this.state.error = null
     this.state.lastLoadedAt = Date.now()
+    this.persistSessionToLocalStorage()
   }
 
   /** Зафиксировать успешное сохранение документа */
@@ -181,6 +217,7 @@ export class DocumentSessionStore {
     this.state.isDirty = false
     this.state.error = null
     this.state.lastSavedAt = Date.now()
+    this.persistSessionToLocalStorage()
   }
 
   /** Установить/сбросить текст ошибки */
@@ -191,6 +228,64 @@ export class DocumentSessionStore {
   /** Очистить ошибку сессии */
   clearError() {
     this.state.error = null
+  }
+
+  /** Сохранить ссылку на текущий документ в localStorage */
+  persistSessionToLocalStorage() {
+    if (!this.state.ref) return
+    const snapshot: LastOpenedDocumentSnapshot = {
+      fileId: this.state.ref.fileId,
+      name: this.state.ref.name,
+      mimeType: this.state.ref.mimeType,
+      space: this.state.ref.space,
+      parentFolderId: this.state.ref.parentFolderId,
+      updatedAt: Date.now()
+    }
+    localStorage.setItem(LAST_OPENED_DOCUMENT_KEY, JSON.stringify(snapshot))
+  }
+
+  /** Удалить сохраненный снимок сессии документа */
+  clearPersistedSession() {
+    localStorage.removeItem(LAST_OPENED_DOCUMENT_KEY)
+  }
+
+  /** Получить и провалидировать снимок последнего открытого документа */
+  restoreSessionFromLocalStorage(): LastOpenedDocumentSnapshot | null {
+    const raw = localStorage.getItem(LAST_OPENED_DOCUMENT_KEY)
+    if (!raw) return null
+
+    try {
+      const snapshot = toSnapshot(JSON.parse(raw))
+      if (!snapshot) this.clearPersistedSession()
+      return snapshot
+    } catch {
+      this.clearPersistedSession()
+      return null
+    }
+  }
+
+  /** Автоматически восстановить последний документ из localStorage */
+  async restoreLastOpenedDocument() {
+    const snapshot = this.restoreSessionFromLocalStorage()
+    if (!snapshot) return false
+
+    if (snapshot.fileId) {
+      await this.openFromDriveFile(snapshot.fileId, { space: snapshot.space ?? undefined })
+      if (this.state.error) {
+        this.clearPersistedSession()
+        return false
+      }
+      return true
+    }
+
+    this.openDocument({
+      fileId: null,
+      name: snapshot.name,
+      mimeType: snapshot.mimeType,
+      space: snapshot.space,
+      parentFolderId: snapshot.parentFolderId
+    })
+    return true
   }
 
   /** Проверка, открыт ли документ */

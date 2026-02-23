@@ -48,6 +48,14 @@ const CalendarIconBar: React.FC = observer(function() {
     handleSaveAsToDrive()
   }
 
+  const handleLoadLastOpenedDocument = async () => {
+    const restored = await documentSessionStore.restoreLastOpenedDocument()
+    if (!restored) {
+      const message = documentSessionStore.state.error || 'В localStorage нет последнего открытого документа.'
+      alert(message)
+    }
+  }
+
   let icons: IconItem[] = []
   let menu: MenuItem[] = []
 
@@ -68,14 +76,14 @@ const CalendarIconBar: React.FC = observer(function() {
   icons.push({
     name: 'Load from Google Drive',
     jsx: <SwgIcon><Google/><DownloadSign/></SwgIcon>,
-    fn: storageService.loadFromGoogleDrive
+    fn: handleLoadLastOpenedDocument
   })
 
   if (googleApiService.isGoogleLoggedIn) {
     menu.push({ name: 'Logout', fn: googleApiService.logOut })
     menu.push({ name: 'Save to Google Drive', fn: handleSaveCurrentDocument })
     menu.push({ name: 'Save to Google Drive As...', fn: handleSaveAsToDrive })
-    menu.push({ name: 'Load from Google Drive', fn: storageService.loadFromGoogleDrive })
+    menu.push({ name: 'Load from Google Drive', fn: handleLoadLastOpenedDocument })
     menu.push({ name: 'Open Drive File Picker', fn: () => setIsPickerOpen(true) })
 
     icons.push({

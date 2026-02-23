@@ -15,6 +15,15 @@
 .caption {
   white-space: nowrap;
 }
+
+.documentName {
+  max-width: 38vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  color: #4a4a4a;
+}
 /*
 @media (max-width: 440px) { 
 	.caption {
