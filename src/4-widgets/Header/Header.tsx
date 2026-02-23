@@ -11,11 +11,14 @@ import styles from './Header.module.css'
 
 const Header: React.FC = observer(function() {
   const { calendarStore, mainStore, documentSessionStore } = useContext(StoreContext)
+  const documentTitle = documentSessionStore.isOpened
+    ? `${documentSessionStore.title}${documentSessionStore.state.isDirty ? ' *' : ''}`
+    : 'Документ не открыт'
 
   return <header className={styles.header}>
     <CalendarIconBar/>
     <span className={styles.documentName}>
-      {documentSessionStore.isOpened ? documentSessionStore.title : 'Документ не открыт'}
+      {documentTitle}
     </span>
     <span className={styles.caption}>{ calendarStore.caption }</span>
     <Time onClick={()=>{

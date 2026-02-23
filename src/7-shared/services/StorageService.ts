@@ -109,6 +109,17 @@ export class StorageService {
     return data
   }
 
+  /** Сбросить данные приложения к пустому состоянию (без привязки к Drive-файлу) */
+  resetToEmptyContent = () => {
+    this.projectsStore.init([])
+    this.eventsStore.init({ completedList: [], plannedList: [] })
+    runInAction(() => {
+      this.isSyncWithLocalstorage = false
+      this.isSyncWithGoogleDrive = false
+      mainStore.mustForceUpdate = {}
+    })
+  }
+
   /**
    * Применить контент документа к сторам приложения.
    * Используется как единая точка входа для загрузки из произвольных источников.
