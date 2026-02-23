@@ -1,4 +1,4 @@
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+﻿import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
@@ -9,35 +9,45 @@ import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
-import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore';
+import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
+import { DocumentSessionStore } from 'src/6-entities/Document/model'
 
-
-// 1. Инстанцирование основных доменных хранилищ
+// 1. Основные доменные сторы
 export const projectsStore = new ProjectsStore()
 export const eventsStore = new EventsStore(projectsStore)
 export const eventsCache = new EventsCache(projectsStore, eventsStore)
 
-// 2. Инстанцирование других доменных/функциональных хранилищ с их зависимостями
+// 2. Сторы представления и функций приложения
 export const weatherStore = new WeatherStore()
 export const calendarStore = new CalendarStore(eventsCache, weatherStore)
 export const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
 export const eventFormStore = new EventFormStore()
 
-// 3. Инстанцирование общих сервисов
+// 3. Инфраструктурные сервисы
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(projectsStore, eventsStore, googleApiService)
 
-// 4. Инстанцирование MainStore (оркестратора) с его основными зависимостями
-export const mainStore = new MainStore(projectsStore, eventsStore, eventsCache, googleApiService, storageService)
+// 4. Сессия активного документа (Google Drive/local state)
+export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
 
-// 5. Инстанцирование SaveToDriveStore (зависит от GoogleApiService и MainStore)
-export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore);
+// 5. Оркестратор приложения
+export const mainStore = new MainStore(
+  projectsStore,
+  eventsStore,
+  eventsCache,
+  googleApiService,
+  storageService,
+  documentSessionStore
+)
 
-// 5. Инициализация главного хранилища, которое в свою очередь инициализирует другие сервисы/хранилища
+// 6. Store диалога "Сохранить как"
+export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentSessionStore)
+
+// 7. Инициализация приложения
 mainStore.init()
 
-// Реэкспорт всех хранилищ и сервисов для удобного доступа из одной точки
+// Реэкспорт классов для внешнего использования
 export {
   UIStore,
   GoogleApiService,
@@ -49,6 +59,5 @@ export {
   WeatherStore,
   CalendarStore,
   DayListStore,
-  EventFormStore,
-  // saveToDriveStore // REMOVE THIS LINE
+  EventFormStore
 }

@@ -99,6 +99,20 @@ export class GoogleApiService {
     return GAPI.getFileMetadata(fileId);
   }
 
+  /**
+   * Получает контент файла Google Drive по ID.
+   * Возвращает либо объект (если JSON распарсился), либо строку.
+   */
+  async downloadFileContent(fileId: string): Promise<unknown> {
+    if (!this.isGoogleLoggedIn) {
+      await this.logIn();
+      if (!this.isGoogleLoggedIn) {
+        throw new Error("User not logged in to Google.");
+      }
+    }
+    return GAPI.download(fileId);
+  }
+
   async createFolder(name: string, parentFolderId: string): Promise<DriveFileMetadata> {
     if (!this.isGoogleLoggedIn) {
       await this.logIn();

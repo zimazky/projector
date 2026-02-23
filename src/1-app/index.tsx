@@ -1,16 +1,33 @@
-import React from 'react'
-import {createRoot} from "react-dom/client"
+﻿import React from 'react'
+import { createRoot } from 'react-dom/client'
 
 import App from './App/App'
 
 import './index.css'
 
-import { mainStore, projectsStore, eventsStore, eventsCache, weatherStore, calendarStore, dayListStore, eventFormStore, uiStore, googleApiService, storageService, saveToDriveStore } from './root'
+import {
+  mainStore,
+  projectsStore,
+  eventsStore,
+  eventsCache,
+  weatherStore,
+  calendarStore,
+  dayListStore,
+  eventFormStore,
+  uiStore,
+  googleApiService,
+  storageService,
+  saveToDriveStore,
+  documentSessionStore
+} from './root'
 import StoreProvider from './Providers/StoreProvider'
 
 const rootElement = document.getElementById('root')
-if(rootElement === null) throw new Error('Не найден DOM элемент #root')
+if (rootElement === null) throw new Error('Не найден DOM элемент #root')
+
 const root = createRoot(rootElement)
+
+// Регистрируем все сторы в едином провайдере контекста приложения.
 root.render(
   <StoreProvider
     mainStore={mainStore}
@@ -25,6 +42,7 @@ root.render(
     googleApiService={googleApiService}
     storageService={storageService}
     saveToDriveStore={saveToDriveStore}
+    documentSessionStore={documentSessionStore}
     fileSavedNotifier={mainStore.fileSavedNotifier}
   >
     <App />

@@ -8,6 +8,7 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService' // Imp
 import { StorageService } from 'src/7-shared/services/StorageService' // Import the type
 import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListStore'; // Import PathSegment
 import { Observable } from 'src/7-shared/libs/Observable/Observable';
+import { DocumentSessionStore } from 'src/6-entities/Document/model';
 
 /** Класс главного хранилища приложения */
 export class MainStore {
@@ -21,6 +22,7 @@ export class MainStore {
   mustForceUpdate: {} = {}
   private googleApiService: GoogleApiService
   private storageService: StorageService
+  private documentSessionStore: DocumentSessionStore
 
   // New property for Drive Explorer persistence
   driveExplorerPersistentState = new Map<string, { folderId: string; path: PathSegment[] }>();
@@ -29,12 +31,20 @@ export class MainStore {
   fileSavedNotifier = new Observable<void>();
 
 
-  constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, eventsCache: EventsCache, googleApiService: GoogleApiService, storageService: StorageService) {
+  constructor(
+    projectsStore: ProjectsStore,
+    eventsStore: EventsStore,
+    eventsCache: EventsCache,
+    googleApiService: GoogleApiService,
+    storageService: StorageService,
+    documentSessionStore: DocumentSessionStore
+  ) {
     this.projectsStore = projectsStore
     this.eventsStore = eventsStore
     this.eventsCache = eventsCache
     this.googleApiService = googleApiService
     this.storageService = storageService
+    this.documentSessionStore = documentSessionStore
 
     this.driveExplorerPersistentState.set('drive', { folderId: 'root', path: [{ id: 'root', name: 'Мой диск' }] });
     this.driveExplorerPersistentState.set('appDataFolder', { folderId: 'appDataFolder', path: [{ id: 'appDataFolder', name: 'Раздел приложения' }] });
@@ -55,6 +65,7 @@ export class MainStore {
       this.eventsStore.sort()
       this.eventsCache.init()
       this.storageService.desyncWithStorages()
+      this.documentSessionStore.markDirty()
     }
   }
 

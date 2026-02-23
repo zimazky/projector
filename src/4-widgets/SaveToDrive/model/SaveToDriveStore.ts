@@ -1,68 +1,77 @@
-import { makeAutoObservable, runInAction } from 'mobx';
-import { GoogleApiService, SaveFileResult } from 'src/7-shared/services/GoogleApiService';
-import { DriveFileMetadata } from 'src/7-shared/services/gapi'; // Import DriveFileMetadata
-import { MainStore } from 'src/1-app/Stores/MainStore'; // Import MainStore
+﻿import { makeAutoObservable, runInAction } from 'mobx'
+
+import { GoogleApiService, SaveFileResult } from 'src/7-shared/services/GoogleApiService'
+import { DriveFileMetadata } from 'src/7-shared/services/gapi'
+import { MainStore } from 'src/1-app/Stores/MainStore'
+import { DocumentSessionStore, DriveSpace } from 'src/6-entities/Document/model'
 
 export class SaveToDriveStore {
-  isOpen: boolean = false;
-  fileName: string = '';
-  fileContent: string | Blob | null = null;
-  mimeType: string = 'text/plain';
+  isOpen: boolean = false
+  fileName: string = ''
+  fileContent: string | Blob | null = null
+  mimeType: string = 'text/plain'
 
-  isSaving: boolean = false;
-  error: string | null = null;
+  isSaving: boolean = false
+  error: string | null = null
 
-  // New state for conflict resolution
-  showConflictDialog: boolean = false;
-  conflictingFiles: DriveFileMetadata[] = [];
-  newFileNameForConflict: string = ''; // For the rename option
+  showConflictDialog: boolean = false
+  conflictingFiles: DriveFileMetadata[] = []
+  newFileNameForConflict: string = ''
 
-  constructor(private googleApiService: GoogleApiService, private mainStore: MainStore) {
-    makeAutoObservable(this);
+  constructor(
+    private googleApiService: GoogleApiService,
+    private mainStore: MainStore,
+    private documentSessionStore: DocumentSessionStore
+  ) {
+    makeAutoObservable(this)
   }
 
-  // Actions
   open = (initialFileName: string, content: string | Blob, mime: string = 'text/plain') => {
-    this.isOpen = true;
-    this.fileName = initialFileName;
-    this.fileContent = content;
-    this.mimeType = mime;
-    this.error = null;
-    this.resetConflictState(); // Ensure conflict state is reset on open
-  };
+    this.isOpen = true
+    this.fileName = initialFileName
+    this.fileContent = content
+    this.mimeType = mime
+    this.error = null
+    this.resetConflictState()
+  }
 
   close = () => {
-    this.isOpen = false;
-    this.resetState();
-    this.resetConflictState();
-  };
+    this.isOpen = false
+    this.resetState()
+    this.resetConflictState()
+  }
 
   setFileName = (name: string) => {
-    this.fileName = name;
-  };
+    this.fileName = name
+  }
 
   setNewFileNameForConflict = (name: string) => {
-    this.newFileNameForConflict = name;
-  };
+    this.newFileNameForConflict = name
+  }
 
   closeConflictDialog = () => {
-    this.showConflictDialog = false;
-    this.resetConflictState();
-  };
+    this.showConflictDialog = false
+    this.resetConflictState()
+  }
 
-  // The core save method, now handling conflict resolution
-  saveFile = async (selectedFolderId: string, spaces: string, currentFileName: string = this.fileName, fileContentToSave: string | Blob | null = this.fileContent, fileIdToUpdate: string | null = null) => {
+  saveFile = async (
+    selectedFolderId: string,
+    spaces: string,
+    currentFileName: string = this.fileName,
+    fileContentToSave: string | Blob | null = this.fileContent,
+    fileIdToUpdate: string | null = null
+  ) => {
     if (!fileContentToSave || !currentFileName) {
-      this.error = "Имя файла и содержимое не могут быть пустыми.";
-      runInAction(() => { this.isSaving = false; }); // Ensure isSaving is reset on early exit
-      return;
+      this.error = 'Имя файла и содержимое не могут быть пустыми.'
+      runInAction(() => { this.isSaving = false })
+      return
     }
 
-    this.isSaving = true;
-    this.error = null;
+    this.isSaving = true
+    this.error = null
     try {
       if (!this.googleApiService.isGoogleLoggedIn) {
-        await this.googleApiService.logIn();
+        await this.googleApiService.logIn()
       }
 
       if (this.googleApiService.isGoogleLoggedIn) {
@@ -71,96 +80,102 @@ export class SaveToDriveStore {
           fileContentToSave,
           this.mimeType,
           selectedFolderId,
-          spaces, // Pass spaces to GoogleApiService.saveFile
-          fileIdToUpdate // Pass the file ID if we are updating
-        );
+          spaces,
+          fileIdToUpdate
+        )
 
         runInAction(() => {
           if (result.status === 'success') {
-            console.log("Файл успешно сохранен:", result.file);
-            this.mainStore.fileSavedNotifier.fire();
+            this.mainStore.fileSavedNotifier.fire()
+            const documentSpace: DriveSpace = spaces === 'appDataFolder' ? 'appDataFolder' : 'drive'
+            this.documentSessionStore.markSaveCompleted({
+              fileId: result.file.id,
+              name: result.file.name,
+              mimeType: result.file.mimeType || this.mimeType,
+              space: documentSpace,
+              parentFolderId: result.file.parents?.[0] ?? selectedFolderId,
+              webViewLink: result.file.webViewLink
+            })
+            this.close()
           } else if (result.status === 'conflict') {
-            this.conflictingFiles = result.existingFiles;
-            this.newFileNameForConflict = this.generateUniqueFileName(currentFileName, result.existingFiles); // Suggest a new name
-            this.showConflictDialog = true; // Show conflict dialog
-          } else { // result.status === 'error'
-            this.error = result.message;
+            this.conflictingFiles = result.existingFiles
+            this.newFileNameForConflict = this.generateUniqueFileName(currentFileName, result.existingFiles)
+            this.showConflictDialog = true
+          } else {
+            this.error = result.message
           }
-        });
+        })
       } else {
         runInAction(() => {
-          this.error = "Пожалуйста, войдите в Google для сохранения файла.";
-        });
+          this.error = 'Пожалуйста, войдите в Google для сохранения файла.'
+        })
       }
     } catch (e: any) {
       runInAction(() => {
-        console.error("Не удалось сохранить файл на Диск:", e);
-        this.error = e.message || "Не удалось сохранить файл на Диск.";
-      });
+        console.error('Не удалось сохранить файл на Google Drive:', e)
+        this.error = e.message || 'Не удалось сохранить файл на Google Drive.'
+      })
     } finally {
       runInAction(() => {
-        this.isSaving = false;
-      });
+        this.isSaving = false
+      })
     }
-  };
+  }
 
-  // Action to resolve conflict based on user's choice
   resolveConflict = async (resolution: 'overwrite' | 'rename' | 'cancel', selectedFolderId: string, spaces: string) => {
-    this.closeConflictDialog(); // Close the conflict dialog immediately
+    this.closeConflictDialog()
 
     if (resolution === 'cancel') {
-      this.isSaving = false; // Stop saving process
-      return;
+      this.isSaving = false
+      return
     }
 
     if (!this.fileContent) {
-      this.error = "Содержимое файла отсутствует.";
-      return;
+      this.error = 'Содержимое файла отсутствует.'
+      return
     }
 
     if (resolution === 'overwrite') {
-      const fileToOverwriteId = this.conflictingFiles.length > 0 ? this.conflictingFiles[0].id : null;
+      const fileToOverwriteId = this.conflictingFiles.length > 0 ? this.conflictingFiles[0].id : null
       if (fileToOverwriteId) {
-        // Call saveFile again, but this time with the ID of the file to update
-        await this.saveFile(selectedFolderId, spaces, this.fileName, this.fileContent, fileToOverwriteId);
+        await this.saveFile(selectedFolderId, spaces, this.fileName, this.fileContent, fileToOverwriteId)
       } else {
-        this.error = "Нет файла для перезаписи.";
+        this.error = 'Нет файла для перезаписи.'
       }
     } else if (resolution === 'rename') {
       if (this.newFileNameForConflict.trim() === '') {
-        this.error = "Новое имя файла не может быть пустым.";
-        return;
+        this.error = 'Новое имя файла не может быть пустым.'
+        return
       }
-      // Call saveFile again, but with the new unique name
-      await this.saveFile(selectedFolderId, spaces, this.newFileNameForConflict, this.fileContent);
+      await this.saveFile(selectedFolderId, spaces, this.newFileNameForConflict, this.fileContent)
     }
-  };
+  }
 
   private resetState = () => {
-    this.fileName = '';
-    this.fileContent = null;
-    this.mimeType = 'text/plain';
-    this.isSaving = false;
-    this.error = null;
-  };
+    this.fileName = ''
+    this.fileContent = null
+    this.mimeType = 'text/plain'
+    this.isSaving = false
+    this.error = null
+  }
 
   private resetConflictState = () => {
-    this.showConflictDialog = false;
-    this.conflictingFiles = [];
-    this.newFileNameForConflict = '';
-  };
+    this.showConflictDialog = false
+    this.conflictingFiles = []
+    this.newFileNameForConflict = ''
+  }
 
   private generateUniqueFileName = (originalName: string, existingFiles: DriveFileMetadata[]): string => {
-    let newName = originalName;
-    let counter = 1;
-    const nameParts = originalName.split('.');
-    const extension = nameParts.length > 1 ? `.${nameParts.pop()}` : '';
-    const nameWithoutExt = nameParts.join('.');
+    let newName = originalName
+    let counter = 1
+    const nameParts = originalName.split('.')
+    const extension = nameParts.length > 1 ? `.${nameParts.pop()}` : ''
+    const nameWithoutExt = nameParts.join('.')
 
     while (existingFiles.some(file => file.name === newName)) {
-        newName = `${nameWithoutExt} (${counter})${extension}`;
-        counter++;
+      newName = `${nameWithoutExt} (${counter})${extension}`
+      counter++
     }
-    return newName;
-  };
+    return newName
+  }
 }

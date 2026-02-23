@@ -1,4 +1,4 @@
-import React from 'react'
+﻿import React from 'react'
 
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
@@ -11,9 +11,14 @@ import { EventFormStore } from 'src/4-widgets/EventForm/EventFormStore'
 import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
-import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore';
-import { Observable } from 'src/7-shared/libs/Observable/Observable';
+import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
+import { Observable } from 'src/7-shared/libs/Observable/Observable'
+import { DocumentSessionStore } from 'src/6-entities/Document/model'
 
+/**
+ * Контракт всех сторов/сервисов, доступных через React Context.
+ * Нужен для единообразного DI в компонентах.
+ */
 export interface IRootStore {
   mainStore: MainStore;
   projectsStore: ProjectsStore;
@@ -27,7 +32,8 @@ export interface IRootStore {
   googleApiService: GoogleApiService;
   storageService: StorageService;
   saveToDriveStore: SaveToDriveStore;
+  documentSessionStore: DocumentSessionStore;
   fileSavedNotifier: Observable<void>;
 }
 
-export const StoreContext = React.createContext<IRootStore>({} as IRootStore);
+export const StoreContext = React.createContext<IRootStore>({} as IRootStore)
