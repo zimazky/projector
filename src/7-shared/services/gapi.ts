@@ -293,6 +293,11 @@ function getKey(): string {
   const e = 'cn1LBTIfdmVjcV0Pf3VYSHpXXw4MDC9nIk4JDQhDE0J7WQIhGSNV'
   const de = atob(e)
   const k = process.env.OPEN_WEATHER_KEY ?? ''
+
+  console.log('e', e)
+  console.log('de', de)
+  console.log('k', k)
+
   let output = ''
   for (let i = 0; i < de.length; i++) {
     const charCode = de.charCodeAt(i) ^ k.charCodeAt(i % k.length)
