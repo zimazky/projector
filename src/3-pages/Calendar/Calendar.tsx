@@ -1,7 +1,7 @@
-import React, { useContext } from 'react'
+import React, { useContext, useRef } from 'react'
 import { observer } from 'mobx-react-lite'
 
-import { max, min, throttle } from 'src/7-shared/helpers/utils'
+import { max, min } from 'src/7-shared/helpers/utils'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import useUpdate from 'src/7-shared/hooks/useUpdate'
 
@@ -15,46 +15,26 @@ import CalendarDay from "./CalendarDay"
 import CalendarEventItem from './CalendarEventItem'
 
 import styles from './Calendar.module.css'
+import { useCalendarScroll } from './useCalendarScroll'
 
 const Calendar: React.FC = observer(function() {
   const forceUpdate = useUpdate()
   const { calendarStore, eventFormStore, eventsStore, uiStore } = useContext(StoreContext)
-
-
-
-  React.useEffect(()=>{
-    const weekDiv = document.getElementById(calendarStore.week.toString())
-    weekDiv?.scrollIntoView(true)
-  }, [calendarStore.week, uiStore.mustForceUpdate])
+  const bodyRef = useRef<HTMLDivElement | null>(null)
 
   const today = DateTime.getBeginDayTimestamp(Date.now()/1000)
   const zeroPoint  = calendarStore.week
 
   const calendarWeeks = calendarStore.getCalendarDataStructure(zeroPoint)
-  
-  const onScrollHandle = React.useCallback(
-    throttle((e: React.UIEvent<HTMLElement>) => {
-      const el = e.currentTarget;
-      const t = el.scrollTop;
-      const b = el.scrollHeight - el.scrollTop - el.clientHeight;
-      // Общее число строк календаря (включая заголовки, баланс и строку ввода)
-      const sumN = calendarWeeks.reduce((a, w) => a + max(w.maxCount + 3, 7 + 3), 0);
-      // Средняя высота строки календаря
-      const hAvg = el.scrollHeight / sumN;
-      // Определение индекса первой недели отображаемой в видимой области
-      for (var i = 0, H = t; H > 0; i++) {
-        H -= hAvg * max(calendarWeeks[i].maxCount + 3, 7 + 3);
-      }
-      const w = Math.ceil(i - calendarStore.shift);
-      // Дата первой видимой недели
-      const d = new Date((zeroPoint + w * 7 * 86400) * 1000);
-      calendarStore.setMonthYear(d.getMonth(), d.getFullYear());
-      // Средняя высота недели в календаре
-      const avgDayHeight = el.scrollHeight / calendarWeeks.length;
-      calendarStore.correctShift(t / avgDayHeight, b / avgDayHeight);
-    }, 100), // Throttle limit of 100ms
-    [calendarStore, calendarWeeks, zeroPoint]
-  );
+  const { onScrollHandle } = useCalendarScroll({ calendarStore, calendarWeeks, zeroPoint })
+
+  React.useEffect(() => {
+    const container = bodyRef.current
+    if (!container) return
+    const selector = `[data-week-timestamp=\"${calendarStore.week}\"]`
+    const weekDiv = container.querySelector<HTMLElement>(selector)
+    weekDiv?.scrollIntoView({ block: 'start' })
+  }, [calendarStore.week, uiStore.mustForceUpdate])
 
   const dragDrop = (e: React.DragEvent<HTMLElement>, timestamp: timestamp) => {
     e.preventDefault()
@@ -72,9 +52,14 @@ const Calendar: React.FC = observer(function() {
       <div className={styles.dayOfWeekLabels}>
         { DateTime.getWeekdaysArray().map( d => <div key={d}>{d}</div> ) }
       </div>
-      <div className={styles.CalendarBody} onScroll={onScrollHandle}>
+      <div
+        ref={bodyRef}
+        className={styles.CalendarBody}
+        onScroll={onScrollHandle}
+      >
         { calendarWeeks.map( week => (
-          <div id={week.list[0].timestamp.toString()}
+          <div
+            data-week-timestamp={week.list[0].timestamp}
             className={styles.CalendarWeek}
             key={week.list[0].timestamp}
             style={{height: max(week.maxCount, 7)*1.5+1.6+1.6+1.6+'em'}}> {
