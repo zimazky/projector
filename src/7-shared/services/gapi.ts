@@ -83,6 +83,9 @@ export default class GAPI {
       const _gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
       const _gapi = loadScriptPromise('https://apis.google.com/js/api.js')
       await _gsi
+
+      console.log('client_id', CLIENT_ID)
+
       GAPI.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
