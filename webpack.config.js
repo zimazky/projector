@@ -55,7 +55,9 @@ module.exports = {
   },
   
   plugins: [
-    new Dotenv(),
+    new Dotenv({
+      systemvars: true, // брать переменные из process.env (в т.ч. GitHub Secrets)
+    }),
     new MiniCssExtractPlugin({ filename: 'main.css' })
   ],
 
