@@ -50,6 +50,30 @@
   z-index: 10;
 }
 
+.userMenuProfile {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eeeeee;
+  gap: 8px;
+}
+
+.userMenuProfileInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userMenuProfileName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212121;
+}
+
+.userMenuProfileEmail {
+  font-size: 12px;
+  color: #616161;
+}
+
 /*
 @media (max-width: 440px) { 
 	.caption {

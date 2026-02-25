@@ -12,6 +12,9 @@ export type SaveFileResult =
  */
 export class GoogleApiService {
   isGoogleLoggedIn: boolean = false
+  userName: string | null = null
+  userAvatarUrl: string | null = null
+  userEmail: string | null = null
   private isGapiInitStarted: boolean = false
   private gapiReadyPromise: Promise<void> | null = null
   private resolveGapiReady: (() => void) | null = null
@@ -40,6 +43,9 @@ export class GoogleApiService {
     GAPI.init({
       onSuccess: () => {
         runInAction(() => { this.isGoogleLoggedIn = GAPI.isLoggedIn() })
+        this.loadUserProfile().catch(() => {
+          // ignore profile loading errors on init
+        })
         this.resolveGapiReady?.()
       },
       onFailure: () => {
@@ -51,9 +57,17 @@ export class GoogleApiService {
           this.isGoogleLoggedIn = GAPI.isLoggedIn()
           console.log('onSignIn in GoogleApiService', this.isGoogleLoggedIn)
         })
+        this.loadUserProfile().catch(() => {
+          // ignore profile loading errors on sign in
+        })
       },
       onExpiredToken: () => {
-        runInAction(() => { this.isGoogleLoggedIn = false })
+        runInAction(() => {
+          this.isGoogleLoggedIn = false
+          this.userName = null
+          this.userAvatarUrl = null
+          this.userEmail = null
+        })
       }
     })
   }
@@ -74,6 +88,7 @@ export class GoogleApiService {
     await this.waitForGapiReady()
     await GAPI.logIn()
     runInAction(() => { this.isGoogleLoggedIn = GAPI.isLoggedIn() })
+    await this.loadUserProfile()
   }
 
   /**
@@ -81,7 +96,27 @@ export class GoogleApiService {
    */
   logOut = () => {
     GAPI.logOut()
-    runInAction(() => { this.isGoogleLoggedIn = false })
+    runInAction(() => {
+      this.isGoogleLoggedIn = false
+      this.userName = null
+      this.userAvatarUrl = null
+      this.userEmail = null
+    })
+  }
+
+  /** Загрузить профиль текущего пользователя Google (имя и аватар). */
+  private async loadUserProfile() {
+    if (!this.isGoogleLoggedIn) return
+    try {
+      const info = await GAPI.getUserInfo()
+      runInAction(() => {
+        this.userName = info.name ?? null
+        this.userAvatarUrl = info.picture ?? null
+        this.userEmail = info.email ?? null
+      })
+    } catch (e) {
+      console.error('Failed to load Google user profile', e)
+    }
   }
 
   /**

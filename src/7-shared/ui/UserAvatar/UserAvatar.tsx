@@ -11,13 +11,16 @@ type UserAvatarProps = {
   userName?: string | null
   /** Обработчик клика по аватару (для будущего меню пользователя) */
   onClick?: React.MouseEventHandler<HTMLDivElement>
+  /** Размер аватара: маленький (по умолчанию) или крупный */
+  size?: 'small' | 'large'
 }
 
 const UserAvatar: React.FC<UserAvatarProps> = ({
   isLoggedIn,
   avatarUrl,
   userName,
-  onClick
+  onClick,
+  size = 'small'
 }) => {
   if (!isLoggedIn) {
     return null
@@ -25,8 +28,11 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   const isClickable = typeof onClick === 'function'
 
+  const sizeClass = size === 'large' ? styles.avatarLarge : styles.avatarSmall
+
   const className = [
     styles.avatar,
+    sizeClass,
     isClickable ? styles.avatarClickable : ''
   ].filter(Boolean).join(' ')
 
@@ -36,6 +42,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
         className={className}
         onClick={onClick}
         aria-label={userName || 'Google user'}
+        title={userName || 'Google user'}
       >
         <img
           src={avatarUrl}
@@ -53,6 +60,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
       className={className}
       onClick={onClick}
       aria-label={userName || 'Google user'}
+      title={userName || 'Google user'}
     >
       {initials
         ? initials

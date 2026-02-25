@@ -42,10 +42,31 @@ const Header: React.FC = observer(function() {
       <span className={styles.userMenu}>
         <UserAvatar
           isLoggedIn={googleApiService.isGoogleLoggedIn}
+          userName={googleApiService.userName}
+          avatarUrl={googleApiService.userAvatarUrl}
           onClick={handleAvatarClick}
+          size="small"
         />
         {isUserMenuOpen && googleApiService.isGoogleLoggedIn && (
           <div className={styles.userMenuDropdown}>
+            <div className={styles.userMenuProfile}>
+              <UserAvatar
+                isLoggedIn={googleApiService.isGoogleLoggedIn}
+                userName={googleApiService.userName}
+                avatarUrl={googleApiService.userAvatarUrl}
+                size="large"
+              />
+              <div className={styles.userMenuProfileInfo}>
+                <div className={styles.userMenuProfileName}>
+                  {googleApiService.userName || googleApiService.userEmail || 'Аккаунт Google'}
+                </div>
+                {googleApiService.userEmail && (
+                  <div className={styles.userMenuProfileEmail}>
+                    {googleApiService.userEmail}
+                  </div>
+                )}
+              </div>
+            </div>
             <List>
               <ListItem onClick={handleLogoutClick}>Выйти</ListItem>
             </List>

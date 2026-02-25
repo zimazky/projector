@@ -1,6 +1,4 @@
- .avatar {
-  width: 32px;
-  height: 32px;
+.avatar {
   border-radius: 50%;
   overflow: hidden;
   display: inline-flex;
@@ -11,6 +9,16 @@
   font-size: 14px;
   font-weight: 500;
   user-select: none;
+}
+
+.avatarSmall {
+  width: 32px;
+  height: 32px;
+}
+
+.avatarLarge {
+  width: 56px;
+  height: 56px;
 }
 
 .avatarClickable {

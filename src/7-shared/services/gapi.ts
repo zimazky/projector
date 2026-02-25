@@ -1,6 +1,12 @@
-﻿const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
+const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.appfolder'
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/drive.appfolder',
+  'https://www.googleapis.com/auth/userinfo.profile',
+  'https://www.googleapis.com/auth/userinfo.email'
+].join(' ')
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
 /** Обертка gapi-вызова в Promise с обработкой ошибок авторизации. */
@@ -159,6 +165,27 @@ export default class GAPI {
   /** Проверка выданных приложению scope-разрешений. */
   static isGranted(scope: string, ...scopes: string[]) {
     return google.accounts.oauth2.hasGrantedAllScopes(gapi.client.getToken() as google.accounts.oauth2.TokenResponse, scope, ...scopes)
+  }
+
+  /** Получение информации о текущем пользователе (профиль Google). */
+  static async getUserInfo(): Promise<{ name?: string; picture?: string; email?: string }> {
+    const token = gapi.client.getToken()
+    if (!token || !token.access_token) {
+      throw new Error('Google access token is not available')
+    }
+
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${token.access_token}`
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info')
+    }
+
+    const data = await response.json() as { name?: string; picture?: string; email?: string }
+    return data
   }
 
   static async createFileOrFolder(name: string, mimeType: string = 'text/plain', parents: string[]) {
