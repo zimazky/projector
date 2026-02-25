@@ -37,7 +37,8 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          # Deploy the repository root so that index.html is at site root
+          path: .
 
   deploy:
     environment:
