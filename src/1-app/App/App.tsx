@@ -13,9 +13,9 @@ import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
 
 const App: React.FC = observer(function() {
   const forceUpdate = useUpdate()
-  const { mainStore, uiStore } = useContext(StoreContext)
+  const { uiStore } = useContext(StoreContext)
 
-  React.useEffect(forceUpdate, [mainStore.mustForceUpdate])
+  React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 
   console.log('app')
  

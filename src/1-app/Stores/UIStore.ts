@@ -8,6 +8,8 @@ export class UIStore {
   viewMode: ViewMode = 'Calendar'
   /** Признак открытого сайдбара с меню */
   isMenuOpen: boolean = false
+  /** Триггер принудительного обновления UI */
+  mustForceUpdate: {} = {}
 
   constructor() {
     makeAutoObservable(this)
@@ -21,6 +23,11 @@ export class UIStore {
   /** Переключить состояние меню */
   toggleMenu(isOpen: boolean) {
     this.isMenuOpen = isOpen
+  }
+
+  /** Триггернуть обновление UI */
+  forceUpdate() {
+    this.mustForceUpdate = {}
   }
 }
 

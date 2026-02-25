@@ -10,7 +10,7 @@ import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
 import styles from './Header.module.css'
 
 const Header: React.FC = observer(function() {
-  const { calendarStore, mainStore, documentSessionStore } = useContext(StoreContext)
+  const { calendarStore, uiStore, documentSessionStore } = useContext(StoreContext)
   const documentTitle = documentSessionStore.isOpened
     ? `${documentSessionStore.title}${documentSessionStore.state.isDirty ? ' *' : ''}`
     : 'Документ не открыт'
@@ -23,7 +23,7 @@ const Header: React.FC = observer(function() {
     <span className={styles.caption}>{ calendarStore.caption }</span>
     <Time onClick={()=>{
       calendarStore.setWeek(Date.now()/1000)
-      mainStore.forceUpdate()
+      uiStore.forceUpdate()
     }}></Time>
   </header>
 })

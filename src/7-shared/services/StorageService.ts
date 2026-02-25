@@ -1,8 +1,7 @@
-﻿import { makeAutoObservable, runInAction } from 'mobx'
+import { makeAutoObservable, runInAction } from 'mobx'
 
 import { ProjectData, ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore, EventsStoreData } from 'src/6-entities/Events/EventsStore'
-import { mainStore } from 'src/1-app/root'
 
 /** Сериализуемая структура данных приложения */
 export type MainStoreData = {
@@ -73,10 +72,16 @@ export class StorageService {
 
   private projectsStore: ProjectsStore
   private eventsStore: EventsStore
+  private onContentApplied?: () => void
 
-  constructor(projectsStore: ProjectsStore, eventsStore: EventsStore) {
+  constructor(
+    projectsStore: ProjectsStore,
+    eventsStore: EventsStore,
+    onContentApplied?: () => void
+  ) {
     this.projectsStore = projectsStore
     this.eventsStore = eventsStore
+    this.onContentApplied = onContentApplied
     makeAutoObservable(this)
   }
 
@@ -116,7 +121,7 @@ export class StorageService {
     runInAction(() => {
       this.isSyncWithLocalstorage = false
       this.isSyncWithGoogleDrive = false
-      mainStore.mustForceUpdate = {}
+      this.onContentApplied?.()
     })
   }
 
@@ -131,7 +136,7 @@ export class StorageService {
     runInAction(() => {
       this.isSyncWithLocalstorage = false
       this.isSyncWithGoogleDrive = true
-      mainStore.mustForceUpdate = {}
+      this.onContentApplied?.()
     })
   }
 

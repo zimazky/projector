@@ -18,14 +18,14 @@ import styles from './Calendar.module.css'
 
 const Calendar: React.FC = observer(function() {
   const forceUpdate = useUpdate()
-  const { calendarStore, eventFormStore, eventsStore, mainStore } = useContext(StoreContext)
+  const { calendarStore, eventFormStore, eventsStore, uiStore } = useContext(StoreContext)
 
 
 
   React.useEffect(()=>{
     const weekDiv = document.getElementById(calendarStore.week.toString())
     weekDiv?.scrollIntoView(true)
-  }, [calendarStore.week, mainStore.mustForceUpdate])
+  }, [calendarStore.week, uiStore.mustForceUpdate])
 
   const today = DateTime.getBeginDayTimestamp(Date.now()/1000)
   const zeroPoint  = calendarStore.week

@@ -1,4 +1,4 @@
-﻿import { makeAutoObservable } from 'mobx'
+import { makeAutoObservable } from 'mobx'
 
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
@@ -18,9 +18,6 @@ export class MainStore {
   eventsStore: EventsStore
   /** Кэш событий для календарных представлений */
   eventsCache: EventsCache
-
-  /** Триггер принудительного обновления UI */
-  mustForceUpdate: {} = {}
 
   private googleApiService: GoogleApiService
   private storageService: StorageService
@@ -83,11 +80,6 @@ export class MainStore {
       .catch((e) => {
         console.error('GAPI init failed, skip restoring last opened document:', e)
       })
-  }
-
-  /** Триггернуть обновление UI */
-  forceUpdate() {
-    this.mustForceUpdate = {}
   }
 
   /** Обновить сохраненное состояние проводника Drive */

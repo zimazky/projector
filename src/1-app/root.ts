@@ -1,4 +1,4 @@
-﻿import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
@@ -26,7 +26,11 @@ export const eventFormStore = new EventFormStore()
 // 3. Инфраструктурные сервисы
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
-export const storageService = new StorageService(projectsStore, eventsStore)
+export const storageService = new StorageService(
+  projectsStore,
+  eventsStore,
+  uiStore.forceUpdate
+)
 
 // 4. Сессия активного документа (Google Drive/local state)
 export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
