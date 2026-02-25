@@ -1,4 +1,4 @@
-﻿import React, { useContext, useRef, useState } from 'react'
+import React, { useContext, useRef, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
@@ -7,7 +7,8 @@ import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
-import UnsavedChangesPrompt, { UnsavedDecision } from 'src/5-features/UnsavedChangesPrompt'
+import YesNoCancelConfirmation, { YesNoCancelDecision } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
+import { UnsavedDecision } from 'src/5-features/UnsavedChangesPrompt'
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
@@ -226,11 +227,27 @@ const CalendarIconBar: React.FC = observer(function() {
       onSelect={handleFileSelect}
     />
     <SaveToDrive />
-    <UnsavedChangesPrompt
+    <YesNoCancelConfirmation
       open={isUnsavedDialogOpen}
-      actionName={unsavedDialogActionName}
-      onDecision={resolveUnsavedDecision}
-    />
+      onDecision={(decision: YesNoCancelDecision) => {
+        if (decision === 'yes') {
+          resolveUnsavedDecision('save')
+          return
+        }
+        if (decision === 'no') {
+          resolveUnsavedDecision('discard')
+          return
+        }
+        resolveUnsavedDecision('cancel')
+      }}
+      yesLabel="Сохранить"
+      noLabel="Не сохранять"
+      cancelLabel="Отмена"
+    >
+      Есть несохраненные изменения.
+      <br />
+      Что сделать перед действием "{unsavedDialogActionName}"?
+    </YesNoCancelConfirmation>
   </>
 })
 
