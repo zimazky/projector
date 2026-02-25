@@ -27,6 +27,7 @@ export class UIStore {
 
   /** Триггернуть обновление UI */
   forceUpdate() {
+    console.log('UIStore.forceUpdate')
     this.mustForceUpdate = {}
   }
 }

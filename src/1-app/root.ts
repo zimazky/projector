@@ -29,7 +29,7 @@ export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(
   projectsStore,
   eventsStore,
-  uiStore.forceUpdate
+  () => uiStore.forceUpdate()
 )
 
 // 4. Сессия активного документа (Google Drive/local state)

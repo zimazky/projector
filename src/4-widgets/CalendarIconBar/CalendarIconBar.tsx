@@ -8,7 +8,6 @@ import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
 import YesNoCancelConfirmation, { YesNoCancelDecision } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
-import { UnsavedDecision } from 'src/5-features/UnsavedChangesPrompt'
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
@@ -33,7 +32,7 @@ const CalendarIconBar: React.FC = observer(function() {
   const [isPickerOpen, setIsPickerOpen] = useState(false)
   const [unsavedDialogActionName, setUnsavedDialogActionName] = useState('')
   const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false)
-  const unsavedDecisionResolverRef = useRef<((decision: UnsavedDecision) => void) | null>(null)
+  const unsavedDecisionResolverRef = useRef<((decision: YesNoCancelDecision) => void) | null>(null)
 
   const handleSaveAsToDrive = () => {
     const dataToSave = storageService.getContentToSave()
@@ -55,15 +54,15 @@ const CalendarIconBar: React.FC = observer(function() {
     return isSaved
   }
 
-  const requestUnsavedDecision = (actionName: string): Promise<UnsavedDecision> => {
+  const requestUnsavedDecision = (actionName: string): Promise<YesNoCancelDecision> => {
     setUnsavedDialogActionName(actionName)
     setIsUnsavedDialogOpen(true)
-    return new Promise<UnsavedDecision>((resolve) => {
+    return new Promise<YesNoCancelDecision>((resolve) => {
       unsavedDecisionResolverRef.current = resolve
     })
   }
 
-  const resolveUnsavedDecision = (decision: UnsavedDecision) => {
+  const resolveUnsavedDecision = (decision: YesNoCancelDecision) => {
     setIsUnsavedDialogOpen(false)
     setUnsavedDialogActionName('')
     const resolver = unsavedDecisionResolverRef.current
@@ -76,7 +75,7 @@ const CalendarIconBar: React.FC = observer(function() {
 
     const decision = await requestUnsavedDecision(actionName)
     if (decision === 'cancel') return false
-    if (decision === 'save') {
+    if (decision === 'yes') {
       const saved = await handleSaveCurrentDocument()
       return Boolean(saved)
     }
@@ -229,20 +228,9 @@ const CalendarIconBar: React.FC = observer(function() {
     <SaveToDrive />
     <YesNoCancelConfirmation
       open={isUnsavedDialogOpen}
-      onDecision={(decision: YesNoCancelDecision) => {
-        if (decision === 'yes') {
-          resolveUnsavedDecision('save')
-          return
-        }
-        if (decision === 'no') {
-          resolveUnsavedDecision('discard')
-          return
-        }
-        resolveUnsavedDecision('cancel')
-      }}
+      onDecision={resolveUnsavedDecision}
       yesLabel="Сохранить"
       noLabel="Не сохранять"
-      cancelLabel="Отмена"
     >
       Есть несохраненные изменения.
       <br />
