@@ -54,7 +54,10 @@ export class CalendarStore {
     makeAutoObservable(this)
   }
 
-  setWeek(timestamp: timestamp) { this.week = DateTime.getBegintWeekTimestamp(timestamp) }
+  setWeek(timestamp: timestamp) {
+    this.week = DateTime.getBegintWeekTimestamp(timestamp)
+    this.resetShift()
+  }
 
   setMonthYear(month: number, year: number) {
     this.month = month
