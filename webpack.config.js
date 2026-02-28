@@ -15,6 +15,13 @@ module.exports = {
       src: path.resolve(__dirname, 'src'),
     },
     extensions: ['.ts', '.tsx', '.js'],
+    fallback: {
+      "crypto": false,
+      "stream": false,
+      "util": false,
+      "path": false,
+      "fs": false
+    }
   },
   module: {
     rules: [ 

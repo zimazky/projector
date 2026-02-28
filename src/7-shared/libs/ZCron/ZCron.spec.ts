@@ -1,8 +1,15 @@
+// =============================================================================
+// Тесты для библиотеки ZCron
+// =============================================================================
+// Библиотека для работы с cron-подобными расписаниями повторяющихся событий
+// =============================================================================
+
 import ZCron from './ZCron'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 /**
  * Функция для замыкания аргументов внутри функции без аргументов
+ * Используется для параметризованных тестов в циклах
  * @param f функция для вызова
  * @param args аргументы, передаваемые в функцию f
  * @returns функция без аргументов
@@ -10,13 +17,20 @@ import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
  function callf(f: (...args: any[])=>void, ...args:any[]) {
   return ()=>{ f(...args) }
 }
-/** Возвращает массив с последовательностью чисел от a до b */
+/** 
+ * Вспомогательная функция: возвращает массив с последовательностью чисел от a до b
+ * Используется для создания ожидаемых результатов в тестах
+ */
 function seq(a: number, b: number): number[] {
   const r = []
   for(let i=a;i<=b;i++) r.push(i)
   return r
 }
-/** Возвращает массив с последовательностью чисел от a до max с шагом b */
+
+/** 
+ * Вспомогательная функция: возвращает массив с последовательностью чисел от a до max с шагом b
+ * Используется для тестирования шагов (например, 1/4 -> [1, 5, 9, 13...])
+ */
 function seqD(a: number, b: number, max:number = 31): number[] {
   const r = []
   for(let i=a;i<=max;i+=b) r.push(i)
@@ -24,9 +38,9 @@ function seqD(a: number, b: number, max:number = 31): number[] {
 }
 
 
-/******************************************************************************
- * ZCrone addSequence
- ******************************************************************************/
+// =============================================================================
+// Тесты для метода addSequence - разбор строк с последовательностями чисел
+// =============================================================================
 describe('ZCrone addSequence', ()=>{
   const testset = [
     ['1-10', seq(1,10)],
@@ -56,9 +70,9 @@ describe('ZCrone addSequence', ()=>{
 })
 
 
-/******************************************************************************
- * ZCron validate
- ******************************************************************************/
+// =============================================================================
+// Тесты для метода validate - проверка корректности строк расписаний
+// =============================================================================
 describe('ZCron validate', ()=>{
 
   it('должна считать пустую строку валидной (неповторяемое событие)', ()=>{
@@ -199,9 +213,9 @@ describe('ZCron validate', ()=>{
 })
 
 
-/******************************************************************************
- * ZCron isMatch
- ******************************************************************************/
+// =============================================================================
+// Тесты для метода isMatch - проверка совпадения даты с шаблоном
+// =============================================================================
 describe('ZCron isMatch', ()=>{
 
   function ts(date: string): timestamp {
@@ -379,5 +393,236 @@ describe('ZCron isMatch', ()=>{
     const day = ts('2024.03.01')
     const schedule = '1/3 * *' // каждый 3-й день, начиная с 1-го
     expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+})
+
+
+// =============================================================================
+// Тесты для метода parse - компиляция строки в структуру расписания
+// =============================================================================
+describe('ZCron parse', ()=>{
+
+  it('should return empty schedule for empty string', ()=>{
+    const result = ZCron.parse('')
+    expect(result.mode).toBe('empty')
+  })
+
+  it('should return empty schedule for whitespace string', ()=>{
+    const result = ZCron.parse('   ')
+    expect(result.mode).toBe('empty')
+  })
+
+  it('should return relative schedule for /d format', ()=>{
+    const result = ZCron.parse('/4')
+    expect(result.mode).toBe('relative')
+    if (result.mode === 'relative') {
+      expect(result.intervalDays).toBe(4)
+    }
+  })
+
+  it('should return absolute schedule for cron format', ()=>{
+    const result = ZCron.parse('* * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days.length).toBe(31)
+      expect(result.months.length).toBe(12)
+      expect(result.weekdays.length).toBe(7)
+    }
+  })
+
+  it('should parse specific days', ()=>{
+    const result = ZCron.parse('1,5,10 * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1, 5, 10])
+    }
+  })
+
+  it('should parse day ranges', ()=>{
+    const result = ZCron.parse('1-5 * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1, 2, 3, 4, 5])
+    }
+  })
+
+  it('should parse step patterns', ()=>{
+    const result = ZCron.parse('*/4 * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1, 5, 9, 13, 17, 21, 25, 29])
+    }
+  })
+
+  it('should normalize duplicates', ()=>{
+    const result = ZCron.parse('1,1,5,5,10 * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1, 5, 10])
+    }
+  })
+
+  it('should sort values', ()=>{
+    const result = ZCron.parse('10,1,5 * *')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1, 5, 10])
+    }
+  })
+
+  it('should handle shortened format with missing fields', ()=>{
+    const result = ZCron.parse('1')
+    expect(result.mode).toBe('absolute')
+    if (result.mode === 'absolute') {
+      expect(result.days).toEqual([1])
+      expect(result.months.length).toBe(12) // default *
+      expect(result.weekdays.length).toBe(7) // default *
+    }
+  })
+})
+
+
+// =============================================================================
+// Тесты для метода match - проверка совпадения со скомпилированным расписанием
+// =============================================================================
+describe('ZCron match', ()=>{
+
+  function ts(date: string): timestamp {
+    return DateTime.YYYYMMDDToTimestamp(date)
+  }
+
+  it('should return false for empty schedule', ()=>{
+    const schedule = ZCron.parse('')
+    expect(ZCron.match(schedule, 0, ts('2024.01.01'))).toBe(false)
+  })
+
+  it('should match relative schedule correctly', ()=>{
+    const schedule = ZCron.parse('/4')
+    const start = ts('2024.01.01')
+    
+    expect(ZCron.match(schedule, start, start)).toBe(true)
+    expect(ZCron.match(schedule, start, ts('2024.01.04'))).toBe(false)
+    expect(ZCron.match(schedule, start, ts('2024.01.05'))).toBe(true)
+    expect(ZCron.match(schedule, start, ts('2024.01.02'))).toBe(false)
+  })
+
+  it('should not match relative schedule before start', ()=>{
+    const schedule = ZCron.parse('/3')
+    const start = ts('2024.01.10')
+    
+    expect(ZCron.match(schedule, start, ts('2024.01.05'))).toBe(false)
+  })
+
+  it('should match absolute schedule correctly', ()=>{
+    const schedule = ZCron.parse('15 3 *')
+    const day = ts('2024.03.15')
+    
+    expect(ZCron.match(schedule, day, day)).toBe(true)
+  })
+
+  it('should not match when day differs', ()=>{
+    const schedule = ZCron.parse('15 3 *')
+    const day = ts('2024.03.16')
+    
+    expect(ZCron.match(schedule, day, day)).toBe(false)
+  })
+
+  it('should match all days with * * *', ()=>{
+    const schedule = ZCron.parse('* * *')
+    
+    expect(ZCron.match(schedule, 0, ts('2024.01.01'))).toBe(true)
+    expect(ZCron.match(schedule, 0, ts('2024.06.15'))).toBe(true)
+    expect(ZCron.match(schedule, 0, ts('2024.12.31'))).toBe(true)
+  })
+})
+
+
+// =============================================================================
+// Тесты для методов parseWithCache и clearCache - кэширование расписаний
+// =============================================================================
+describe('ZCron parseWithCache', ()=>{
+
+  it('should return same object for same input', ()=>{
+    const result1 = ZCron.parseWithCache('* * *')
+    const result2 = ZCron.parseWithCache('* * *')
+    
+    expect(result1).toBe(result2)
+  })
+
+  it('should return different objects for different inputs', ()=>{
+    const result1 = ZCron.parseWithCache('* * *')
+    const result2 = ZCron.parseWithCache('/4')
+    
+    expect(result1).not.toBe(result2)
+  })
+
+  it('should clear cache with clearCache()', ()=>{
+    const result1 = ZCron.parseWithCache('* * *')
+    ZCron.clearCache()
+    const result2 = ZCron.parseWithCache('* * *')
+    
+    expect(result1).not.toBe(result2)
+  })
+})
+
+
+// =============================================================================
+// Тесты для метода validateDetailed - детальная валидация с ошибками
+// =============================================================================
+describe('ZCron validateDetailed', ()=>{
+
+  it('should return ok:true for valid schedule', ()=>{
+    const result = ZCron.validateDetailed('* * *')
+    expect(result.ok).toBe(true)
+    expect(result.error).toBeUndefined()
+  })
+
+  it('should return ok:true for empty string', ()=>{
+    const result = ZCron.validateDetailed('')
+    expect(result.ok).toBe(true)
+  })
+
+  it('should return ok:false for too many fields', ()=>{
+    const result = ZCron.validateDetailed('* * * *')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('general')
+  })
+
+  it('should return error for day out of range', ()=>{
+    const result = ZCron.validateDetailed('0 * *')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('days')
+    expect(result.error?.token).toBe('0')
+  })
+
+  it('should return error for month out of range', ()=>{
+    const result = ZCron.validateDetailed('* 13 *')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('months')
+  })
+
+  it('should return error for weekday out of range', ()=>{
+    const result = ZCron.validateDetailed('* * 7')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('weekdays')
+  })
+
+  it('should return error for invalid relative schedule', ()=>{
+    const result = ZCron.validateDetailed('/0')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('general')
+  })
+
+  it('should return error for invalid token format', ()=>{
+    const result = ZCron.validateDetailed('abc * *')
+    expect(result.ok).toBe(false)
+    expect(result.error?.field).toBe('days')
+    expect(result.error?.token).toBe('abc')
+  })
+
+  it('should include descriptive error message', ()=>{
+    const result = ZCron.validateDetailed('32 * *')
+    expect(result.ok).toBe(false)
+    expect(result.error?.message).toContain('32')
   })
 })
