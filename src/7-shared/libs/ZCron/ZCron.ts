@@ -155,17 +155,19 @@ function validateDaysPattern(s: string): boolean {
     if(!testInt(s.substring(1), 1)) return false
     return true
   }
-  // '2/180', '*/24'
-  const d = s.split('/')
-  if(d.length === 2) {
-    const [m1, m2] = d
-    if(!testInt(m2, 1)) return false
-    if(m1 !== '*' && !testInt(m1, 1, 31)) return false
-    return true
-  }
-  // '20,25,27-31'
+  
+  // '3/4,20,25,27-31'
   const p = s.split(',')
   return p.every(s=>{
+    // '2/180', '*/24'
+    const ds = s.split('/')
+    if(ds.length === 2) {
+      const [m1, m2] = ds
+      if(!testInt(m2, 1)) return false
+      if(m1 !== '*' && !testInt(m1, 1, 31)) return false
+      return true
+    }
+
     const d = s.split('-')
     if(d.length > 2) return false
     if(d.length === 2) {    // '20-31'
@@ -184,17 +186,17 @@ function validateDaysPattern(s: string): boolean {
  */
 function validateMonthsPattern(s: string): boolean {
   if(s === '*') return true
-  // '2/2', '*/5'
-  const d = s.split('/')
-  if(d.length === 2) {
-    const [m1, m2] = d
-    if(!testInt(m2, 1)) return false
-    if(m1 !== '*' && !testInt(m1, 1, 12)) return false
-    return true
-  }
-  // '1,3,7-10'
+  // '2/5,1,3,7-10'
   const p = s.split(',')
   return p.every(s=>{
+    // '2/2', '*/5'
+    const ds = s.split('/')
+    if(ds.length === 2) {
+      const [m1, m2] = ds
+      if(!testInt(m2, 1)) return false
+      if(m1 !== '*' && !testInt(m1, 1, 12)) return false
+      return true
+    }
     const d = s.split('-')
     if(d.length > 2) return false
     if(d.length === 2) {    // '7-10'
@@ -213,17 +215,17 @@ function validateMonthsPattern(s: string): boolean {
  */
 function validateWeekdaysPattern(s: string): boolean {
   if(s === '*') return true
-  // '2/2', '*/5'
-  const d = s.split('/')
-  if(d.length === 2) {
-    const [m1, m2] = d
-    if(!testInt(m2, 1)) return false
-    if(m1 !== '*' && !testInt(m1, 0, 6)) return false
-    return true
-  }
-  // '1,3-5'
+  // '1,3-5,1/2'
   const p = s.split(',')
   return p.every(s=>{
+    // '2/2', '*/5'
+    const ds = s.split('/')
+    if(ds.length === 2) {
+      const [m1, m2] = ds
+      if(!testInt(m2, 1)) return false
+      if(m1 !== '*' && !testInt(m1, 0, 6)) return false
+      return true
+    }
     const d = s.split('-')
     if(d.length > 2) return false
     if(d.length === 2) {    // '3-5'

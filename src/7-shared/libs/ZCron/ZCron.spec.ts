@@ -94,6 +94,108 @@ describe('ZCron validate', ()=>{
     expect(ZCron.validate('/4')).toBe(true)
     expect(ZCron.validate('25 2,3 *')).toBe(true)
   })
+
+  // Additional validation tests for malformed inputs
+  it('должна отклонять слишком много полей', ()=>{
+    expect(ZCron.validate('* * * *')).toBe(false)
+    expect(ZCron.validate('* * * extra')).toBe(false)
+  })
+
+  it('должна отклонять неправильные символы в шаблонах', ()=>{
+    expect(ZCron.validate('a * *')).toBe(false)
+    expect(ZCron.validate('* b *')).toBe(false)
+    expect(ZCron.validate('* * c')).toBe(false)
+    expect(ZCron.validate('1.5 * *')).toBe(false) // decimal numbers not allowed
+  })
+
+  it('должна отклонять неправильные форматы шагов', ()=>{
+    expect(ZCron.validate('1/ * *')).toBe(false) // incomplete step
+    expect(ZCron.validate('/ * *')).toBe(false) // incomplete relative
+    expect(ZCron.validate('a/2 * *')).toBe(false) // non-numeric base
+  })
+
+  it('должна отклонять неправильные форматы диапазонов', ()=>{
+    expect(ZCron.validate('1- * *')).toBe(false) // incomplete range
+    expect(ZCron.validate('-5 * *')).toBe(false) // negative start
+    expect(ZCron.validate('a-b * *')).toBe(false) // non-numeric range
+  })
+
+  it('должна отклонять неправильные форматы списков', ()=>{
+    expect(ZCron.validate('1, * *')).toBe(false) // incomplete list
+    expect(ZCron.validate(',5 * *')).toBe(false) // leading comma
+    expect(ZCron.validate('1,,5 * *')).toBe(false) // double comma
+    expect(ZCron.validate('a,5 * *')).toBe(false) // non-numeric in list
+  })
+
+  it('должна корректно обрабатывать граничные значения', ()=>{
+    expect(ZCron.validate('1 * *')).toBe(true)  // minimum day
+    expect(ZCron.validate('31 * *')).toBe(true) // maximum day
+    expect(ZCron.validate('* 1 *')).toBe(true)  // minimum month
+    expect(ZCron.validate('* 12 *')).toBe(true) // maximum month
+    expect(ZCron.validate('* * 0')).toBe(true)  // minimum weekday
+    expect(ZCron.validate('* * 6')).toBe(true)  // maximum weekday
+  })
+
+  it('должна отклонять неправильные относительные интервалы', ()=>{
+    expect(ZCron.validate('/')).toBe(false)      // incomplete relative
+    expect(ZCron.validate('/-1')).toBe(false)   // negative interval
+    expect(ZCron.validate('/0')).toBe(false)    // zero interval
+    expect(ZCron.validate('/a')).toBe(false)    // non-numeric interval
+  })
+
+  it('должна корректно обрабатывать сокращенные форматы', ()=>{
+    expect(ZCron.validate('1')).toBe(true)      // only day
+    expect(ZCron.validate('1 3')).toBe(true)    // day and month
+    expect(ZCron.validate('1 3 5')).toBe(true)  // all three fields
+  })
+
+  it('должна отклонять неправильные шаги в днях недели', ()=>{
+    expect(ZCron.validate('* * 7/1')).toBe(false) // weekday out of range
+    expect(ZCron.validate('* * 5/2')).toBe(true)  // valid weekday step
+  })
+
+  it('должна отклонять отрицательные шаги', ()=>{
+    expect(ZCron.validate('1/-2 * *')).toBe(false)
+    expect(ZCron.validate('* 1/-2 *')).toBe(false)
+    expect(ZCron.validate('* * 1/-2')).toBe(false)
+  })
+
+  it('должна отклонять отрицательные диапазоны', ()=>{
+    expect(ZCron.validate('-5-10 * *')).toBe(false)
+    expect(ZCron.validate('5--10 * *')).toBe(false)
+    expect(ZCron.validate('* -5-10 *')).toBe(false)
+  })
+
+  it('должна отклонять некорректные комбинации операторов в днях', ()=>{
+    expect(ZCron.validate('1-5/2 * *')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('1/3,1-5/2 * *')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('1/3,1-5-2 * *')).toBe(false)  // invalid combination, double dash
+    expect(ZCron.validate('1,2-5 * *')).toBe(true)   // valid combination
+    expect(ZCron.validate('1/2/3 * *')).toBe(false)  // invalid: double slash
+    expect(ZCron.validate('1,2/3 * *')).toBe(true)   // valid combination
+    expect(ZCron.validate('1-5-10 * *')).toBe(false) // invalid: double dash
+  })
+
+  it('должна отклонять некорректные комбинации операторов в месяцах', ()=>{
+    expect(ZCron.validate('* 1-5/2 *')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('* 1/3,1-5/2 *')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('* 1/3,1-5-2 *')).toBe(false)  // invalid combination, double dash
+    expect(ZCron.validate('* 1,2-5 *')).toBe(true)   // valid combination
+    expect(ZCron.validate('* 1/2/3 *')).toBe(false)  // invalid: double slash
+    expect(ZCron.validate('* 1,2/3 *')).toBe(true)   // valid combination
+    expect(ZCron.validate('* 1-5-10 *')).toBe(false) // invalid: double dash
+  })
+
+  it('должна отклонять некорректные комбинации операторов в днях недели', ()=>{
+    expect(ZCron.validate('* * 1-5/2')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('* * 1/3,1-2/2')).toBe(false)  // invalid combination, шаг не может быть применен к диапазону
+    expect(ZCron.validate('* * 1/3,1-2-2')).toBe(false)  // invalid combination, double dash
+    expect(ZCron.validate('* * 1,2-5')).toBe(true)   // valid combination
+    expect(ZCron.validate('* * 1/2/3')).toBe(false)  // invalid: double slash
+    expect(ZCron.validate('* * 1,2/3')).toBe(true)   // valid combination
+    expect(ZCron.validate('* * 1-5-6')).toBe(false) // invalid: double dash
+  })
+
 })
 
 
@@ -164,5 +266,118 @@ describe('ZCron isMatch', ()=>{
     const before = ts('2024.01.05')
     const schedule = '/3'
     expect(ZCron.isMatch(schedule, start, before)).toBe(false)
+  })
+
+  // Tests for reduced forms of templates (with omitted *)
+  it('должен работать с частично опущенными полями - только день', ()=>{
+    const day = ts('2024.03.01')
+    const schedule = '1' // эквивалентно '1 * *'
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен работать с частично опущенными полями - день и месяц', ()=>{
+    const day = ts('2024.03.01')
+    const schedule = '1 3' // эквивалентно '1 3 *'
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен корректно обрабатывать сокращенный формат с опущенным днем', ()=>{
+    const day = ts('2024.03.15')
+    const schedule = '* 3 *' // должен соответствовать марчу
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен корректно обрабатывать сокращенный формат с опущенным месяцем', ()=>{
+    const day = ts('2024.03.15')
+    const schedule = '15 * *' // должен соответствовать 15 числу
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен корректно обрабатывать сокращенный формат с опущенным днем недели', ()=>{
+    const day = ts('2024.03.15')
+    const { weekday } = DateTime.getDayMonthWeekday(day)
+    const schedule = `15 3` // эквивалентно '15 3 *'
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен корректно обрабатывать комбинации опущенных полей', ()=>{
+    const day = ts('2024.03.15')
+    const schedule = '15 3' // эквивалентно '15 3 *'
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  // Tests for various range and step patterns
+  it('должен обрабатывать шаги с опущенным первым значением (*/4)', ()=>{
+    const day = ts('2024.01.01') // Это 1 число, должно соответствовать */4
+    const schedule = '*/4 * *' // каждый 4-й день месяца, начиная с 1
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен обрабатывать диапазоны с опущенными звездами', ()=>{
+    const day = ts('2024.01.05')
+    const schedule = '1-10 * *' // дни с 1 по 10
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен обрабатывать списки значений', ()=>{
+    const day = ts('2024.01.05')
+    const schedule = '5,10,15 * *' // 5, 10 или 15 число
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен обрабатывать списки значений с опущенными полями', ()=>{
+    const day = ts('2024.01.05')
+    const schedule = '5,10,15' // эквивалентно '5,10,15 * *'
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен корректно обрабатывать шаги в месяцах', ()=>{
+    const day = ts('2024.03.01') // 1 марта
+    const schedule = '1 */3 *' // каждый 3-й месяц, начиная с января (1, 4, 7, 10)
+    expect(ZCron.isMatch(schedule, day, day)).toBe(false) // март (месяц 3) не должен совпадать
+    
+    const aprDay = ts('2024.04.01') // 1 апреля
+    expect(ZCron.isMatch(schedule, aprDay, aprDay)).toBe(true) // апрель (месяц 4) должен совпадать
+  })
+
+  it('должен корректно обрабатывать шаги в днях недели', ()=>{
+    const day = ts('2024.01.07') // воскресенье (день недели 0)
+    const { weekday } = DateTime.getDayMonthWeekday(day)
+    const schedule = '* * */2' // каждый 2-й день недели (0, 2, 4, 6)
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true) // воскресенье (0) должно совпадать
+    
+    const monDay = ts('2024.01.08') // понедельник (день недели 1)
+    expect(ZCron.isMatch(schedule, monDay, monDay)).toBe(false) // понедельник (1) не должен совпадать
+  })
+
+  it('должен обрабатывать комбинации условий', ()=>{
+    const day = ts('2024.04.05') // 5 апреля
+    const { weekday } = DateTime.getDayMonthWeekday(day)
+    const schedule = '5 4 5' // 5 апреля, в пятницу
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен обрабатывать сложные комбинации с диапазонами', ()=>{
+    const day = ts('2024.04.05') // 5 апреля
+    const schedule = '1-10 4-6 *' // 1-10 числа, в апреле-июне
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен обрабатывать сложные комбинации со списками', ()=>{
+    const day = ts('2024.04.05') // 5 апреля
+    const schedule = '5,10,15 4,5,6 5' // 5, 10 или 15 числа, в апреле, мае или июне, в пятницу
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
+  })
+
+  it('должен не совпадать при несоответствии хотя бы одного условия', ()=>{
+    const day = ts('2024.04.05') // 5 апреля, пятница
+    const schedule = '6 4 5' // 6 апреля, в апреле, в пятницу
+    expect(ZCron.isMatch(schedule, day, day)).toBe(false) // не совпадает по дню месяца
+  })
+
+  it('должен корректно обрабатывать сокращенный формат без пробелов', ()=>{
+    const day = ts('2024.03.01')
+    const schedule = '1/3 * *' // каждый 3-й день, начиная с 1-го
+    expect(ZCron.isMatch(schedule, day, day)).toBe(true)
   })
 })
