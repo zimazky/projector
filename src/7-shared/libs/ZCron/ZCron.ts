@@ -164,7 +164,7 @@ export default class ZCron {
    * @returns true если шаблон корректен
    */
   static validate(scheduleString: string = ''): boolean {
-    return this.validateDetailed(scheduleString).ok
+    return ZCron.validateDetailed(scheduleString).ok
   }
 
   // =============================================================================
