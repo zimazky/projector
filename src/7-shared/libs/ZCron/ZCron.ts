@@ -120,42 +120,95 @@ export default class ZCron {
     return this.match(schedule, startTimestamp, ts)
   }
 
-  /** 
-   * Проверяет, срабатывает ли шаблон расписания в указанном интервале дат
+  /**
+   * Проверяет, срабатывает ли шаблон расписания в указанном интервале дат.
+   * Оптимизированная версия - использует nextAfter вместо линейного перебора.
    * @param scheduleString - строка с шаблоном расписания
-   * @param startTimestamp - начальная дата
+   * @param startTimestamp - начальная дата события
    * @param begin - начало интервала
    * @param end - конец интервала
    * @returns true если есть совпадение в интервале
    */
-  static ariseInInterval(scheduleString:string, startTimestamp: timestamp, begin: timestamp, end: timestamp): boolean {
-    for(var t=begin;t<end;t+=86400) {
-      if(this.isMatch(scheduleString, startTimestamp, t)) return true
-    }
-    return false
+  static ariseInInterval(scheduleString: string, startTimestamp: timestamp, begin: timestamp, end: timestamp): boolean {
+    const schedule = this.parseWithCache(scheduleString)
+    return this.ariseInIntervalParsed(schedule, startTimestamp, begin, end)
   }
 
-  /** 
-   * Находит первое совпадение шаблона в указанном интервале
-   * @returns timestamp первого совпадения или 0 если не найдено
+  /**
+   * Оптимизированная проверка для скомпилированного расписания.
    */
-  static firstInInterval(scheduleString:string, startTimestamp: timestamp, begin: timestamp, end: timestamp) {
-    for(var t=begin;t<end;t+=86400) {
-      if(this.isMatch(scheduleString, startTimestamp, t)) return t
-    }
-    return 0
+  static ariseInIntervalParsed(
+    schedule: ParsedSchedule,
+    startTimestamp: timestamp,
+    begin: timestamp,
+    end: timestamp
+  ): boolean {
+    // Ищем первое совпадение строго перед началом интервала,
+    // чтобы nextAfter нашёл первое совпадение >= begin
+    const beforeBegin = DateTime.getBeginDayTimestamp(begin) - 86400
+    const nextMatch = this.nextAfter(schedule, startTimestamp, beforeBegin)
+    return nextMatch !== null && nextMatch < end
   }
 
-  /** 
-   * Находит первое совпадение шаблона начиная с startTimestamp
-   * @param maxinterval - максимальное количество дней для поиска
+  /**
+   * Находит первое совпадение шаблона в указанном интервале.
+   * Оптимизированная версия - использует nextAfter вместо линейного перебора.
    * @returns timestamp первого совпадения или 0 если не найдено
    */
-  static first(scheduleString:string, startTimestamp: timestamp, maxinterval = 366) {
-    for(let i=0, t=startTimestamp; i<maxinterval; t+=86400, i++) {
-      if(this.isMatch(scheduleString, startTimestamp, t)) return t
+  static firstInInterval(scheduleString: string, startTimestamp: timestamp, begin: timestamp, end: timestamp): timestamp {
+    const schedule = this.parseWithCache(scheduleString)
+    return this.firstInIntervalParsed(schedule, startTimestamp, begin, end)
+  }
+
+  /**
+   * Оптимизированный поиск для скомпилированного расписания.
+   */
+  static firstInIntervalParsed(
+    schedule: ParsedSchedule,
+    startTimestamp: timestamp,
+    begin: timestamp,
+    end: timestamp
+  ): timestamp {
+    const beforeBegin = DateTime.getBeginDayTimestamp(begin) - 86400
+    const nextMatch = this.nextAfter(schedule, startTimestamp, beforeBegin)
+    if (nextMatch !== null && nextMatch < end) {
+      return nextMatch
     }
-    return 0
+    return 0 as timestamp
+  }
+
+  /**
+   * Находит первое совпадение шаблона начиная с startTimestamp.
+   * Оптимизированная версия - использует nextAfter.
+   * @param maxinterval - максимальное количество дней для поиска (защита от бесконечного поиска)
+   * @returns timestamp первого совпадения или 0 если не найдено
+   */
+  static first(scheduleString: string, startTimestamp: timestamp, maxinterval = 366): timestamp {
+    const schedule = this.parseWithCache(scheduleString)
+    return this.firstParsed(schedule, startTimestamp, maxinterval)
+  }
+
+  /**
+   * Оптимизированный поиск для скомпилированного расписания.
+   */
+  static firstParsed(schedule: ParsedSchedule, startTimestamp: timestamp, maxinterval = 366): timestamp {
+    // Для поиска от startTimestamp, передаём день перед startTimestamp
+    const beforeStart = DateTime.getBeginDayTimestamp(startTimestamp) - 86400
+    // maxIterations для nextAfter - это лимит итераций алгоритма, не дней
+    // Увеличиваем лимит для сложных случаев
+    const nextMatch = this.nextAfter(schedule, startTimestamp, beforeStart, maxinterval * 2)
+    
+    if (nextMatch === null) {
+      return 0 as timestamp
+    }
+    
+    // Проверяем, что найденное совпадение в пределах maxinterval дней от startTimestamp
+    const maxTimestamp = DateTime.getBeginDayTimestamp(startTimestamp) + maxinterval * 86400
+    if (nextMatch >= maxTimestamp) {
+      return 0 as timestamp
+    }
+    
+    return nextMatch
   }
 
   /** 
@@ -305,6 +358,221 @@ export default class ZCron {
   /** Clears compiled schedule cache */
   static clearCache(): void {
     this.parseCache.clear()
+  }
+
+  // =============================================================================
+  // Оптимизированные методы поиска следующего срабатывания
+  // =============================================================================
+
+  /**
+   * Находит следующее срабатывание расписания после указанного timestamp.
+   * Оптимизированная версия без линейного перебора дней.
+   *
+   * @param schedule - скомпилированное расписание
+   * @param startTimestamp - начальная дата события (для относительных расписаний)
+   * @param afterTimestamp - искать срабатывание строго после этой даты
+   * @param maxIterations - максимальное количество итераций (защита от бесконечного цикла)
+   * @returns timestamp следующего срабатывания или null если не найдено
+   */
+  static nextAfter(
+    schedule: ParsedSchedule,
+    startTimestamp: timestamp,
+    afterTimestamp: timestamp,
+    maxIterations = 1000
+  ): timestamp | null {
+    switch (schedule.mode) {
+      case 'empty':
+        return null
+
+      case 'relative':
+        return this.nextAfterRelative(schedule, startTimestamp, afterTimestamp)
+
+      case 'absolute':
+        return this.nextAfterAbsolute(schedule, startTimestamp, afterTimestamp, maxIterations)
+    }
+  }
+
+  /**
+   * O(1) вычисление следующего срабатывания для относительного расписания.
+   * Формула: k = ceil(diff / intervalDays), nextTs = startTimestamp + k * intervalDays * 86400
+   */
+  private static nextAfterRelative(
+    schedule: RelativeSchedule,
+    startTimestamp: timestamp,
+    afterTimestamp: timestamp
+  ): timestamp | null {
+    const intervalSec = schedule.intervalDays * 86400
+    const startDay = DateTime.getBeginDayTimestamp(startTimestamp)
+    const afterDay = DateTime.getBeginDayTimestamp(afterTimestamp)
+
+    // Если afterTimestamp раньше или равен startTimestamp, следующее - это сам startTimestamp
+    if (afterDay < startDay) {
+      return startDay
+    }
+
+    // Вычисляем разницу в днях
+    const diffDays = DateTime.getDifferenceInDays(startDay, afterDay)
+
+    // k = количество интервалов от старта (округление вверх для "после afterTimestamp")
+    // Если afterTimestamp точно на интервале, нужно следующее срабатывание
+    const k = Math.floor(diffDays / schedule.intervalDays) + 1
+
+    return startDay + k * intervalSec
+  }
+
+  /**
+   * Оптимизированный поиск следующего срабатывания для абсолютного расписания.
+   * Вместо линейного перебора - "перепрыгивание" к ближайшим кандидатам.
+   */
+  private static nextAfterAbsolute(
+    schedule: AbsoluteSchedule,
+    startTimestamp: timestamp,
+    afterTimestamp: timestamp,
+    maxIterations: number
+  ): timestamp | null {
+    // Начинаем поиск со следующего дня после afterTimestamp
+    // (или с начала дня startTimestamp, если afterTimestamp раньше)
+    let candidate = DateTime.getBeginDayTimestamp(afterTimestamp) + 86400
+    const startDay = DateTime.getBeginDayTimestamp(startTimestamp)
+
+    if (candidate < startDay) {
+      candidate = startDay
+    }
+
+    const { months, days, weekdays } = schedule
+    const monthsSet = new Set(months)
+    const daysSet = new Set(days)
+    const weekdaysSet = new Set(weekdays)
+
+    // Быстрые проверки: если все поля = "*", то каждый день
+    const allMonths = months.length === 12
+    const allDays = days.length === 31
+    const allWeekdays = weekdays.length === 7
+
+    if (allMonths && allDays && allWeekdays) {
+      return candidate
+    }
+
+    // Если только weekdays ограничен - прыгаем по дням недели
+    if (allMonths && allDays && !allWeekdays) {
+      return this.findNextWeekday(candidate, weekdays, weekdaysSet)
+    }
+
+    // Общий случай - итеративный поиск с перепрыгиванием
+    for (let i = 0; i < maxIterations; i++) {
+      const { year, month, day } = DateTime.getYearMonthDay(candidate)
+      const month1based = month + 1
+
+      // 1. Проверка месяца
+      if (!monthsSet.has(month1based)) {
+        // Прыгаем к первому дню следующего подходящего месяца
+        candidate = this.jumpToNextMonth(year, month, months)
+        continue
+      }
+
+      // 2. Проверка дня месяца
+      if (!daysSet.has(day)) {
+        // Ищем следующий подходящий день в этом месяце
+        const daysInMonth = DateTime.getDaysInMonth(year, month)
+        const nextDay = this.findNextInSorted(days, day, daysInMonth)
+
+        if (nextDay !== null) {
+          candidate = DateTime.YearMonthDayToTimestamp(year, month, nextDay)
+        } else {
+          // Подходящего дня в этом месяце нет - прыгаем к следующему месяцу
+          candidate = this.jumpToNextMonth(year, month, months)
+        }
+        continue
+      }
+
+      // 3. Проверка дня недели
+      const weekday = DateTime.getWeekday(candidate)
+      if (!weekdaysSet.has(weekday)) {
+        // Прыгаем к ближайшему подходящему дню недели
+        const daysToAdd = this.daysToNextWeekday(weekday, weekdays)
+        candidate += daysToAdd * 86400
+        continue
+      }
+
+      // Все условия выполнены
+      return candidate
+    }
+
+    return null // Превышен лимит итераций
+  }
+
+  /**
+   * Находит ближайший подходящий день недели от текущего дня.
+   */
+  private static daysToNextWeekday(currentWeekday: number, weekdays: number[]): number {
+    let minDays = 7
+    for (const wd of weekdays) {
+      let diff = wd - currentWeekday
+      if (diff <= 0) diff += 7
+      if (diff < minDays) minDays = diff
+    }
+    return minDays
+  }
+
+  /**
+   * Находит ближайший подходящий день недели и возвращает timestamp.
+   */
+  private static findNextWeekday(
+    candidate: timestamp,
+    weekdays: number[],
+    weekdaysSet: Set<number>
+  ): timestamp | null {
+    const weekday = DateTime.getWeekday(candidate)
+    if (weekdaysSet.has(weekday)) {
+      return candidate
+    }
+    const daysToAdd = this.daysToNextWeekday(weekday, weekdays)
+    return candidate + daysToAdd * 86400
+  }
+
+  /**
+   * Прыгает к первому дню следующего подходящего месяца.
+   */
+  private static jumpToNextMonth(year: number, month: number, months: number[]): timestamp {
+    const month1based = month + 1
+    const nextMonth = this.findNextInSorted(months, month1based, 12)
+
+    if (nextMonth !== null) {
+      // Следующий подходящий месяц в этом году
+      return DateTime.YearMonthDayToTimestamp(year, nextMonth - 1, 1)
+    } else {
+      // Первый подходящий месяц следующего года
+      return DateTime.YearMonthDayToTimestamp(year + 1, months[0] - 1, 1)
+    }
+  }
+
+  /**
+   * Находит следующее значение в отсортированном массиве после текущего.
+   * Учитывает максимальное значение max (например, 31 для дней, 12 для месяцев).
+   */
+  private static findNextInSorted(sorted: number[], current: number, max: number): number | null {
+    for (const val of sorted) {
+      if (val > current && val <= max) {
+        return val
+      }
+    }
+    return null
+  }
+
+  /**
+   * Упрощённый метод для поиска следующего срабатывания по строке расписания.
+   * @param scheduleString - строка расписания
+   * @param startTimestamp - начальная дата события
+   * @param afterTimestamp - искать после этой даты
+   * @returns timestamp следующего срабатывания или null
+   */
+  static nextAfterString(
+    scheduleString: string,
+    startTimestamp: timestamp,
+    afterTimestamp: timestamp
+  ): timestamp | null {
+    const schedule = this.parseWithCache(scheduleString)
+    return this.nextAfter(schedule, startTimestamp, afterTimestamp)
   }
 
   /**

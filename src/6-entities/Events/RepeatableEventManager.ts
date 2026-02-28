@@ -90,7 +90,11 @@ export class RepeatableEventManager {
       const d = +revent.repeat.substring(1);
       revent.start = currentdate + d * 86400;
     }
-    else revent.start = ZCron.first(revent.repeat, currentdate + 86400);
+    else {
+      // Находим следующее совпадение после текущей даты
+      const next = ZCron.nextAfterString(revent.repeat, revent.start, currentdate);
+      revent.start = next ?? currentdate + 86400;
+    }
 
     if (revent.end && !ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, revent.end)) {
       this.delete(revent.id);
@@ -118,7 +122,11 @@ export class RepeatableEventManager {
         const d = +revent.repeat.substring(1);
         revent.start = currentdate + d * 86400;
       }
-      else revent.start = ZCron.first(revent.repeat, currentdate + 86400);
+      else {
+        // Находим следующее совпадение после текущей даты
+        const next = ZCron.nextAfterString(revent.repeat, revent.start, currentdate);
+        revent.start = next ?? currentdate + 86400;
+      }
 
       if (revent.end && !ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, revent.end)) {
         this.delete(revent.id);

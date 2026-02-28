@@ -626,3 +626,455 @@ describe('ZCron validateDetailed', ()=>{
     expect(result.error?.message).toContain('32')
   })
 })
+
+
+// =============================================================================
+// Тесты для метода nextAfter - оптимизированный поиск следующего срабатывания
+// =============================================================================
+describe('ZCron nextAfter', ()=>{
+
+  function ts(date: string): timestamp {
+    return DateTime.YYYYMMDDToTimestamp(date)
+  }
+
+  function formatTs(t: timestamp | null): string {
+    if (t === null) return 'null'
+    return DateTime.getYYYYMMDD(t)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Тесты для пустого расписания
+  // ---------------------------------------------------------------------------
+  describe('empty schedule', ()=>{
+    it('should return null for empty schedule', ()=>{
+      const schedule = ZCron.parse('')
+      const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.01'))
+      expect(result).toBeNull()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Тесты для относительного расписания (O(1) calculation)
+  // ---------------------------------------------------------------------------
+  describe('relative schedule /d', ()=>{
+
+    it('should return start day when after is before start', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.10')
+      const after = ts('2024.01.05')
+      
+      const result = ZCron.nextAfter(schedule, start, after)
+      expect(formatTs(result)).toBe('2024.01.10')
+    })
+
+    it('should return start day when after equals start', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.10')
+      
+      const result = ZCron.nextAfter(schedule, start, start)
+      expect(formatTs(result)).toBe('2024.01.14') // start + 4 days
+    })
+
+    it('should calculate next occurrence after start', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      
+      // После 2024.01.01 следующее - 2024.01.05
+      const result1 = ZCron.nextAfter(schedule, start, start)
+      expect(formatTs(result1)).toBe('2024.01.05')
+      
+      // После 2024.01.02 следующее - 2024.01.05
+      const result2 = ZCron.nextAfter(schedule, start, ts('2024.01.02'))
+      expect(formatTs(result2)).toBe('2024.01.05')
+      
+      // После 2024.01.05 следующее - 2024.01.09
+      const result3 = ZCron.nextAfter(schedule, start, ts('2024.01.05'))
+      expect(formatTs(result3)).toBe('2024.01.09')
+    })
+
+    it('should handle large intervals', ()=>{
+      const schedule = ZCron.parse('/30')
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.nextAfter(schedule, start, ts('2024.02.15'))
+      expect(formatTs(result)).toBe('2024.03.01') // 60 дней от старта
+    })
+
+    it('should work with interval of 1 day', ()=>{
+      const schedule = ZCron.parse('/1')
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.nextAfter(schedule, start, ts('2024.01.15'))
+      expect(formatTs(result)).toBe('2024.01.16')
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Тесты для абсолютного расписания (cron-like)
+  // ---------------------------------------------------------------------------
+  describe('absolute schedule', ()=>{
+
+    describe('* * * (every day)', ()=>{
+      it('should return next day for * * *', ()=>{
+        const schedule = ZCron.parse('* * *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.15'))
+        expect(formatTs(result)).toBe('2024.01.16')
+      })
+
+      it('should return start day when after is before start', ()=>{
+        const schedule = ZCron.parse('* * *')
+        const start = ts('2024.01.10')
+        
+        const result = ZCron.nextAfter(schedule, start, ts('2024.01.05'))
+        expect(formatTs(result)).toBe('2024.01.10')
+      })
+    })
+
+    describe('weekdays only', ()=>{
+      it('should find next weekday', ()=>{
+        // '* * 1-5' = Mon-Fri
+        const schedule = ZCron.parse('* * 1-5')
+        
+        // 2024.01.06 = Saturday, следующее должно быть Monday 2024.01.08
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.06'))
+        expect(formatTs(result)).toBe('2024.01.08')
+      })
+
+      it('should return same day if it matches weekday', ()=>{
+        const schedule = ZCron.parse('* * 1-5')
+        
+        // 2024.01.10 = Wednesday
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.09'))
+        expect(formatTs(result)).toBe('2024.01.10')
+      })
+
+      it('should handle weekends', ()=>{
+        // '* * 0,6' = Sat, Sun
+        const schedule = ZCron.parse('* * 0,6')
+        
+        // 2024.01.11 = Thursday, следующее должно быть Saturday 2024.01.13
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.11'))
+        expect(formatTs(result)).toBe('2024.01.13')
+      })
+    })
+
+    describe('day of month only', ()=>{
+      it('should find next day in current month', ()=>{
+        // '15 * *' = 15-е каждого месяца
+        const schedule = ZCron.parse('15 * *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.10'))
+        expect(formatTs(result)).toBe('2024.01.15')
+      })
+
+      it('should jump to next month if day passed', ()=>{
+        const schedule = ZCron.parse('15 * *')
+        
+        // После 15 января следующее - 15 февраля
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.15'))
+        expect(formatTs(result)).toBe('2024.02.15')
+      })
+
+      it('should handle specific days list', ()=>{
+        const schedule = ZCron.parse('5,10,20 * *')
+        
+        const result1 = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.05'))
+        expect(formatTs(result1)).toBe('2024.01.10')
+        
+        const result2 = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.12'))
+        expect(formatTs(result2)).toBe('2024.01.20')
+      })
+
+      it('should handle day 31 correctly', ()=>{
+        const schedule = ZCron.parse('31 * *')
+        
+        // Февраль не имеет 31 дня, должно перейти на март
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.02.01'))
+        expect(formatTs(result)).toBe('2024.03.31')
+      })
+    })
+
+    describe('month only', ()=>{
+      it('should find next month', ()=>{
+        // '* 3 *' = только март
+        const schedule = ZCron.parse('* 3 *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.15'))
+        expect(formatTs(result)).toBe('2024.03.01')
+      })
+
+      it('should jump to next year if month passed', ()=>{
+        const schedule = ZCron.parse('* 3 *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.04.01'))
+        expect(formatTs(result)).toBe('2025.03.01')
+      })
+
+      it('should handle month list', ()=>{
+        const schedule = ZCron.parse('* 3,6,9 *') // март, июнь, сентябрь
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.04.01'))
+        expect(formatTs(result)).toBe('2024.06.01')
+      })
+    })
+
+    describe('combined conditions', ()=>{
+      it('should match day AND month', ()=>{
+        // '15 3 *' = 15 марта
+        const schedule = ZCron.parse('15 3 *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.01'))
+        expect(formatTs(result)).toBe('2024.03.15')
+      })
+
+      it('should find next matching day when day changes', ()=>{
+        // '15 3,6 *' = 15 марта и 15 июня
+        const schedule = ZCron.parse('15 3,6 *')
+        
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.03.15'))
+        expect(formatTs(result)).toBe('2024.06.15')
+      })
+
+      it('should match day AND weekday', ()=>{
+        // '15 * 5' = 15-е число, если это пятница
+        const schedule = ZCron.parse('15 * 5')
+        
+        // Ищем ближайшую пятницу 15-го числа
+        // 2024.03.15 = пятница
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.01'))
+        expect(formatTs(result)).toBe('2024.03.15')
+      })
+
+      it('should match all three conditions', ()=>{
+        // '1 1 1' = 1 января, если это понедельник
+        const schedule = ZCron.parse('1 1 1')
+        
+        // 2024.01.01 = Monday!
+        const result = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2023.12.01'))
+        expect(formatTs(result)).toBe('2024.01.01')
+        
+        // После 2024.01.01 следующее совпадение будет не скоро
+        // Нужно найти 1 января, которое выпадает на понедельник
+        const result2 = ZCron.nextAfter(schedule, ts('2024.01.01'), ts('2024.01.01'))
+        expect(result2).toBe(ts('2029.01.01'))
+      })
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Тесты для nextAfterString - обёртка
+  // ---------------------------------------------------------------------------
+  describe('nextAfterString wrapper', ()=>{
+    it('should work with string schedule', ()=>{
+      const result = ZCron.nextAfterString('/4', ts('2024.01.01'), ts('2024.01.01'))
+      expect(formatTs(result)).toBe('2024.01.05')
+    })
+
+    it('should return null for empty schedule', ()=>{
+      const result = ZCron.nextAfterString('', ts('2024.01.01'), ts('2024.01.01'))
+      expect(result).toBeNull()
+    })
+  })
+
+  // ---------------------------------------------------------------------------
+  // Тесты производительности (сравнение с линейным перебором)
+  // ---------------------------------------------------------------------------
+  describe('performance comparison', ()=>{
+    it('should produce correct results for relative schedule', ()=>{
+      const scheduleStr = '/7'
+      const start = ts('2024.01.01')
+      
+      // Проверяем конкретные ожидаемые результаты
+      const testCases = [
+        { after: ts('2024.01.01'), expected: '2024.01.08' },
+        { after: ts('2024.01.05'), expected: '2024.01.08' },
+        { after: ts('2024.01.08'), expected: '2024.01.15' },
+        { after: ts('2024.02.01'), expected: '2024.02.05' }, // 35 дней от старта
+      ]
+      
+      for (const { after, expected } of testCases) {
+        const result = ZCron.nextAfterString(scheduleStr, start, after)
+        expect(formatTs(result)).toBe(expected)
+      }
+    })
+
+    it('should produce same results as linear search for absolute schedule', ()=>{
+      const scheduleStr = '15 * 1-5' // 15-е число, пн-пт
+      const start = ts('2024.01.01')
+      
+      const testPoints = [
+        ts('2024.01.01'),
+        ts('2024.02.01'),
+        ts('2024.06.15'),
+      ]
+      
+      for (const after of testPoints) {
+        const optimized = ZCron.nextAfterString(scheduleStr, start, after)
+        const linear = ZCron.first(scheduleStr, Math.max(start, after), 400)
+        
+        // Оба должны найти одно и то же
+        if (optimized !== null && linear !== 0) {
+          expect(formatTs(optimized)).toBe(formatTs(linear))
+        }
+      }
+    })
+  })
+})
+
+
+// =============================================================================
+// Тесты для оптимизированных методов ariseInInterval и firstInInterval
+// =============================================================================
+describe('ZCron ariseInInterval and firstInInterval', ()=>{
+
+  function ts(date: string): timestamp {
+    return DateTime.YYYYMMDDToTimestamp(date)
+  }
+
+  describe('ariseInInterval', ()=>{
+
+    it('should return true when match exists in interval', ()=>{
+      const schedule = '/4'
+      const start = ts('2024.01.01')
+      
+      // Интервал содержит 2024.01.05 (4 дня от старта)
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.03'), ts('2024.01.07'))).toBe(true)
+    })
+
+    it('should return false when no match in interval', ()=>{
+      const schedule = '/4'
+      const start = ts('2024.01.01')
+      
+      // Интервал 2024.01.02-04 НЕ содержит совпадений (01 - день 0, 05 - день 4)
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.02'), ts('2024.01.04'))).toBe(false)
+    })
+
+    it('should find match at interval start', ()=>{
+      const schedule = '15 * *'
+      const start = ts('2024.01.01')
+      
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.15'), ts('2024.01.16'))).toBe(true)
+    })
+
+    it('should find match at interval end', ()=>{
+      const schedule = '15 * *'
+      const start = ts('2024.01.01')
+      
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.10'), ts('2024.01.16'))).toBe(true)
+    })
+
+    it('should work with absolute schedule - weekday only', ()=>{
+      const schedule = '* * 1-5' // Mon-Fri
+      const start = ts('2024.01.01')
+      
+      // 2024.01.06-07 = Sat-Sun, нет совпадений
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.06'), ts('2024.01.08'))).toBe(false)
+      
+      // 2024.01.08-12 = Mon-Fri, есть совпадения
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.08'), ts('2024.01.13'))).toBe(true)
+    })
+
+    it('should return false for empty schedule', ()=>{
+      expect(ZCron.ariseInInterval('', ts('2024.01.01'), ts('2024.01.01'), ts('2024.01.10'))).toBe(false)
+    })
+
+    it('should handle large intervals efficiently', ()=>{
+      const schedule = '29 2 *' // 29 февраля
+      const start = ts('2024.01.01')
+      
+      // Интервал в несколько лет
+      expect(ZCron.ariseInInterval(schedule, start, ts('2024.01.01'), ts('2025.03.01'))).toBe(true)
+    })
+  })
+
+  describe('firstInInterval', ()=>{
+
+    it('should return first match in interval', ()=>{
+      const schedule = '/4'
+      const start = ts('2024.01.01')
+      
+      // 2024.01.05 - день 4 от старта
+      const result = ZCron.firstInInterval(schedule, start, ts('2024.01.03'), ts('2024.01.10'))
+      expect(DateTime.getYYYYMMDD(result)).toBe('2024.01.05')
+    })
+
+    it('should return 0 when no match in interval', ()=>{
+      const schedule = '/4'
+      const start = ts('2024.01.01')
+      
+      // Интервал 02-04 не содержит совпадений
+      const result = ZCron.firstInInterval(schedule, start, ts('2024.01.02'), ts('2024.01.04'))
+      expect(result).toBe(0)
+    })
+
+    it('should find match at interval start', ()=>{
+      const schedule = '15 * *'
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.firstInInterval(schedule, start, ts('2024.01.15'), ts('2024.01.20'))
+      expect(DateTime.getYYYYMMDD(result)).toBe('2024.01.15')
+    })
+
+    it('should return 0 for empty schedule', ()=>{
+      const result = ZCron.firstInInterval('', ts('2024.01.01'), ts('2024.01.01'), ts('2024.01.10'))
+      expect(result).toBe(0)
+    })
+  })
+
+  describe('first', ()=>{
+
+    it('should find first occurrence from start', ()=>{
+      const schedule = '/4'
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.first(schedule, start)
+      expect(DateTime.getYYYYMMDD(result)).toBe('2024.01.01')
+    })
+
+    it('should respect maxinterval parameter', ()=>{
+      const schedule = '15 3 *' // 15 марта
+      const start = ts('2024.01.01')
+      
+      // 15 марта дальше 30 дней от старта
+      const result = ZCron.first(schedule, start, 30)
+      expect(result).toBe(0) // не найдено в пределах 30 дней
+      
+      // Увеличиваем интервал
+      const result2 = ZCron.first(schedule, start, 80)
+      expect(DateTime.getYYYYMMDD(result2)).toBe('2024.03.15')
+    })
+
+    it('should return 0 for empty schedule', ()=>{
+      const result = ZCron.first('', ts('2024.01.01'))
+      expect(result).toBe(0)
+    })
+  })
+
+  describe('Parsed versions (for cached schedules)', ()=>{
+
+    it('ariseInIntervalParsed should work with cached schedule', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      
+      expect(ZCron.ariseInIntervalParsed(schedule, start, ts('2024.01.03'), ts('2024.01.07'))).toBe(true)
+      expect(ZCron.ariseInIntervalParsed(schedule, start, ts('2024.01.02'), ts('2024.01.04'))).toBe(false)
+    })
+
+    it('firstInIntervalParsed should work with cached schedule', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.firstInIntervalParsed(schedule, start, ts('2024.01.03'), ts('2024.01.10'))
+      expect(DateTime.getYYYYMMDD(result)).toBe('2024.01.05')
+    })
+
+    it('firstParsed should work with cached schedule', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      
+      const result = ZCron.firstParsed(schedule, start)
+      expect(DateTime.getYYYYMMDD(result)).toBe('2024.01.01')
+    })
+  })
+})

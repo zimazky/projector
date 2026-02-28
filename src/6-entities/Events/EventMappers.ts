@@ -16,7 +16,8 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
       comment: e.comment ?? '',
       project: e.project ?? '',
       repeat: e.repeat,
-      start: ZCron.first(e.repeat,start),
+      // Находим первое совпадение расписания от даты начала (start - 1 день для nextAfter)
+      start: ZCron.nextAfterString(e.repeat, start, start - 86400) ?? start,
       time, duration,
       end: e.end? DateTime.YYYYMMDDToTimestamp(e.end) : 0,
       credit: e.credit? +e.credit : 0, debit: e.debit? +e.debit : 0
