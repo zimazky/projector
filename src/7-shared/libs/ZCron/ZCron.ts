@@ -66,7 +66,9 @@ export default class ZCron {
    */
   static isMatch(scheduleString: string, startTimestamp: timestamp, timestamp: timestamp): boolean {
     const {day, month, weekday} = DateTime.getDayMonthWeekday(timestamp)
-    const [d = null, m = '*', w = '*'] = scheduleString.trim().split(' ',3)
+    const trimmed = scheduleString.trim()
+    if(trimmed === '') return false
+    const [d = null, m = '*', w = '*'] = trimmed.split(/\s+/,3)
     if(d === null) return false
     if(d[0] === '/') { // расписание повторяется начиная от startTimestamp
       const difference = DateTime.getDifferenceInDays(startTimestamp,timestamp)
@@ -78,7 +80,7 @@ export default class ZCron {
     // обычное расписание подобный cron-шаблонам
     const days = d.split(',').reduce( (a,s) => ZCron.addSequence(a,s), <number[]> [])
     const months = m.split(',').reduce( (a,s) => ZCron.addSequence(a,s,12), <number[]> [])
-    const weekdays = w.split(',').reduce( (a,s) => ZCron.addSequence(a,s,7,0), <number[]> [])
+    const weekdays = w.split(',').reduce( (a,s) => ZCron.addSequence(a,s,6,0), <number[]> [])
     if( months.includes(month+1) && days.includes(day) && weekdays.includes(weekday) ) return true
     return false
   }
@@ -109,8 +111,9 @@ export default class ZCron {
 
   /** Валидация шаблона */
   static validate(scheduleString: string = ''): boolean {
-    if(scheduleString === '') return true
-    const arr = scheduleString.split(' ')
+    const trimmed = scheduleString.trim()
+    if(trimmed === '') return true
+    const arr = trimmed.split(/\s+/)
     if(arr.length > 3) return false
     const [d, m = '*', w = '*'] = arr
     return validateDaysPattern(d) && validateMonthsPattern(m) && validateWeekdaysPattern(w)
@@ -138,7 +141,7 @@ function testIntegerInString(s: string, min = 0, max = 0): [boolean, number] {
 function testInt(s: string, min = 0, max = 0): boolean {
   if(!/^\d+$/.test(s)) return false
   const n: number = +s
-  if(n < min) false
+  if(n < min) return false
   if(max > 0 && n > max) return false
   return true
 }
