@@ -14,6 +14,7 @@ import { StorageService } from 'src/7-shared/services/StorageService'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
 import { DocumentSessionStore } from 'src/6-entities/Document/model'
+import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 
 /**
  * Контракт всех сторов/сервисов, доступных через React Context.
@@ -34,6 +35,7 @@ export interface IRootStore {
   saveToDriveStore: SaveToDriveStore;
   documentSessionStore: DocumentSessionStore;
   fileSavedNotifier: Observable<void>;
+  eventSearchStore: EventSearchStore;
 }
 
 export const StoreContext = React.createContext<IRootStore>({} as IRootStore)

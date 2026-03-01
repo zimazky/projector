@@ -18,7 +18,8 @@ import {
   googleApiService,
   storageService,
   saveToDriveStore,
-  documentSessionStore
+  documentSessionStore,
+  eventSearchStore
 } from './root'
 import StoreProvider from './Providers/StoreProvider'
 
@@ -44,6 +45,7 @@ root.render(
     saveToDriveStore={saveToDriveStore}
     documentSessionStore={documentSessionStore}
     fileSavedNotifier={mainStore.fileSavedNotifier}
+    eventSearchStore={eventSearchStore}
   >
     <App />
   </StoreProvider>

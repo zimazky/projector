@@ -14,9 +14,12 @@ type CalendarEventItemProps = {
 }
 
 const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
-  const { eventFormStore, eventsStore } = useContext(StoreContext)
+  const { eventFormStore, eventsStore, eventSearchStore } = useContext(StoreContext)
   const {timestamp, daysInCurrentWeek: daysInCurrentWeek} = props
   const {id, name, completed, background, color, repeatable, start, time, end, credit, debit, days} = props.event
+
+  // Check if this event is highlighted by search
+  const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
 
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
     e.stopPropagation()
@@ -34,7 +37,7 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
   ?
   <div className={styles.placeholder} ></div>
   :
-  <div className={completed?styles.completed:repeatable?styles.repeatable:styles.item}
+  <div className={`${completed?styles.completed:repeatable?styles.repeatable:styles.item} ${isHighlighted ? styles.highlighted : ''}`}
     draggable={true} onDragStart={onDragStart}
     style={{
       width: props.daysInCurrentWeek==1?'calc(100% + 2px)':'calc(' +props.daysInCurrentWeek +' * (100% + 1px) + 1px )',

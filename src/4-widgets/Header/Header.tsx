@@ -9,6 +9,7 @@ import ListItem from 'src/7-shared/ui/List/ListItem'
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 
 import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
+import { EventSearchInput } from 'src/5-features/EventSearch/EventSearchInput'
 
 import styles from './Header.module.css'
 
@@ -30,6 +31,7 @@ const Header: React.FC = observer(function() {
 
   return <header className={styles.header}>
     <CalendarIconBar/>
+    <EventSearchInput />
     <span className={styles.documentName}>
       {documentTitle}
     </span>

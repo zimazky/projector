@@ -739,6 +739,92 @@
   width: 100%;
 }
 
+/* Search toggle button (collapsed state) */
+.searchToggle_f648d40 {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 16px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.searchToggle_f648d40:hover {
+  opacity: 1;
+}
+
+/* Search container (expanded state) */
+.searchContainer_c1949a4 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-bg-secondary, #2a2a2a);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+/* Search input field */
+.searchInput_ad76515 {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #fff);
+  font-size: 14px;
+  padding: 4px 8px;
+  width: 150px;
+  outline: none;
+}
+
+.searchInput_ad76515::placeholder {
+  color: var(--color-text-secondary, #888);
+}
+
+/* Result counter */
+.resultCount_dc70a9d {
+  color: var(--color-text-secondary, #888);
+  font-size: 12px;
+  padding: 0 4px;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* Navigation buttons */
+.navButton_b8293f8 {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #fff);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.navButton_b8293f8:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.navButton_b8293f8:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Close button */
+.closeButton_c37844c {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary, #fff);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.closeButton_c37844c:hover {
+  opacity: 1;
+}
+
 .header_fc851ac {
   font-size: 22px;
   width: 100%;
@@ -1246,6 +1332,20 @@
 .completed_ea224e7 .name_ceccda0, .completed_ea224e7 .time_e598119 {
   text-decoration: line-through;
   color: gray;
+}
+
+/* Highlighted event (search result) */
+.highlighted_b147091 {
+  outline: 3px solid #ff9800;
+  outline-offset: -1px;
+  box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6);
+  z-index: 10;
+  animation: pulse_d2d8397 1s ease-in-out infinite;
+}
+
+@keyframes pulse_d2d8397 {
+  0%, 100% { box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6); }
+  50% { box-shadow: 0 0 12px 4px rgba(255, 152, 0, 0.8); }
 }
 
 .wrapper_b1e50ba {

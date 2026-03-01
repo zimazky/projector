@@ -11,6 +11,7 @@ import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
 import { DocumentSessionStore } from 'src/6-entities/Document/model'
+import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 
 // 1. Основные доменные сторы
 export const projectsStore = new ProjectsStore()
@@ -22,6 +23,7 @@ export const weatherStore = new WeatherStore()
 export const calendarStore = new CalendarStore(eventsCache, weatherStore)
 export const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
 export const eventFormStore = new EventFormStore()
+export const eventSearchStore = new EventSearchStore(eventsStore)
 
 // 3. Инфраструктурные сервисы
 export const uiStore = new UIStore()
