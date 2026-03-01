@@ -739,7 +739,7 @@
   width: 100%;
 }
 
-/* Search toggle button (collapsed state) */
+/* Кнопка открытия поиска (свёрнутое состояние) */
 .searchToggle_f648d40 {
   background: transparent;
   border: none;
@@ -754,7 +754,7 @@
   opacity: 1;
 }
 
-/* Search container (expanded state) */
+/* Контейнер поиска (развёрнутое состояние) */
 .searchContainer_c1949a4 {
   display: flex;
   align-items: center;
@@ -764,7 +764,7 @@
   padding: 2px 6px;
 }
 
-/* Search input field */
+/* Поле ввода поиска */
 .searchInput_ad76515 {
   background: transparent;
   border: none;
@@ -779,7 +779,7 @@
   color: var(--color-text-secondary, #888);
 }
 
-/* Result counter */
+/* Счётчик результатов */
 .resultCount_dc70a9d {
   color: var(--color-text-secondary, #888);
   font-size: 12px;
@@ -788,7 +788,7 @@
   text-align: center;
 }
 
-/* Navigation buttons */
+/* Кнопки навигации */
 .navButton_b8293f8 {
   background: transparent;
   border: none;
@@ -809,7 +809,7 @@
   cursor: default;
 }
 
-/* Close button */
+/* Кнопка закрытия */
 .closeButton_c37844c {
   background: transparent;
   border: none;
@@ -1334,7 +1334,7 @@
   color: gray;
 }
 
-/* Highlighted event (search result) */
+/* Подсвеченное событие (результат поиска) */
 .highlighted_b147091 {
   outline: 3px solid #ff9800;
   outline-offset: -1px;

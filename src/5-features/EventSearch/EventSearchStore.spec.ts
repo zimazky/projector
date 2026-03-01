@@ -3,18 +3,18 @@ import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-// Helper to create a timestamp for a specific date
+// Вспомогательная функция для создания timestamp на определённое количество дней от сегодня
 function daysFromToday(days: number): timestamp {
   const today = DateTime.getBeginDayTimestamp(Date.now() / 1000)
   return (today + days * 86400) as timestamp
 }
 
-// Helper to convert timestamp to YYYY.MM.DD string
+// Вспомогательная функция для конвертации timestamp в строку YYYY.MM.DD
 function timestampToDateString(ts: timestamp): string {
   return DateTime.getYYYYMMDD(ts)
 }
 
-// Helper to create a mock EventsStore with test data
+// Вспомогательная функция для создания мока EventsStore с тестовыми данными
 function createMockEventsStore(
   plannedEvents: Array<{ name: string; start: number; comment?: string }>,
   completedEvents: Array<{ name: string; start: number; comment?: string }> = [],
@@ -23,7 +23,7 @@ function createMockEventsStore(
   const projectsStore = new ProjectsStore()
   const eventsStore = new EventsStore(projectsStore)
 
-  // Add planned single events
+  // Добавляем запланированные одиночные события
   plannedEvents.forEach(e => {
     eventsStore.addPlannedEventDto({
       name: e.name,
@@ -33,7 +33,7 @@ function createMockEventsStore(
     }, false)
   })
 
-  // Add completed events
+  // Добавляем завершённые события
   completedEvents.forEach(e => {
     eventsStore.addCompletedEventDto({
       name: e.name,
@@ -43,7 +43,7 @@ function createMockEventsStore(
     }, false)
   })
 
-  // Add repeatable events
+  // Добавляем повторяемые события
   repeatableEvents.forEach(e => {
     eventsStore.addPlannedEventDto({
       name: e.name,
@@ -61,7 +61,7 @@ function createMockEventsStore(
 describe('EventSearchStore', () => {
 
   /******************************************************************************
-   * Basic search functionality
+   * Базовая функциональность поиска
    ******************************************************************************/
   describe('basic search', () => {
 
@@ -123,20 +123,20 @@ describe('EventSearchStore', () => {
   })
 
   /******************************************************************************
-   * Count-based search: Initial results
+   * Поиск по количеству: Начальные результаты
    ******************************************************************************/
   describe('count-based initial search', () => {
 
     it('should find up to 4 events before and 4 after today', () => {
       const eventsStore = createMockEventsStore([
-        // 6 events before today
+        // 6 событий до сегодняшнего дня
         { name: 'Test Event', start: daysFromToday(-60) },
         { name: 'Test Event', start: daysFromToday(-45) },
         { name: 'Test Event', start: daysFromToday(-30) },
         { name: 'Test Event', start: daysFromToday(-15) },
         { name: 'Test Event', start: daysFromToday(-10) },
         { name: 'Test Event', start: daysFromToday(-5) },
-        // 6 events after today
+        // 6 событий после сегодняшнего дня
         { name: 'Test Event', start: daysFromToday(5) },
         { name: 'Test Event', start: daysFromToday(10) },
         { name: 'Test Event', start: daysFromToday(15) },
@@ -148,10 +148,10 @@ describe('EventSearchStore', () => {
 
       searchStore.search('Test')
 
-      // Should have 4 before + 4 after = 8 total
+      // Должно быть 4 до + 4 после = 8 всего
       expect(searchStore.results.length).toBe(8)
 
-      // Check the events closest to today are included
+      // Проверяем, что ближайшие к сегодня события включены
       const timestamps = searchStore.results.map(r => r.timestamp)
       expect(timestamps).toContain(daysFromToday(-15))
       expect(timestamps).toContain(daysFromToday(-10))
@@ -160,7 +160,7 @@ describe('EventSearchStore', () => {
       expect(timestamps).toContain(daysFromToday(10))
       expect(timestamps).toContain(daysFromToday(15))
 
-      // Check events far from today are NOT included in initial results
+      // Проверяем, что далёкие события НЕ включены в начальные результаты
       expect(timestamps).not.toContain(daysFromToday(-60))
       expect(timestamps).not.toContain(daysFromToday(-45))
       expect(timestamps).not.toContain(daysFromToday(45))
@@ -212,7 +212,7 @@ describe('EventSearchStore', () => {
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.search('Test')
-      expect(searchStore.currentIndex).toBe(2) // Index of event at +5 days
+      expect(searchStore.currentIndex).toBe(2) // Индекс события через +5 дней
       expect(searchStore.results[searchStore.currentIndex].timestamp).toBe(daysFromToday(5))
     })
 
@@ -225,18 +225,18 @@ describe('EventSearchStore', () => {
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.search('Test')
-      expect(searchStore.currentIndex).toBe(2) // Last event
+      expect(searchStore.currentIndex).toBe(2) // Последнее событие
     })
   })
 
   /******************************************************************************
-   * Count-based search: Sparse periods
+   * Поиск по количеству: Разреженные периоды
    ******************************************************************************/
   describe('sparse event periods', () => {
 
     it('should find events even if they are far from today (sparse before)', () => {
       const eventsStore = createMockEventsStore([
-        // Only 2 events, both far in the past
+        // Только 2 события, оба далеко в прошлом
         { name: 'Test Event', start: daysFromToday(-200) },
         { name: 'Test Event', start: daysFromToday(-150) }
       ])
@@ -249,7 +249,7 @@ describe('EventSearchStore', () => {
 
     it('should find events even if they are far from today (sparse after)', () => {
       const eventsStore = createMockEventsStore([
-        // Only 2 events, both far in the future
+        // Только 2 события, оба далеко в будущем
         { name: 'Test Event', start: daysFromToday(150) },
         { name: 'Test Event', start: daysFromToday(200) }
       ])
@@ -262,16 +262,16 @@ describe('EventSearchStore', () => {
 
     it('should correctly handle very sparse distribution (3 months gap)', () => {
       const eventsStore = createMockEventsStore([
-        // Events with 3 month gap
-        { name: 'Test Event', start: daysFromToday(-120) },  // 4 months ago
-        { name: 'Test Event', start: daysFromToday(90) }    // 3 months ahead
+        // События с разрывом в 3 месяца
+        { name: 'Test Event', start: daysFromToday(-120) },  // 4 месяца назад
+        { name: 'Test Event', start: daysFromToday(90) }    // 3 месяца вперёд
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.search('Test')
       expect(searchStore.results.length).toBe(2)
       
-      // Both events should be found despite the gap
+      // Оба события должны быть найдены несмотря на разрыв
       const timestamps = searchStore.results.map(r => r.timestamp)
       expect(timestamps).toContain(daysFromToday(-120))
       expect(timestamps).toContain(daysFromToday(90))
@@ -279,7 +279,7 @@ describe('EventSearchStore', () => {
   })
 
   /******************************************************************************
-   * Navigation and incremental loading
+   * Навигация и инкрементальная загрузка
    ******************************************************************************/
   describe('navigation and incremental loading', () => {
 
@@ -307,7 +307,7 @@ describe('EventSearchStore', () => {
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.search('Test')
-      // Move to last result first
+      // Сначала переходим к последнему результату
       searchStore.currentIndex = searchStore.results.length - 1
 
       searchStore.prevResult()
@@ -337,7 +337,7 @@ describe('EventSearchStore', () => {
     })
 
     it('should load more results when navigating near boundary (future)', () => {
-      // Create events that require multiple loads
+      // Создаём события, требующие несколько загрузок
       const events: Array<{ name: string; start: number }> = []
       for (let i = 1; i <= 20; i++) {
         events.push({ name: 'Test Event', start: daysFromToday(i * 10) })
@@ -348,17 +348,17 @@ describe('EventSearchStore', () => {
       searchStore.search('Test')
       const initialLength = searchStore.results.length
 
-      // Navigate to near the end to trigger loadMoreAfter
+      // Переходим к концу для триггера loadMoreAfter
       searchStore.currentIndex = searchStore.results.length - 1
       searchStore.nextResult()
 
-      // Should have loaded more results or be at boundary
+      // Должны быть загружены ещё результаты или достингута граница
       expect(searchStore.hasMoreAfter || searchStore.results.length > initialLength || searchStore.currentIndex === searchStore.results.length - 1).toBe(true)
     })
   })
 
   /******************************************************************************
-   * Completed events
+   * Завершённые события
    ******************************************************************************/
   describe('completed events', () => {
 
@@ -391,7 +391,7 @@ describe('EventSearchStore', () => {
   })
 
   /******************************************************************************
-   * Repeatable events
+   * Повторяемые события
    ******************************************************************************/
   describe('repeatable events', () => {
 
@@ -399,7 +399,7 @@ describe('EventSearchStore', () => {
       const eventsStore = createMockEventsStore(
         [],
         [],
-        [{ name: 'Weekly Meeting', start: daysFromToday(-30), repeat: '* * 1' }] // Every Monday
+        [{ name: 'Weekly Meeting', start: daysFromToday(-30), repeat: '* * 1' }] // Каждый понедельник
       )
       const searchStore = new EventSearchStore(eventsStore)
 
@@ -412,12 +412,12 @@ describe('EventSearchStore', () => {
       const eventsStore = createMockEventsStore(
         [],
         [],
-        [{ name: 'Daily Standup', start: daysFromToday(-10), repeat: '* * *' }] // Every day
+        [{ name: 'Daily Standup', start: daysFromToday(-10), repeat: '* * *' }] // Каждый день
       )
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.search('Standup')
-      // Should have multiple occurrences
+      // Должно быть несколько вхождений
       expect(searchStore.results.length).toBeGreaterThan(1)
     })
 
@@ -431,7 +431,7 @@ describe('EventSearchStore', () => {
 
       searchStore.search('Test')
       
-      // Check all timestamps are unique
+      // Проверяем, что все метки времени уникальны
       const timestamps = searchStore.results.map(r => r.timestamp)
       const uniqueTimestamps = new Set(timestamps)
       expect(uniqueTimestamps.size).toBe(timestamps.length)
@@ -439,7 +439,7 @@ describe('EventSearchStore', () => {
   })
 
   /******************************************************************************
-   * Highlighting
+   * Подсветка
    ******************************************************************************/
   describe('highlighting', () => {
 
@@ -469,7 +469,7 @@ describe('EventSearchStore', () => {
       searchStore.search('Test')
       const current = searchStore.currentResult
       
-      // Check that other events are not highlighted
+      // Проверяем, что другие события не подсвечены
       searchStore.results.forEach(result => {
         if (result !== current) {
           expect(searchStore.isHighlighted(result.eventId, result.timestamp)).toBe(false)
@@ -479,7 +479,7 @@ describe('EventSearchStore', () => {
   })
 
   /******************************************************************************
-   * Clear and toggle
+   * Очистка и переключение
    ******************************************************************************/
   describe('clear and toggle', () => {
 
@@ -522,14 +522,14 @@ describe('EventSearchStore', () => {
       searchStore.search('Test')
       expect(searchStore.results.length).toBe(1)
 
-      searchStore.toggleActive() // Toggle off
+      searchStore.toggleActive() // Выключаем
       expect(searchStore.query).toBe('')
       expect(searchStore.results).toEqual([])
     })
   })
 
   /******************************************************************************
-   * Result text
+   * Текст результатов
    ******************************************************************************/
   describe('result text', () => {
 

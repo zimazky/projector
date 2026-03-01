@@ -44,7 +44,7 @@
   color: gray;
 }
 
-/* Highlighted event (search result) */
+/* Подсвеченное событие (результат поиска) */
 .highlighted {
   outline: 3px solid #ff9800;
   outline-offset: -1px;

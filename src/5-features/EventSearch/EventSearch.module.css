@@ -1,4 +1,4 @@
-/* Search toggle button (collapsed state) */
+/* Кнопка открытия поиска (свёрнутое состояние) */
 .searchToggle {
   background: transparent;
   border: none;
@@ -13,7 +13,7 @@
   opacity: 1;
 }
 
-/* Search container (expanded state) */
+/* Контейнер поиска (развёрнутое состояние) */
 .searchContainer {
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
   padding: 2px 6px;
 }
 
-/* Search input field */
+/* Поле ввода поиска */
 .searchInput {
   background: transparent;
   border: none;
@@ -38,7 +38,7 @@
   color: var(--color-text-secondary, #888);
 }
 
-/* Result counter */
+/* Счётчик результатов */
 .resultCount {
   color: var(--color-text-secondary, #888);
   font-size: 12px;
@@ -47,7 +47,7 @@
   text-align: center;
 }
 
-/* Navigation buttons */
+/* Кнопки навигации */
 .navButton {
   background: transparent;
   border: none;
@@ -68,7 +68,7 @@
   cursor: default;
 }
 
-/* Close button */
+/* Кнопка закрытия */
 .closeButton {
   background: transparent;
   border: none;

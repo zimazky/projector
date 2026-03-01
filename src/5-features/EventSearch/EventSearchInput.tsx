@@ -54,7 +54,7 @@ export const EventSearchInput: React.FC = observer(() => {
       <button
         className={styles.searchToggle}
         onClick={() => eventSearchStore.toggleActive()}
-        title="Search events"
+        title="Поиск событий"
       >
         🔍
       </button>
@@ -67,7 +67,7 @@ export const EventSearchInput: React.FC = observer(() => {
         ref={inputRef}
         type="text"
         className={styles.searchInput}
-        placeholder="Search events..."
+        placeholder="Поиск событий..."
         value={eventSearchStore.query}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
@@ -81,7 +81,7 @@ export const EventSearchInput: React.FC = observer(() => {
         className={styles.navButton}
         onClick={handlePrevClick}
         disabled={eventSearchStore.results.length === 0}
-        title="Previous (Shift+Enter)"
+        title="Предыдущее (Shift+Enter)"
       >
         ◀
       </button>
@@ -89,14 +89,14 @@ export const EventSearchInput: React.FC = observer(() => {
         className={styles.navButton}
         onClick={handleNextClick}
         disabled={eventSearchStore.results.length === 0}
-        title="Next (Enter)"
+        title="Следующее (Enter)"
       >
         ▶
       </button>
       <button
         className={styles.closeButton}
         onClick={() => eventSearchStore.clear()}
-        title="Close (Esc)"
+        title="Закрыть (Esc)"
       >
         ✕
       </button>

@@ -18,7 +18,7 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = (props) => {
   const {timestamp, daysInCurrentWeek: daysInCurrentWeek} = props
   const {id, name, completed, background, color, repeatable, start, time, end, credit, debit, days} = props.event
 
-  // Check if this event is highlighted by search
+  // Проверяем, подсвечено ли это событие поиском
   const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
 
   const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
