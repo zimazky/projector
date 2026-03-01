@@ -71,7 +71,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('')
+      searchStore.search('')
       expect(searchStore.results).toEqual([])
       expect(searchStore.currentIndex).toBe(-1)
     })
@@ -84,7 +84,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('John')
+      searchStore.search('John')
       expect(searchStore.results.length).toBe(1)
       expect(searchStore.results[0].name).toBe('Meeting with John')
     })
@@ -96,7 +96,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('John')
+      searchStore.search('John')
       expect(searchStore.results.length).toBe(1)
       expect(searchStore.results[0].name).toBe('Meeting')
     })
@@ -107,7 +107,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('john')
+      searchStore.search('john')
       expect(searchStore.results.length).toBe(1)
     })
 
@@ -117,7 +117,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('  Test  ')
+      searchStore.search('  Test  ')
       expect(searchStore.results.length).toBe(1)
     })
   })
@@ -146,7 +146,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
 
       // Должно быть 4 до + 4 после = 8 всего
       expect(searchStore.results.length).toBe(8)
@@ -174,7 +174,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(2)
     })
 
@@ -186,7 +186,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(3)
     })
 
@@ -198,7 +198,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(3)
     })
 
@@ -211,7 +211,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.currentIndex).toBe(2) // Индекс события через +5 дней
       expect(searchStore.results[searchStore.currentIndex].timestamp).toBe(daysFromToday(5))
     })
@@ -224,7 +224,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.currentIndex).toBe(2) // Последнее событие
     })
   })
@@ -242,7 +242,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(2)
       expect(searchStore.hasMoreBefore).toBe(false)
     })
@@ -255,7 +255,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(2)
       expect(searchStore.hasMoreAfter).toBe(false)
     })
@@ -268,7 +268,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(2)
       
       // Оба события должны быть найдены несмотря на разрыв
@@ -291,7 +291,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       const initialIndex = searchStore.currentIndex
 
       searchStore.nextResult()
@@ -306,7 +306,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       // Сначала переходим к последнему результату
       searchStore.currentIndex = searchStore.results.length - 1
 
@@ -320,7 +320,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       searchStore.prevResult()
       expect(searchStore.currentIndex).toBe(0)
     })
@@ -331,7 +331,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       searchStore.nextResult()
       expect(searchStore.currentIndex).toBe(0)
     })
@@ -345,7 +345,7 @@ describe('EventSearchStore', () => {
       const eventsStore = createMockEventsStore(events)
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       const initialLength = searchStore.results.length
 
       // Переходим к концу для триггера loadMoreAfter
@@ -369,7 +369,7 @@ describe('EventSearchStore', () => {
       )
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Completed')
+      searchStore.search('Completed')
       expect(searchStore.results.length).toBe(1)
       expect(searchStore.results[0].completed).toBe(true)
     })
@@ -381,7 +381,7 @@ describe('EventSearchStore', () => {
       )
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       const completedResults = searchStore.results.filter(r => r.completed)
       const plannedResults = searchStore.results.filter(r => !r.completed)
       
@@ -403,7 +403,7 @@ describe('EventSearchStore', () => {
       )
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Weekly')
+      searchStore.search('Weekly')
       expect(searchStore.results.length).toBeGreaterThan(0)
       expect(searchStore.results.every(r => r.repeatable)).toBe(true)
     })
@@ -416,7 +416,7 @@ describe('EventSearchStore', () => {
       )
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Standup')
+      searchStore.search('Standup')
       // Должно быть несколько вхождений
       expect(searchStore.results.length).toBeGreaterThan(1)
     })
@@ -429,7 +429,7 @@ describe('EventSearchStore', () => {
       )
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       
       // Проверяем, что все метки времени уникальны
       const timestamps = searchStore.results.map(r => r.timestamp)
@@ -450,7 +450,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       const current = searchStore.currentResult
       
       if (current) {
@@ -466,7 +466,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       const current = searchStore.currentResult
       
       // Проверяем, что другие события не подсвечены
@@ -489,7 +489,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(1)
 
       searchStore.clear()
@@ -519,7 +519,7 @@ describe('EventSearchStore', () => {
       const searchStore = new EventSearchStore(eventsStore)
 
       searchStore.toggleActive()
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       expect(searchStore.results.length).toBe(1)
 
       searchStore.toggleActive() // Выключаем
@@ -548,7 +548,7 @@ describe('EventSearchStore', () => {
       ])
       const searchStore = new EventSearchStore(eventsStore)
 
-      searchStore.searchImmediate('Test')
+      searchStore.search('Test')
       searchStore.currentIndex = 1
 
       expect(searchStore.resultText).toBe('2 / 3')

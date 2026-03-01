@@ -56,3 +56,38 @@ export function throttle<T extends (...args: any[]) => void>(func: T, limit: num
   } as T;
 }
 
+/**
+ * Функция-утилита для debounce.
+ * Откладывает выполнение функции до тех пор, пока не пройдёт
+ * указанное время после последнего вызова.
+ *
+ * @param func - функция для debounce
+ * @param wait - время ожидания в миллисекундах
+ * @returns обёрнутая функция с методом cancel()
+ */
+export function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): T & { cancel: () => void } {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  const debounced = function(this: any, ...args: Parameters<T>) {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+    }
+    timeoutId = setTimeout(() => {
+      func.apply(this, args)
+      timeoutId = null
+    }, wait)
+  } as T & { cancel: () => void }
+
+  debounced.cancel = () => {
+    if (timeoutId !== null) {
+      clearTimeout(timeoutId)
+      timeoutId = null
+    }
+  }
+
+  return debounced
+}
+

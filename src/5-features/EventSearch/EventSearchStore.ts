@@ -19,8 +19,6 @@ const COUNT_BEFORE = 4
 const COUNT_AFTER = 4
 /** Количество событий для загрузки при приближении к границе */
 const COUNT_LOAD = 4
-/** Задержка debounce при вводе (мс) */
-const DEBOUNCE_MS = 300
 
 export class EventSearchStore {
   /** Поисковый запрос */
@@ -44,8 +42,6 @@ export class EventSearchStore {
   private eventsStore: EventsStore
   /** Кэш скомпилированных расписаний */
   private scheduleCache: Map<string, ParsedSchedule> = new Map()
-  /** Таймер debounce */
-  private debounceTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(eventsStore: EventsStore) {
     this.eventsStore = eventsStore
@@ -53,41 +49,9 @@ export class EventSearchStore {
   }
 
   /** 
-   * Выполнить поиск с debounce.
-   * При быстром вводе поиск выполняется только после паузы.
+   * Выполнить поиск.
    */
   search(query: string) {
-    // Обновляем query немедленно для отображения в UI
-    this.query = query.trim().toLowerCase()
-
-    // Отменяем предыдущий таймер
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer)
-    }
-
-    // Если запрос пустой, очищаем немедленно
-    if (!this.query) {
-      this.performClear()
-      return
-    }
-
-    // Устанавливаем новый таймер
-    this.debounceTimer = setTimeout(() => {
-      this.performSearch()
-    }, DEBOUNCE_MS)
-  }
-
-  /** 
-   * Выполнить поиск немедленно (без debounce).
-   * Используется для программного вызова или в тестах.
-   */
-  searchImmediate(query: string) {
-    // Отменяем pending debounce
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer)
-      this.debounceTimer = null
-    }
-
     this.query = query.trim().toLowerCase()
 
     if (!this.query) {
@@ -482,11 +446,6 @@ export class EventSearchStore {
 
   /** Очистить поиск */
   clear() {
-    // Отменяем pending debounce
-    if (this.debounceTimer !== null) {
-      clearTimeout(this.debounceTimer)
-      this.debounceTimer = null
-    }
     this.performClear()
   }
 

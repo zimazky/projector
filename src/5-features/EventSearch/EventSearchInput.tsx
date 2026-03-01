@@ -1,11 +1,29 @@
-import React, { useContext, useRef, useEffect } from 'react'
+import React, { useContext, useRef, useEffect, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
+import { runInAction } from 'mobx'
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { debounce } from 'src/7-shared/helpers/utils'
 import styles from './EventSearch.module.css'
+
+/** Задержка debounce при вводе (мс) */
+const DEBOUNCE_MS = 300
 
 export const EventSearchInput: React.FC = observer(() => {
   const { eventSearchStore, calendarStore, uiStore } = useContext(StoreContext)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Создаём debounced функцию поиска один раз при монтировании
+  const debouncedSearch = useMemo(
+    () => debounce((query: string) => {
+      eventSearchStore.search(query)
+    }, DEBOUNCE_MS),
+    [eventSearchStore]
+  )
+
+  // Очистка при unmount
+  useEffect(() => {
+    return () => debouncedSearch.cancel()
+  }, [debouncedSearch])
 
   useEffect(() => {
     if (eventSearchStore.isActive && inputRef.current) {
@@ -14,12 +32,21 @@ export const EventSearchInput: React.FC = observer(() => {
   }, [eventSearchStore.isActive])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    eventSearchStore.search(e.target.value)
-    navigateToCurrentResult()
+    const value = e.target.value
+    // Обновляем query немедленно для отображения в UI
+    runInAction(() => {
+      eventSearchStore.query = value.trim().toLowerCase()
+    })
+    // Выполняем поиск с debounce
+    debouncedSearch(value)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
+      // При Enter выполняем поиск немедленно
+      debouncedSearch.cancel()
+      eventSearchStore.search(eventSearchStore.query)
+      
       if (e.shiftKey) {
         eventSearchStore.prevResult()
       } else {
@@ -27,6 +54,7 @@ export const EventSearchInput: React.FC = observer(() => {
       }
       navigateToCurrentResult()
     } else if (e.key === 'Escape') {
+      debouncedSearch.cancel()
       eventSearchStore.clear()
     }
   }
@@ -47,6 +75,11 @@ export const EventSearchInput: React.FC = observer(() => {
   const handleNextClick = () => {
     eventSearchStore.nextResult()
     navigateToCurrentResult()
+  }
+
+  const handleClose = () => {
+    debouncedSearch.cancel()
+    eventSearchStore.clear()
   }
 
   if (!eventSearchStore.isActive) {
@@ -95,7 +128,7 @@ export const EventSearchInput: React.FC = observer(() => {
       </button>
       <button
         className={styles.closeButton}
-        onClick={() => eventSearchStore.clear()}
+        onClick={handleClose}
         title="Закрыть (Esc)"
       >
         ✕
