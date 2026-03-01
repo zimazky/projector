@@ -16,6 +16,12 @@ export const EventSearchInput: React.FC = observer(() => {
   const debouncedSearch = useMemo(
     () => debounce((query: string) => {
       eventSearchStore.search(query)
+      // Навигация к текущему результату после поиска
+      const current = eventSearchStore.currentResult
+      if (current) {
+        calendarStore.setWeek(current.timestamp)
+        uiStore.forceUpdate()
+      }
     }, DEBOUNCE_MS),
     []
   )
@@ -24,12 +30,6 @@ export const EventSearchInput: React.FC = observer(() => {
   useEffect(() => {
     return () => debouncedSearch.cancel()
   }, [debouncedSearch])
-
-  useEffect(() => {
-    if (eventSearchStore.isActive && inputRef.current) {
-      inputRef.current.focus()
-    }
-  }, [eventSearchStore.isActive])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -80,18 +80,6 @@ export const EventSearchInput: React.FC = observer(() => {
     eventSearchStore.clear()
   }
 
-  if (!eventSearchStore.isActive) {
-    return (
-      <button
-        className={styles.searchToggle}
-        onClick={() => eventSearchStore.toggleActive()}
-        title="Поиск событий"
-      >
-        🔍
-      </button>
-    )
-  }
-
   return (
     <div className={styles.searchContainer}>
       <input
@@ -124,13 +112,15 @@ export const EventSearchInput: React.FC = observer(() => {
       >
         ▶
       </button>
-      <button
-        className={styles.closeButton}
-        onClick={handleClose}
-        title="Закрыть (Esc)"
-      >
-        ✕
-      </button>
+      {eventSearchStore.query && (
+        <button
+          className={styles.closeButton}
+          onClick={handleClose}
+          title="Очистить (Esc)"
+        >
+          ✕
+        </button>
+      )}
     </div>
   )
 })
