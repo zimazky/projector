@@ -87,10 +87,10 @@ export class EventSearchStore {
     this.hasMoreBefore = beforeToday.length > COUNT_BEFORE
     this.hasMoreAfter = afterToday.length > COUNT_AFTER
 
-    // Запоминаем границы найденного
-    if (allResults.length > 0) {
-      this.earliestFound = allResults[0].timestamp
-      this.latestFound = allResults[allResults.length - 1].timestamp
+    // Запоминаем границы ОТОБРАЖАЕМЫХ результатов (не всех найденных!)
+    if (this.results.length > 0) {
+      this.earliestFound = this.results[0].timestamp
+      this.latestFound = this.results[this.results.length - 1].timestamp
     }
 
     if (this.results.length > 0) {
