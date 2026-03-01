@@ -1,6 +1,5 @@
 import React, { useContext, useRef, useEffect, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
-import { runInAction } from 'mobx'
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import { debounce } from 'src/7-shared/helpers/utils'
 import styles from './EventSearch.module.css'
@@ -13,11 +12,12 @@ export const EventSearchInput: React.FC = observer(() => {
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Создаём debounced функцию поиска один раз при монтировании
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useMemo(
     () => debounce((query: string) => {
       eventSearchStore.search(query)
     }, DEBOUNCE_MS),
-    [eventSearchStore]
+    []
   )
 
   // Очистка при unmount
@@ -34,9 +34,7 @@ export const EventSearchInput: React.FC = observer(() => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     // Обновляем query немедленно для отображения в UI
-    runInAction(() => {
-      eventSearchStore.query = value.trim().toLowerCase()
-    })
+    eventSearchStore.setQuery(value)
     // Выполняем поиск с debounce
     debouncedSearch(value)
   }

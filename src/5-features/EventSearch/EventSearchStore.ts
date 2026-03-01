@@ -49,6 +49,14 @@ export class EventSearchStore {
   }
 
   /** 
+   * Установить поисковый запрос (без выполнения поиска).
+   * Используется для немедленного обновления UI.
+   */
+  setQuery(query: string) {
+    this.query = query.trim().toLowerCase()
+  }
+
+  /** 
    * Выполнить поиск.
    */
   search(query: string) {
