@@ -5,8 +5,8 @@ import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
 import Drawer from 'src/7-shared/ui/Drawer/Drawer'
 import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
-import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
-import { Diskette, DownloadSign, Fullscreen, Google, Menu, ModifiedAsterisk, UploadSign, Weather } from 'src/7-shared/ui/Icons/Icons'
+import SwgIcon, { CompoundIcon } from 'src/7-shared/ui/Icons/SwgIcon'
+import { AppIcon, ICONS, ModifiedAsterisk } from 'src/7-shared/ui/Icons/Icons'
 import YesNoCancelConfirmation, { YesNoCancelDecision } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
@@ -135,20 +135,24 @@ const CalendarIconBar: React.FC = observer(function() {
   menu.push({ name: 'Сохранить локально', fn: storageService.saveToLocalStorage })
   icons.push({
     name: '',
-    jsx: <SwgIcon><Menu/></SwgIcon>,
+    jsx: <AppIcon icon={ICONS.menu}/>,
     fn: () => { uiStore.toggleMenu(true) }
   })
   icons.push({
     name: 'Сохранить локально',
-    jsx: <SwgIcon><Diskette/>
+    jsx: <SwgIcon>
+      <AppIcon icon={ICONS.save} size={20}/>
       {storageService.isSyncWithLocalstorage || <ModifiedAsterisk/>}
-      </SwgIcon>,
+    </SwgIcon>,
     fn: storageService.saveToLocalStorage
   })
 
   icons.push({
     name: 'Открыть последний документ',
-    jsx: <SwgIcon><Google/><DownloadSign/></SwgIcon>,
+    jsx: <CompoundIcon>
+      <AppIcon icon={ICONS.google} size={16}/>
+      <AppIcon icon={ICONS.download} size={10} style={{position: 'absolute', right: -2, bottom: -2}}/>
+    </CompoundIcon>,
     fn: handleLoadLastOpenedDocument
   })
 
@@ -163,21 +167,29 @@ const CalendarIconBar: React.FC = observer(function() {
 
     icons.push({
       name: 'Сохранить',
-      jsx: <SwgIcon><Google/><UploadSign/>
+      jsx: <CompoundIcon>
+        <AppIcon icon={ICONS.google} size={16}/>
+        <AppIcon icon={ICONS.upload} size={10} style={{position: 'absolute', right: -2, bottom: -2}}/>
         {documentSessionStore.state.isDirty ? <ModifiedAsterisk/> : null}
-      </SwgIcon>,
+      </CompoundIcon>,
       fn: handleSaveCurrentDocument
     })
 
     icons.push({
       name: 'Открыть из Google Drive',
-      jsx: <SwgIcon><Google/><DownloadSign/></SwgIcon>,
+      jsx: <CompoundIcon>
+        <AppIcon icon={ICONS.google} size={16}/>
+        <AppIcon icon={ICONS.download} size={10} style={{position: 'absolute', right: -2, bottom: -2}}/>
+      </CompoundIcon>,
       fn: handleOpenDriveFilePicker
     })
 
     icons.push({
       name: 'Сохранить как...',
-      jsx: <SwgIcon><Google/><UploadSign/></SwgIcon>,
+      jsx: <CompoundIcon>
+        <AppIcon icon={ICONS.google} size={16}/>
+        <AppIcon icon={ICONS.upload} size={10} style={{position: 'absolute', right: -2, bottom: -2}}/>
+      </CompoundIcon>,
       fn: handleSaveAsToDrive
     })
   } else {
@@ -188,12 +200,15 @@ const CalendarIconBar: React.FC = observer(function() {
 
   icons.push({
     name: 'Загрузить погоду',
-    jsx: <SwgIcon><Weather/><DownloadSign/></SwgIcon>,
+    jsx: <CompoundIcon>
+      <AppIcon icon={ICONS.weather} size={18}/>
+      <AppIcon icon={ICONS.download} size={10} style={{position: 'absolute', right: -2, bottom: -2}}/>
+    </CompoundIcon>,
     fn: weatherStore.loadForecast
   })
   icons.push({
     name: 'Полный экран',
-    jsx: <SwgIcon><Fullscreen/></SwgIcon>,
+    jsx: <AppIcon icon={ICONS.fullscreen}/>,
     fn: fullScreen
   })
 

@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@iconify/react": "^6.0.2",
     "mobx": "^6.10.0",
     "mobx-react-lite": "^3.4.3",
     "react": "^18.2.0",

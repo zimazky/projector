@@ -6,8 +6,7 @@ import TextField from 'src/7-shared/ui/TextField/TextField'
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import IconButton from 'src/7-shared/ui/IconButton/IconButton'
-import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
-import { ArrowBackIos, ArrowForwardIos, Calendar } from 'src/7-shared/ui/Icons/Icons'
+import { AppIcon, ICONS } from 'src/7-shared/ui/Icons/Icons'
 
 import styles from './DatePicker.module.css'
 import { fakeEvent } from './fakeEvent'
@@ -93,7 +92,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
   return <>
   <TextField label={label} value={value} error={error} disabled={disabled}
     onChange={onChange} {...rest} ref={onChangeRef}>
-    <IconButton disabled={disabled} onClick={()=>{setOpen(true)}}><SwgIcon><Calendar/></SwgIcon></IconButton>
+    <IconButton disabled={disabled} onClick={()=>{setOpen(true)}}><AppIcon icon={ICONS.calendar}/></IconButton>
   </TextField>
   <Dialog open={open} onClose={closeHandle}>
     <div className={styles.title}>
@@ -104,10 +103,10 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
       <div className={styles.label}>{DateTime.getMonthNamesArray()[state.month] + ' ' + state.year}</div>
       <div className={styles.buttons}>
         <IconButton onClick={()=>setState(s=>({...s, ...prevMonth(s.year, s.month)}))}>
-          <SwgIcon><ArrowBackIos/></SwgIcon>
+          <AppIcon icon={ICONS.arrowBack}/>
         </IconButton>
         <IconButton onClick={()=>setState(s=>({...s, ...nextMonth(s.year, s.month)}))}>
-          <SwgIcon><ArrowForwardIos/></SwgIcon>
+          <AppIcon icon={ICONS.arrowForward}/>
         </IconButton>
       </div>
     </div>
