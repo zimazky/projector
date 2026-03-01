@@ -591,3 +591,142 @@ describe('ZCron ariseInInterval and firstInInterval (integration)', ()=>{
     })
   })
 })
+
+
+// =============================================================================
+// Интеграционные тесты для prevBefore
+// =============================================================================
+describe('ZCron prevBefore (integration)', ()=>{
+
+  describe('empty schedule', ()=>{
+    it('should return null for empty schedule', ()=>{
+      const schedule = ZCron.parse('')
+      const result = ZCron.prevBefore(schedule, ts('2024.01.01'), ts('2024.01.10'))
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('relative schedule /d', ()=>{
+    it('should calculate previous occurrence correctly', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      
+      // 2024.01.09 is an occurrence (day 8 from start), prev before it is 2024.01.05
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.09')))).toBe('2024.01.05')
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.05')))).toBe('2024.01.01')
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.04')))).toBe('2024.01.01')
+    })
+
+    it('should return null when before is at or before start', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.10')
+      
+      expect(ZCron.prevBefore(schedule, start, ts('2024.01.10'))).toBeNull()
+      expect(ZCron.prevBefore(schedule, start, ts('2024.01.05'))).toBeNull()
+    })
+
+    it('should handle intervals correctly', ()=>{
+      const schedule = ZCron.parse('/7')
+      const start = ts('2024.01.01')
+      
+      // Occurrences: 01, 08, 15, 22, 29
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.30')))).toBe('2024.01.29')
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.29')))).toBe('2024.01.22')
+      expect(formatTs(ZCron.prevBefore(schedule, start, ts('2024.01.23')))).toBe('2024.01.22')
+    })
+  })
+
+  describe('absolute schedule', ()=>{
+    it('should return previous day for * * *', ()=>{
+      const schedule = ZCron.parse('* * *')
+      
+      const result = ZCron.prevBefore(schedule, ts('2024.01.01'), ts('2024.01.15'))
+      expect(formatTs(result)).toBe('2024.01.14')
+    })
+
+    it('should find previous weekday', ()=>{
+      const schedule = ZCron.parse('* * 1-5')  // Mon-Fri
+      
+      // 2024.01.08 = Monday, prev before should be Friday 2024.01.05
+      const result = ZCron.prevBefore(schedule, ts('2024.01.01'), ts('2024.01.08'))
+      expect(formatTs(result)).toBe('2024.01.05')
+    })
+
+    it('should find previous day of month', ()=>{
+      const schedule = ZCron.parse('15 * *')
+      
+      const result = ZCron.prevBefore(schedule, ts('2024.01.01'), ts('2024.02.20'))
+      expect(formatTs(result)).toBe('2024.02.15')
+    })
+
+    it('should find combined conditions going back', ()=>{
+      const schedule = ZCron.parse('15 3 *')
+      
+      // Find prev before April 1st -> should be March 15
+      const result = ZCron.prevBefore(schedule, ts('2024.01.01'), ts('2024.04.01'))
+      expect(formatTs(result)).toBe('2024.03.15')
+    })
+
+    it('should return start when before is one day after start and start matches', ()=>{
+      const schedule = ZCron.parse('15 3 *')
+      
+      // Start is March 15, before March 16 -> prev is March 15 (the start)
+      const result = ZCron.prevBefore(schedule, ts('2024.03.15'), ts('2024.03.16'))
+      expect(formatTs(result)).toBe('2024.03.15')
+    })
+
+    it('should return null when before is at start', ()=>{
+      const schedule = ZCron.parse('15 3 *')
+      
+      // Before is exactly at start -> no prev (can't be strictly before start)
+      const result = ZCron.prevBefore(schedule, ts('2024.03.15'), ts('2024.03.15'))
+      expect(result).toBeNull()
+    })
+
+    it('should handle year boundaries', ()=>{
+      const schedule = ZCron.parse('15 3 *')  // March 15
+      
+      // Find prev before March 15 2025 -> should be March 15 2024
+      const result = ZCron.prevBefore(schedule, ts('2024.03.15'), ts('2025.03.15'))
+      expect(formatTs(result)).toBe('2024.03.15')
+    })
+  })
+
+  describe('prevBeforeString wrapper', ()=>{
+    it('should work with string schedule', ()=>{
+      const result = ZCron.prevBeforeString('/4', ts('2024.01.01'), ts('2024.01.09'))
+      expect(formatTs(result)).toBe('2024.01.05')
+    })
+
+    it('should return null for empty schedule', ()=>{
+      const result = ZCron.prevBeforeString('', ts('2024.01.01'), ts('2024.01.10'))
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('symmetry with nextAfter', ()=>{
+    it('nextAfter then prevBefore should return original', ()=>{
+      const schedule = ZCron.parse('/4')
+      const start = ts('2024.01.01')
+      const original = ts('2024.01.09')
+      
+      const next = ZCron.nextAfter(schedule, start, original)
+      expect(formatTs(next)).toBe('2024.01.13')
+      
+      const prev = ZCron.prevBefore(schedule, start, next as timestamp)
+      expect(formatTs(prev)).toBe('2024.01.09')
+    })
+
+    it('prevBefore then nextAfter should return original for absolute', ()=>{
+      const schedule = ZCron.parse('* * 1-5')  // Mon-Fri
+      const start = ts('2024.01.01')
+      const original = ts('2024.01.15')  // Monday
+      
+      const prev = ZCron.prevBefore(schedule, start, original)
+      expect(formatTs(prev)).toBe('2024.01.12')  // Friday
+      
+      const next = ZCron.nextAfter(schedule, start, prev as timestamp)
+      expect(formatTs(next)).toBe('2024.01.15')
+    })
+  })
+})

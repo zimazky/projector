@@ -121,4 +121,44 @@ export class RelativeScheduleHandler {
 
     return startDay + k * intervalSec
   }
+
+  /**
+   * Вычисляет предыдущее срабатывание расписания.
+   * O(1) - прямая формула без итераций.
+   * 
+   * Формула: k = floor((diff - 1) / intervalDays), prevTs = startTimestamp + k * intervalDays * 86400
+   * 
+   * @param schedule - скомпилированное расписание
+   * @param startTimestamp - начальная дата события
+   * @param beforeTimestamp - искать срабатывание строго до этой даты
+   * @returns timestamp предыдущего срабатывания или null
+   */
+  static prevBefore(
+    schedule: RelativeSchedule,
+    startTimestamp: timestamp,
+    beforeTimestamp: timestamp
+  ): timestamp | null {
+    const intervalSec = schedule.intervalDays * 86400
+    const startDay = DateTime.getBeginDayTimestamp(startTimestamp)
+    const beforeDay = DateTime.getBeginDayTimestamp(beforeTimestamp)
+
+    // Если beforeTimestamp <= startTimestamp, предыдущего срабатывания нет
+    if (beforeDay <= startDay) {
+      return null
+    }
+
+    // Вычисляем разницу в днях
+    const diffDays = DateTime.getDifferenceInDays(startDay, beforeDay)
+
+    // k = количество полных интервалов от старта до beforeTimestamp
+    // Вычитаем 1, чтобы получить строго до beforeTimestamp
+    const k = Math.floor((diffDays - 1) / schedule.intervalDays)
+
+    // Если k < 0, значит нет срабатываний до beforeTimestamp
+    if (k < 0) {
+      return null
+    }
+
+    return startDay + k * intervalSec
+  }
 }

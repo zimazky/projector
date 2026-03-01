@@ -39,123 +39,203 @@ const MAX_OCCURRENCE_ITERATIONS = 500
 
 ---
 
+## Корневая архитектурная проблема
+
+### Противоречие между концепцией и реализацией
+
+Проектная документация (`calendar_event_search_implementation_analysis.md`) описывает подход **"Ленивый инкрементальный поиск по количеству событий"**:
+
+> Вместо временного окна ищем фиксированное количество ближайших событий.
+
+Это правильная концепция: пользователь хочет видеть N ближайших событий, независимо от того, насколько они удалены во времени.
+
+**Однако реализация делает прямо противоположное:**
+
+```typescript
+// search() вызывает:
+const allResults = this.collectAllMatchingEvents()  // Собирает ВСЕ события!
+
+// collectAllMatchingEvents() внутри делает:
+this.eventsStore.plannedRepeatable.forEach(event => {
+  const occurrences = this.getOccurrences(event)  // До 500 вхождений на каждое!
+  // ...
+})
+```
+
+### Почему это проблема
+
+| Тип событий | Количество | Что делает текущий код |
+|-------------|------------|------------------------|
+| Одиночные | Конечное (например, 100) | Перебирает все — приемлемо |
+| Повторяемые | Потенциально бесконечное | Генерирует до 500 вхождений на каждое |
+
+При 10 повторяемых событиях с ежедневным расписанием:
+- Генерируется 10 × 500 = 5000 вхождений
+- Сортируется массив из 5000+ элементов
+- Пользователю показывается только 8
+
+**Это расточительно и противоречит идее "инкрементального поиска".**
+
+### Правильная архитектура: Инкрементальный поиск без полного перебора
+
+Вместо сбора всех событий и последующей фильтрации, нужно **искать ближайшие события напрямую**:
+
+```
+Текущий подход (неправильный):
+┌─────────────────────────────────────────────────────────────────────┐
+│  collectAllMatchingEvents()                                          │
+│  ├── Перебрать все одиночные события                                │
+│  ├── Для каждого повторяемого: сгенерировать 500 вхождений          │
+│  ├── Отсортировать 5000+ результатов                                │
+│  └── Вернуть всё                                                    │
+│                                                                      │
+│  Затем: filter + slice(8)                                           │
+└─────────────────────────────────────────────────────────────────────┘
+
+Правильный подход:
+┌─────────────────────────────────────────────────────────────────────┐
+│  findNearestEvents(fromTimestamp, direction, limit)                 │
+│  ├── Одиночные: отфильтровать по запросу, найти ближайшие N         │
+│  ├── Повторяемые: для каждого найти ближайшие N вхождений           │
+│  │   └── Использовать ZCron.nextAfter() инкрементально              │
+│  ├── Объединить и отсортировать только N результатов                │
+│  └── Вернуть N ближайших                                            │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Проблемы и рекомендации
 
-### 1. Критическая проблема: Неэффективность `collectAllMatchingEvents()`
+### 1. Критическая проблема: Сбор всех событий вместо инкрементального поиска
 
 #### Проблема
 
-Метод `collectAllMatchingEvents()` вызывается многократно:
-
-- При начальном поиске (`search`)
-- При каждой дозагрузке (`loadMoreAfter`, `loadMoreBefore`)
+Метод `collectAllMatchingEvents()` собирает ВСЕ события, включая генерацию до 500 вхождений для каждого повторяемого события. Это противоречит концепции поиска ближайших событий.
 
 Каждый вызов:
 1. Перебирает ВСЕ события в `eventsStore`
 2. Генерирует ВСЕ вхождения повторяемых событий (до 500 штук на каждое)
 3. Сортирует полный список
+4. Повторяется при каждой дозагрузке!
 
 ```typescript
 // В loadMoreAfter():
-const allResults = this.collectAllMatchingEvents()  // ← Полный перебор!
+const allResults = this.collectAllMatchingEvents()  // ← Полный перебор снова!
 const newResults = allResults.filter(r => r.timestamp > this.latestFound)
 ```
 
-#### Решение
+#### Решение: Инкрементальный поиск ближайших событий
 
-Кэшировать результаты поиска и использовать инкрементальный подход:
+Вместо сбора всех событий, реализовать методы прямого поиска ближайших:
 
 ```typescript
 export class EventSearchStore {
-  /** Кэш всех найденных результатов */
-  private allMatchingEvents: SearchResult[] | null = null
+  /** Найти ближайшие N событий после указанной даты */
+  private findNearestAfter(fromTimestamp: timestamp, limit: number): SearchResult[] {
+    const candidates: SearchResult[] = []
 
-  search(query: string) {
-    this.query = query.trim().toLowerCase()
-    this.currentIndex = -1
-    this.results = []
-    this.allMatchingEvents = null  // Сброс кэша
+    // Одиночные события — конечный список, фильтруем и берём ближайшие
+    const matchingSingle = [
+      ...this.eventsStore.planned.filter(e => this.matchesQuery(e.name) || this.matchesQuery(e.comment)),
+      ...this.eventsStore.completed.filter(e => this.matchesQuery(e.name) || this.matchesQuery(e.comment))
+    ]
+      .filter(e => e.start > fromTimestamp)
+      .sort((a, b) => a.start - b.start)
+      .slice(0, limit)
+      .map(e => this.toSearchResult(e))
 
-    if (!this.query) {
-      this.hasMoreBefore = false
-      this.hasMoreAfter = false
-      return
+    candidates.push(...matchingSingle)
+
+    // Повторяемые события — инкрементальная генерация вхождений
+    for (const event of this.eventsStore.plannedRepeatable) {
+      if (!this.matchesQuery(event.name) && !this.matchesQuery(event.comment)) continue
+
+      const occurrences = this.getOccurrencesAfter(event, fromTimestamp, limit)
+      candidates.push(...occurrences)
     }
 
-    // Первичный сбор всех результатов (один раз!)
-    this.allMatchingEvents = this.collectAllMatchingEvents()
-    
-    // ... остальная логика
+    // Сортируем только кандидатов и берём limit ближайших
+    return candidates
+      .sort((a, b) => a.timestamp - b.timestamp)
+      .slice(0, limit)
   }
 
-  private loadMoreAfter() {
-    if (!this.hasMoreAfter || !this.query || !this.allMatchingEvents) return
+  /** Найти ближайшие N событий до указанной даты */
+  private findNearestBefore(fromTimestamp: timestamp, limit: number): SearchResult[] {
+    // Аналогично, но в обратном направлении
+  }
 
-    // Используем кэш вместо повторного сбора
-    const newResults = this.allMatchingEvents.filter(r => r.timestamp > this.latestFound)
-    // ...
+  /** Получить ближайшие вхождения повторяемого события после даты */
+  private getOccurrencesAfter(
+    event: RepeatableEventModel, 
+    fromTimestamp: timestamp, 
+    limit: number
+  ): SearchResult[] {
+    const schedule = ZCron.parse(event.repeat)
+    if (schedule.mode === 'empty') {
+      return event.start > fromTimestamp ? [this.toSearchResult(event, event.start)] : []
+    }
+
+    const results: SearchResult[] = []
+    let current: timestamp | null = event.start
+
+    // Находим первое вхождение после fromTimestamp
+    while (current !== null && current <= fromTimestamp) {
+      current = ZCron.nextAfter(schedule, event.start, current)
+    }
+
+    // Генерируем только нужно количество
+    while (current !== null && results.length < limit) {
+      if (event.end && current >= event.end) break
+
+      results.push({
+        eventId: event.id,
+        timestamp: current,
+        name: event.name,
+        completed: false,
+        repeatable: true
+      })
+
+      current = ZCron.nextAfter(schedule, event.start, current)
+    }
+
+    return results
   }
 }
 ```
 
-### 2. Проблема: Неоптимальная генерация вхождений
+**Преимущества:**
+- Для повторяемых событий генерируется только нужное количество вхождений
+- Нет полного перебора и сортировки тысяч элементов
+- Соответствует концепции "поиск ближайших событий"
+
+### 2. Проблема: Поиск в обратном направлении (prevResult)
 
 #### Проблема
 
-Метод `getOccurrences()` всегда начинает с `event.start`, даже если нужно найти вхождения после определённой даты:
-
-```typescript
-private getOccurrences(event: RepeatableEventModel): timestamp[] {
-  let current: timestamp | null = event.start  // ← Всегда с начала!
-  let iterations = 0
-
-  while (current !== null && iterations < MAX_OCCURRENCE_ITERATIONS) {
-    // ...
-    current = ZCron.nextAfter(schedule, event.start, current)
-  }
-}
-```
-
-При `MAX_OCCURRENCE_ITERATIONS = 500` и ежедневном повторении это ~1.4 года событий. Для каждого повторяемого события генерируется до 500 вхождений.
+Для навигации назад нужны события **до** текущей даты. ZCron предоставляет `nextAfter()`, но не имеет встроенного метода для поиска предыдущих вхождений.
 
 #### Решение
 
-Использовать инкрементальный поиск вхождений с опорной точкой:
+Вариант A: Добавить метод `prevBefore` в ZCron (требует изменений в библиотеке)
+
+Вариант B: Использовать приближённый подход с буфером:
 
 ```typescript
-private getOccurrencesFrom(
-  event: RepeatableEventModel, 
-  fromTimestamp: timestamp,
-  direction: 'forward' | 'backward',
-  limit: number
-): timestamp[] {
-  const schedule = ZCron.parse(event.repeat)
-  if (schedule.mode === 'empty') {
-    return [event.start]
-  }
-
-  const occurrences: timestamp[] = []
-  let current: timestamp | null = fromTimestamp
-  let iterations = 0
-
-  if (direction === 'forward') {
-    while (current !== null && occurrences.length < limit && iterations < limit * 2) {
-      iterations++
-      if (event.end && current >= event.end) break
-      
-      // Пропускаем вхождения до fromTimestamp
-      if (current >= fromTimestamp) {
-        occurrences.push(current)
-      }
-      current = ZCron.nextAfter(schedule, event.start, current)
-    }
-  } else {
-    // Для обратного направления нужен метод ZCron.prevBefore
-    // или альтернативный подход
-  }
-
-  return occurrences
+/** При начальном поиске сохраняем больше событий в прошлое */
+private findNearestBefore(fromTimestamp: timestamp, limit: number): SearchResult[] {
+  // Для каждого повторяемого события храним буфер последних вхождений
+  // или вычисляем от конца события (event.end) в обратном направлении
 }
+```
+
+Вариант C: Для обратной навигации кэшировать уже найденные вхождения:
+
+```typescript
+// При движении вперёд сохраняем пройденные события
+// При движении назад используем кэш
+private visitedResults: SearchResult[] = []
 ```
 
 ### 3. Проблема: Дублирование логики в `loadMoreBefore`/`loadMoreAfter`
@@ -372,12 +452,23 @@ private mergeSortedArrays(arr1: SearchResult[], arr2: SearchResult[]): SearchRes
 
 | Аспект | В документации | В реализации | Оценка |
 |--------|---------------|--------------|--------|
-| Метод поиска | По количеству событий | По количеству событий | ✅ Соответствует |
-| Начальное количество | COUNT_BEFORE=4, COUNT_AFTER=4 | Те же значения | ✅ Соответствует |
+| Метод поиска | По количеству событий | По количеству событий (на уровне UI) | ⚠️ Частично |
+| Инкрементальность | Дозагрузка при навигации | Дозагрузка работает, но через полный перебор | ❌ Не соответствует |
+| Генерация вхождений | Инкрементальная (предполагалась) | Генерация 500 вхождений с начала события | ❌ Не соответствует |
 | Защитный предел | MAX_OCCURRENCE_ITERATIONS | 500 | ✅ Реализовано |
-| Кэширование | Не указано | Не реализовано | ⚠️ Можно улучшить |
 | Debounce | Не указано | Не реализовано | ⚠️ Можно улучшить |
-| Оптимизация merge | Не указано | Не реализовано | ⚠️ Можно улучшить |
+
+### Ключевое несоответствие
+
+Документация описывает принцип:
+
+> "Вместо временного окна ищем фиксированное количество ближайших событий."
+
+Но реализация делает:
+
+> "Собираем ВСЕ события (до 500 вхождений на каждое повторяемое), затем фильтруем нужные."
+
+Это фундаментальное расхождение между концепцией и реализацией.
 
 ---
 
@@ -385,14 +476,14 @@ private mergeSortedArrays(arr1: SearchResult[], arr2: SearchResult[]): SearchRes
 
 ### Приоритет 1: Критические изменения
 
-1. **Добавить кэширование результатов** — исключит повторные полные переборы
-2. **Добавить debounce** — улучшит производительность при вводе
+1. **Переписать поиск на инкрементальный подход** — вместо сбора всех событий реализовать `findNearestAfter`/`findNearestBefore`, которые ищут только нужное количество событий
+2. **Реализовать инкрементальную генерацию вхождений** — `getOccurrencesAfter()` должен генерировать только N вхождений, начиная с нужной даты, а не 500 штук с начала события
 
 ### Приоритет 2: Оптимизации
 
-3. **Оптимизировать генерацию вхождений** — использовать инкрементальный подход
-4. **Заменить сортировку на merge** — для уже отсортированных массивов
-5. **Рефакторинг loadMoreBefore/loadMoreAfter** — уменьшить дублирование
+3. **Решить проблему обратной навигации** — выбрать один из вариантов: добавить `prevBefore` в ZCron, использовать буфер или кэширование
+4. **Добавить debounce** — улучшит производительность при вводе
+5. **Заменить сортировку на merge** — для уже отсортированных массивов
 
 ### Приоритет 3: Улучшения кода
 
@@ -402,32 +493,33 @@ private mergeSortedArrays(arr1: SearchResult[], arr2: SearchResult[]): SearchRes
 
 ---
 
-## Рекомендуемая обновлённая архитектура
+## Рекомендуемая архитектура
 
 ```
 EventSearchStore
 ├── Состояние
 │   ├── query: string
-│   ├── results: SearchResult[]
+│   ├── results: SearchResult[]           (только отображаемые)
 │   ├── currentIndex: number
 │   ├── isActive: boolean
 │   ├── hasMoreBefore/After: boolean
-│   └── private cachedResults: SearchResult[] | null
+│   └── earliestFound/latestFound         (границы отображаемых)
 │
 ├── Публичные методы
-│   ├── search(query)          — с debounce
-│   ├── nextResult()
-│   ├── prevResult()
+│   ├── search(query)                     — с debounce
+│   ├── nextResult()                      — вызывает loadMore('after')
+│   ├── prevResult()                      — вызывает loadMore('before')
 │   ├── clear()
 │   └── toggleActive()
 │
-├── Приватные методы
-│   ├── performSearch()        — фактический поиск
-│   ├── collectAllMatching()   — сбор результатов (кэшируемый)
-│   ├── loadMore(direction)    — унифицированный метод
-│   ├── getOccurrencesFrom()   — инкрементальная генерация
-│   ├── mergeResults()         — эффективное слияние
-│   └── updateBoundaries()     — обновление границ
+├── Приватные методы (новые)
+│   ├── findNearestAfter(from, limit)     — инкрементальный поиск вперёд
+│   ├── findNearestBefore(from, limit)    — инкрементальный поиск назад
+│   ├── getOccurrencesAfter(event, from, limit) — только N вхождений
+│   └── loadMore(direction)               — использует findNearest*
+│
+├── Удаляемые методы
+│   └── collectAllMatchingEvents()        — больше не нужен!
 │
 └── Геттеры
     ├── currentResult
@@ -438,10 +530,16 @@ EventSearchStore
 
 ## Заключение
 
-Реализация `EventSearchStore` функционально корректна и соответствует основным требованиям проектной документации. Однако есть несколько критических проблем с производительностью:
+Текущая реализация `EventSearchStore` содержит **фундаментальное архитектурное противоречие**:
 
-1. **Повторный полный перебор** при каждой дозагрузке — главный источник проблем
-2. **Отсутствие debounce** — множественные ненужные поиски при вводе
-3. **Неоптимальная генерация вхождений** — до 500 итераций на каждое повторяемое событие
+- **Декларируется:** "Ленивый инкрементальный поиск по количеству событий"
+- **Реализуется:** Полный сбор всех событий с генерацией до 500 вхождений на каждое повторяемое событие
 
-Рекомендуется реализовать предложения из Приоритета 1 перед использованием в production, особенно при большом количестве событий.
+Это приводит к:
+1. Генерации тысяч ненужных вхождений
+2. Сортировке массивов из тысяч элементов
+3. Повторению всего процесса при каждой дозагрузке
+
+**Главное recommendation:** Переписать поиск на истинно инкрементальный подход, где методы `findNearestAfter`/`findNearestBefore` ищут только запрошенное количество событий, используя `ZCron.nextAfter()` для инкрементальной генерации вхождений.
+
+Это особенно важно для повторяемых событий — вместо генерации 500 вхождений с начала события, нужно найти первое вхождение после нужной даты и сгенерировать только N следующих.

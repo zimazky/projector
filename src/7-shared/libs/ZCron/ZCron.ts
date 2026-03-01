@@ -299,6 +299,50 @@ export default class ZCron {
   }
 
   /**
+   * Находит предыдущее срабатывание расписания до указанного timestamp.
+   * Оптимизированная версия без линейного перебора дней.
+   *
+   * @param schedule - скомпилированное расписание
+   * @param startTimestamp - начальная дата события (для относительных расписаний)
+   * @param beforeTimestamp - искать срабатывание строго до этой даты
+   * @param maxIterations - максимальное количество итераций (защита от бесконечного цикла)
+   * @returns timestamp предыдущего срабатывания или null если не найдено
+   */
+  static prevBefore(
+    schedule: ParsedSchedule,
+    startTimestamp: timestamp,
+    beforeTimestamp: timestamp,
+    maxIterations = 1000
+  ): timestamp | null {
+    switch (schedule.mode) {
+      case 'empty':
+        return null
+
+      case 'relative':
+        return RelativeScheduleHandler.prevBefore(schedule, startTimestamp, beforeTimestamp)
+
+      case 'absolute':
+        return AbsoluteScheduleHandler.prevBefore(schedule, startTimestamp, beforeTimestamp, maxIterations)
+    }
+  }
+
+  /**
+   * Упрощённый метод для поиска предыдущего срабатывания по строке расписания.
+   * @param scheduleString - строка расписания
+   * @param startTimestamp - начальная дата события
+   * @param beforeTimestamp - искать до этой даты
+   * @returns timestamp предыдущего срабатывания или null
+   */
+  static prevBeforeString(
+    scheduleString: string,
+    startTimestamp: timestamp,
+    beforeTimestamp: timestamp
+  ): timestamp | null {
+    const schedule = this.parseWithCache(scheduleString)
+    return this.prevBefore(schedule, startTimestamp, beforeTimestamp)
+  }
+
+  /**
    * Validates schedule string with detailed error diagnostics.
    */
   static validateDetailed(scheduleString: string): ValidationResult {

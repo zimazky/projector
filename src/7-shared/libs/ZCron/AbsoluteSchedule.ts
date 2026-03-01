@@ -379,4 +379,148 @@ export class AbsoluteScheduleHandler {
     }
     return null
   }
+
+  /**
+   * Находит предыдущее срабатывание расписания.
+   * Оптимизированный алгоритм с "перепрыгиванием" назад вместо линейного перебора.
+   * 
+   * @param schedule - скомпилированное расписание
+   * @param startTimestamp - начальная дата события
+   * @param beforeTimestamp - искать срабатывание строго до этой даты
+   * @param maxIterations - защита от бесконечного цикла
+   * @returns timestamp предыдущего срабатывания или null
+   */
+  static prevBefore(
+    schedule: AbsoluteSchedule,
+    startTimestamp: timestamp,
+    beforeTimestamp: timestamp,
+    maxIterations: number
+  ): timestamp | null {
+    // Начинаем поиск с дня перед beforeTimestamp
+    let candidate = DateTime.getBeginDayTimestamp(beforeTimestamp) - 86400
+    const startDay = DateTime.getBeginDayTimestamp(startTimestamp)
+
+    // Не можем найти срабатывание раньше startTimestamp
+    if (candidate < startDay) {
+      return null
+    }
+
+    const { months, days, weekdays } = schedule
+    const monthsSet = new Set(months)
+    const daysSet = new Set(days)
+    const weekdaysSet = new Set(weekdays)
+
+    // Быстрые проверки: если все поля = "*", то каждый день
+    const allMonths = months.length === 12
+    const allDays = days.length === 31
+    const allWeekdays = weekdays.length === 7
+
+    if (allMonths && allDays && allWeekdays) {
+      return candidate
+    }
+
+    // Если только weekdays ограничен - прыгаем по дням недели назад
+    if (allMonths && allDays && !allWeekdays) {
+      return this.findPrevWeekday(candidate, weekdays, weekdaysSet)
+    }
+
+    // Общий случай - итеративный поиск с перепрыгиванием назад
+    for (let i = 0; i < maxIterations; i++) {
+      const { year, month, day } = DateTime.getYearMonthDay(candidate)
+      const month1based = month + 1
+
+      // 1. Проверка месяца
+      if (!monthsSet.has(month1based)) {
+        candidate = this.jumpToPrevMonth(year, month, months)
+        if (candidate < startDay) return null
+        continue
+      }
+
+      // 2. Проверка дня месяца
+      if (!daysSet.has(day)) {
+        const prevDay = this.findPrevInSorted(days, day, 1)
+
+        if (prevDay !== null) {
+          candidate = DateTime.YearMonthDayToTimestamp(year, month, prevDay)
+        } else {
+          candidate = this.jumpToPrevMonth(year, month, months)
+          if (candidate < startDay) return null
+        }
+        continue
+      }
+
+      // 3. Проверка дня недели
+      const weekday = DateTime.getWeekday(candidate)
+      if (!weekdaysSet.has(weekday)) {
+        const daysToSub = this.daysToPrevWeekday(weekday, weekdays)
+        candidate -= daysToSub * 86400
+        if (candidate < startDay) return null
+        continue
+      }
+
+      // Все условия выполнены
+      return candidate
+    }
+
+    return null // Превышен лимит итераций
+  }
+
+  /**
+   * Находит количество дней до ближайшего подходящего дня недели (назад).
+   */
+  private static daysToPrevWeekday(currentWeekday: number, weekdays: number[]): number {
+    let minDays = 7
+    for (const wd of weekdays) {
+      let diff = currentWeekday - wd
+      if (diff <= 0) diff += 7
+      if (diff < minDays) minDays = diff
+    }
+    return minDays
+  }
+
+  /**
+   * Находит ближайший подходящий день недели назад и возвращает timestamp.
+   */
+  private static findPrevWeekday(
+    candidate: timestamp,
+    weekdays: number[],
+    weekdaysSet: Set<number>
+  ): timestamp | null {
+    const weekday = DateTime.getWeekday(candidate)
+    if (weekdaysSet.has(weekday)) {
+      return candidate
+    }
+    const daysToSub = this.daysToPrevWeekday(weekday, weekdays)
+    return candidate - daysToSub * 86400
+  }
+
+  /**
+   * Переходит к последнему дню предыдущего подходящего месяца.
+   */
+  private static jumpToPrevMonth(year: number, month: number, months: number[]): timestamp {
+    const month1based = month + 1
+    const prevMonth = this.findPrevInSorted(months, month1based, 1)
+
+    if (prevMonth !== null) {
+      const daysInMonth = DateTime.getDaysInMonth(year, prevMonth - 1)
+      return DateTime.YearMonthDayToTimestamp(year, prevMonth - 1, daysInMonth)
+    } else {
+      // Переход к декабрю предыдущего года
+      const lastMonth = months[months.length - 1]
+      const daysInMonth = DateTime.getDaysInMonth(year - 1, lastMonth - 1)
+      return DateTime.YearMonthDayToTimestamp(year - 1, lastMonth - 1, daysInMonth)
+    }
+  }
+
+  /**
+   * Находит предыдущее значение в отсортированном массиве перед текущим.
+   */
+  private static findPrevInSorted(sorted: number[], current: number, min: number): number | null {
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i] < current && sorted[i] >= min) {
+        return sorted[i]
+      }
+    }
+    return null
+  }
 }
