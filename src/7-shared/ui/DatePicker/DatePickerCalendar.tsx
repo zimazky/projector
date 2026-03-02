@@ -41,7 +41,7 @@ const DatePickerCalendar: React.FC<DatePickerCalendarProps> = props => {
 								key={d.timestamp}
 								today={d.timestamp === todayTS}
 								selected={d.timestamp === selectedTS}
-								onClick={e => {
+								onClick={_ => {
 									onSelect(d.timestamp)
 								}}
 							>

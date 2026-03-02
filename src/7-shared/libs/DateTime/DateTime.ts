@@ -313,7 +313,6 @@ export default class DateTime {
 	static getYYYYMMDDTHHMM(t: timestamp): string {
 		const { year, month, day } = DateTime.getYearMonthDay(t)
 		const { hours, minutes } = DateTime.getHoursMinutes(t)
-		const M = month + 1
 		return year + mNN(month + 1) + mNN(day) + TNN(hours) + cNN(minutes)
 	}
 	/** Преобразование интервала времени в секундах к строке времени в формате "H:MM" [tested]*/

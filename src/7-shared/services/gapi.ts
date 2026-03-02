@@ -118,7 +118,7 @@ export default class GAPI {
 						onFailure()
 					})
 			})
-		} catch (error) {
+		} catch (_) {
 			console.log('error gapi or gis load')
 			onFailure()
 		}

@@ -1,4 +1,4 @@
-import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 
 import { EventDto } from './EventDto'

@@ -40,7 +40,7 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 		eventFormStore.showForm()
 	}
 
-	function onClickHandle(e: React.MouseEvent<HTMLElement>) {
+	function onClickHandle(_e: React.MouseEvent<HTMLElement>) {
 		if (inputElementRef) inputElementRef.current?.focus()
 	}
 
@@ -74,7 +74,7 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 		>
 			<div
 				className={isToday ? styles.today : styles.header}
-				onClick={e => {
+				onClick={_ => {
 					onDayOpen(timestamp)
 				}}
 			>

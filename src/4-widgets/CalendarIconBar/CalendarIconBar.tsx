@@ -5,7 +5,7 @@ import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
 import Drawer from 'src/7-shared/ui/Drawer/Drawer'
 import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
-import SwgIcon, { CompoundIcon } from 'src/7-shared/ui/Icons/SwgIcon'
+import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import {
 	Diskette,
 	DownloadSign,
@@ -118,7 +118,7 @@ const CalendarIconBar: React.FC = observer(function () {
 		if (!googleApiService.isGoogleLoggedIn) {
 			try {
 				await googleApiService.logIn()
-			} catch (e) {
+			} catch (_) {
 				alert('Не удалось выполнить вход в Google.')
 				return
 			}

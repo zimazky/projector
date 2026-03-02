@@ -1,4 +1,3 @@
-// src/7-shared/libs/Observable/Observable.ts
 type Listener<T> = (event: T) => void
 
 class Observable<T> {

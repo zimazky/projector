@@ -1,5 +1,4 @@
 import React from 'react'
-import styles from './ColorPicker.module.css'
 
 type ColorPickerProps = {
 	value: string

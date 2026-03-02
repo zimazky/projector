@@ -3,6 +3,7 @@ import ts from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import prettier from 'eslint-config-prettier'
 import prettierPlugin from 'eslint-plugin-prettier'
+import globals from 'globals'
 
 export default [
 	js.configs.recommended,
@@ -16,20 +17,15 @@ export default [
 				},
 				ecmaVersion: 'latest',
 				sourceType: 'module',
-				project: ['./tsconfig.json'] // Specify the TypeScript project configuration
+				project: ['./tsconfig.json']
 			},
 			globals: {
-				document: 'readonly',
-				navigator: 'readonly',
-				window: 'readonly',
-				console: 'readonly',
-				alert: 'readonly',
-				setTimeout: 'readonly',
-				setInterval: 'readonly',
-				clearTimeout: 'readonly',
-				clearInterval: 'readonly',
+				...globals.browser,
+				...globals.node,
 				JSX: 'readonly',
 				React: 'readonly',
+				gapi: 'readonly',
+				google: 'readonly'
 			}
 		},
 		plugins: {
@@ -39,29 +35,37 @@ export default [
 		rules: {
 			...prettier.rules,
 			'prettier/prettier': 'error',
-			"no-undef": "warn",
-			"no-unused-vars": "warn"
+			'no-undef': 'warn'
 		}
 	},
 	{
-		files: ['webpack.config.cjs', 'webpack.config.test.cjs'],
-		languageOptions: {
-			globals: {
-				require: 'readonly',
-				__dirname: 'readonly',
-				module: 'writable',
-				process: 'readonly'
-			}
+		files: ['**/*.{ts,tsx}'],
+		rules: {
+			'no-unused-vars': 'off',
+			'@typescript-eslint/no-unused-vars': ['warn', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_',
+				caughtErrorsIgnorePattern: '^_',
+				ignoreRestSiblings: true
+			}]
 		}
 	},
 	{
-		files: ['jest.config.cjs'],
+		files: ['**/*.{js,jsx}'],
+		rules: {
+			'no-unused-vars': ['warn', {
+				argsIgnorePattern: '^_',
+				varsIgnorePattern: '^_',
+				caughtErrorsIgnorePattern: '^_',
+				ignoreRestSiblings: true
+			}]
+		}
+	},
+	{
+		files: ['webpack.config.cjs', 'webpack.config.test.cjs', 'jest.config.cjs'],
 		languageOptions: {
 			globals: {
-				require: 'readonly',
-				__dirname: 'readonly',
-				module: 'writable',
-				process: 'readonly'
+				...globals.node
 			}
 		}
 	},
@@ -69,14 +73,10 @@ export default [
 		files: ['**/*.spec.{js,jsx,ts,tsx}', '**/*.test.{js,jsx,ts,tsx}'],
 		languageOptions: {
 			globals: {
-				describe: 'readonly',
-				it: 'readonly',
-				test: 'readonly',
-				expect: 'readonly',
-				beforeEach: 'readonly',
-				afterEach: 'readonly',
-				beforeAll: 'readonly',
-				afterAll: 'readonly'
+				...globals.jest,
+				...globals.jasmine,
+				...globals.browser,
+				...globals.node
 			}
 		},
 		rules: {

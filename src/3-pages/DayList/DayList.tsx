@@ -28,7 +28,7 @@ const DayList: React.FC = observer(() => {
 		if (e.key == 'Enter') e.currentTarget.blur()
 	}
 
-	function onBlurHandle(e: React.FocusEvent<HTMLElement>) {
+	function onBlurHandle(_e: React.FocusEvent<HTMLElement>) {
 		//onAddEvent(timestamp, e.currentTarget.innerText)
 		//e.currentTarget.innerText = ''
 	}
@@ -37,11 +37,11 @@ const DayList: React.FC = observer(() => {
 		<div className={styles.day} onClick={onClickHandle}>
 			<div>
 				<div onClick={() => uiStore.changeViewMode({ mode: 'Calendar' })}>Calendar</div>
-				<div onClick={e => dayListStore.setDate(timestamp - 86400)}>Prev</div>
+				<div onClick={_ => dayListStore.setDate(timestamp - 86400)}>Prev</div>
 				<div className={today ? styles.today : styles.header}>
 					{day + ' ' + DateTime.getMonthShortNamesArray()[month]}
 				</div>
-				<div onClick={e => dayListStore.setDate(timestamp + 86400)}>Next</div>
+				<div onClick={_ => dayListStore.setDate(timestamp + 86400)}>Next</div>
 			</div>
 			<div className={styles.balance}>
 				{kilo(plannedBalance, 1) +
