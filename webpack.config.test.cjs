@@ -1,23 +1,23 @@
-const path = require('path');
-const Dotenv = require('dotenv-webpack');
+const path = require('path')
+const Dotenv = require('dotenv-webpack')
 
 module.exports = {
   mode: 'development',
   resolve: {
     alias: {
-      src: path.resolve(__dirname, 'src'),
+      src: path.resolve(__dirname, 'src')
     },
     extensions: ['.ts', '.tsx', '.js'],
     fallback: {
-      "crypto": false,
-      "stream": false,
-      "util": false,
-      "path": false,
-      "fs": false
+      crypto: false,
+      stream: false,
+      util: false,
+      path: false,
+      fs: false
     }
   },
   module: {
-    rules: [ 
+    rules: [
       {
         test: /\.tsx?$/,
         exclude: '/node_modules/',
@@ -25,21 +25,19 @@ module.exports = {
         options: {
           transpileOnly: true
         }
-      },
+      }
     ]
   },
 
-  plugins: [
-    new Dotenv()
-  ],
+  plugins: [new Dotenv()],
 
   devServer: {
     open: ['/index.html'],
     client: {
-      overlay: true,
+      overlay: true
     },
     static: {
-      directory: __dirname,
-    },
+      directory: __dirname
+    }
   }
-};
+}

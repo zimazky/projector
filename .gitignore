@@ -1,4 +1,4 @@
 /node_modules
 /coverage
 *.env
-dist/main.js.LICENSE.txt
+dist

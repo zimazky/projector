@@ -7,6 +7,7 @@ import prettierPlugin from 'eslint-plugin-prettier'
 export default [
   js.configs.recommended,
   {
+    files: ['**/*.{js,jsx,ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
@@ -22,7 +23,17 @@ export default [
     rules: {
       ...prettier.rules,
       'prettier/prettier': 'error'
-    },
-    files: ['**/*.{js,jsx,ts,tsx}']
+    }
+  },
+  {
+    files: ['webpack.config.cjs', 'webpack.config.test.cjs'],
+    languageOptions: {
+      globals: {
+        require: 'readonly',
+        __dirname: 'readonly',
+        module: 'writable',
+        process: 'readonly'
+      }
+    }
   }
 ]

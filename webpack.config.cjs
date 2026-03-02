@@ -1,6 +1,6 @@
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const path = require('path');
-const Dotenv = require('dotenv-webpack');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const path = require('path')
+const Dotenv = require('dotenv-webpack')
 
 module.exports = {
   mode: 'development',
@@ -8,27 +8,27 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'main.js',
-	  publicPath: '/dist/'
+    publicPath: '/dist/'
   },
   resolve: {
     alias: {
-      src: path.resolve(__dirname, 'src'),
+      src: path.resolve(__dirname, 'src')
     },
     extensions: ['.ts', '.tsx', '.js'],
     fallback: {
-      "crypto": false,
-      "stream": false,
-      "util": false,
-      "path": false,
-      "fs": false
+      crypto: false,
+      stream: false,
+      util: false,
+      path: false,
+      fs: false
     }
   },
   module: {
-    rules: [ 
+    rules: [
       {
         test: /\.tsx?$/,
         exclude: '/node_modules/',
-        loader: 'ts-loader',
+        loader: 'ts-loader'
       },
       {
         test: /\.module\.css$/,
@@ -39,19 +39,19 @@ module.exports = {
             options: {
               modules: {
                 localIdentName: '[local]_[sha1:hash:hex:7]'
-              },
+              }
             }
           }
         ]
       },
       {
         test: /^((?!\.module).)*css$/,
-        use: [ MiniCssExtractPlugin.loader, 'css-loader' ]
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
       {
         test: /\.m?js$/,
         enforce: 'pre',
-        use: ['source-map-loader'],
+        use: ['source-map-loader']
       }
     ]
   },
@@ -60,10 +60,10 @@ module.exports = {
     maxEntrypointSize: 512000,
     maxAssetSize: 512000
   },
-  
+
   plugins: [
     new Dotenv({
-      systemvars: true, // брать переменные из process.env (в т.ч. GitHub Secrets)
+      systemvars: true // брать переменные из process.env (в т.ч. GitHub Secrets)
     }),
     new MiniCssExtractPlugin({ filename: 'main.css' })
   ],
@@ -71,10 +71,10 @@ module.exports = {
   devServer: {
     open: ['/index.html'],
     client: {
-      overlay: true,
+      overlay: true
     },
     static: {
-      directory: __dirname,
-    },
+      directory: __dirname
+    }
   }
-};
+}
