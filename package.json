@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "dependencies": {
     "mobx": "^6.10.0",
     "mobx-react-lite": "^3.4.3",
@@ -11,14 +12,21 @@
     "react-hook-form": "^7.45.2"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/gapi": "^0.0.42",
     "@types/gapi.client.drive": "^3.0.15",
     "@types/google.accounts": "^0.0.2",
     "@types/jasmine": "^4.3.5",
     "@types/react": "^18.2.17",
     "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "css-loader": "^6.8.1",
     "dotenv-webpack": "^7.1.1",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-formatter-table": "^7.32.1",
+    "eslint-plugin-prettier": "^5.5.5",
     "jasmine-core": "^4.6.0",
     "karma": "^6.4.2",
     "karma-chrome-launcher": "^3.2.0",
@@ -27,6 +35,7 @@
     "karma-sourcemap-loader": "^0.3.8",
     "karma-webpack": "^5.0.0",
     "mini-css-extract-plugin": "^2.7.6",
+    "prettier": "^3.8.1",
     "source-map-loader": "^4.0.1",
     "ts-loader": "^9.4.4",
     "typescript": "^4.9.5",
@@ -37,7 +46,10 @@
   "scripts": {
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
-    "start": "webpack serve --mode development"
+    "start": "webpack serve --mode development",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
+    "lint-check": "eslint \"src/**/*.{js,jsx,ts,tsx}\""
   },
   "author": "Andrey Zimatskiy <zimazky@gmail.com>",
   "license": "ISC"

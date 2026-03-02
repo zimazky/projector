@@ -8,7 +8,7 @@ type EventFormStructure = {
   /** Идентификатор события (если не указан, то новое событие) */
   id: number | null
   /** Признак завершенности события */
-  completed?: boolean 
+  completed?: boolean
   /** Метка времени дня */
   timestamp: timestamp
 } & EventDto
@@ -28,12 +28,15 @@ export class EventFormStore {
     makeAutoObservable(this)
   }
 
-  showForm = () => { this.isShow = true }
+  showForm = () => {
+    this.isShow = true
+  }
 
-  hideForm = () => { this.isShow = false }
+  hideForm = () => {
+    this.isShow = false
+  }
 
   setEventDto = (e: EventFormStructure) => {
     this.eventData = e
   }
-
 }
