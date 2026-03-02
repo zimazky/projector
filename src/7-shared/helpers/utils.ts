@@ -1,28 +1,33 @@
 // Функции помощники
 
-
 /** Определение меньшего из двух чисел */
-export function min(a: number, b: number) { return a < b ? a : b }
+export function min(a: number, b: number) {
+	return a < b ? a : b
+}
 /** Определение большего из двух чисел */
-export function max(a: number, b: number) { return a > b ? a : b }
+export function max(a: number, b: number) {
+	return a > b ? a : b
+}
 
 /**
  * Представление числа со стартовым знаком '+' при положительных значениях
  * @param d - число
  * @param n - точность округления, по умолчанию 0
- * @returns 
+ * @returns
  */
 export function plus(d: number, n: number = 0): string {
-  return d > 0 ? '+' + d.toFixed(n) : d.toFixed(n)
+	return d > 0 ? '+' + d.toFixed(n) : d.toFixed(n)
 }
 
 /**
  * Представление числа в кило-единицах
  * @param d - число
  * @param n - точность округления, по умолчанию 0
- * @returns 
+ * @returns
  */
-export function kilo(d: number, n: number = 0): string { return (d/1000).toFixed(n) }
+export function kilo(d: number, n: number = 0): string {
+	return (d / 1000).toFixed(n)
+}
 
 /**
  * Функция-утилита для троттлинга.
@@ -32,28 +37,29 @@ export function kilo(d: number, n: number = 0): string { return (d/1000).toFixed
  * @returns обернутая функция, вызовы которой будут троттлиться
  */
 export function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
-  let inThrottle: boolean;
-  let lastResult: any;
-  let lastArgs: any[] | null;
-  let lastThis: any | null;
+	let inThrottle: boolean
+	let lastResult: any
+	let lastArgs: any[] | null
+	let lastThis: any | null
 
-  return function(this: any, ...args: any[]): any {
-    lastArgs = args;
-    lastThis = this;
-    if (!inThrottle) {
-      inThrottle = true;
-      setTimeout(() => {
-        inThrottle = false;
-        if (lastArgs && lastThis) { // If it was called again during the throttle period
-            lastResult = func.apply(lastThis, lastArgs);
-            lastArgs = null;
-            lastThis = null;
-        }
-      }, limit);
-      lastResult = func.apply(this, args);
-    }
-    return lastResult;
-  } as T;
+	return function (this: any, ...args: any[]): any {
+		lastArgs = args
+		lastThis = this
+		if (!inThrottle) {
+			inThrottle = true
+			setTimeout(() => {
+				inThrottle = false
+				if (lastArgs && lastThis) {
+					// If it was called again during the throttle period
+					lastResult = func.apply(lastThis, lastArgs)
+					lastArgs = null
+					lastThis = null
+				}
+			}, limit)
+			lastResult = func.apply(this, args)
+		}
+		return lastResult
+	} as T
 }
 
 /**
@@ -65,29 +71,25 @@ export function throttle<T extends (...args: any[]) => void>(func: T, limit: num
  * @param wait - время ожидания в миллисекундах
  * @returns обёрнутая функция с методом cancel()
  */
-export function debounce<T extends (...args: any[]) => void>(
-  func: T,
-  wait: number
-): T & { cancel: () => void } {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
+export function debounce<T extends (...args: any[]) => void>(func: T, wait: number): T & { cancel: () => void } {
+	let timeoutId: ReturnType<typeof setTimeout> | null = null
 
-  const debounced = function(this: any, ...args: Parameters<T>) {
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId)
-    }
-    timeoutId = setTimeout(() => {
-      func.apply(this, args)
-      timeoutId = null
-    }, wait)
-  } as T & { cancel: () => void }
+	const debounced = function (this: any, ...args: Parameters<T>) {
+		if (timeoutId !== null) {
+			clearTimeout(timeoutId)
+		}
+		timeoutId = setTimeout(() => {
+			func.apply(this, args)
+			timeoutId = null
+		}, wait)
+	} as T & { cancel: () => void }
 
-  debounced.cancel = () => {
-    if (timeoutId !== null) {
-      clearTimeout(timeoutId)
-      timeoutId = null
-    }
-  }
+	debounced.cancel = () => {
+		if (timeoutId !== null) {
+			clearTimeout(timeoutId)
+			timeoutId = null
+		}
+	}
 
-  return debounced
+	return debounced
 }
-

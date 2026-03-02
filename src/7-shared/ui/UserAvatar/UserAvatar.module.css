@@ -1,42 +1,41 @@
 .avatar {
-  border-radius: 50%;
-  overflow: hidden;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--color-surface-secondary, #eceff1);
-  color: var(--color-text-secondary, #455a64);
-  font-size: 14px;
-  font-weight: 500;
-  user-select: none;
+	border-radius: 50%;
+	overflow: hidden;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--color-surface-secondary, #eceff1);
+	color: var(--color-text-secondary, #455a64);
+	font-size: 14px;
+	font-weight: 500;
+	user-select: none;
 }
 
 .avatarSmall {
-  width: 32px;
-  height: 32px;
+	width: 32px;
+	height: 32px;
 }
 
 .avatarLarge {
-  width: 56px;
-  height: 56px;
+	width: 56px;
+	height: 56px;
 }
 
 .avatarClickable {
-  cursor: pointer;
+	cursor: pointer;
 }
 
 .avatarImage {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
 }
 
 .placeholderIcon {
-  width: 60%;
-  height: 60%;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  box-sizing: border-box;
+	width: 60%;
+	height: 60%;
+	border-radius: 50%;
+	border: 2px solid currentColor;
+	box-sizing: border-box;
 }
-

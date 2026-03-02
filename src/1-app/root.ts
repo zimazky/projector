@@ -28,23 +28,19 @@ export const eventSearchStore = new EventSearchStore(eventsStore)
 // 3. Инфраструктурные сервисы
 export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
-export const storageService = new StorageService(
-  projectsStore,
-  eventsStore,
-  () => uiStore.forceUpdate()
-)
+export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
 
 // 4. Сессия активного документа (Google Drive/local state)
 export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
 
 // 5. Оркестратор приложения
 export const mainStore = new MainStore(
-  projectsStore,
-  eventsStore,
-  eventsCache,
-  googleApiService,
-  storageService,
-  documentSessionStore
+	projectsStore,
+	eventsStore,
+	eventsCache,
+	googleApiService,
+	storageService,
+	documentSessionStore
 )
 
 // 6. Store диалога "Сохранить как"
@@ -55,15 +51,15 @@ mainStore.init()
 
 // Реэкспорт классов для внешнего использования
 export {
-  UIStore,
-  GoogleApiService,
-  StorageService,
-  MainStore,
-  ProjectsStore,
-  EventsStore,
-  EventsCache,
-  WeatherStore,
-  CalendarStore,
-  DayListStore,
-  EventFormStore
+	UIStore,
+	GoogleApiService,
+	StorageService,
+	MainStore,
+	ProjectsStore,
+	EventsStore,
+	EventsCache,
+	WeatherStore,
+	CalendarStore,
+	DayListStore,
+	EventFormStore
 }

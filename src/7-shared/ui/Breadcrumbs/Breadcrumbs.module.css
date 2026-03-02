@@ -1,24 +1,24 @@
 .breadcrumb {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  padding: 14px 8px 4px 8px;
-  color: var(--color-primary);
-  font-size: 0.9rem;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	padding: 14px 8px 4px 8px;
+	color: var(--color-primary);
+	font-size: 0.9rem;
 }
 
 .breadcrumbItem {
-  cursor: pointer;
-  color: var(--color-primary);
-  text-decoration: none;
-  margin: 2px 0px;
+	cursor: pointer;
+	color: var(--color-primary);
+	text-decoration: none;
+	margin: 2px 0px;
 }
 
 .breadcrumbItem:hover {
-  text-decoration: underline;
+	text-decoration: underline;
 }
 
 .breadcrumbSeparator {
-  margin: 0 2px;
-  color: var(--color-primary);
+	margin: 0 2px;
+	color: var(--color-primary);
 }

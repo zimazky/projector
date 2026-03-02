@@ -1,49 +1,52 @@
-.day, .before_actual_date, .between_firstplanned_and_actual {
-  display: inline-block;
-  width: calc(100%/7);
-  height: 100%;
-  border-left:  1px solid lightgray;
-  vertical-align: top;
-  background-color: rgb(245, 245, 245);
+.day,
+.before_actual_date,
+.between_firstplanned_and_actual {
+	display: inline-block;
+	width: calc(100% / 7);
+	height: 100%;
+	border-left: 1px solid lightgray;
+	vertical-align: top;
+	background-color: rgb(245, 245, 245);
 }
 .before_actual_date {
-  background-color: rgb(240, 240, 240);
+	background-color: rgb(240, 240, 240);
 }
-.between_firstplanned_and_actual{
-  background-color: rgb(255, 215, 215);
+.between_firstplanned_and_actual {
+	background-color: rgb(255, 215, 215);
 }
-.header, .today {
-  background-color: rgb(233, 233, 233);
-  color: gray;
-  padding: 0.1em 0.4em;
-  height: 1.6em;
-  font-size: 1.2em;
-  line-height: 1.6em;
-  position: relative;
+.header,
+.today {
+	background-color: rgb(233, 233, 233);
+	color: gray;
+	padding: 0.1em 0.4em;
+	height: 1.6em;
+	font-size: 1.2em;
+	line-height: 1.6em;
+	position: relative;
 }
 .today {
-  background-color: hotpink;
-  color: white;
+	background-color: hotpink;
+	color: white;
 }
 .balance {
-  font-size: 0.9em;
-  margin: 0.1em;
-  height: 1.2em;
-  overflow: hidden;
-  text-align: justify;
-  text-align-last: justify;
+	font-size: 0.9em;
+	margin: 0.1em;
+	height: 1.2em;
+	overflow: hidden;
+	text-align: justify;
+	text-align-last: justify;
 }
 .input {
-  width: 100%;
-  overflow: hidden;
-  outline-width: 0;
-  white-space: nowrap;
-  padding: 0.2em;
-  height: 1.4em;
+	width: 100%;
+	overflow: hidden;
+	outline-width: 0;
+	white-space: nowrap;
+	padding: 0.2em;
+	height: 1.4em;
 }
 .weather {
-  font-size: 0.8em;
-  position: absolute;
-  right: 0px;
-  top: 0px;
+	font-size: 0.8em;
+	position: absolute;
+	right: 0px;
+	top: 0px;
 }

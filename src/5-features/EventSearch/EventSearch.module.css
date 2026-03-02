@@ -1,85 +1,85 @@
 /* Кнопка открытия поиска (свёрнутое состояние) */
 .searchToggle {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  font-size: 16px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	padding: 4px 8px;
+	font-size: 16px;
+	opacity: 0.7;
+	transition: opacity 0.2s;
 }
 
 .searchToggle:hover {
-  opacity: 1;
+	opacity: 1;
 }
 
 /* Контейнер поиска (развёрнутое состояние) */
 .searchContainer {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--color-bg-secondary, #2a2a2a);
-  border-radius: 4px;
-  padding: 2px 6px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	background: var(--color-bg-secondary, #2a2a2a);
+	border-radius: 4px;
+	padding: 2px 6px;
 }
 
 /* Поле ввода поиска */
 .searchInput {
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary, #fff);
-  font-size: 14px;
-  padding: 4px 8px;
-  width: 150px;
-  outline: none;
+	background: transparent;
+	border: none;
+	color: var(--color-text-primary, #fff);
+	font-size: 14px;
+	padding: 4px 8px;
+	width: 150px;
+	outline: none;
 }
 
 .searchInput::placeholder {
-  color: var(--color-text-secondary, #888);
+	color: var(--color-text-secondary, #888);
 }
 
 /* Счётчик результатов */
 .resultCount {
-  color: var(--color-text-secondary, #888);
-  font-size: 12px;
-  padding: 0 4px;
-  min-width: 40px;
-  text-align: center;
+	color: var(--color-text-secondary, #888);
+	font-size: 12px;
+	padding: 0 4px;
+	min-width: 40px;
+	text-align: center;
 }
 
 /* Кнопки навигации */
 .navButton {
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary, #fff);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 12px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+	background: transparent;
+	border: none;
+	color: var(--color-text-primary, #fff);
+	cursor: pointer;
+	padding: 2px 6px;
+	font-size: 12px;
+	opacity: 0.7;
+	transition: opacity 0.2s;
 }
 
 .navButton:hover:not(:disabled) {
-  opacity: 1;
+	opacity: 1;
 }
 
 .navButton:disabled {
-  opacity: 0.3;
-  cursor: default;
+	opacity: 0.3;
+	cursor: default;
 }
 
 /* Кнопка закрытия */
 .closeButton {
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary, #fff);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 14px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+	background: transparent;
+	border: none;
+	color: var(--color-text-primary, #fff);
+	cursor: pointer;
+	padding: 2px 6px;
+	font-size: 14px;
+	opacity: 0.7;
+	transition: opacity 0.2s;
 }
 
 .closeButton:hover {
-  opacity: 1;
+	opacity: 1;
 }

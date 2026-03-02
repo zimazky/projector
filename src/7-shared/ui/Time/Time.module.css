@@ -1,8 +1,8 @@
 .time {
-  text-align: right;
-  position: relative;
+	text-align: right;
+	position: relative;
 	overflow: hidden;
-  font-size: 23px;
+	font-size: 23px;
 	color: var(--color-text-secondary);
 	background-color: transparent;
 	padding: 6px 12px;
@@ -16,20 +16,24 @@
 }
 
 .ripple {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0;
-  background-color: var(--color-background-secondary-ripple);
-  pointer-events: none;
-  transition: opacity 500ms linear;
-  animation: ripple 300ms linear;
+	position: absolute;
+	border-radius: 50%;
+	opacity: 0;
+	background-color: var(--color-background-secondary-ripple);
+	pointer-events: none;
+	transition: opacity 500ms linear;
+	animation: ripple 300ms linear;
 }
 
 .ripple.clicked {
-  opacity: 0.3;
+	opacity: 0.3;
 }
 
 @keyframes ripple {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+	from {
+		transform: scale(0);
+	}
+	to {
+		transform: scale(1);
+	}
 }

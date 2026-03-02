@@ -1,69 +1,69 @@
 .title {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 20px 24px;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	padding: 20px 24px;
 }
 
 .title span {
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 400;
-  font-size: 0.75rem;
-  line-height: 2.66;
-  letter-spacing: 0.08333em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+	font-family: Roboto, Helvetica, Arial, sans-serif;
+	font-weight: 400;
+	font-size: 0.75rem;
+	line-height: 2.66;
+	letter-spacing: 0.08333em;
+	text-transform: uppercase;
+	color: var(--color-text-secondary);
 }
 
 .title h4 {
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 400;
-  font-size: 2.125rem;
-  line-height: 1.235;
-  letter-spacing: 0.00735em;
-  text-align: center;
+	font-family: Roboto, Helvetica, Arial, sans-serif;
+	font-weight: 400;
+	font-size: 2.125rem;
+	line-height: 1.235;
+	letter-spacing: 0.00735em;
+	text-align: center;
 }
 
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-left: 24px;
-  padding-right: 12px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding-left: 24px;
+	padding-right: 12px;
 }
 
 .label {
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 500;
-  font-size: 1rem;
-  line-height: 1.5;
-  letter-spacing: 0.00938em;
+	font-family: Roboto, Helvetica, Arial, sans-serif;
+	font-weight: 500;
+	font-size: 1rem;
+	line-height: 1.5;
+	letter-spacing: 0.00938em;
 }
 
 .buttons {
-  display: flex;
-  justify-content: space-between;
+	display: flex;
+	justify-content: space-between;
 }
 
 .weekdays {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  font-family: Roboto, Helvetica, Arial, sans-serif;
-  font-weight: 400;
-  font-size: 0.750rem;
-  line-height: 1.66;
-  letter-spacing: 0.03333em;
-  padding: 8px 20px 0px 20px;
+	display: flex;
+	justify-content: flex-start;
+	align-items: center;
+	font-family: Roboto, Helvetica, Arial, sans-serif;
+	font-weight: 400;
+	font-size: 0.75rem;
+	line-height: 1.66;
+	letter-spacing: 0.03333em;
+	padding: 8px 20px 0px 20px;
 }
 
 .weekday {
-  display: flex;
-  width: 36px;
-  height: 40px;
-  margin: 0 2px;
-  text-align: center;
-  justify-content: center;
-  align-items: center;
-  color: var(--color-text-secondary);
+	display: flex;
+	width: 36px;
+	height: 40px;
+	margin: 0 2px;
+	text-align: center;
+	justify-content: center;
+	align-items: center;
+	color: var(--color-text-secondary);
 }

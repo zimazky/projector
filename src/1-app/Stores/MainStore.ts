@@ -12,83 +12,83 @@ import { DocumentSessionStore } from 'src/6-entities/Document/model'
 
 /** Главный orchestrator-стор приложения */
 export class MainStore {
-  /** Стор проектов */
-  projectsStore: ProjectsStore
-  /** Стор событий */
-  eventsStore: EventsStore
-  /** Кэш событий для календарных представлений */
-  eventsCache: EventsCache
+	/** Стор проектов */
+	projectsStore: ProjectsStore
+	/** Стор событий */
+	eventsStore: EventsStore
+	/** Кэш событий для календарных представлений */
+	eventsCache: EventsCache
 
-  private googleApiService: GoogleApiService
-  private storageService: StorageService
-  private documentSessionStore: DocumentSessionStore
+	private googleApiService: GoogleApiService
+	private storageService: StorageService
+	private documentSessionStore: DocumentSessionStore
 
-  /**
-   * Сохраненное состояние проводника Google Drive по пространствам
-   * (`drive` и `appDataFolder`), чтобы помнить последнюю открытую папку.
-   */
-  driveExplorerPersistentState = new Map<string, { folderId: string; path: PathSegment[] }>()
+	/**
+	 * Сохраненное состояние проводника Google Drive по пространствам
+	 * (`drive` и `appDataFolder`), чтобы помнить последнюю открытую папку.
+	 */
+	driveExplorerPersistentState = new Map<string, { folderId: string; path: PathSegment[] }>()
 
-  /** Нотификатор успешного сохранения файла в Drive */
-  fileSavedNotifier = new Observable<void>()
+	/** Нотификатор успешного сохранения файла в Drive */
+	fileSavedNotifier = new Observable<void>()
 
-  constructor(
-    projectsStore: ProjectsStore,
-    eventsStore: EventsStore,
-    eventsCache: EventsCache,
-    googleApiService: GoogleApiService,
-    storageService: StorageService,
-    documentSessionStore: DocumentSessionStore
-  ) {
-    this.projectsStore = projectsStore
-    this.eventsStore = eventsStore
-    this.eventsCache = eventsCache
-    this.googleApiService = googleApiService
-    this.storageService = storageService
-    this.documentSessionStore = documentSessionStore
+	constructor(
+		projectsStore: ProjectsStore,
+		eventsStore: EventsStore,
+		eventsCache: EventsCache,
+		googleApiService: GoogleApiService,
+		storageService: StorageService,
+		documentSessionStore: DocumentSessionStore
+	) {
+		this.projectsStore = projectsStore
+		this.eventsStore = eventsStore
+		this.eventsCache = eventsCache
+		this.googleApiService = googleApiService
+		this.storageService = storageService
+		this.documentSessionStore = documentSessionStore
 
-    this.driveExplorerPersistentState.set('drive', {
-      folderId: 'root',
-      path: [{ id: 'root', name: 'Мой диск' }]
-    })
-    this.driveExplorerPersistentState.set('appDataFolder', {
-      folderId: 'appDataFolder',
-      path: [{ id: 'appDataFolder', name: 'Раздел приложения' }]
-    })
+		this.driveExplorerPersistentState.set('drive', {
+			folderId: 'root',
+			path: [{ id: 'root', name: 'Мой диск' }]
+		})
+		this.driveExplorerPersistentState.set('appDataFolder', {
+			folderId: 'appDataFolder',
+			path: [{ id: 'appDataFolder', name: 'Раздел приложения' }]
+		})
 
-    makeAutoObservable(this)
-  }
+		makeAutoObservable(this)
+	}
 
-  /** Инициализация приложения и зависимых сервисов */
-  init() {
-    // Обработчик изменений событий назначаем до загрузки данных.
-    this.eventsStore.onChangeList = () => {
-      this.eventsStore.sort()
-      this.eventsCache.init()
-      this.storageService.desyncWithStorages()
-      if (this.documentSessionStore.isOpened && !this.documentSessionStore.state.isLoading) {
-        this.documentSessionStore.markDirty()
-      }
-    }
+	/** Инициализация приложения и зависимых сервисов */
+	init() {
+		// Обработчик изменений событий назначаем до загрузки данных.
+		this.eventsStore.onChangeList = () => {
+			this.eventsStore.sort()
+			this.eventsCache.init()
+			this.storageService.desyncWithStorages()
+			if (this.documentSessionStore.isOpened && !this.documentSessionStore.state.isLoading) {
+				this.documentSessionStore.markDirty()
+			}
+		}
 
-    this.storageService.init()
-    this.eventsCache.init()
-    this.googleApiService.initGapi()
-    void this.googleApiService
-      .waitForGapiReady()
-      .then(() => this.documentSessionStore.restoreLastOpenedDocument())
-      .catch((e) => {
-        console.error('GAPI init failed, skip restoring last opened document:', e)
-      })
-  }
+		this.storageService.init()
+		this.eventsCache.init()
+		this.googleApiService.initGapi()
+		void this.googleApiService
+			.waitForGapiReady()
+			.then(() => this.documentSessionStore.restoreLastOpenedDocument())
+			.catch(e => {
+				console.error('GAPI init failed, skip restoring last opened document:', e)
+			})
+	}
 
-  /** Обновить сохраненное состояние проводника Drive */
-  updateDriveExplorerPersistentState(space: string, folderId: string, path: PathSegment[]) {
-    this.driveExplorerPersistentState.set(space, { folderId, path })
-  }
+	/** Обновить сохраненное состояние проводника Drive */
+	updateDriveExplorerPersistentState(space: string, folderId: string, path: PathSegment[]) {
+		this.driveExplorerPersistentState.set(space, { folderId, path })
+	}
 
-  /** Получить сохраненное состояние проводника Drive */
-  getDriveExplorerPersistentState(space: string): { folderId: string; path: PathSegment[] } {
-    return this.driveExplorerPersistentState.get(space)!
-  }
+	/** Получить сохраненное состояние проводника Drive */
+	getDriveExplorerPersistentState(space: string): { folderId: string; path: PathSegment[] } {
+		return this.driveExplorerPersistentState.get(space)!
+	}
 }

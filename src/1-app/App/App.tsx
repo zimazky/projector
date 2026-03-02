@@ -11,20 +11,22 @@ import DayList from 'src/3-pages/DayList/DayList'
 import './App.css'
 import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
 
-const App: React.FC = observer(function() {
-  const forceUpdate = useUpdate()
-  const { uiStore } = useContext(StoreContext)
+const App: React.FC = observer(function () {
+	const forceUpdate = useUpdate()
+	const { uiStore } = useContext(StoreContext)
 
-  React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
+	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 
-  console.log('app')
- 
-  return <>
-    <Header/>
-    { uiStore.viewMode === 'Calendar' ? <Calendar/> : null }
-    { uiStore.viewMode === 'Day' ? <DayList/> : null }
-    { uiStore.viewMode === 'Projects' ? <ProjectsForm/> : null }
-  </>
+	console.log('app')
+
+	return (
+		<>
+			<Header />
+			{uiStore.viewMode === 'Calendar' ? <Calendar /> : null}
+			{uiStore.viewMode === 'Day' ? <DayList /> : null}
+			{uiStore.viewMode === 'Projects' ? <ProjectsForm /> : null}
+		</>
+	)
 })
 
 export default App

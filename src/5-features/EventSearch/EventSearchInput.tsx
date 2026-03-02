@@ -8,119 +8,111 @@ import styles from './EventSearch.module.css'
 const DEBOUNCE_MS = 300
 
 export const EventSearchInput: React.FC = observer(() => {
-  const { eventSearchStore, calendarStore, uiStore } = useContext(StoreContext)
-  const inputRef = useRef<HTMLInputElement>(null)
+	const { eventSearchStore, calendarStore, uiStore } = useContext(StoreContext)
+	const inputRef = useRef<HTMLInputElement>(null)
 
-  // Создаём debounced функцию поиска один раз при монтировании
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSearch = useMemo(
-    () => debounce((query: string) => {
-      eventSearchStore.search(query)
-      // Навигация к текущему результату после поиска
-      const current = eventSearchStore.currentResult
-      if (current) {
-        calendarStore.setWeek(current.timestamp)
-        uiStore.forceUpdate()
-      }
-    }, DEBOUNCE_MS),
-    []
-  )
+	// Создаём debounced функцию поиска один раз при монтировании
+	const debouncedSearch = useMemo(
+		() =>
+			debounce((query: string) => {
+				eventSearchStore.search(query)
+				// Навигация к текущему результату после поиска
+				const current = eventSearchStore.currentResult
+				if (current) {
+					calendarStore.setWeek(current.timestamp)
+					uiStore.forceUpdate()
+				}
+			}, DEBOUNCE_MS),
+		[]
+	)
 
-  // Очистка при unmount
-  useEffect(() => {
-    return () => debouncedSearch.cancel()
-  }, [debouncedSearch])
+	// Очистка при unmount
+	useEffect(() => {
+		return () => debouncedSearch.cancel()
+	}, [debouncedSearch])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    // Обновляем query немедленно для отображения в UI
-    eventSearchStore.setQuery(value)
-    // Выполняем поиск с debounce
-    debouncedSearch(value)
-  }
+	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const value = e.target.value
+		// Обновляем query немедленно для отображения в UI
+		eventSearchStore.setQuery(value)
+		// Выполняем поиск с debounce
+		debouncedSearch(value)
+	}
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      // При Enter выполняем поиск немедленно
-      debouncedSearch.cancel()
-      eventSearchStore.search(eventSearchStore.query)
-      
-      if (e.shiftKey) {
-        eventSearchStore.prevResult()
-      } else {
-        eventSearchStore.nextResult()
-      }
-      navigateToCurrentResult()
-    } else if (e.key === 'Escape') {
-      debouncedSearch.cancel()
-      eventSearchStore.clear()
-    }
-  }
+	const handleKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'Enter') {
+			// При Enter выполняем поиск немедленно
+			debouncedSearch.cancel()
+			eventSearchStore.search(eventSearchStore.query)
 
-  const navigateToCurrentResult = () => {
-    const current = eventSearchStore.currentResult
-    if (current) {
-      calendarStore.setWeek(current.timestamp)
-      uiStore.forceUpdate()
-    }
-  }
+			if (e.shiftKey) {
+				eventSearchStore.prevResult()
+			} else {
+				eventSearchStore.nextResult()
+			}
+			navigateToCurrentResult()
+		} else if (e.key === 'Escape') {
+			debouncedSearch.cancel()
+			eventSearchStore.clear()
+		}
+	}
 
-  const handlePrevClick = () => {
-    eventSearchStore.prevResult()
-    navigateToCurrentResult()
-  }
+	const navigateToCurrentResult = () => {
+		const current = eventSearchStore.currentResult
+		if (current) {
+			calendarStore.setWeek(current.timestamp)
+			uiStore.forceUpdate()
+		}
+	}
 
-  const handleNextClick = () => {
-    eventSearchStore.nextResult()
-    navigateToCurrentResult()
-  }
+	const handlePrevClick = () => {
+		eventSearchStore.prevResult()
+		navigateToCurrentResult()
+	}
 
-  const handleClose = () => {
-    debouncedSearch.cancel()
-    eventSearchStore.clear()
-  }
+	const handleNextClick = () => {
+		eventSearchStore.nextResult()
+		navigateToCurrentResult()
+	}
 
-  return (
-    <div className={styles.searchContainer}>
-      <input
-        ref={inputRef}
-        type="text"
-        className={styles.searchInput}
-        placeholder="Поиск событий..."
-        value={eventSearchStore.query}
-        onChange={handleChange}
-        onKeyDown={handleKeyDown}
-      />
-      {eventSearchStore.results.length > 0 && (
-        <span className={styles.resultCount}>
-          {eventSearchStore.resultText}
-        </span>
-      )}
-      <button
-        className={styles.navButton}
-        onClick={handlePrevClick}
-        disabled={eventSearchStore.results.length === 0}
-        title="Предыдущее (Shift+Enter)"
-      >
-        ◀
-      </button>
-      <button
-        className={styles.navButton}
-        onClick={handleNextClick}
-        disabled={eventSearchStore.results.length === 0}
-        title="Следующее (Enter)"
-      >
-        ▶
-      </button>
-      {eventSearchStore.query && (
-        <button
-          className={styles.closeButton}
-          onClick={handleClose}
-          title="Очистить (Esc)"
-        >
-          ✕
-        </button>
-      )}
-    </div>
-  )
+	const handleClose = () => {
+		debouncedSearch.cancel()
+		eventSearchStore.clear()
+	}
+
+	return (
+		<div className={styles.searchContainer}>
+			<input
+				ref={inputRef}
+				type="text"
+				className={styles.searchInput}
+				placeholder="Поиск событий..."
+				value={eventSearchStore.query}
+				onChange={handleChange}
+				onKeyDown={handleKeyDown}
+			/>
+			{eventSearchStore.results.length > 0 && <span className={styles.resultCount}>{eventSearchStore.resultText}</span>}
+			<button
+				className={styles.navButton}
+				onClick={handlePrevClick}
+				disabled={eventSearchStore.results.length === 0}
+				title="Предыдущее (Shift+Enter)"
+			>
+				◀
+			</button>
+			<button
+				className={styles.navButton}
+				onClick={handleNextClick}
+				disabled={eventSearchStore.results.length === 0}
+				title="Следующее (Enter)"
+			>
+				▶
+			</button>
+			{eventSearchStore.query && (
+				<button className={styles.closeButton} onClick={handleClose} title="Очистить (Esc)">
+					✕
+				</button>
+			)}
+		</div>
+	)
 })

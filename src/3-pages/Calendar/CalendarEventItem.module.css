@@ -1,59 +1,69 @@
-.item, .completed, .repeatable, .selected{
-  position: relative;
-  width: 100%;
-  height: 1.5em;
-  overflow: hidden;
-  margin: 0 0 0 -1px;
-  padding: 0.2em 0.3em;
-  background-image: linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
-  /*box-shadow: 0 0 0 1px gray;*/
+.item,
+.completed,
+.repeatable,
+.selected {
+	position: relative;
+	width: 100%;
+	height: 1.5em;
+	overflow: hidden;
+	margin: 0 0 0 -1px;
+	padding: 0.2em 0.3em;
+	background-image: linear-gradient(to top left, transparent 0 50%, rgb(0, 0, 0, 0.1) 100%);
+	/*box-shadow: 0 0 0 1px gray;*/
 
-  cursor: pointer;
-  text-align: justify;
-  text-align-last: justify;
+	cursor: pointer;
+	text-align: justify;
+	text-align-last: justify;
 }
 .placeholder {
-  height: 1.5em;
-  margin: 0 0 0 -1px;
+	height: 1.5em;
+	margin: 0 0 0 -1px;
 }
 .completed {
-  background-image: linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
-  linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
-  color: gray;
+	background-image:
+		linear-gradient(to bottom right, rgba(255, 255, 255, 0.4) 0 100%),
+		linear-gradient(to top left, transparent 0 50%, rgb(0, 0, 0, 0.1) 100%);
+	color: gray;
 }
 .repeatable {
-  background-image: 
-    repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255,255,255,0.6) 0.43033em, transparent 0.53033em),
-    linear-gradient(to top left, transparent 0 50%, rgb(0,0,0,0.1) 100%);
+	background-image:
+		repeating-linear-gradient(45deg, transparent 0 0.33033em, rgb(255, 255, 255, 0.6) 0.43033em, transparent 0.53033em),
+		linear-gradient(to top left, transparent 0 50%, rgb(0, 0, 0, 0.1) 100%);
 }
 .name {
-  display: inline-block;
-  text-align: left;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  vertical-align: top;
+	display: inline-block;
+	text-align: left;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	vertical-align: top;
 }
 .time {
-  display: inline-block;
-  vertical-align: top;
+	display: inline-block;
+	vertical-align: top;
 }
-.completed .name, .completed .time {
-  text-decoration: line-through;
-  color: gray;
+.completed .name,
+.completed .time {
+	text-decoration: line-through;
+	color: gray;
 }
 
 /* Подсвеченное событие (результат поиска) */
 .highlighted {
-  outline: 3px solid #ff9800;
-  outline-offset: -1px;
-  box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6);
-  z-index: 10;
-  animation: pulse 1s ease-in-out infinite;
+	outline: 3px solid #ff9800;
+	outline-offset: -1px;
+	box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6);
+	z-index: 10;
+	animation: pulse 1s ease-in-out infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6); }
-  50% { box-shadow: 0 0 12px 4px rgba(255, 152, 0, 0.8); }
+	0%,
+	100% {
+		box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.6);
+	}
+	50% {
+		box-shadow: 0 0 12px 4px rgba(255, 152, 0, 0.8);
+	}
 }

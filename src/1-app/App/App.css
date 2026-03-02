@@ -1,12 +1,12 @@
 @import 'src/1-app/variables.css';
 
 #root {
-  position: fixed;
-  top: 0;
-  height: 100%;
-  width: 100%;
-  display: grid;
-  user-select: none;
-  grid-template-columns: 1fr;
-  grid-template-rows: max-content 1fr;
+	position: fixed;
+	top: 0;
+	height: 100%;
+	width: 100%;
+	display: grid;
+	user-select: none;
+	grid-template-columns: 1fr;
+	grid-template-rows: max-content 1fr;
 }

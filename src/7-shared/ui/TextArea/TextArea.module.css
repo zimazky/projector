@@ -1,83 +1,84 @@
 .container {
-  position: relative;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
-  border-radius: 4px;
-  margin: 10px 2px 2px 2px;
-  padding: 10px 14px;
-  background-color: var(--color-background-surface);
-  font-size: 1rem;
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
+	position: relative;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
+	border-radius: 4px;
+	margin: 10px 2px 2px 2px;
+	padding: 10px 14px;
+	background-color: var(--color-background-surface);
+	font-size: 1rem;
+	display: grid;
+	grid-template-columns: 1fr;
+	grid-template-rows: 1fr;
 }
 
 .container::after {
-  content: attr(data-replicated-value) " ";
-  white-space: pre-wrap;
-  visibility: hidden;
-  pointer-events: none;
+	content: attr(data-replicated-value) ' ';
+	white-space: pre-wrap;
+	visibility: hidden;
+	pointer-events: none;
 }
 
 .container:hover {
-  box-shadow: 0 0 0 1px black;
+	box-shadow: 0 0 0 1px black;
 }
 
 .container:focus-within {
-  box-shadow: 0 0 0 2px var(--color-border-focus);
+	box-shadow: 0 0 0 2px var(--color-border-focus);
 }
 
-.container.error .label::after{
-  content: ' *';
-  color: red;
+.container.error .label::after {
+	content: ' *';
+	color: red;
 }
 
 .label {
-  pointer-events: none;
-  color: rgba(0, 0, 0, 0.3);
-  padding: 0 7px;
-  position: absolute;
-  left: 7px;
-  top: 0;
-  max-width: calc(100% - 7px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  z-index: 1;
-  background-color: var(--color-background-surface);
-  transform-origin: top left;
-  transform: translate(0, 10px) scale(1);
-  transition: 
-    color 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms,
-    transform 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms,
-    max-width 200ms cubic-bezier(0.0, 0, 0.2, 1) 0ms;
+	pointer-events: none;
+	color: rgba(0, 0, 0, 0.3);
+	padding: 0 7px;
+	position: absolute;
+	left: 7px;
+	top: 0;
+	max-width: calc(100% - 7px);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	z-index: 1;
+	background-color: var(--color-background-surface);
+	transform-origin: top left;
+	transform: translate(0, 10px) scale(1);
+	transition:
+		color 200ms cubic-bezier(0, 0, 0.2, 1) 0ms,
+		transform 200ms cubic-bezier(0, 0, 0.2, 1) 0ms,
+		max-width 200ms cubic-bezier(0, 0, 0.2, 1) 0ms;
 }
 
 .input:not(:placeholder-shown) + .label {
-  transform: translate(2px, -7px) scale(0.75);
+	transform: translate(2px, -7px) scale(0.75);
 }
 
 .container:focus-within .label {
-  color: var(--color-border-focus);
-  transform: translate(2px, -7px) scale(0.75);
+	color: var(--color-border-focus);
+	transform: translate(2px, -7px) scale(0.75);
 }
 
 .input {
-  resize: none;
-  overflow: hidden;
+	resize: none;
+	overflow: hidden;
 }
 
-.container::after, .input {
-  grid-area: 1 / 1 / 2 / 2;
-  padding: 0;
-  background-color: transparent;
-  font-size: inherit;
-  font-family: inherit;
-  overflow: hidden;
-  /*overflow-y: auto;*/
-  /*max-height: 133px;*/
-  word-wrap: break-word;
+.container::after,
+.input {
+	grid-area: 1 / 1 / 2 / 2;
+	padding: 0;
+	background-color: transparent;
+	font-size: inherit;
+	font-family: inherit;
+	overflow: hidden;
+	/*overflow-y: auto;*/
+	/*max-height: 133px;*/
+	word-wrap: break-word;
 }
 
 .input:focus-visible {
-  outline-style: none;
+	outline-style: none;
 }

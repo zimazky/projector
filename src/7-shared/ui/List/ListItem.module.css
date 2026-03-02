@@ -18,29 +18,33 @@
 }
 
 .item[disabled] {
-  opacity: .5;
-  cursor: not-allowed;
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .ripple {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0;
-  background-color: var(--color-background-secondary-ripple);
-  pointer-events: none;
-  transition: opacity 500ms linear;
-  animation: ripple 300ms linear;
+	position: absolute;
+	border-radius: 50%;
+	opacity: 0;
+	background-color: var(--color-background-secondary-ripple);
+	pointer-events: none;
+	transition: opacity 500ms linear;
+	animation: ripple 300ms linear;
 }
 
 .ripple.clicked {
-  opacity: 0.3;
+	opacity: 0.3;
 }
 
 @keyframes ripple {
-  from { transform: scale(0); }
-  to { transform: scale(1); }
+	from {
+		transform: scale(0);
+	}
+	to {
+		transform: scale(1);
+	}
 }
 
 .item.selected {
-  background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+	background-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }

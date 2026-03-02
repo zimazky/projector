@@ -2,71 +2,79 @@ import React from 'react'
 import styles from './TextButton.module.css'
 
 type TextButtonProps = {
-  disabled?: boolean
-  onClick?: React.MouseEventHandler
-  children?: React.ReactNode
+	disabled?: boolean
+	onClick?: React.MouseEventHandler
+	children?: React.ReactNode
 }
 
-const TextButton: React.FC<TextButtonProps> = (props) => {
-  const {disabled=false, children='Button', onClick = ()=>{}, ...rest} = props
+const TextButton: React.FC<TextButtonProps> = props => {
+	const { disabled = false, children = 'Button', onClick = () => {}, ...rest } = props
 
-  return (
-    <button className={styles.button} type='button' disabled={disabled} {...rest}
-      tabIndex={-1}
-      onPointerDown={e => {
-        if(!e.isPrimary) return
-        createRipple(e)
-      }}
-      onPointerUp={e => {
-        if(!e.isPrimary) return
-        removeRipple(e)
-      }}
-      onClick={(e) => {
-        if (!disabled) {
-          onClick(e);
-        }
-      }}
-      onPointerLeave={e=>{
-        if(!e.isPrimary) return
-        removeRipple(e)
-      }}
-      onPointerCancel={e=>{
-        if(!e.isPrimary) return
-        removeRipple(e)
-      }}
-    >{children}</button>
-  )
+	return (
+		<button
+			className={styles.button}
+			type="button"
+			disabled={disabled}
+			{...rest}
+			tabIndex={-1}
+			onPointerDown={e => {
+				if (!e.isPrimary) return
+				createRipple(e)
+			}}
+			onPointerUp={e => {
+				if (!e.isPrimary) return
+				removeRipple(e)
+			}}
+			onClick={e => {
+				if (!disabled) {
+					onClick(e)
+				}
+			}}
+			onPointerLeave={e => {
+				if (!e.isPrimary) return
+				removeRipple(e)
+			}}
+			onPointerCancel={e => {
+				if (!e.isPrimary) return
+				removeRipple(e)
+			}}
+		>
+			{children}
+		</button>
+	)
 }
 
 export default TextButton
 
 function createRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement
+	const tab = event.currentTarget as HTMLElement
 
-  let offsetLeft = tab.offsetLeft
-  let offsetTop = tab.offsetTop
-  let parent: HTMLElement | null = tab.offsetParent as HTMLElement
-  while(parent) {
-    offsetLeft += parent.offsetLeft
-    offsetTop += parent.offsetTop
-    parent = parent.offsetParent as HTMLElement
-  }
-  const circle = document.createElement('span')
-  const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
+	let offsetLeft = tab.offsetLeft
+	let offsetTop = tab.offsetTop
+	let parent: HTMLElement | null = tab.offsetParent as HTMLElement
+	while (parent) {
+		offsetLeft += parent.offsetLeft
+		offsetTop += parent.offsetTop
+		parent = parent.offsetParent as HTMLElement
+	}
+	const circle = document.createElement('span')
+	const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
 
-  circle.style.width = circle.style.height = `${2*radius}px`
-  circle.style.left = `${event.clientX - offsetLeft - radius}px`
-  circle.style.top = `${event.clientY - offsetTop - radius}px`
-  circle.classList.add(styles.ripple, styles.clicked)
+	circle.style.width = circle.style.height = `${2 * radius}px`
+	circle.style.left = `${event.clientX - offsetLeft - radius}px`
+	circle.style.top = `${event.clientY - offsetTop - radius}px`
+	circle.classList.add(styles.ripple, styles.clicked)
 
-  tab.appendChild(circle)
+	tab.appendChild(circle)
 }
 
 function removeRipple(event: React.MouseEvent) {
-  const tab = event.currentTarget as HTMLElement
-  const ripple = tab.getElementsByClassName(styles.clicked)[0]
-  if(ripple) {
-    ripple.classList.remove(styles.clicked)
-    setTimeout(()=>{ ripple?.remove() }, 500)
-  }
+	const tab = event.currentTarget as HTMLElement
+	const ripple = tab.getElementsByClassName(styles.clicked)[0]
+	if (ripple) {
+		ripple.classList.remove(styles.clicked)
+		setTimeout(() => {
+			ripple?.remove()
+		}, 500)
+	}
 }

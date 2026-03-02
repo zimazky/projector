@@ -1,49 +1,53 @@
 .overlay {
-  background-color: var(--color-background-overlay);
-  position: fixed;
-  inset: 0;
-  cursor: default;
-  user-select: none;
-  z-index: 2;
-  transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
-  padding-top: 15vh;
-  animation: opening 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+	background-color: var(--color-background-overlay);
+	position: fixed;
+	inset: 0;
+	cursor: default;
+	user-select: none;
+	z-index: 2;
+	transition: opacity 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+	padding-top: 15vh;
+	animation: opening 225ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
 }
 
 .overlay.open {
-  visibility: visible;
-  opacity: 1;
+	visibility: visible;
+	opacity: 1;
 }
 
 .overlay.closing {
-  visibility: visible;
-  opacity: 0;
+	visibility: visible;
+	opacity: 0;
 }
 
 .overlay.hidden {
-  visibility: hidden;
-  opacity: 0;
+	visibility: hidden;
+	opacity: 0;
 }
 
 .window {
-  background-color: var(--color-background-surface);
-  color: var(--color-text-default);
-  border-radius: 4px;
-  box-shadow:
-    rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
-    rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
-    rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
-  position: relative;
-  margin: 0px auto;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  width: fit-content;
-  max-height: calc(100% - 64px);
-  max-width: 600px;
+	background-color: var(--color-background-surface);
+	color: var(--color-text-default);
+	border-radius: 4px;
+	box-shadow:
+		rgba(0, 0, 0, 0.2) 0px 11px 15px -7px,
+		rgba(0, 0, 0, 0.14) 0px 24px 38px 3px,
+		rgba(0, 0, 0, 0.12) 0px 9px 46px 8px;
+	position: relative;
+	margin: 0px auto;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	width: fit-content;
+	max-height: calc(100% - 64px);
+	max-width: 600px;
 }
 
 @keyframes opening {
-  from { opacity: 0; }
-  to { opacity: 1; }
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
 }

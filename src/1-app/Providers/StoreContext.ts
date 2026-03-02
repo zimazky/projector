@@ -21,21 +21,21 @@ import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
  * Нужен для единообразного DI в компонентах.
  */
 export interface IRootStore {
-  mainStore: MainStore;
-  projectsStore: ProjectsStore;
-  eventsStore: EventsStore;
-  eventsCache: EventsCache;
-  weatherStore: WeatherStore;
-  calendarStore: CalendarStore;
-  dayListStore: DayListStore;
-  eventFormStore: EventFormStore;
-  uiStore: UIStore;
-  googleApiService: GoogleApiService;
-  storageService: StorageService;
-  saveToDriveStore: SaveToDriveStore;
-  documentSessionStore: DocumentSessionStore;
-  fileSavedNotifier: Observable<void>;
-  eventSearchStore: EventSearchStore;
+	mainStore: MainStore
+	projectsStore: ProjectsStore
+	eventsStore: EventsStore
+	eventsCache: EventsCache
+	weatherStore: WeatherStore
+	calendarStore: CalendarStore
+	dayListStore: DayListStore
+	eventFormStore: EventFormStore
+	uiStore: UIStore
+	googleApiService: GoogleApiService
+	storageService: StorageService
+	saveToDriveStore: SaveToDriveStore
+	documentSessionStore: DocumentSessionStore
+	fileSavedNotifier: Observable<void>
+	eventSearchStore: EventSearchStore
 }
 
 export const StoreContext = React.createContext<IRootStore>({} as IRootStore)
