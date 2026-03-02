@@ -22,8 +22,6 @@ export default [
 			globals: {
 				...globals.browser,
 				...globals.node,
-				JSX: 'readonly',
-				React: 'readonly',
 				gapi: 'readonly',
 				google: 'readonly'
 			}
@@ -34,13 +32,13 @@ export default [
 		},
 		rules: {
 			...prettier.rules,
-			'prettier/prettier': 'error',
-			'no-undef': 'warn'
+			'prettier/prettier': 'error'
 		}
 	},
 	{
 		files: ['**/*.{ts,tsx}'],
 		rules: {
+			'no-undef': 'off',
 			'no-unused-vars': 'off',
 			'@typescript-eslint/no-unused-vars': ['warn', {
 				argsIgnorePattern: '^_',
@@ -53,6 +51,7 @@ export default [
 	{
 		files: ['**/*.{js,jsx}'],
 		rules: {
+			'no-undef': 'warn',
 			'no-unused-vars': ['warn', {
 				argsIgnorePattern: '^_',
 				varsIgnorePattern: '^_',
