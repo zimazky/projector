@@ -298,9 +298,12 @@ describe('App Integration Tests', () => {
 		)
 
 		// Дождаться восстановления
-		await waitFor(() => {
-			expect(documentTabsStore.documents.length).toBeGreaterThan(0)
-		}, { timeout: 2000 })
+		await waitFor(
+			() => {
+				expect(documentTabsStore.documents.length).toBeGreaterThan(0)
+			},
+			{ timeout: 2000 }
+		)
 
 		// Проверить восстановление
 		expect(documentTabsStore.documents.length).toBe(1)

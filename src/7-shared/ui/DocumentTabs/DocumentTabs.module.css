@@ -87,7 +87,9 @@
 	padding: 2px 4px;
 	border-radius: 4px;
 	color: #666;
-	transition: opacity 0.2s, background-color 0.2s;
+	transition:
+		opacity 0.2s,
+		background-color 0.2s;
 }
 
 .documentTabClose:hover {
@@ -102,7 +104,9 @@
 	cursor: pointer;
 	font-size: 20px;
 	color: #666;
-	transition: background-color 0.2s, color 0.2s;
+	transition:
+		background-color 0.2s,
+		color 0.2s;
 	border-left: 1px solid #ddd;
 }
 

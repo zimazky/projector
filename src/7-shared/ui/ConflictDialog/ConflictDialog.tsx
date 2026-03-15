@@ -71,11 +71,7 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 	}
 
 	return (
-		<Dialog
-			open={open}
-			onClose={onCancel}
-			title={getTitle()}
-		>
+		<Dialog open={open} onClose={onCancel} title={getTitle()}>
 			<div className={styles.content}>
 				{getMessage()}
 
@@ -92,27 +88,15 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 							<td>📁 Локальная</td>
 							<td>{formatDate(localModifiedAt)}</td>
 							<td>
-								{hasLocalChanges && (
-									<span className={`${styles.badge} ${styles.badgeWarning}`}>
-										Изменена
-									</span>
-								)}
+								{hasLocalChanges && <span className={`${styles.badge} ${styles.badgeWarning}`}>Изменена</span>}
 								{!hasLocalChanges && <span className={styles.ok}>Актуальна</span>}
 							</td>
 						</tr>
 						<tr className={hasRemoteChanges ? styles.highlight : ''}>
 							<td>☁️ Google Drive</td>
+							<td>{remoteMetadata.modifiedTime ? formatDate(new Date(remoteMetadata.modifiedTime).getTime()) : '—'}</td>
 							<td>
-								{remoteMetadata.modifiedTime
-									? formatDate(new Date(remoteMetadata.modifiedTime).getTime())
-									: '—'}
-							</td>
-							<td>
-								{hasRemoteChanges && (
-									<span className={`${styles.badge} ${styles.badgeWarning}`}>
-										Изменена
-									</span>
-								)}
+								{hasRemoteChanges && <span className={`${styles.badge} ${styles.badgeWarning}`}>Изменена</span>}
 								{!hasRemoteChanges && <span className={styles.ok}>Актуальна</span>}
 							</td>
 						</tr>
@@ -121,26 +105,18 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 
 				<div className={styles.actions}>
 					{hasLocalChanges && (
-						<Button
-							onClick={onChooseLocal}
-							className={styles.primaryButton}
-						>
+						<Button onClick={onChooseLocal} className={styles.primaryButton}>
 							💾 Сохранить локальную версию в Drive
 						</Button>
 					)}
 
 					{hasRemoteChanges && (
-						<Button
-							onClick={onChooseRemote}
-							className={styles.secondaryButton}
-						>
+						<Button onClick={onChooseRemote} className={styles.secondaryButton}>
 							☁️ Загрузить версию с Drive
 						</Button>
 					)}
 
-					<Button onClick={onCancel}>
-						Отменить
-					</Button>
+					<Button onClick={onCancel}>Отменить</Button>
 				</div>
 			</div>
 		</Dialog>

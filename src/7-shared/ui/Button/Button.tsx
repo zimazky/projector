@@ -6,6 +6,7 @@ type ButtonProps = {
 	onClick?: React.MouseEventHandler
 	children?: React.ReactNode
 	className?: string
+	title?: string
 }
 
 const Button: React.FC<ButtonProps> = props => {

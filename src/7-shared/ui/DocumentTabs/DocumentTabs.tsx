@@ -67,7 +67,11 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 				>
 					<span className={styles.documentTabName}>
 						{doc.ref?.name || 'Без названия'}
-						{doc.state.isDirty && <span className={styles.modifiedIndicator} title="Есть несохранённые изменения">*</span>}
+						{doc.state.isDirty && (
+							<span className={styles.modifiedIndicator} title="Есть несохранённые изменения">
+								*
+							</span>
+						)}
 					</span>
 
 					{/* Индикатор статуса синхронизации */}
@@ -92,11 +96,7 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 					</button>
 				</div>
 			))}
-			<button
-				className={styles.documentTabNew}
-				onClick={onNew}
-				title="Новый документ"
-			>
+			<button className={styles.documentTabNew} onClick={onNew} title="Новый документ">
 				+
 			</button>
 		</div>

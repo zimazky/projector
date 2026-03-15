@@ -121,13 +121,16 @@ export class DocumentTabsStore {
 				webViewLink: metadata.webViewLink
 			}
 			loadedSession.data = parseDocumentContent(content)
-			loadedSession.state.isLoading = false
 			loadedSession.state.syncStatus = 'synced'
 			loadedSession.state.lastLoadedAt = Date.now()
 			loadedSession.state.lastSyncedAt = Date.now()
 
-			// Применить данные к сторам
+			// Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
 			this.storageService.applyContent(loadedSession.data)
+
+			// Сбрасываем isLoading и явно очищаем isDirty после применения данных
+			loadedSession.state.isLoading = false
+			loadedSession.state.isDirty = false
 
 			this.persistDocumentDataToLocalStorage(id)
 			this.persistToLocalStorage()
@@ -189,11 +192,8 @@ export class DocumentTabsStore {
 		if (this.state.documentOrder.length === 0) {
 			this.storageService.resetToEmptyContent()
 		} else if (this.state.activeDocumentId) {
-			// Применить данные нового активного документа
-			const activeSession = this.state.documents.get(this.state.activeDocumentId)
-			if (activeSession) {
-				this.storageService.applyContent(activeSession.data)
-			}
+			// Активировать новый документ (с блокировкой onChangeList)
+			this.activateDocument(this.state.activeDocumentId)
 		}
 
 		this.removeDocumentDataFromLocalStorage(documentId)
@@ -208,8 +208,15 @@ export class DocumentTabsStore {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
+		// Временно устанавливаем isLoading для блокировки onChangeList
+		const previousLoadingState = session.state.isLoading
+		session.state.isLoading = true
+
 		// Применить данные активного документа к основным сторам
 		this.storageService.applyContent(session.data)
+
+		// Восстанавливаем состояние isLoading
+		session.state.isLoading = previousLoadingState
 
 		this.persistToLocalStorage()
 	}
@@ -223,8 +230,8 @@ export class DocumentTabsStore {
 		const session = this.state.documents.get(this.state.activeDocumentId)
 		if (!session) return
 
-		// Не обновляем isDirty, если документ сейчас сохраняется
-		if (session.state.isSaving) return
+		// Не обновляем isDirty, если документ сейчас сохраняется или загружается
+		if (session.state.isSaving || session.state.isLoading) return
 
 		session.data = data
 		session.state.isDirty = true
@@ -328,9 +335,7 @@ export class DocumentTabsStore {
 
 			// Загрузка метаданных для проверки версии
 			const remoteMetadata = await this.googleApiService.getFileMetadata(session.ref.fileId)
-			const remoteModifiedAt = remoteMetadata.modifiedTime
-				? new Date(remoteMetadata.modifiedTime).getTime()
-				: 0
+			const remoteModifiedAt = remoteMetadata.modifiedTime ? new Date(remoteMetadata.modifiedTime).getTime() : 0
 			const localModifiedAt = session.state.lastSavedAt ?? 0
 
 			// Определение наличия изменений
@@ -365,13 +370,16 @@ export class DocumentTabsStore {
 
 			// Нет изменений — загружаем для проверки и синхронизируем
 			const content = await this.googleApiService.downloadFileContent(session.ref.fileId)
+
+			// Устанавливаем isLoading для блокировки onChangeList во время применения данных
+			session.state.isLoading = true
 			session.data = parseDocumentContent(content)
+			this.storageService.applyContent(session.data)
+			session.state.isLoading = false
+
 			session.state.syncStatus = 'synced'
 			session.state.lastSyncedAt = Date.now()
 			session.state.lastLoadedAt = Date.now()
-
-			// Применить обновлённые данные к сторам
-			this.storageService.applyContent(session.data)
 
 			this.persistDocumentDataToLocalStorage(session.id)
 			this.persistToLocalStorage()
@@ -497,6 +505,8 @@ export class DocumentTabsStore {
 					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
 					const session = this.state.documents.get(docSnapshot.id)!
 					session.data = dataSnapshot.data
+					// Сбрасываем isDirty для восстановленных документов
+					session.state.isDirty = false
 				} catch (e) {
 					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
 				}
@@ -507,7 +517,10 @@ export class DocumentTabsStore {
 		if (this.state.activeDocumentId) {
 			const activeSession = this.state.documents.get(this.state.activeDocumentId)
 			if (activeSession) {
+				// Временно устанавливаем isLoading для блокировки onChangeList
+				activeSession.state.isLoading = true
 				this.storageService.applyContent(activeSession.data)
+				activeSession.state.isLoading = false
 			}
 		}
 

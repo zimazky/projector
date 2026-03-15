@@ -12,7 +12,7 @@
 }
 
 /* Вкладки документов */
-#root > div[data-testid="document-tabs-wrapper"] {
+#root > div[data-testid='document-tabs-wrapper'] {
 	grid-row: 2;
 }
 

@@ -72,7 +72,14 @@ describe('MigrationService', () => {
 			localStorage.setItem(OLD_DATA_KEY, JSON.stringify({ projectsList: [], completedList: [], plannedList: [] }))
 			localStorage.setItem(
 				OLD_LAST_OPENED_DOC_KEY,
-				JSON.stringify({ fileId: null, name: 'Doc', mimeType: 'application/json', space: null, parentFolderId: null, updatedAt: Date.now() })
+				JSON.stringify({
+					fileId: null,
+					name: 'Doc',
+					mimeType: 'application/json',
+					space: null,
+					parentFolderId: null,
+					updatedAt: Date.now()
+				})
 			)
 
 			// Первая миграция
@@ -169,7 +176,17 @@ describe('MigrationService', () => {
 	describe('hasOldData', () => {
 		it('возвращает true при наличии старых данных', () => {
 			localStorage.setItem(OLD_DATA_KEY, JSON.stringify({ projectsList: [] }))
-			localStorage.setItem(OLD_LAST_OPENED_DOC_KEY, JSON.stringify({ fileId: null, name: 'Doc', mimeType: 'application/json', space: null, parentFolderId: null, updatedAt: Date.now() }))
+			localStorage.setItem(
+				OLD_LAST_OPENED_DOC_KEY,
+				JSON.stringify({
+					fileId: null,
+					name: 'Doc',
+					mimeType: 'application/json',
+					space: null,
+					parentFolderId: null,
+					updatedAt: Date.now()
+				})
+			)
 
 			expect(MigrationService.hasOldData()).toBeTrue()
 		})
@@ -188,12 +205,15 @@ describe('MigrationService', () => {
 
 	describe('isMigrated', () => {
 		it('возвращает true, если миграция выполнена', () => {
-			localStorage.setItem(DOCUMENT_TABS_KEY, JSON.stringify({
-				activeDocumentId: 'doc-1',
-				documentOrder: ['doc-1'],
-				documents: [],
-				savedAt: Date.now()
-			}))
+			localStorage.setItem(
+				DOCUMENT_TABS_KEY,
+				JSON.stringify({
+					activeDocumentId: 'doc-1',
+					documentOrder: ['doc-1'],
+					documents: [],
+					savedAt: Date.now()
+				})
+			)
 
 			expect(MigrationService.isMigrated()).toBeTrue()
 		})
@@ -206,7 +226,14 @@ describe('MigrationService', () => {
 	describe('exportOldData', () => {
 		it('экспортирует старые данные', () => {
 			const testData = JSON.stringify({ projectsList: [] })
-			const testDoc = JSON.stringify({ fileId: null, name: 'Doc', mimeType: 'application/json', space: null, parentFolderId: null, updatedAt: Date.now() })
+			const testDoc = JSON.stringify({
+				fileId: null,
+				name: 'Doc',
+				mimeType: 'application/json',
+				space: null,
+				parentFolderId: null,
+				updatedAt: Date.now()
+			})
 
 			localStorage.setItem(OLD_DATA_KEY, testData)
 			localStorage.setItem(OLD_LAST_OPENED_DOC_KEY, testDoc)
@@ -221,16 +248,28 @@ describe('MigrationService', () => {
 	describe('importOldData', () => {
 		it('импортирует старые данные и очищает новые', () => {
 			// Setup новых данных
-			localStorage.setItem(DOCUMENT_TABS_KEY, JSON.stringify({
-				activeDocumentId: 'doc-1',
-				documentOrder: ['doc-1'],
-				documents: [],
-				savedAt: Date.now()
-			}))
+			localStorage.setItem(
+				DOCUMENT_TABS_KEY,
+				JSON.stringify({
+					activeDocumentId: 'doc-1',
+					documentOrder: ['doc-1'],
+					documents: [],
+					savedAt: Date.now()
+				})
+			)
 
 			// Данные для импорта
-			const testData = JSON.stringify({ projectsList: [{ name: 'Импортированный проект', color: '#00ff00', background: '#ffffff' }] })
-			const testDoc = JSON.stringify({ fileId: null, name: 'Импортированный документ', mimeType: 'application/json', space: null, parentFolderId: null, updatedAt: Date.now() })
+			const testData = JSON.stringify({
+				projectsList: [{ name: 'Импортированный проект', color: '#00ff00', background: '#ffffff' }]
+			})
+			const testDoc = JSON.stringify({
+				fileId: null,
+				name: 'Импортированный документ',
+				mimeType: 'application/json',
+				space: null,
+				parentFolderId: null,
+				updatedAt: Date.now()
+			})
 
 			// Execute импорта
 			MigrationService.importOldData({
@@ -242,7 +281,7 @@ describe('MigrationService', () => {
 			expect(localStorage.getItem(OLD_DATA_KEY)).toBe(testData)
 			expect(localStorage.getItem(OLD_LAST_OPENED_DOC_KEY)).toBe(testDoc)
 			expect(localStorage.getItem(DOCUMENT_TABS_KEY)).toBeNull()
-			
+
 			// Проверка, что количество ключей document_* уменьшилось
 			let documentKeysCount = 0
 			for (let i = 0; i < localStorage.length; i++) {

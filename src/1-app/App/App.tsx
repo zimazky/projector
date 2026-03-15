@@ -9,6 +9,7 @@ import Calendar from 'src/3-pages/Calendar/Calendar'
 import DayList from 'src/3-pages/DayList/DayList'
 import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
 import DocumentTabs from 'src/7-shared/ui/DocumentTabs'
+import EmptyState from 'src/7-shared/ui/EmptyState'
 import YesNoCancelConfirmation, {
 	YesNoCancelDecision
 } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
@@ -82,6 +83,12 @@ const App: React.FC = observer(function () {
 		documentTabsStore.openNewDocument()
 	}
 
+	const handleOpenFromDrive = () => {
+		// Открываем Drive file picker через кастомное событие
+		// CalendarIconBar слушает это событие и открывает picker
+		window.dispatchEvent(new CustomEvent('open-drive-file-picker'))
+	}
+
 	// Рендерим страницу в зависимости от режима просмотра
 	const renderPage = () => {
 		switch (uiStore.viewMode) {
@@ -112,7 +119,13 @@ const App: React.FC = observer(function () {
 					/>
 				</div>
 			)}
-			<main>{renderPage()}</main>
+			<main>
+				{documentTabsStore.documents.length === 0 ? (
+					<EmptyState onCreateNew={handleNew} onOpenFromDrive={handleOpenFromDrive} />
+				) : (
+					renderPage()
+				)}
+			</main>
 			<YesNoCancelConfirmation
 				open={unsavedDialogOpen}
 				onDecision={resolveUnsavedDecision}

@@ -45,6 +45,17 @@ const CalendarIconBar: React.FC = observer(function () {
 
 	const activeDoc = documentTabsStore.activeDocument
 
+	// Слушаем кастомное событие для открытия Drive file picker из EmptyState
+	React.useEffect(() => {
+		const handleOpenPicker = () => {
+			setIsPickerOpen(true)
+		}
+		window.addEventListener('open-drive-file-picker' as any, handleOpenPicker)
+		return () => {
+			window.removeEventListener('open-drive-file-picker' as any, handleOpenPicker)
+		}
+	}, [])
+
 	const handleSaveAsToDrive = () => {
 		if (!activeDoc) {
 			alert('Нет активного документа для сохранения')
@@ -171,8 +182,6 @@ const CalendarIconBar: React.FC = observer(function () {
 
 		if (activeDoc) {
 			documentTabsStore.closeDocument(activeDoc.id)
-		} else {
-			storageService.resetToEmptyContent()
 		}
 	}
 
@@ -275,9 +284,10 @@ const CalendarIconBar: React.FC = observer(function () {
 			jsx: (
 				<SwgIcon>
 					<Sync />
-					{activeDoc?.ref?.fileId && (activeDoc.state.syncStatus === 'needs-sync' ||
-						activeDoc.state.syncStatus === 'update-available' ||
-						activeDoc.state.syncStatus === 'offline') && <ModifiedAsterisk />}
+					{activeDoc?.ref?.fileId &&
+						(activeDoc.state.syncStatus === 'needs-sync' ||
+							activeDoc.state.syncStatus === 'update-available' ||
+							activeDoc.state.syncStatus === 'offline') && <ModifiedAsterisk />}
 				</SwgIcon>
 			),
 			fn: handleSyncWithDrive,

@@ -1,0 +1,42 @@
+.emptyState {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	padding: 40px 20px;
+	background: #fafafa;
+}
+
+.emptyStateContent {
+	text-align: center;
+	max-width: 500px;
+}
+
+.emptyStateTitle {
+	margin: 0 0 16px 0;
+	font-size: 24px;
+	font-weight: 500;
+	color: #333;
+}
+
+.emptyStateDescription {
+	margin: 0 0 32px 0;
+	font-size: 16px;
+	color: #666;
+	line-height: 1.5;
+}
+
+.emptyStateActions {
+	display: flex;
+	gap: 16px;
+	justify-content: center;
+}
+
+.buttonPrimary {
+	background: #1976d2;
+	color: white;
+}
+
+.buttonPrimary:hover {
+	background: #1565c0;
+}
