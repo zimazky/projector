@@ -72,6 +72,7 @@ export interface DriveFileMetadata {
 	parents?: string[]
 	iconLink?: string
 	webViewLink?: string
+	modifiedTime?: string
 }
 
 /** Класс статических методов для работы с Google API. */

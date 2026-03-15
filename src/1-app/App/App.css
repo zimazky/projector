@@ -8,5 +8,16 @@
 	display: grid;
 	user-select: none;
 	grid-template-columns: 1fr;
-	grid-template-rows: max-content 1fr;
+	grid-template-rows: max-content max-content 1fr;
+}
+
+/* Вкладки документов */
+#root > div[data-testid="document-tabs-wrapper"] {
+	grid-row: 2;
+}
+
+/* Основной контент */
+#root > main {
+	grid-row: 3;
+	overflow: auto;
 }

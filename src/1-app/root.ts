@@ -10,7 +10,7 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
-import { DocumentSessionStore } from 'src/6-entities/Document/model'
+import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 
 // 1. Основные доменные сторы
@@ -33,20 +33,24 @@ export const storageService = new StorageService(projectsStore, eventsStore, () 
 // 4. Сессия активного документа (Google Drive/local state)
 export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
 
-// 5. Оркестратор приложения
+// 5. Менеджер вкладок документов (multi-document support)
+export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService)
+
+// 6. Оркестратор приложения
 export const mainStore = new MainStore(
 	projectsStore,
 	eventsStore,
 	eventsCache,
 	googleApiService,
 	storageService,
-	documentSessionStore
+	documentSessionStore,
+	documentTabsStore
 )
 
-// 6. Store диалога "Сохранить как"
-export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentSessionStore)
+// 7. Store диалога "Сохранить как"
+export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentTabsStore)
 
-// 7. Инициализация приложения
+// 8. Инициализация приложения
 mainStore.init()
 
 // Реэкспорт классов для внешнего использования
@@ -61,5 +65,6 @@ export {
 	WeatherStore,
 	CalendarStore,
 	DayListStore,
-	EventFormStore
+	EventFormStore,
+	DocumentTabsStore
 }

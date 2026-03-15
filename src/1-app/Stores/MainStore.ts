@@ -8,7 +8,8 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListStore'
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
-import { DocumentSessionStore } from 'src/6-entities/Document/model'
+import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
+import { MigrationService } from 'src/1-app/Stores/MigrationService'
 
 /** Главный orchestrator-стор приложения */
 export class MainStore {
@@ -22,6 +23,7 @@ export class MainStore {
 	private googleApiService: GoogleApiService
 	private storageService: StorageService
 	private documentSessionStore: DocumentSessionStore
+	private documentTabsStore: DocumentTabsStore
 
 	/**
 	 * Сохраненное состояние проводника Google Drive по пространствам
@@ -38,7 +40,8 @@ export class MainStore {
 		eventsCache: EventsCache,
 		googleApiService: GoogleApiService,
 		storageService: StorageService,
-		documentSessionStore: DocumentSessionStore
+		documentSessionStore: DocumentSessionStore,
+		documentTabsStore: DocumentTabsStore
 	) {
 		this.projectsStore = projectsStore
 		this.eventsStore = eventsStore
@@ -46,6 +49,7 @@ export class MainStore {
 		this.googleApiService = googleApiService
 		this.storageService = storageService
 		this.documentSessionStore = documentSessionStore
+		this.documentTabsStore = documentTabsStore
 
 		this.driveExplorerPersistentState.set('drive', {
 			folderId: 'root',
@@ -61,24 +65,38 @@ export class MainStore {
 
 	/** Инициализация приложения и зависимых сервисов */
 	init() {
+		// Выполняем миграцию старых данных в новую структуру
+		MigrationService.migrateFromSingleDocument()
+
 		// Обработчик изменений событий назначаем до загрузки данных.
 		this.eventsStore.onChangeList = () => {
 			this.eventsStore.sort()
 			this.eventsCache.init()
 			this.storageService.desyncWithStorages()
-			if (this.documentSessionStore.isOpened && !this.documentSessionStore.state.isLoading) {
-				this.documentSessionStore.markDirty()
+
+			// Обновляем активный документ в DocumentTabsStore
+			const activeDoc = this.documentTabsStore.activeDocument
+			if (activeDoc && !activeDoc.state.isLoading) {
+				this.documentTabsStore.updateActiveDocumentData({
+					projectsList: this.projectsStore.getList(),
+					...this.eventsStore.prepareToSave()
+				})
 			}
 		}
 
 		this.storageService.init()
 		this.eventsCache.init()
 		this.googleApiService.initGapi()
+
+		// Восстанавливаем сессию из localStorage через DocumentTabsStore
 		void this.googleApiService
 			.waitForGapiReady()
-			.then(() => this.documentSessionStore.restoreLastOpenedDocument())
+			.then(() => {
+				// Сначала пробуем восстановить новую multi-document сессию
+				return this.documentTabsStore.restoreFromLocalStorage()
+			})
 			.catch(e => {
-				console.error('GAPI init failed, skip restoring last opened document:', e)
+				console.error('DocumentTabsStore restore failed:', e)
 			})
 	}
 

@@ -6,16 +6,18 @@ type IconButtonProps = {
 	disabled?: boolean
 	onClick?: React.MouseEventHandler
 	children?: React.ReactNode
+	style?: React.CSSProperties
 }
 
 const IconButton: React.FC<IconButtonProps> = props => {
-	const { disabled, children = 'Button', onClick = () => {}, ...rest } = props
+	const { disabled, children = 'Button', onClick = () => {}, style, ...rest } = props
 
 	return (
 		<button
 			type="button"
 			className={styles.button}
 			disabled={disabled}
+			style={style}
 			{...rest}
 			onPointerDown={e => {
 				if (!e.isPrimary || e.currentTarget.disabled) return

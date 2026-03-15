@@ -3,7 +3,7 @@
 import { GoogleApiService, SaveFileResult } from 'src/7-shared/services/GoogleApiService'
 import { DriveFileMetadata } from 'src/7-shared/services/gapi'
 import { MainStore } from 'src/1-app/Stores/MainStore'
-import { DocumentSessionStore, DriveSpace } from 'src/6-entities/Document/model'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 
 export class SaveToDriveStore {
 	isOpen: boolean = false
@@ -21,7 +21,7 @@ export class SaveToDriveStore {
 	constructor(
 		private googleApiService: GoogleApiService,
 		private mainStore: MainStore,
-		private documentSessionStore: DocumentSessionStore
+		private documentTabsStore: DocumentTabsStore
 	) {
 		makeAutoObservable(this)
 	}
@@ -89,15 +89,24 @@ export class SaveToDriveStore {
 				runInAction(() => {
 					if (result.status === 'success') {
 						this.mainStore.fileSavedNotifier.fire()
-						const documentSpace: DriveSpace = spaces === 'appDataFolder' ? 'appDataFolder' : 'drive'
-						this.documentSessionStore.markSaveCompleted({
-							fileId: result.file.id,
-							name: result.file.name,
-							mimeType: result.file.mimeType || this.mimeType,
-							space: documentSpace,
-							parentFolderId: result.file.parents?.[0] ?? selectedFolderId,
-							webViewLink: result.file.webViewLink
-						})
+						const documentSpace = spaces === 'appDataFolder' ? 'appDataFolder' : 'drive'
+						// Обновляем активный документ через DocumentTabsStore
+						const activeDoc = this.documentTabsStore.activeDocument
+						if (activeDoc) {
+							activeDoc.ref = {
+								...activeDoc.ref!,
+								fileId: result.file.id,
+								name: result.file.name,
+								mimeType: result.file.mimeType || this.mimeType,
+								space: documentSpace,
+								parentFolderId: result.file.parents?.[0] ?? selectedFolderId,
+								webViewLink: result.file.webViewLink
+							}
+							activeDoc.state.isDirty = false
+							activeDoc.state.lastSavedAt = Date.now()
+							activeDoc.state.syncStatus = 'synced'
+							activeDoc.state.lastSyncedAt = Date.now()
+						}
 						this.close()
 					} else if (result.status === 'conflict') {
 						this.conflictingFiles = result.existingFiles

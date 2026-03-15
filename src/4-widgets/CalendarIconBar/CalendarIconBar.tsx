@@ -14,7 +14,8 @@ import {
 	Menu,
 	ModifiedAsterisk,
 	UploadSign,
-	Weather
+	Weather,
+	Sync
 } from 'src/7-shared/ui/Icons/Icons'
 
 import YesNoCancelConfirmation, {
@@ -26,39 +27,107 @@ import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
 import { IDriveItem } from 'src/7-shared/types/IDriveItem'
 
 import SaveToDrive from 'src/4-widgets/SaveToDrive/SaveToDrive'
+import ConflictDialog, { type ConflictDialogProps } from 'src/7-shared/ui/ConflictDialog'
 
 function fullScreen() {
 	document.getElementById('root')?.requestFullscreen()
 }
 
 const CalendarIconBar: React.FC = observer(function () {
-	const { uiStore, googleApiService, storageService, weatherStore, saveToDriveStore, documentSessionStore } =
+	const { uiStore, googleApiService, storageService, weatherStore, saveToDriveStore, documentTabsStore } =
 		useContext(StoreContext)
 
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [unsavedDialogActionName, setUnsavedDialogActionName] = useState('')
 	const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false)
+	const [conflictDialogData, setConflictDialogData] = useState<ConflictDialogProps | null>(null)
 	const unsavedDecisionResolverRef = useRef<((decision: YesNoCancelDecision) => void) | null>(null)
 
+	const activeDoc = documentTabsStore.activeDocument
+
 	const handleSaveAsToDrive = () => {
+		if (!activeDoc) {
+			alert('Нет активного документа для сохранения')
+			return
+		}
 		const dataToSave = storageService.getContentToSave()
-		const fileName =
-			documentSessionStore.state.ref?.name || `calendar_data_${new Date().toISOString().slice(0, 10)}.json`
-		const mimeType = documentSessionStore.state.ref?.mimeType || 'application/json'
+		const fileName = activeDoc.ref?.name || `calendar_data_${new Date().toISOString().slice(0, 10)}.json`
+		const mimeType = activeDoc.ref?.mimeType || 'application/json'
 		saveToDriveStore.open(fileName, JSON.stringify(dataToSave, null, 2), mimeType)
 	}
 
 	const handleSaveCurrentDocument = async () => {
-		if (!documentSessionStore.state.ref?.fileId) {
+		if (!activeDoc?.ref?.fileId) {
 			alert('Нет открытого документа для сохранения. Используйте "Сохранить как...".')
 			return false
 		}
 
-		const isSaved = await documentSessionStore.saveToCurrentFile()
-		if (!isSaved && documentSessionStore.state.error) {
-			alert(documentSessionStore.state.error)
+		const isSaved = await documentTabsStore.saveActiveDocument()
+		if (!isSaved && activeDoc.state.error) {
+			alert(activeDoc.state.error)
 		}
 		return isSaved
+	}
+
+	const handleSyncWithDrive = async () => {
+		if (!activeDoc?.ref?.fileId) {
+			alert('Нет связанного документа с Google Drive для синхронизации.')
+			return
+		}
+
+		const result = await documentTabsStore.syncActiveDocumentWithDrive()
+		if (result.status === 'conflict') {
+			setConflictDialogData({
+				open: true,
+				localModifiedAt: result.localModifiedAt,
+				remoteModifiedAt: result.remoteModifiedAt,
+				hasLocalChanges: result.hasLocalChanges,
+				hasRemoteChanges: result.hasRemoteChanges,
+				remoteMetadata: result.remoteMetadata,
+				onChooseLocal: handleChooseLocalVersion,
+				onChooseRemote: handleChooseRemoteVersion,
+				onCancel: handleCloseConflictDialog
+			})
+		} else if (result.status === 'error') {
+			alert(result.message)
+		}
+	}
+
+	const handleChooseLocalVersion = async () => {
+		const saved = await documentTabsStore.saveActiveDocument()
+		if (saved) {
+			handleCloseConflictDialog()
+		} else if (activeDoc?.state.error) {
+			alert(activeDoc.state.error)
+		}
+	}
+
+	const handleChooseRemoteVersion = async () => {
+		if (!activeDoc?.ref?.fileId) return
+
+		try {
+			const content = await googleApiService.downloadFileContent(activeDoc.ref.fileId)
+
+			// Применение данных
+			const session = documentTabsStore.activeDocument
+			if (session) {
+				session.data = content as any
+				session.state.syncStatus = 'synced'
+				session.state.lastSyncedAt = Date.now()
+				session.state.lastLoadedAt = Date.now()
+
+				// Применение к сторам
+				storageService.applyContent(session.data)
+			}
+
+			handleCloseConflictDialog()
+		} catch (error: any) {
+			alert(error.message)
+		}
+	}
+
+	const handleCloseConflictDialog = () => {
+		setConflictDialogData(null)
 	}
 
 	const requestUnsavedDecision = (actionName: string): Promise<YesNoCancelDecision> => {
@@ -78,7 +147,7 @@ const CalendarIconBar: React.FC = observer(function () {
 	}
 
 	const ensureSafeTransition = async (actionName: string): Promise<boolean> => {
-		if (!documentSessionStore.state.isDirty) return true
+		if (!activeDoc?.state.isDirty) return true
 
 		const decision = await requestUnsavedDecision(actionName)
 		if (decision === 'cancel') return false
@@ -93,16 +162,18 @@ const CalendarIconBar: React.FC = observer(function () {
 		const canProceed = await ensureSafeTransition('Новый документ')
 		if (!canProceed) return
 
-		storageService.resetToEmptyContent()
-		documentSessionStore.createNew('Новый документ', 'application/json')
+		documentTabsStore.openNewDocument('Новый документ')
 	}
 
 	const handleCloseDocument = async () => {
 		const canProceed = await ensureSafeTransition('Закрыть документ')
 		if (!canProceed) return
 
-		documentSessionStore.close()
-		storageService.resetToEmptyContent()
+		if (activeDoc) {
+			documentTabsStore.closeDocument(activeDoc.id)
+		} else {
+			storageService.resetToEmptyContent()
+		}
 	}
 
 	const handleOpenDriveFilePicker = async () => {
@@ -112,27 +183,10 @@ const CalendarIconBar: React.FC = observer(function () {
 	}
 
 	const handleLoadLastOpenedDocument = async () => {
-		const canProceed = await ensureSafeTransition('Открыть последний документ')
-		if (!canProceed) return
-
-		if (!googleApiService.isGoogleLoggedIn) {
-			try {
-				await googleApiService.logIn()
-			} catch (_) {
-				alert('Не удалось выполнить вход в Google.')
-				return
-			}
-		}
-
-		if (!googleApiService.isGoogleLoggedIn) {
-			alert('Для загрузки документа требуется вход в Google.')
-			return
-		}
-
-		const restored = await documentSessionStore.restoreLastOpenedDocument()
+		// Восстановление через DocumentTabsStore
+		const restored = await documentTabsStore.restoreFromLocalStorage()
 		if (!restored) {
-			const message = documentSessionStore.state.error || 'В локальном хранилище нет последнего открытого документа.'
-			alert(message)
+			alert('В локальном хранилище нет сохранённых документов.')
 		}
 	}
 
@@ -188,7 +242,7 @@ const CalendarIconBar: React.FC = observer(function () {
 				<SwgIcon>
 					<Google />
 					<UploadSign />
-					{documentSessionStore.state.isDirty ? <ModifiedAsterisk /> : null}
+					{activeDoc?.state.isDirty ? <ModifiedAsterisk /> : null}
 				</SwgIcon>
 			),
 			fn: handleSaveCurrentDocument
@@ -214,6 +268,20 @@ const CalendarIconBar: React.FC = observer(function () {
 				</SwgIcon>
 			),
 			fn: handleSaveAsToDrive
+		})
+
+		icons.push({
+			name: 'Синхронизировать с Google Drive',
+			jsx: (
+				<SwgIcon>
+					<Sync />
+					{activeDoc?.ref?.fileId && (activeDoc.state.syncStatus === 'needs-sync' ||
+						activeDoc.state.syncStatus === 'update-available' ||
+						activeDoc.state.syncStatus === 'offline') && <ModifiedAsterisk />}
+				</SwgIcon>
+			),
+			fn: handleSyncWithDrive,
+			disabled: !activeDoc?.ref?.fileId
 		})
 	} else {
 		menu.push({ name: 'Войти', fn: googleApiService.logIn })
@@ -263,9 +331,9 @@ const CalendarIconBar: React.FC = observer(function () {
 		console.log('Selected file:', file)
 		if (file.isFolder()) return
 
-		await documentSessionStore.openFromDriveFile(file.id)
-		if (documentSessionStore.state.error) {
-			alert(documentSessionStore.state.error)
+		await documentTabsStore.openFromDrive(file.id)
+		if (activeDoc?.state.error) {
+			alert(activeDoc.state.error)
 		}
 	}
 
@@ -293,6 +361,19 @@ const CalendarIconBar: React.FC = observer(function () {
 				<br />
 				Что сделать перед действием "{unsavedDialogActionName}"?
 			</YesNoCancelConfirmation>
+			{conflictDialogData && (
+				<ConflictDialog
+					open={conflictDialogData.open}
+					localModifiedAt={conflictDialogData.localModifiedAt}
+					remoteModifiedAt={conflictDialogData.remoteModifiedAt}
+					hasLocalChanges={conflictDialogData.hasLocalChanges}
+					hasRemoteChanges={conflictDialogData.hasRemoteChanges}
+					remoteMetadata={conflictDialogData.remoteMetadata}
+					onChooseLocal={conflictDialogData.onChooseLocal}
+					onChooseRemote={conflictDialogData.onChooseRemote}
+					onCancel={conflictDialogData.onCancel}
+				/>
+			)}
 		</>
 	)
 })

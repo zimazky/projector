@@ -5,14 +5,15 @@ type ButtonProps = {
 	disabled?: boolean
 	onClick?: React.MouseEventHandler
 	children?: React.ReactNode
+	className?: string
 }
 
 const Button: React.FC<ButtonProps> = props => {
-	const { disabled = false, children = 'Button', onClick = () => {}, ...rest } = props
+	const { disabled = false, children = 'Button', onClick = () => {}, className, ...rest } = props
 
 	return (
 		<button
-			className={styles.button}
+			className={`${styles.button} ${className || ''}`}
 			type="button"
 			{...rest}
 			tabIndex={-1}

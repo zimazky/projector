@@ -6,12 +6,14 @@ type DialogProps = {
 	open: boolean
 	/** Функция, вызываемая при закрытии сайдбара */
 	onClose?: () => void
+	/** Заголовок диалога */
+	title?: React.ReactNode
 	children?: React.ReactNode
 }
 
 type state = 'hidden' | 'open' | 'closing'
 
-const Dialog: React.FC<DialogProps> = ({ open = false, onClose = () => {}, children = null }) => {
+const Dialog: React.FC<DialogProps> = ({ open = false, onClose = () => {}, title, children = null }) => {
 	const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
 	React.useEffect(() => {
 		if (open) setState('open')
@@ -26,7 +28,8 @@ const Dialog: React.FC<DialogProps> = ({ open = false, onClose = () => {}, child
 	return state === 'hidden' ? null : (
 		<div className={styles.overlay + ' ' + styles[state]} onClick={onClose}>
 			<div className={styles.window} onClick={e => e.stopPropagation()}>
-				{children}
+				{title && <div className={styles.title}>{title}</div>}
+				<div className={styles.content}>{children}</div>
 			</div>
 		</div>
 	)

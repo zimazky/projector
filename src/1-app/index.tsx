@@ -19,6 +19,7 @@ import {
 	storageService,
 	saveToDriveStore,
 	documentSessionStore,
+	documentTabsStore,
 	eventSearchStore
 } from './root'
 import StoreProvider from './Providers/StoreProvider'
@@ -44,6 +45,7 @@ root.render(
 		storageService={storageService}
 		saveToDriveStore={saveToDriveStore}
 		documentSessionStore={documentSessionStore}
+		documentTabsStore={documentTabsStore}
 		fileSavedNotifier={mainStore.fileSavedNotifier}
 		eventSearchStore={eventSearchStore}
 	>

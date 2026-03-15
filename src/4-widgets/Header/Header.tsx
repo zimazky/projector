@@ -14,10 +14,11 @@ import { EventSearchInput } from 'src/5-features/EventSearch/EventSearchInput'
 import styles from './Header.module.css'
 
 const Header: React.FC = observer(function () {
-	const { calendarStore, uiStore, documentSessionStore, googleApiService } = useContext(StoreContext)
+	const { calendarStore, uiStore, documentTabsStore, googleApiService } = useContext(StoreContext)
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-	const documentTitle = documentSessionStore.isOpened
-		? `${documentSessionStore.title}${documentSessionStore.state.isDirty ? ' *' : ''}`
+	const activeDoc = documentTabsStore.activeDocument
+	const documentTitle = activeDoc
+		? `${activeDoc.ref?.name || 'Без названия'}${activeDoc.state.isDirty ? ' *' : ''}`
 		: 'Документ не открыт'
 
 	const handleAvatarClick = () => {

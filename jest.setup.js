@@ -1,4 +1,9 @@
 // Jest setup file - adds Jasmine-compatible APIs for migrated tests
+try {
+  require('@testing-library/jest-dom')
+} catch (e) {
+  // @testing-library/jest-dom not installed, skip
+}
 
 // Create a jasmine-compatible spy with .and.returnValue() API
 function createJasmineSpy(name) {
@@ -36,6 +41,20 @@ expect.extend({
       pass,
       message: () => `expected ${received} to be true`
     };
+  },
+  toBeNull(received) {
+    const pass = received === null;
+    return {
+      pass,
+      message: () => `expected ${received} to be null`
+    };
+  },
+  toBeUndefined(received) {
+    const pass = received === undefined;
+    return {
+      pass,
+      message: () => `expected ${received} to be undefined`
+    };
   }
 });
 
@@ -60,3 +79,13 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true
 });
+
+// Mock scrollIntoView for jsdom environment
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = jest.fn();
+}
+
+// Mock scrollTo for jsdom environment
+if (!window.scrollTo) {
+  window.scrollTo = jest.fn();
+}
