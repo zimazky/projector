@@ -154,14 +154,15 @@ export class DocumentTabsStore {
 			ref: docSnapshot.ref,
 			data: createEmptyDocumentData(), // Данные загрузятся отдельно
 			state: {
-				isDirty: docSnapshot.state.isDirty,
+				isDirty: false, // Сбрасываем — новая сессия
 				isLoading: false,
 				isSaving: docSnapshot.state.isSaving,
 				lastLoadedAt: docSnapshot.lastAccessedAt,
 				lastSavedAt: docSnapshot.state.lastSavedAt,
 				error: docSnapshot.state.error,
 				syncStatus: docSnapshot.ref?.fileId ? 'offline' : 'offline',
-				lastSyncedAt: null
+				lastSyncedAt: null,
+				hasUnsyncedChanges: docSnapshot.state.hasUnsyncedChanges
 			},
 			createdAt: docSnapshot.lastAccessedAt,
 			lastAccessedAt: docSnapshot.lastAccessedAt
@@ -175,8 +176,8 @@ export class DocumentTabsStore {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
 
-		// Проверка несохранённых изменений
-		if (session.state.isDirty) {
+		// Проверка несохранённых изменений (в сессии или с предыдущей сессии)
+		if (session.state.isDirty || session.state.hasUnsyncedChanges) {
 			// TODO: Показать диалог подтверждения
 			console.warn('Closing document with unsaved changes')
 		}
@@ -274,6 +275,7 @@ export class DocumentTabsStore {
 			if (result.status === 'success') {
 				runInAction(() => {
 					session.state.isDirty = false
+					session.state.hasUnsyncedChanges = false
 					session.state.isSaving = false
 					session.state.lastSavedAt = Date.now()
 					session.state.syncStatus = 'synced'
@@ -452,7 +454,8 @@ export class DocumentTabsStore {
 						lastSavedAt: session.state.lastSavedAt,
 						error: session.state.error,
 						syncStatus: session.state.syncStatus,
-						lastSyncedAt: session.state.lastSyncedAt
+						lastSyncedAt: session.state.lastSyncedAt,
+						hasUnsyncedChanges: session.state.isDirty
 					},
 					lastAccessedAt: session.lastAccessedAt
 				}
@@ -505,8 +508,6 @@ export class DocumentTabsStore {
 					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
 					const session = this.state.documents.get(docSnapshot.id)!
 					session.data = dataSnapshot.data
-					// Сбрасываем isDirty для восстановленных документов
-					session.state.isDirty = false
 				} catch (e) {
 					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
 				}

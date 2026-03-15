@@ -38,6 +38,7 @@ export type DocumentState = {
 	error: string | null
 	syncStatus: SyncStatus
 	lastSyncedAt: number | null
+	hasUnsyncedChanges: boolean
 }
 
 /** Метаданные документа */
@@ -76,6 +77,7 @@ export type DocumentTabsSnapshot = {
 			error: string | null
 			syncStatus: SyncStatus
 			lastSyncedAt: number | null
+			hasUnsyncedChanges: boolean
 		}
 		lastAccessedAt: number
 	}>
@@ -101,6 +103,7 @@ export type RestoredDocumentSnapshot = {
 		error: string | null
 		syncStatus: SyncStatus
 		lastSyncedAt: number | null
+		hasUnsyncedChanges: boolean
 	}
 	lastAccessedAt: number
 }
@@ -140,7 +143,8 @@ export function createInitialDocumentState(): DocumentState {
 		lastSavedAt: null,
 		error: null,
 		syncStatus: 'offline',
-		lastSyncedAt: null
+		lastSyncedAt: null,
+		hasUnsyncedChanges: false
 	}
 }
 

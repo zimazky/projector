@@ -24,14 +24,18 @@ const App: React.FC = observer(function () {
 
 	const [unsavedDialogOpen, setUnsavedDialogOpen] = React.useState(false)
 	const [pendingDocumentId, setPendingDocumentId] = React.useState<string | null>(null)
+	const [dialogMessage, setDialogMessage] = React.useState('Есть несохранённые изменения.')
 	const unsavedDecisionResolverRef = React.useRef<((decision: YesNoCancelDecision) => void) | null>(null)
 
 	const handleActivate = (id: string) => {
 		documentTabsStore.activateDocument(id)
 	}
 
-	const requestUnsavedDecision = (documentId: string): Promise<YesNoCancelDecision> => {
+	const requestUnsavedDecision = (documentId: string, hasUnsyncedChanges: boolean): Promise<YesNoCancelDecision> => {
 		setPendingDocumentId(documentId)
+		setDialogMessage(
+			hasUnsyncedChanges ? 'Документ не синхронизирован с предыдущей сессии.' : 'Есть несохранённые изменения.'
+		)
 		setUnsavedDialogOpen(true)
 		return new Promise<YesNoCancelDecision>(resolve => {
 			unsavedDecisionResolverRef.current = resolve
@@ -62,8 +66,8 @@ const App: React.FC = observer(function () {
 
 	const handleClose = async (id: string) => {
 		const doc = documentTabsStore.documents.find(d => d.id === id)
-		if (doc?.state.isDirty) {
-			const decision = await requestUnsavedDecision(id)
+		if (doc?.state.isDirty || doc?.state.hasUnsyncedChanges) {
+			const decision = await requestUnsavedDecision(id, doc.state.hasUnsyncedChanges)
 			if (decision === 'cancel') return
 			// Decision is handled in resolveUnsavedDecision
 			return
@@ -73,8 +77,8 @@ const App: React.FC = observer(function () {
 
 	const handleNew = async () => {
 		const activeDoc = documentTabsStore.activeDocument
-		if (activeDoc?.state.isDirty) {
-			const decision = await requestUnsavedDecision(activeDoc.id)
+		if (activeDoc?.state.isDirty || activeDoc?.state.hasUnsyncedChanges) {
+			const decision = await requestUnsavedDecision(activeDoc.id, activeDoc.state.hasUnsyncedChanges)
 			if (decision === 'cancel') return
 			if (decision === 'yes') {
 				await documentTabsStore.saveActiveDocument()
@@ -132,7 +136,7 @@ const App: React.FC = observer(function () {
 				yesLabel="Сохранить"
 				noLabel="Не сохранять"
 			>
-				Есть несохранённые изменения.
+				{dialogMessage}
 				<br />
 				Что сделать перед закрытием вкладки?
 			</YesNoCancelConfirmation>

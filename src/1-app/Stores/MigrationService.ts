@@ -68,7 +68,8 @@ export class MigrationService {
 							lastSavedAt: null,
 							error: null,
 							syncStatus: oldDocParsed.fileId ? 'offline' : 'offline',
-							lastSyncedAt: null
+							lastSyncedAt: null,
+							hasUnsyncedChanges: false
 						},
 						lastAccessedAt: oldDocParsed.updatedAt
 					}
