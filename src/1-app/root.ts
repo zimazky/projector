@@ -12,9 +12,11 @@ import { MainStore } from 'src/1-app/Stores/MainStore'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
 import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
+import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/ProjectEditorStore'
 
 // 1. Основные доменные сторы
 export const projectsStore = new ProjectsStore()
+export const projectEditorStore = new ProjectEditorStore(projectsStore)
 export const eventsStore = new EventsStore(projectsStore)
 export const eventsCache = new EventsCache(projectsStore, eventsStore)
 

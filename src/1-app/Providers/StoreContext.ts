@@ -15,6 +15,7 @@ import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveSto
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
 import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
+import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/ProjectEditorStore'
 
 /**
  * Контракт всех сторов/сервисов, доступных через React Context.
@@ -23,6 +24,7 @@ import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 export interface IRootStore {
 	mainStore: MainStore
 	projectsStore: ProjectsStore
+	projectEditorStore: ProjectEditorStore
 	eventsStore: EventsStore
 	eventsCache: EventsCache
 	weatherStore: WeatherStore

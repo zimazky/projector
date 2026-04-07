@@ -1,0 +1,37 @@
+.title {
+	margin: 0 0 16px 0;
+	font-size: 1.25rem;
+	font-weight: 500;
+	color: var(--color-text-default);
+	text-align: left;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+	min-width: 300px;
+}
+
+.colorGrid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+}
+
+.preview {
+	margin-top: 8px;
+}
+
+.previewCard {
+	padding: 16px;
+	border-radius: 8px;
+	text-align: center;
+	font-size: 1rem;
+	font-weight: 500;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+	min-height: 40px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}

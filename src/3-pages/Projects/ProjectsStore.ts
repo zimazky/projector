@@ -26,17 +26,65 @@ export class ProjectsStore {
 	list: ProjectStructure[]
 	/** Проект по умолчанию */
 	static defaultProject: ProjectStructure = { name: 'Default', background: 'lightgray', color: 'black', events: 0 }
+	/** Callback при изменении списка проектов */
+	onChangeList?: () => void
 
 	constructor() {
 		this.list = [ProjectsStore.defaultProject]
 		makeAutoObservable(this)
 	}
 
-	/** Добавить проект в список */
-	add(name: string, color: string, background: string) {
-		const l = this.list.find(l => l.name === name)
-		if (l === undefined) this.list.push({ name, events: 0, color, background })
-		else alert(`Project "${name}" already exists`)
+	/**
+	 * Добавить новый проект
+	 * @param name - наименование проекта
+	 * @param color - цвет текста
+	 * @param background - цвет фона
+	 * @returns true если успешно, false если дубликат или пустое имя
+	 */
+	add(name: string, color: string, background: string): boolean {
+		const trimmedName = name.trim()
+		if (trimmedName === '') return false
+
+		const exists = this.list.find(l => l.name === trimmedName)
+		if (exists) return false
+
+		this.list.push({ name: trimmedName, events: 0, color, background })
+		this.onChangeList?.()
+		return true
+	}
+
+	/**
+	 * Обновить существующий проект
+	 * @param oldName - текущее наименование проекта
+	 * @param updates - обновленные данные (name, color, background)
+	 * @returns true если успешно, false если проект не найден или дубликат имени
+	 */
+	update(oldName: string, updates: { name?: string; color?: string; background?: string }): boolean {
+		const project = this.list.find(l => l.name === oldName)
+		if (!project) return false
+
+		// Проверка дубликата при переименовании
+		if (updates.name && updates.name.trim() !== oldName) {
+			const trimmedNewName = updates.name.trim()
+			const duplicate = this.list.find(l => l.name === trimmedNewName)
+			if (duplicate) return false
+			project.name = trimmedNewName
+		}
+
+		if (updates.color) project.color = updates.color
+		if (updates.background) project.background = updates.background
+
+		this.onChangeList?.()
+		return true
+	}
+
+	/**
+	 * Проверить существует ли проект с таким именем
+	 * @param name - наименование проекта
+	 * @returns true если проект существует
+	 */
+	exists(name: string): boolean {
+		return this.list.some(l => l.name === name)
 	}
 
 	/**
@@ -47,7 +95,10 @@ export class ProjectsStore {
 		const l = this.list.find(l => l.name === name)
 		if (l === undefined) return
 		if (l.events > 0) alert(`Project "${name}" has ${l.events} links to events`)
-		else this.list = this.list.filter(l => l.name !== name)
+		else {
+			this.list = this.list.filter(l => l.name !== name)
+			this.onChangeList?.()
+		}
 	}
 
 	/**

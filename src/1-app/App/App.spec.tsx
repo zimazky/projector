@@ -9,6 +9,7 @@ import StoreProvider from 'src/1-app/Providers/StoreProvider'
 // Импорты сторов
 import {
 	projectsStore,
+	projectEditorStore,
 	eventsStore,
 	eventsCache,
 	weatherStore,
@@ -45,6 +46,7 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 
 const stores = {
 	projectsStore,
+	projectEditorStore,
 	eventsStore,
 	eventsCache,
 	weatherStore,

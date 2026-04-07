@@ -8,6 +8,7 @@ import './index.css'
 import {
 	mainStore,
 	projectsStore,
+	projectEditorStore,
 	eventsStore,
 	eventsCache,
 	weatherStore,
@@ -34,6 +35,7 @@ root.render(
 	<StoreProvider
 		mainStore={mainStore}
 		projectsStore={projectsStore}
+		projectEditorStore={projectEditorStore}
 		eventsStore={eventsStore}
 		eventsCache={eventsCache}
 		weatherStore={weatherStore}

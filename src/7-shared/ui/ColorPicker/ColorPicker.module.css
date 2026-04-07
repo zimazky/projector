@@ -1,0 +1,124 @@
+.root {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 10px 2px 2px 2px;
+}
+
+.label {
+	font-size: 0.75rem;
+	color: rgba(0, 0, 0, 0.6);
+	padding: 0 7px;
+}
+
+.label.error {
+	color: red;
+}
+
+.control {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.23);
+	border-radius: 4px;
+	padding: 0 8px;
+	background-color: var(--color-background-surface);
+	cursor: pointer;
+	transition: box-shadow 200ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+}
+
+.control:hover {
+	box-shadow: 0 0 0 1px black;
+}
+
+.control:focus-within {
+	box-shadow: 0 0 0 2px var(--color-border-focus);
+}
+
+.controlError {
+	box-shadow: 0 0 0 1px red;
+}
+
+.controlError:focus-within {
+	box-shadow: 0 0 0 2px red;
+}
+
+.preview {
+	width: 24px;
+	height: 24px;
+	border-radius: 4px;
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.input {
+	flex: 1;
+	border: none;
+	background: transparent;
+	font-size: 1rem;
+	font-family: inherit;
+	color: var(--color-text-default);
+	outline: none;
+	min-width: 0;
+}
+
+.input::placeholder {
+	color: rgba(0, 0, 0, 0.38);
+}
+
+.backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	background: transparent;
+}
+
+.popover {
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 10000;
+	padding: 16px;
+	background-color: var(--color-background-surface);
+	border-radius: 8px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+	border: 1px solid var(--color-border-default);
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Стили для react-colorful picker */
+.popover .react-colorful {
+	width: 200px;
+	height: 150px;
+}
+
+.presets {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 8px;
+}
+
+.swatch {
+	width: 32px;
+	height: 32px;
+	border-radius: 4px;
+	cursor: pointer;
+	transition: transform 150ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+	padding: 0;
+	border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.swatch:hover {
+	transform: scale(1.15);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.swatch:active {
+	transform: scale(1);
+}

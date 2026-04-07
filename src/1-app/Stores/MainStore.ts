@@ -84,6 +84,21 @@ export class MainStore {
 			}
 		}
 
+		// Обработчик изменений проектов
+		this.projectsStore.onChangeList = () => {
+			this.eventsCache.init()
+			this.storageService.desyncWithStorages()
+
+			// Обновляем активный документ в DocumentTabsStore
+			const activeDoc = this.documentTabsStore.activeDocument
+			if (activeDoc && !activeDoc.state.isLoading) {
+				this.documentTabsStore.updateActiveDocumentData({
+					projectsList: this.projectsStore.getList(),
+					...this.eventsStore.prepareToSave()
+				})
+			}
+		}
+
 		this.storageService.init()
 		this.eventsCache.init()
 		this.googleApiService.initGapi()

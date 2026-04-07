@@ -1,9 +1,22 @@
-import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
+import React from 'react'
+import { observer } from 'mobx-react-lite'
 
-export default function ProjectsForm() {
+import ProjectList from 'src/5-features/ProjectManager/ProjectList/ProjectList'
+import ProjectForm from 'src/5-features/ProjectManager/ProjectEditor/ProjectForm'
+
+import styles from './ProjectsForm.module.css'
+
+/**
+ * Страница управления проектами
+ * Отображает список проектов и форму добавления/редактирования
+ */
+const ProjectsForm: React.FC = observer(() => {
 	return (
-		<>
-			<DatePicker label="test"></DatePicker>
-		</>
+		<div className={styles.root}>
+			<ProjectList />
+			<ProjectForm />
+		</div>
 	)
-}
+})
+
+export default ProjectsForm
