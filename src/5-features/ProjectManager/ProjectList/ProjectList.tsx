@@ -55,10 +55,7 @@ const ProjectList: React.FC = observer(() => {
 							{project.events} event{project.events !== 1 ? 's' : ''}
 						</span>
 						<div className={styles.actions}>
-							<IconButton
-								onClick={() => handleEdit(project.name)}
-								disabled={project.name === 'Default'}
-							>
+							<IconButton onClick={() => handleEdit(project.name)} disabled={project.name === 'Default'}>
 								<Icon icon="mdi:pencil" width={20} height={20} />
 							</IconButton>
 							<IconButton

@@ -5,28 +5,65 @@ import styles from './ColorPicker.module.css'
 
 /** Цветовые пресеты Material Design */
 const COLOR_PRESETS = [
-	'#000000', '#FFFFFF', '#F44336', '#E91E63', '#9C27B0',
-	'#673AB7', '#3F51B5', '#2196F3', '#03A9F4', '#00BCD4',
-	'#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B',
-	'#FFC107', '#FF9800', '#FF5722', '#795548', '#9E9E9E',
+	'#000000',
+	'#FFFFFF',
+	'#F44336',
+	'#E91E63',
+	'#9C27B0',
+	'#673AB7',
+	'#3F51B5',
+	'#2196F3',
+	'#03A9F4',
+	'#00BCD4',
+	'#009688',
+	'#4CAF50',
+	'#8BC34A',
+	'#CDDC39',
+	'#FFEB3B',
+	'#FFC107',
+	'#FF9800',
+	'#FF5722',
+	'#795548',
+	'#9E9E9E',
 	'#607D8B'
 ]
 
 /** Маппинг популярных CSS алиасов в HEX */
 const CSS_ALIAS_TO_HEX: Record<string, string> = {
-	'black': '#000000', 'white': '#FFFFFF', 'red': '#FF0000', 'green': '#008000',
-	'blue': '#0000FF', 'yellow': '#FFFF00', 'orange': '#FFA500', 'purple': '#800080',
-	'pink': '#FFC0CB', 'brown': '#A52A2A', 'gray': '#808080', 'grey': '#808080',
-	'silver': '#C0C0C0', 'maroon': '#800000', 'olive': '#808000', 'lime': '#00FF00',
-	'aqua': '#00FFFF', 'teal': '#008080', 'navy': '#000080', 'fuchsia': '#FF00FF',
-	'lightgray': '#D3D3D3', 'lightgrey': '#D3D3D3', 'darkgray': '#A9A9A9', 'darkgrey': '#A9A9A9',
-	'dimgray': '#696969', 'dimgrey': '#696969', 'slategray': '#708090', 'slategrey': '#708090'
+	black: '#000000',
+	white: '#FFFFFF',
+	red: '#FF0000',
+	green: '#008000',
+	blue: '#0000FF',
+	yellow: '#FFFF00',
+	orange: '#FFA500',
+	purple: '#800080',
+	pink: '#FFC0CB',
+	brown: '#A52A2A',
+	gray: '#808080',
+	grey: '#808080',
+	silver: '#C0C0C0',
+	maroon: '#800000',
+	olive: '#808000',
+	lime: '#00FF00',
+	aqua: '#00FFFF',
+	teal: '#008080',
+	navy: '#000080',
+	fuchsia: '#FF00FF',
+	lightgray: '#D3D3D3',
+	lightgrey: '#D3D3D3',
+	darkgray: '#A9A9A9',
+	darkgrey: '#A9A9A9',
+	dimgray: '#696969',
+	dimgrey: '#696969',
+	slategray: '#708090',
+	slategrey: '#708090'
 }
 
 /** Конвертация значения в HEX для HexColorPicker */
 function toHex(value: string): string {
 	const trimmed = value.trim().toLowerCase()
-	
+
 	// Если уже HEX
 	if (/^#[0-9A-Fa-f]{6}$/.test(trimmed)) return trimmed
 	if (/^#[0-9A-Fa-f]{3}$/.test(trimmed)) {
@@ -35,7 +72,7 @@ function toHex(value: string): string {
 		const b = trimmed[3]
 		return `#${r}${r}${g}${g}${b}${b}`
 	}
-	
+
 	// Если CSS алиас
 	return CSS_ALIAS_TO_HEX[trimmed] || '#000000'
 }
@@ -66,15 +103,8 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error
 
 	return (
 		<div className={styles.root}>
-			{label && (
-				<label className={styles.label + (error ? ' ' + styles.error : '')}>
-					{label}
-				</label>
-			)}
-			<div
-				className={styles.control + (error ? ' ' + styles.controlError : '')}
-				onClick={() => setIsOpen(!isOpen)}
-			>
+			{label && <label className={styles.label + (error ? ' ' + styles.error : '')}>{label}</label>}
+			<div className={styles.control + (error ? ' ' + styles.controlError : '')} onClick={() => setIsOpen(!isOpen)}>
 				<div
 					className={styles.preview}
 					style={{
@@ -97,7 +127,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error
 					<>
 						<div className={styles.backdrop} onClick={() => setIsOpen(false)} />
 						<div className={styles.popover}>
-							<HexColorPicker color={toHex(value)} onChange={(color) => onChange(color.toUpperCase())} />
+							<HexColorPicker color={toHex(value)} onChange={color => onChange(color.toUpperCase())} />
 							<div className={styles.presets}>
 								{COLOR_PRESETS.map(color => (
 									<button

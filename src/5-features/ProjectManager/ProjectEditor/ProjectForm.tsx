@@ -23,7 +23,7 @@ const ProjectForm: React.FC = observer(() => {
 	const [localName, setLocalName] = React.useState('')
 	const [localColor, setLocalColor] = React.useState('#000000')
 	const [localBackground, setLocalBackground] = React.useState('#ffffff')
-	const [localErrors, setLocalErrors] = React.useState<{name?: string; color?: string; background?: string}>({})
+	const [localErrors, setLocalErrors] = React.useState<{ name?: string; color?: string; background?: string }>({})
 
 	// Синхронизация локальных значений с store при открытии
 	useEffect(() => {
@@ -45,7 +45,7 @@ const ProjectForm: React.FC = observer(() => {
 		projectEditorStore.updateField('name', localName)
 		projectEditorStore.updateField('color', localColor)
 		projectEditorStore.updateField('background', localBackground)
-		
+
 		const success = projectEditorStore.save()
 		if (!success) {
 			// Ошибки уже установлены в store
@@ -60,9 +60,7 @@ const ProjectForm: React.FC = observer(() => {
 	return (
 		<Dialog open={projectEditorStore.isOpen} onClose={handleClose}>
 			<DialogContent>
-				<h2 className={styles.title}>
-					{projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}
-				</h2>
+				<h2 className={styles.title}>{projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}</h2>
 
 				<form className={styles.form}>
 					<TextField
@@ -114,9 +112,7 @@ const ProjectForm: React.FC = observer(() => {
 			</DialogContent>
 
 			<DialogActions>
-				<TextButton onClick={handleSave}>
-					{projectEditorStore.mode === 'add' ? 'Add' : 'Save'}
-				</TextButton>
+				<TextButton onClick={handleSave}>{projectEditorStore.mode === 'add' ? 'Add' : 'Save'}</TextButton>
 				<TextButton onClick={handleClose}>Cancel</TextButton>
 			</DialogActions>
 		</Dialog>
