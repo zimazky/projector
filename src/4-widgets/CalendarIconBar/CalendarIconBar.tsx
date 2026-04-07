@@ -7,7 +7,6 @@ import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
 import SwgIcon from 'src/7-shared/ui/Icons/SwgIcon'
 import {
-	Diskette,
 	DownloadSign,
 	Fullscreen,
 	Google,
@@ -191,18 +190,9 @@ const CalendarIconBar: React.FC = observer(function () {
 		setIsPickerOpen(true)
 	}
 
-	const handleLoadLastOpenedDocument = async () => {
-		// Восстановление через DocumentTabsStore
-		const restored = await documentTabsStore.restoreFromLocalStorage()
-		if (!restored) {
-			alert('В локальном хранилище нет сохранённых документов.')
-		}
-	}
-
 	let icons: IconItem[] = []
 	let menu: MenuItem[] = []
 
-	menu.push({ name: 'Сохранить локально', fn: storageService.saveToLocalStorage })
 	icons.push({
 		name: '',
 		jsx: (
@@ -214,27 +204,6 @@ const CalendarIconBar: React.FC = observer(function () {
 			uiStore.toggleMenu(true)
 		}
 	})
-	icons.push({
-		name: 'Сохранить локально',
-		jsx: (
-			<SwgIcon>
-				<Diskette />
-				{storageService.isSyncWithLocalstorage || <ModifiedAsterisk />}
-			</SwgIcon>
-		),
-		fn: storageService.saveToLocalStorage
-	})
-
-	icons.push({
-		name: 'Открыть последний документ',
-		jsx: (
-			<SwgIcon>
-				<Google />
-				<DownloadSign />
-			</SwgIcon>
-		),
-		fn: handleLoadLastOpenedDocument
-	})
 
 	if (googleApiService.isGoogleLoggedIn) {
 		menu.push({ name: 'Выйти', fn: googleApiService.logOut })
@@ -242,7 +211,6 @@ const CalendarIconBar: React.FC = observer(function () {
 		menu.push({ name: 'Закрыть документ', fn: handleCloseDocument })
 		menu.push({ name: 'Сохранить', fn: handleSaveCurrentDocument })
 		menu.push({ name: 'Сохранить как...', fn: handleSaveAsToDrive })
-		menu.push({ name: 'Открыть последний документ', fn: handleLoadLastOpenedDocument })
 		menu.push({ name: 'Открыть из Google Drive', fn: handleOpenDriveFilePicker })
 
 		icons.push({
