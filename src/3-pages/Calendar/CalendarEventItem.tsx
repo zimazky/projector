@@ -16,10 +16,13 @@ type CalendarEventItemProps = {
 const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 	const { eventFormStore, eventsStore, eventSearchStore } = useContext(StoreContext)
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
-	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days } = props.event
+	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days, documentId, documentColor } = props.event
 
 	// Проверяем, подсвечено ли это событие поиском
 	const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
+
+	// Определяем, является ли событие из агрегированного документа
+	const isFromAggregatedDocument = documentId !== undefined
 
 	const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
 		e.stopPropagation()
@@ -46,14 +49,17 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 						? 'calc(100% + 2px)'
 						: 'calc(' + props.daysInCurrentWeek + ' * (100% + 1px) + 1px )',
 				backgroundColor: background,
-				color: color
+				color: color,
+				// Цветовая маркировка документа для общего календаря
+				borderLeft: isFromAggregatedDocument && documentColor ? `3px solid ${documentColor}` : undefined
 			}}
 			onClick={openEventForm}
 			title={
 				name +
 				(time !== null ? '\ntime: ' + DateTime.secondsToHMM(time) : '') +
 				(credit ? '\ncredit: ' + credit : '') +
-				(debit ? '\ndebit: ' + debit : '')
+				(debit ? '\ndebit: ' + debit : '') +
+				(isFromAggregatedDocument ? '\n📄 из общего календаря' : '')
 			}
 		>
 			<div className={styles.name}>

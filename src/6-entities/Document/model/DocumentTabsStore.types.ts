@@ -1,8 +1,14 @@
 import type { EventDto } from 'src/6-entities/Events/EventDto'
 import type { DriveSpace, ProjectDocumentData } from './types'
 
+/** Фиксированный ID виртуального агрегированного документа */
+export const VIRTUAL_AGGREGATED_DOCUMENT_ID = '__virtual_aggregated__'
+
 /** Уникальный идентификатор документа в сессии */
 export type DocumentId = string
+
+/** Тип документа: реальный или виртуальный агрегированный */
+export type DocumentType = 'real' | 'virtual-aggregated'
 
 /** Статус синхронизации документа с Google Drive */
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'needs-sync' | 'update-available' | 'error'
@@ -26,6 +32,30 @@ export type DocumentData = {
 	projectsList: ProjectDocumentData[]
 	completedList: EventDto[]
 	plannedList: EventDto[]
+}
+
+/**
+ * Расширенное событие с метаданными документа-источника.
+ * Используется ТОЛЬКО для агрегированных данных виртуального документа.
+ * НЕ сохраняется во внешнее хранилище.
+ */
+export type AggregatedEventDto = EventDto & {
+	/** Временный ID события с префиксом документа (строка вместо number) */
+	id: string
+	/** ID документа-источника */
+	documentId: DocumentId
+	/** Цвет документа-источника */
+	documentColor: string
+}
+
+/**
+ * Агрегированные данные виртуального документа.
+ * Содержат события из всех реальных документов с метаданными источника.
+ */
+export type AggregatedDocumentData = {
+	projectsList: ProjectDocumentData[]
+	completedList: AggregatedEventDto[]
+	plannedList: AggregatedEventDto[]
 }
 
 /** Состояние документа */
@@ -54,11 +84,16 @@ export type DocumentRef = {
 /** Полная сессия документа */
 export type DocumentSession = {
 	id: DocumentId
+	/** Тип документа: реальный или виртуальный агрегированный */
+	type: DocumentType
 	ref: DocumentRef | null
-	data: DocumentData
+	/** Данные документа (для виртуального документа — AggregatedDocumentData) */
+	data: DocumentData | AggregatedDocumentData
 	state: DocumentState
 	createdAt: number
 	lastAccessedAt: number
+	/** Цвет документа для визуального различения в общем календаре */
+	color?: string
 }
 
 /** Снимок состояния вкладки для localStorage */
@@ -135,6 +170,30 @@ export function generateDocumentId(): DocumentId {
 
 /** Создать начальное состояние документа */
 export function createInitialDocumentState(): DocumentState {
+	return {
+		isDirty: false,
+		isLoading: false,
+		isSaving: false,
+		lastLoadedAt: null,
+		lastSavedAt: null,
+		error: null,
+		syncStatus: 'offline',
+		lastSyncedAt: null,
+		hasUnsyncedChanges: false
+	}
+}
+
+/** Создать пустые данные для виртуального агрегированного документа */
+export function createVirtualDocumentData(): AggregatedDocumentData {
+	return {
+		projectsList: [],
+		completedList: [],
+		plannedList: []
+	}
+}
+
+/** Создать начальное состояние виртуального документа */
+export function createVirtualDocumentState(): DocumentState {
 	return {
 		isDirty: false,
 		isLoading: false,

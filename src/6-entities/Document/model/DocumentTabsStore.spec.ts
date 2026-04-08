@@ -524,4 +524,130 @@ describe('DocumentTabsStore', () => {
 			expect(store.offlineDocumentsCount).toBe(1)
 		})
 	})
+
+	describe('Виртуальные документы', () => {
+		it('создаёт виртуальный документ при открытии 2 документов', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+
+			expect(store.documents.length).toBe(3) // 2 реальных + 1 виртуальный
+			expect(store.realDocuments.length).toBe(2)
+			expect(store.isVirtualDocument('__virtual_aggregated__')).toBeTrue()
+		})
+
+		it('не создаёт виртуальный документ при 1 документе', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+
+			expect(store.documents.length).toBe(1)
+			expect(store.realDocuments.length).toBe(1)
+			expect(store.getVirtualAggregatedDocument()).toBeNull()
+		})
+
+		it('удаляет виртуальный документ при закрытии до 1 документа', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			expect(store.documents.length).toBe(3)
+
+			store.closeDocument(store.documents[0].id)
+
+			expect(store.documents.length).toBe(1)
+			expect(store.getVirtualAggregatedDocument()).toBeNull()
+		})
+
+		it('запрещает закрытие виртуального документа', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			const virtualId = '__virtual_aggregated__'
+
+			store.closeDocument(virtualId)
+
+			expect(store.getVirtualAggregatedDocument()).not.toBeNull()
+		})
+
+		it('запрещает сохранение виртуального документа', async () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			store.activateDocument('__virtual_aggregated__')
+
+			const result = await store.saveActiveDocument()
+
+			expect(result).toBeFalse()
+		})
+
+		it('запрещает синхронизацию виртуального документа', async () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			store.activateDocument('__virtual_aggregated__')
+
+			// Виртуальный документ не имеет fileId, поэтому получим ошибку "Нет документа"
+			const result = await store.syncActiveDocumentWithDrive()
+
+			expect(result.status).toBe('error')
+		})
+
+		it('не сохраняет виртуальный документ в localStorage', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+
+			const snapshot = localStorage.getItem('documentTabs')
+			expect(snapshot).not.toBeNull()
+
+			const parsed = JSON.parse(snapshot!)
+			expect(parsed.documentOrder.length).toBe(2) // Только реальные документы
+			expect(parsed.documents.length).toBe(2)
+		})
+
+		it('восстанавливается из localStorage без виртуального документа', async () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			const doc1Id = store.documents[0].id
+			const doc2Id = store.documents[1].id
+
+			// Сохраняем snapshot
+			const snapshot = localStorage.getItem('documentTabs')
+
+			// Закрываем все документы
+			store.closeDocument(store.documents.find(d => d.id !== '__virtual_aggregated__' && d.id !== doc1Id)!.id)
+			store.closeDocument(doc1Id)
+
+			// Восстанавливаем
+			if (snapshot) {
+				localStorage.setItem('documentTabs', snapshot)
+			}
+			await store.restoreFromLocalStorage()
+
+			// Виртуальный документ должен создаться заново
+			expect(store.documents.length).toBe(3)
+			expect(store.getVirtualAggregatedDocument()).not.toBeNull()
+		})
+
+		it('имеет уникальный цвет для каждого документа', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Doc 1')
+			store.openNewDocument('Doc 2')
+			store.openNewDocument('Doc 3')
+
+			const colors = store.realDocuments.map(d => d.color).filter(Boolean)
+			const uniqueColors = new Set(colors)
+
+			expect(uniqueColors.size).toBe(colors.length)
+		})
+	})
 })

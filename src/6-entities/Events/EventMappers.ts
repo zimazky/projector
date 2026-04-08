@@ -1,28 +1,38 @@
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 
+import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import { EventDto } from './EventDto'
 import { IEventModel, RepeatableEventModel, SingleEventModel } from './EventModel'
 
+/** Расширенный EventDto с метаданными документа (для агрегированных данных) */
+type ExtendedEventDto = EventDto & {
+	documentId?: DocumentId
+	documentColor?: string
+}
+
 /** Функция преобразования данных EventDto из внешнего хранилища, в структуру IEventModel */
 export function eventDtoToIEventModel(e: EventDto): IEventModel {
-	const start = DateTime.YYYYMMDDToTimestamp(e.start)
-	const time = e.time ? DateTime.HMMToSeconds(e.time) : null
-	const duration = e.duration ? DateTime.DdHMMToSeconds(e.duration) : 0
+	const ext = e as ExtendedEventDto
+	const start = DateTime.YYYYMMDDToTimestamp(ext.start)
+	const time = ext.time ? DateTime.HMMToSeconds(ext.time) : null
+	const duration = ext.duration ? DateTime.DdHMMToSeconds(ext.duration) : 0
 
-	if (e.repeat) {
+	if (ext.repeat) {
 		return {
-			name: e.name,
-			comment: e.comment ?? '',
-			project: e.project ?? '',
-			repeat: e.repeat,
+			name: ext.name,
+			comment: ext.comment ?? '',
+			project: ext.project ?? '',
+			repeat: ext.repeat,
 			// Находим первое совпадение расписания от даты начала (start - 1 день для nextAfter)
-			start: ZCron.nextAfterString(e.repeat, start, start - 86400) ?? start,
+			start: ZCron.nextAfterString(ext.repeat, start, start - 86400) ?? start,
 			time,
 			duration,
-			end: e.end ? DateTime.YYYYMMDDToTimestamp(e.end) : 0,
-			credit: e.credit ? +e.credit : 0,
-			debit: e.debit ? +e.debit : 0
+			end: ext.end ? DateTime.YYYYMMDDToTimestamp(ext.end) : 0,
+			credit: ext.credit ? +ext.credit : 0,
+			debit: ext.debit ? +ext.debit : 0,
+			documentId: ext.documentId,
+			documentColor: ext.documentColor
 		}
 	}
 
@@ -30,20 +40,22 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 	// end = начало следующего дня от окончания события
 	const end = duration
 		? DateTime.getBeginDayTimestamp(startdatetime + duration + 86399)
-		: e.end
-			? DateTime.YYYYMMDDToTimestamp(e.end)
+		: ext.end
+			? DateTime.YYYYMMDDToTimestamp(ext.end)
 			: start + 86400
 
 	return {
-		name: e.name,
-		comment: e.comment ?? '',
-		project: e.project ?? '',
+		name: ext.name,
+		comment: ext.comment ?? '',
+		project: ext.project ?? '',
 		start,
 		time,
 		duration,
 		end,
-		credit: e.credit ? +e.credit : 0,
-		debit: e.debit ? +e.debit : 0
+		credit: ext.credit ? +ext.credit : 0,
+		debit: ext.debit ? +ext.debit : 0,
+		documentId: ext.documentId,
+		documentColor: ext.documentColor
 	}
 }
 
@@ -57,6 +69,7 @@ export function singleEventModelToEventDto(e: SingleEventModel): EventDto {
 	else if (e.end && e.end - e.start !== 86400) raw.end = DateTime.getYYYYMMDD(e.end)
 	if (e.credit) raw.credit = e.credit
 	if (e.debit) raw.debit = e.debit
+	// documentId и documentColor НЕ сохраняются во внешнее хранилище
 	return raw
 }
 
@@ -71,5 +84,6 @@ export function repeatableEventModelToEventDto(e: RepeatableEventModel): EventDt
 	if (e.end) raw.end = DateTime.getYYYYMMDD(e.end)
 	if (e.credit) raw.credit = e.credit
 	if (e.debit) raw.debit = e.debit
+	// documentId и documentColor НЕ сохраняются во внешнее хранилище
 	return raw
 }

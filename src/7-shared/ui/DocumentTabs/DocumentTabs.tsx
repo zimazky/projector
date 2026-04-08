@@ -1,5 +1,6 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
+import { Icon } from '@iconify/react'
 import { DocumentSession, DocumentId } from 'src/6-entities/Document/model'
 
 import styles from './DocumentTabs.module.css'
@@ -73,36 +74,52 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 
 	return (
 		<div className={styles.documentTabs}>
-			{documents.map(doc => (
-				<div
-					key={doc.id}
-					className={`${styles.documentTab} ${doc.id === activeDocumentId ? styles.active : ''}`}
-					onClick={() => onActivate(doc.id)}
-				>
-					<span className={styles.documentTabName}>{doc.ref?.name || 'Без названия'}</span>
+			{documents.map(doc => {
+				const isVirtual = doc.type === 'virtual-aggregated'
+				const isActive = doc.id === activeDocumentId
 
-					{/* Индикатор статуса синхронизации */}
-					{doc.ref?.fileId && (
-						<span
-							className={`${styles.syncStatus} ${styles[`syncStatus--${doc.state.syncStatus}`]}`}
-							title={getSyncStatusTitle(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
-						>
-							{getSyncStatusIcon(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
-						</span>
-					)}
-
-					<button
-						className={styles.documentTabClose}
-						onClick={e => {
-							e.stopPropagation()
-							onClose(doc.id)
-						}}
-						title="Закрыть вкладку"
+				return (
+					<div
+						key={doc.id}
+						className={`${styles.documentTab} ${isActive ? styles.active : ''} ${isVirtual ? styles.virtualTab : ''}`}
+						onClick={() => onActivate(doc.id)}
+						title={isVirtual ? 'Общий календарь всех документов' : undefined}
 					>
-						×
-					</button>
-				</div>
-			))}
+						{/* Иконка документа */}
+						{isVirtual ? (
+							<Icon icon="mdi:calendar-multiple" className={styles.virtualIcon} />
+						) : (
+							<Icon icon="mdi:file-document" className={styles.documentIcon} />
+						)}
+
+						<span className={styles.documentTabName}>{doc.ref?.name || 'Без названия'}</span>
+
+						{/* Индикатор статуса синхронизации (только для реальных документов) */}
+						{!isVirtual && doc.ref?.fileId && (
+							<span
+								className={`${styles.syncStatus} ${styles[`syncStatus--${doc.state.syncStatus}`]}`}
+								title={getSyncStatusTitle(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
+							>
+								{getSyncStatusIcon(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
+							</span>
+						)}
+
+						{/* Кнопка закрытия (только для реальных документов) */}
+						{!isVirtual && (
+							<button
+								className={styles.documentTabClose}
+								onClick={e => {
+									e.stopPropagation()
+									onClose(doc.id)
+								}}
+								title="Закрыть вкладку"
+							>
+								×
+							</button>
+						)}
+					</div>
+				)
+			})}
 			<button className={styles.documentTabNew} onClick={onNew} title="Новый документ">
 				+
 			</button>

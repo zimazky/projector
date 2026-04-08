@@ -1,4 +1,5 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 
 /** Модель одиночного события для хранения в классе хранилища */
 export type SingleEventModel = {
@@ -27,4 +28,9 @@ export type SingleEventModel = {
 	projectId: number
 	/** Длительность события в днях */
 	days: number
+	
+	/** ID документа-источника (для общего календаря) */
+	documentId?: DocumentId
+	/** Цвет документа-источника (для общего календаря) */
+	documentColor?: string
 }

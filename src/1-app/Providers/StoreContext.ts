@@ -3,6 +3,7 @@
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
+import { EventsStoreWithAggregation } from 'src/6-entities/Events/EventsStoreWithAggregation'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
 import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
@@ -26,6 +27,7 @@ export interface IRootStore {
 	projectsStore: ProjectsStore
 	projectEditorStore: ProjectEditorStore
 	eventsStore: EventsStore
+	eventsStoreWithAggregation: EventsStoreWithAggregation
 	eventsCache: EventsCache
 	weatherStore: WeatherStore
 	calendarStore: CalendarStore

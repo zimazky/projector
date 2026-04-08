@@ -10,6 +10,7 @@ import {
 	projectsStore,
 	projectEditorStore,
 	eventsStore,
+	eventsStoreWithAggregation,
 	eventsCache,
 	weatherStore,
 	calendarStore,
@@ -37,6 +38,7 @@ root.render(
 		projectsStore={projectsStore}
 		projectEditorStore={projectEditorStore}
 		eventsStore={eventsStore}
+		eventsStoreWithAggregation={eventsStoreWithAggregation}
 		eventsCache={eventsCache}
 		weatherStore={weatherStore}
 		calendarStore={calendarStore}

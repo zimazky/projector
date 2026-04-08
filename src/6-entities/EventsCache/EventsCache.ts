@@ -54,7 +54,7 @@ export class EventsCache {
 			if (date < e.start || date >= e.end) return a
 			const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
 			const background = this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
-			a.push(singleEventToEventCache(e, date, false, color, background))
+			a.push(singleEventToEventCache(e, date, false, color, background, e.documentId, e.documentColor))
 			return a
 		}, [] as EventCacheStructure[])
 		this.eventsStore.plannedRepeatable.reduce((a, e) => {
@@ -64,7 +64,7 @@ export class EventsCache {
 				const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
 				const background =
 					this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
-				a.push(repeatableEventToEventCache(e, date, false, color, background))
+				a.push(repeatableEventToEventCache(e, date, false, color, background, e.documentId, e.documentColor))
 			}
 			return a
 		}, events)
@@ -73,7 +73,7 @@ export class EventsCache {
 				const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
 				const background =
 					this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
-				a.push(singleEventToEventCache(e, date, true, color, background))
+				a.push(singleEventToEventCache(e, date, true, color, background, e.documentId, e.documentColor))
 			}
 			return a
 		}, events)

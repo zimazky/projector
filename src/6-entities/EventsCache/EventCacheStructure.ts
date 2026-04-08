@@ -1,6 +1,7 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/Events/EventModel'
+import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type EventCacheStructure = {
@@ -28,6 +29,10 @@ export type EventCacheStructure = {
 	completed: boolean
 	/** Признак повторяемого события */
 	repeatable: boolean
+	/** ID документа-источника (для общего календаря) */
+	documentId?: DocumentId
+	/** Цвет документа-источника (для визуальной маркировки) */
+	documentColor?: string
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -42,7 +47,9 @@ export function singleEventToEventCache(
 	currentDate: timestamp,
 	completed: boolean,
 	color: string,
-	background: string
+	background: string,
+	documentId?: string,
+	documentColor?: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
 		id: e.id,
@@ -56,7 +63,9 @@ export function singleEventToEventCache(
 		credit: e.credit,
 		debit: e.debit,
 		completed: completed,
-		repeatable: false
+		repeatable: false,
+		documentId,
+		documentColor
 	}
 	return c
 }
@@ -70,7 +79,9 @@ export function repeatableEventToEventCache(
 	currentDate: timestamp,
 	completed: boolean,
 	color: string,
-	background: string
+	background: string,
+	documentId?: string,
+	documentColor?: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
 		id: e.id,
@@ -84,7 +95,9 @@ export function repeatableEventToEventCache(
 		credit: e.credit,
 		debit: e.debit,
 		completed: completed,
-		repeatable: true
+		repeatable: true,
+		documentId,
+		documentColor
 	}
 	return c
 }

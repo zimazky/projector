@@ -27,6 +27,7 @@ import { IDriveItem } from 'src/7-shared/types/IDriveItem'
 
 import SaveToDrive from 'src/4-widgets/SaveToDrive/SaveToDrive'
 import ConflictDialog, { type ConflictDialogProps } from 'src/7-shared/ui/ConflictDialog'
+import CalendarLegend from 'src/4-widgets/CalendarLegend/CalendarLegend'
 
 function fullScreen() {
 	document.getElementById('root')?.requestFullscreen()
@@ -318,6 +319,8 @@ const CalendarIconBar: React.FC = observer(function () {
 	return (
 		<>
 			<IconBar icons={icons} />
+			{/* Легенда документов (отображается только при активном виртуальном документе) */}
+			<CalendarLegend />
 			<Drawer open={uiStore.isMenuOpen} onClose={() => uiStore.toggleMenu(false)}>
 				<List>
 					{menu.map((m, i) => (

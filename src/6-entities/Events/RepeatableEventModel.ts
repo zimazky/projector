@@ -1,4 +1,5 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 
 /** Модель повторяемого события для хранения в классе хранилища */
 export type RepeatableEventModel = {
@@ -27,4 +28,9 @@ export type RepeatableEventModel = {
 
 	/** Индекс записи проекта */
 	projectId: number
+	
+	/** ID документа-источника (для общего календаря) */
+	documentId?: DocumentId
+	/** Цвет документа-источника (для общего календаря) */
+	documentColor?: string
 }

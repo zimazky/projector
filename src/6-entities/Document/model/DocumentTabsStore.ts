@@ -2,11 +2,14 @@ import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
+import { generateEventHash } from 'src/7-shared/helpers/generateEventHash'
 import {
 	DocumentId,
 	DocumentSession,
 	DocumentTabsState,
 	DocumentData,
+	AggregatedDocumentData,
+	AggregatedEventDto,
 	SyncResult,
 	RestoredDocumentSnapshot,
 	DocumentTabsSnapshot,
@@ -16,7 +19,10 @@ import {
 	createInitialDocumentState,
 	parseDocumentContent,
 	parseDocumentTabsSnapshot,
-	DocumentRef
+	DocumentRef,
+	VIRTUAL_AGGREGATED_DOCUMENT_ID,
+	createVirtualDocumentData,
+	createVirtualDocumentState
 } from './DocumentTabsStore.types'
 
 const DOCUMENT_TABS_KEY = 'documentTabs'
@@ -48,6 +54,7 @@ export class DocumentTabsStore {
 		const id = generateDocumentId()
 		const session: DocumentSession = {
 			id,
+			type: 'real',
 			ref: {
 				fileId: null,
 				name,
@@ -61,7 +68,8 @@ export class DocumentTabsStore {
 				syncStatus: 'offline'
 			},
 			createdAt: Date.now(),
-			lastAccessedAt: Date.now()
+			lastAccessedAt: Date.now(),
+			color: this.generateDocumentColor()
 		}
 		this.state.documents.set(id, session)
 		this.state.documentOrder.push(id)
@@ -72,6 +80,9 @@ export class DocumentTabsStore {
 
 		this.persistToLocalStorage()
 		this.persistDocumentDataToLocalStorage(id)
+
+		// Обеспечить существование виртуального документа при 2+ документах
+		this.ensureVirtualAggregatedDocument()
 	}
 
 	/** Открыть документ из Google Drive */
@@ -86,6 +97,7 @@ export class DocumentTabsStore {
 		const id = generateDocumentId()
 		const session: DocumentSession = {
 			id,
+			type: 'real',
 			ref: {
 				fileId,
 				name: 'Загрузка...',
@@ -100,7 +112,8 @@ export class DocumentTabsStore {
 				syncStatus: 'syncing'
 			},
 			createdAt: Date.now(),
-			lastAccessedAt: Date.now()
+			lastAccessedAt: Date.now(),
+			color: this.generateDocumentColor()
 		}
 		this.state.documents.set(id, session)
 		this.state.documentOrder.push(id)
@@ -141,6 +154,9 @@ export class DocumentTabsStore {
 			failedSession.state.syncStatus = 'error'
 			console.error('Failed to open document from Drive:', error)
 		}
+
+		// Обеспечить существование виртуального документа при 2+ документах
+		this.ensureVirtualAggregatedDocument()
 	}
 
 	/**
@@ -151,6 +167,7 @@ export class DocumentTabsStore {
 		const id = docSnapshot.id
 		const session: DocumentSession = {
 			id,
+			type: 'real',
 			ref: docSnapshot.ref,
 			data: createEmptyDocumentData(), // Данные загрузятся отдельно
 			state: {
@@ -165,7 +182,8 @@ export class DocumentTabsStore {
 				hasUnsyncedChanges: docSnapshot.state.hasUnsyncedChanges
 			},
 			createdAt: docSnapshot.lastAccessedAt,
-			lastAccessedAt: docSnapshot.lastAccessedAt
+			lastAccessedAt: docSnapshot.lastAccessedAt,
+			color: this.generateDocumentColor()
 		}
 		this.state.documents.set(id, session)
 		this.state.documentOrder.push(id)
@@ -175,6 +193,12 @@ export class DocumentTabsStore {
 	closeDocument(documentId: DocumentId) {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
+
+		// Запрет на закрытие виртуального документа
+		if (session.type === 'virtual-aggregated') {
+			console.warn('Cannot close virtual aggregated document')
+			return
+		}
 
 		// Проверка несохранённых изменений (в сессии или с предыдущей сессии)
 		if (session.state.isDirty || session.state.hasUnsyncedChanges) {
@@ -199,12 +223,176 @@ export class DocumentTabsStore {
 
 		this.removeDocumentDataFromLocalStorage(documentId)
 		this.persistToLocalStorage()
+
+		// Обеспечить существование виртуального документа при изменении количества документов
+		this.ensureVirtualAggregatedDocument()
+	}
+
+	// === Управление виртуальными документами ===
+
+	/** Создать виртуальный агрегированный документ */
+	private createVirtualAggregatedDocument() {
+		const session: DocumentSession = {
+			id: VIRTUAL_AGGREGATED_DOCUMENT_ID,
+			type: 'virtual-aggregated',
+			ref: {
+				fileId: null,
+				name: 'Общий календарь',
+				mimeType: 'application/json',
+				space: null,
+				parentFolderId: null
+			},
+			data: createVirtualDocumentData(),
+			state: createVirtualDocumentState(),
+			createdAt: Date.now(),
+			lastAccessedAt: Date.now(),
+			color: this.generateDocumentColor()
+		}
+
+		this.state.documents.set(session.id, session)
+		this.state.documentOrder.push(session.id)
+	}
+
+	/** Получить виртуальный агрегированный документ, если существует (для тестирования) */
+	getVirtualAggregatedDocument(): DocumentSession | null {
+		return this.state.documents.get(VIRTUAL_AGGREGATED_DOCUMENT_ID) ?? null
+	}
+
+	/**
+	 * Построить агрегированные данные из всех реальных документов.
+	 * Собирает все события и проекты из всех документов.
+	 * Возвращает AggregatedDocumentData с метаданными документа-источника.
+	 * Генерирует стабильные ID на основе хеша содержимого события.
+	 */
+	private buildAggregatedDocumentData(): AggregatedDocumentData {
+		const realDocuments = this.documents.filter(d => d.type !== 'virtual-aggregated')
+
+		const aggregated: AggregatedDocumentData = {
+			projectsList: [],
+			completedList: [],
+			plannedList: []
+		}
+
+		for (const doc of realDocuments) {
+			// Собираем проекты (без модификации ID — предполагаем уникальные)
+			aggregated.projectsList.push(...doc.data.projectsList)
+
+			// Извлекаем префикс документа и цвет
+			const docPrefix = doc.id.replace('doc_', '').replace(VIRTUAL_AGGREGATED_DOCUMENT_ID, 'virt')
+			const docColor = doc.color ?? '#888888'
+
+			// Собираем завершённые события с метаданными документа
+			aggregated.completedList.push(
+				...doc.data.completedList.map(e => {
+					const hash = generateEventHash(e)
+					return {
+						...e,
+						id: `${docPrefix}_${hash}`,
+						documentId: doc.id,
+						documentColor: docColor
+					}
+				})
+			)
+
+			// Собираем запланированные события с метаданными документа
+			aggregated.plannedList.push(
+				...doc.data.plannedList.map(e => {
+					const hash = generateEventHash(e)
+					return {
+						...e,
+						id: `${docPrefix}_${hash}`,
+						documentId: doc.id,
+						documentColor: docColor
+					}
+				})
+			)
+		}
+
+		return aggregated
+	}
+
+	/** Удалить виртуальный агрегированный документ */
+	private removeVirtualAggregatedDocument() {
+		const virtual = this.getVirtualAggregatedDocument()
+		if (!virtual) return
+
+		this.state.documents.delete(virtual.id)
+		this.state.documentOrder = this.state.documentOrder.filter(
+			id => id !== virtual.id
+		)
+
+		// Если виртуальный документ был активен — активируем первый реальный
+		if (this.state.activeDocumentId === virtual.id) {
+			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
+			if (this.state.activeDocumentId) {
+				// Блокируем onChangeList при активации
+				const session = this.state.documents.get(this.state.activeDocumentId)!
+				session.state.isLoading = true
+				this.storageService.applyContent(session.data)
+				session.state.isLoading = false
+			}
+		}
+	}
+
+	/**
+	 * Обеспечить существование виртуального агрегированного документа.
+	 * Создаёт его при 2+ реальных документах, удаляет при 0-1.
+	 */
+	private ensureVirtualAggregatedDocument() {
+		const realDocuments = this.documents.filter(d => d.type !== 'virtual-aggregated')
+		const virtualExists = this.getVirtualAggregatedDocument() !== null
+
+		if (realDocuments.length > 1 && !virtualExists) {
+			// Создаём виртуальный документ
+			this.createVirtualAggregatedDocument()
+		} else if (realDocuments.length <= 1 && virtualExists) {
+			// Удаляем виртуальный документ
+			this.removeVirtualAggregatedDocument()
+		}
+	}
+
+	/**
+	 * Обновить данные виртуального документа и перестроить кэш.
+	 * Вызывается при изменении любого реального документа.
+	 */
+	private refreshVirtualAggregatedDocument() {
+		const virtual = this.getVirtualAggregatedDocument()
+		if (!virtual) return
+
+		// Перестраиваем данные
+		virtual.data = this.buildAggregatedDocumentData()
+		virtual.lastAccessedAt = Date.now()
+
+		// Если виртуальный документ активен — применяем данные к сторам
+		if (this.state.activeDocumentId === virtual.id) {
+			const previousLoadingState = virtual.state.isLoading
+			virtual.state.isLoading = true
+			this.storageService.applyContent(virtual.data)
+			virtual.state.isLoading = previousLoadingState
+		}
+	}
+
+	/** Проверить, является ли документ виртуальным */
+	isVirtualDocument(documentId: DocumentId): boolean {
+		const session = this.state.documents.get(documentId)
+		if (!session) return false
+		return session.type === 'virtual-aggregated'
+	}
+
+	/** Получить только реальные документы (исключая виртуальные) */
+	get realDocuments(): DocumentSession[] {
+		return this.documents.filter(d => d.type !== 'virtual-aggregated')
 	}
 
 	/** Активировать документ */
 	activateDocument(documentId: DocumentId) {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
+
+		// Для виртуального документа — перестраиваем данные перед активацией
+		if (session.type === 'virtual-aggregated') {
+			session.data = this.buildAggregatedDocumentData()
+		}
 
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
@@ -231,6 +419,9 @@ export class DocumentTabsStore {
 		const session = this.state.documents.get(this.state.activeDocumentId)
 		if (!session) return
 
+		// Не обновляем виртуальный документ напрямую — он обновляется через refresh
+		if (session.type === 'virtual-aggregated') return
+
 		// Не обновляем isDirty, если документ сейчас сохраняется или загружается
 		if (session.state.isSaving || session.state.isLoading) return
 
@@ -249,6 +440,9 @@ export class DocumentTabsStore {
 
 		this.persistDocumentDataToLocalStorage(this.state.activeDocumentId)
 		this.persistToLocalStorage()
+
+		// Обновляем виртуальный документ, если существует
+		this.refreshVirtualAggregatedDocument()
 	}
 
 	/** Сохранить активный документ в Google Drive */
@@ -257,6 +451,12 @@ export class DocumentTabsStore {
 
 		const session = this.state.documents.get(this.state.activeDocumentId)
 		if (!session || !session.ref?.fileId) return false
+
+		// Запрет на сохранение виртуального документа
+		if (session.type === 'virtual-aggregated') {
+			console.warn('Cannot save virtual aggregated document')
+			return false
+		}
 
 		session.state.isSaving = true
 		this.persistToLocalStorage()
@@ -323,6 +523,11 @@ export class DocumentTabsStore {
 		const session = this.state.documents.get(this.state.activeDocumentId!)
 		if (!session || !session.ref?.fileId) {
 			return { status: 'error', message: 'Нет документа для синхронизации' }
+		}
+
+		// Запрет на синхронизацию виртуального документа
+		if (session.type === 'virtual-aggregated') {
+			return { status: 'error', message: 'Нельзя синхронизировать общий календарь' }
 		}
 
 		session.state.syncStatus = 'syncing'
@@ -438,26 +643,32 @@ export class DocumentTabsStore {
 
 	/** Сохранить метаданные вкладок в localStorage */
 	private persistToLocalStorage() {
+		// Исключаем виртуальный документ из сохраняемых данных
+		const documentsToPersist = this.documents.filter(d => d.type !== 'virtual-aggregated')
+
 		const snapshot: DocumentTabsSnapshot = {
-			activeDocumentId: this.state.activeDocumentId,
-			documentOrder: this.state.documentOrder,
-			documents: this.state.documentOrder.map(id => {
-				const session = this.state.documents.get(id)!
+			activeDocumentId: this.state.activeDocumentId === VIRTUAL_AGGREGATED_DOCUMENT_ID
+				? null
+				: this.state.activeDocumentId,
+			documentOrder: this.state.documentOrder.filter(
+				id => id !== VIRTUAL_AGGREGATED_DOCUMENT_ID
+			),
+			documents: documentsToPersist.map(doc => {
 				return {
-					id: session.id,
-					ref: session.ref!,
+					id: doc.id,
+					ref: doc.ref!,
 					state: {
-						isDirty: session.state.isDirty,
-						isLoading: session.state.isLoading,
-						isSaving: session.state.isSaving,
-						lastLoadedAt: session.state.lastLoadedAt,
-						lastSavedAt: session.state.lastSavedAt,
-						error: session.state.error,
-						syncStatus: session.state.syncStatus,
-						lastSyncedAt: session.state.lastSyncedAt,
-						hasUnsyncedChanges: session.state.isDirty
+						isDirty: doc.state.isDirty,
+						isLoading: doc.state.isLoading,
+						isSaving: doc.state.isSaving,
+						lastLoadedAt: doc.state.lastLoadedAt,
+						lastSavedAt: doc.state.lastSavedAt,
+						error: doc.state.error,
+						syncStatus: doc.state.syncStatus,
+						lastSyncedAt: doc.state.lastSyncedAt,
+						hasUnsyncedChanges: doc.state.isDirty
 					},
-					lastAccessedAt: session.lastAccessedAt
+					lastAccessedAt: doc.lastAccessedAt
 				}
 			}),
 			savedAt: Date.now()
@@ -467,6 +678,9 @@ export class DocumentTabsStore {
 
 	/** Сохранить данные документа в localStorage */
 	private persistDocumentDataToLocalStorage(documentId: DocumentId) {
+		// Не сохраняем данные виртуального документа
+		if (documentId === VIRTUAL_AGGREGATED_DOCUMENT_ID) return
+
 		const session = this.state.documents.get(documentId)
 		if (!session) return
 
@@ -525,10 +739,32 @@ export class DocumentTabsStore {
 			}
 		}
 
+		// Обеспечить существование виртуального документа при восстановлении
+		this.ensureVirtualAggregatedDocument()
+
 		return true
 	}
 
 	// === Геттеры ===
+
+	/** Сгенерировать уникальный цвет для документа */
+	private generateDocumentColor(): string {
+		const colors = [
+			'#3B82F6', // синий
+			'#10B981', // зелёный
+			'#F59E0B', // жёлтый
+			'#EF4444', // красный
+			'#8B5CF6', // фиолетовый
+			'#EC4899', // розовый
+			'#06B6D4', // голубой
+			'#F97316'  // оранжевый
+		]
+
+		const existingColors = this.documents.map(d => d.color).filter(Boolean) as string[]
+		const availableColor = colors.find(c => !existingColors.includes(c))
+
+		return availableColor ?? colors[Math.floor(Math.random() * colors.length)]
+	}
 
 	/** Найти документ по fileId */
 	private findDocumentByFileId(fileId: string): DocumentSession | null {

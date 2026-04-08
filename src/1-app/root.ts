@@ -1,5 +1,6 @@
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
+import { EventsStoreWithAggregation } from 'src/6-entities/Events/EventsStoreWithAggregation'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
 import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
@@ -38,7 +39,13 @@ export const documentSessionStore = new DocumentSessionStore(googleApiService, s
 // 5. Менеджер вкладок документов (multi-document support)
 export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService)
 
-// 6. Оркестратор приложения
+// 6. Обёртка для обработки событий из агрегированного документа
+export const eventsStoreWithAggregation = new EventsStoreWithAggregation(
+	eventsStore,
+	documentTabsStore
+)
+
+// 7. Оркестратор приложения
 export const mainStore = new MainStore(
 	projectsStore,
 	eventsStore,
@@ -49,10 +56,10 @@ export const mainStore = new MainStore(
 	documentTabsStore
 )
 
-// 7. Store диалога "Сохранить как"
+// 8. Store диалога "Сохранить как"
 export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentTabsStore)
 
-// 8. Инициализация приложения
+// 9. Инициализация приложения
 mainStore.init()
 
 // Реэкспорт классов для внешнего использования
@@ -63,6 +70,7 @@ export {
 	MainStore,
 	ProjectsStore,
 	EventsStore,
+	EventsStoreWithAggregation,
 	EventsCache,
 	WeatherStore,
 	CalendarStore,
