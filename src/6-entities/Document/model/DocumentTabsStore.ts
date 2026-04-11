@@ -18,6 +18,8 @@ import {
 	parseDocumentTabsSnapshot,
 	DocumentRef
 } from './DocumentTabsStore.types'
+import { DocumentStoreManager } from './DocumentStoreManager'
+import type { DocumentStores, IEventsStoreProvider } from './DocumentStoreManager.types'
 
 const DOCUMENT_TABS_KEY = 'documentTabs'
 const DOCUMENT_DATA_PREFIX = 'document_'
@@ -26,8 +28,9 @@ const DOCUMENT_DATA_PREFIX = 'document_'
  * Store для управления несколькими открытыми документами.
  * Поддерживает вкладки, персистентность в localStorage и синхронизацию с Google Drive.
  */
-export class DocumentTabsStore {
+export class DocumentTabsStore implements IEventsStoreProvider {
 	private state: DocumentTabsState
+	private documentStoreManager: DocumentStoreManager
 
 	constructor(
 		private readonly googleApiService: GoogleApiService,
@@ -38,7 +41,43 @@ export class DocumentTabsStore {
 			activeDocumentId: null,
 			documentOrder: []
 		}
+
+		// Создаём менеджер внутри конструктора, передаём себя как провайдер данных
+		const self = this
+		this.documentStoreManager = new DocumentStoreManager({
+			getDocumentData: id => self.state.documents.get(id)?.data ?? null,
+			get activeDocumentId(): DocumentId | null {
+				return self.state.activeDocumentId
+			}
+		})
+
 		makeAutoObservable(this)
+	}
+
+	// === Методы доступа к сторам (делегирование к DocumentStoreManager) ===
+
+	/** Получить сторы активного документа */
+	getActiveDocumentStores(): DocumentStores | null {
+		return this.documentStoreManager.activeStores
+	}
+
+	/** Получить все сторы (для общего календаря) */
+	getAllDocumentStores(): DocumentStores[] {
+		return this.documentStoreManager.getAllDocumentStores()
+	}
+
+	/** Получить сторы конкретного документа */
+	getDocumentStores(documentId: DocumentId): DocumentStores | null {
+		return this.documentStoreManager.getStores(documentId)
+	}
+
+	// === IEventsStoreProvider ===
+
+	get activeEventsStore() {
+		return this.documentStoreManager.activeEventsStore
+	}
+	get activeProjectsStore() {
+		return this.documentStoreManager.activeProjectsStore
 	}
 
 	// === Управление вкладками ===
@@ -189,10 +228,7 @@ export class DocumentTabsStore {
 			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
 		}
 
-		// Если закрыли последний документ, сбросить данные в сторам
-		if (this.state.documentOrder.length === 0) {
-			this.storageService.resetToEmptyContent()
-		} else if (this.state.activeDocumentId) {
+		if (this.state.activeDocumentId) {
 			// Активировать новый документ (с блокировкой onChangeList)
 			this.activateDocument(this.state.activeDocumentId)
 		}

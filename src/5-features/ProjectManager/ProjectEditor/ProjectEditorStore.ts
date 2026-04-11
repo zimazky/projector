@@ -1,5 +1,5 @@
 import { makeAutoObservable } from 'mobx'
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 
 /** Допустимые CSS именованные цвета */
 const CSS_COLOR_ALIASES = new Set([

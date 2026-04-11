@@ -20,7 +20,6 @@ import {
 	googleApiService,
 	storageService,
 	mainStore,
-	documentSessionStore,
 	documentTabsStore,
 	saveToDriveStore,
 	eventSearchStore
@@ -57,7 +56,6 @@ const stores = {
 	googleApiService,
 	storageService,
 	mainStore,
-	documentSessionStore,
 	documentTabsStore,
 	saveToDriveStore,
 	eventSearchStore,

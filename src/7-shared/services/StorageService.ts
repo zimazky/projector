@@ -1,6 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
-import { ProjectData, ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectData, ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { EventsStore, EventsStoreData } from 'src/6-entities/Events/EventsStore'
 
 /** Сериализуемая структура данных приложения */
@@ -88,17 +88,6 @@ export class StorageService {
 		this.isSyncWithGoogleDrive = true
 	}
 
-	/** Сохранить текущее состояние приложения в localStorage */
-	saveToLocalStorage = () => {
-		const data: MainStoreData = {
-			projectsList: this.projectsStore.getList(),
-			...this.eventsStore.prepareToSave()
-		}
-		const dataString = JSON.stringify(data)
-		localStorage.setItem('data', dataString)
-		this.isSyncWithLocalstorage = true
-	}
-
 	/** Получить снапшот данных для сохранения во внешнее хранилище */
 	getContentToSave = () => {
 		const data: MainStoreData = {
@@ -106,17 +95,6 @@ export class StorageService {
 			...this.eventsStore.prepareToSave()
 		}
 		return data
-	}
-
-	/** Сбросить данные приложения к пустому состоянию (без привязки к Drive-файлу) */
-	resetToEmptyContent = () => {
-		this.projectsStore.init([])
-		this.eventsStore.init({ completedList: [], plannedList: [] })
-		runInAction(() => {
-			this.isSyncWithLocalstorage = false
-			this.isSyncWithGoogleDrive = false
-			this.onContentApplied?.()
-		})
 	}
 
 	/**
@@ -132,28 +110,5 @@ export class StorageService {
 			this.isSyncWithGoogleDrive = true
 			this.onContentApplied?.()
 		})
-	}
-
-	/** Инициализация состояния приложения из localStorage с fallback на пустые данные */
-	init = () => {
-		const json = localStorage.getItem('data')
-		if (!json) {
-			this.projectsStore.init([])
-			this.eventsStore.init({ completedList: [], plannedList: [] })
-			this.isSyncWithLocalstorage = true
-			return
-		}
-
-		try {
-			const obj = normalizeMainStoreData(json)
-			this.projectsStore.init(obj.projectsList)
-			this.eventsStore.init(obj)
-			this.isSyncWithLocalstorage = true
-		} catch (e) {
-			console.error('Failed to initialize app data from localStorage:', e)
-			this.projectsStore.init([])
-			this.eventsStore.init({ completedList: [], plannedList: [] })
-			this.isSyncWithLocalstorage = true
-		}
 	}
 }

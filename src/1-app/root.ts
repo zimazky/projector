@@ -1,4 +1,4 @@
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
@@ -10,7 +10,7 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
-import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/ProjectEditorStore'
 
@@ -32,27 +32,23 @@ export const uiStore = new UIStore()
 export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
 
-// 4. Сессия активного документа (Google Drive/local state)
-export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
-
-// 5. Менеджер вкладок документов (multi-document support)
+// 4. Менеджер вкладок документов (multi-document support)
 export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService)
 
-// 6. Оркестратор приложения
+// 5. Оркестратор приложения
 export const mainStore = new MainStore(
 	projectsStore,
 	eventsStore,
 	eventsCache,
 	googleApiService,
 	storageService,
-	documentSessionStore,
 	documentTabsStore
 )
 
-// 7. Store диалога "Сохранить как"
+// 6. Store диалога "Сохранить как"
 export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentTabsStore)
 
-// 8. Инициализация приложения
+// 7. Инициализация приложения
 mainStore.init()
 
 // Реэкспорт классов для внешнего использования

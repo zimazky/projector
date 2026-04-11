@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 
@@ -8,7 +8,7 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListStore'
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
-import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import { MigrationService } from 'src/1-app/Stores/MigrationService'
 
 /** Главный orchestrator-стор приложения */
@@ -22,7 +22,6 @@ export class MainStore {
 
 	private googleApiService: GoogleApiService
 	private storageService: StorageService
-	private documentSessionStore: DocumentSessionStore
 	private documentTabsStore: DocumentTabsStore
 
 	/**
@@ -40,7 +39,6 @@ export class MainStore {
 		eventsCache: EventsCache,
 		googleApiService: GoogleApiService,
 		storageService: StorageService,
-		documentSessionStore: DocumentSessionStore,
 		documentTabsStore: DocumentTabsStore
 	) {
 		this.projectsStore = projectsStore
@@ -48,7 +46,6 @@ export class MainStore {
 		this.eventsCache = eventsCache
 		this.googleApiService = googleApiService
 		this.storageService = storageService
-		this.documentSessionStore = documentSessionStore
 		this.documentTabsStore = documentTabsStore
 
 		this.driveExplorerPersistentState.set('drive', {
@@ -99,7 +96,6 @@ export class MainStore {
 			}
 		}
 
-		this.storageService.init()
 		this.eventsCache.init()
 		this.googleApiService.initGapi()
 

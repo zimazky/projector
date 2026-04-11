@@ -15,7 +15,6 @@ type StorageServiceMock = {
 	applyContent: jasmine.Spy
 	getContentToSave: jasmine.Spy
 	desyncWithStorages: jasmine.Spy
-	resetToEmptyContent: jasmine.Spy
 }
 
 function createGoogleApiServiceMock(): GoogleApiServiceMock {
@@ -43,8 +42,7 @@ function createStorageServiceMock(): StorageServiceMock {
 			completedList: [],
 			plannedList: []
 		}),
-		desyncWithStorages: jasmine.createSpy('desyncWithStorages'),
-		resetToEmptyContent: jasmine.createSpy('resetToEmptyContent')
+		desyncWithStorages: jasmine.createSpy('desyncWithStorages')
 	}
 }
 
@@ -136,15 +134,6 @@ describe('DocumentTabsStore', () => {
 
 			expect(store.documents.length).toBe(0)
 			expect(store.activeDocumentId).toBeNull()
-		})
-
-		it('вызывает resetToEmptyContent при закрытии последнего документа', () => {
-			const { store, storageService } = createStore()
-
-			store.openNewDocument('Doc 1')
-			store.closeDocument(store.activeDocument!.id)
-
-			expect(storageService.resetToEmptyContent).toHaveBeenCalled()
 		})
 	})
 

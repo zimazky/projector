@@ -1,6 +1,6 @@
 import { EventSearchStore, SearchResult } from './EventSearchStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 // Вспомогательная функция для создания timestamp на определённое количество дней от сегодня
