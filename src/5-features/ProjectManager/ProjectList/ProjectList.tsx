@@ -14,7 +14,9 @@ import styles from './ProjectList.module.css'
  * Список проектов с возможностью редактирования и удаления
  */
 const ProjectList: React.FC = observer(() => {
-	const { projectsStore, projectEditorStore } = useContext(StoreContext)
+	const { documentTabsStore, projectEditorStore } = useContext(StoreContext)
+	const stores = documentTabsStore.getActiveDocumentStores()
+	const projectsStore = stores?.projectsStore
 	const [deletingProject, setDeletingProject] = React.useState<string | null>(null)
 
 	const handleEdit = (projectName: string) => {
@@ -22,9 +24,9 @@ const ProjectList: React.FC = observer(() => {
 	}
 
 	const handleDelete = (projectName: string) => {
-		const project = projectsStore.getByName(projectName)
+		const project = projectsStore?.getByName(projectName)
 		if (project?.events === 0) {
-			projectsStore.delete(projectName)
+			projectsStore?.delete(projectName)
 		}
 		setDeletingProject(null)
 	}
@@ -41,7 +43,7 @@ const ProjectList: React.FC = observer(() => {
 			</div>
 
 			<div className={styles.list}>
-				{projectsStore.list.map(project => (
+				{projectsStore?.list.map(project => (
 					<div
 						key={project.name}
 						className={styles.projectCard}

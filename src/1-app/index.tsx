@@ -7,9 +7,7 @@ import './index.css'
 
 import {
 	mainStore,
-	projectsStore,
 	projectEditorStore,
-	eventsStore,
 	eventsCache,
 	weatherStore,
 	calendarStore,
@@ -19,7 +17,6 @@ import {
 	googleApiService,
 	storageService,
 	saveToDriveStore,
-	documentSessionStore,
 	documentTabsStore,
 	eventSearchStore
 } from './root'
@@ -31,12 +28,11 @@ if (rootElement === null) throw new Error('Не найден DOM элемент 
 const root = createRoot(rootElement)
 
 // Регистрируем все сторы в едином провайдере контекста приложения.
+// НОВОЕ: projectsStore, eventsStore и documentSessionStore больше не передаются
 root.render(
 	<StoreProvider
 		mainStore={mainStore}
-		projectsStore={projectsStore}
 		projectEditorStore={projectEditorStore}
-		eventsStore={eventsStore}
 		eventsCache={eventsCache}
 		weatherStore={weatherStore}
 		calendarStore={calendarStore}
@@ -46,7 +42,6 @@ root.render(
 		googleApiService={googleApiService}
 		storageService={storageService}
 		saveToDriveStore={saveToDriveStore}
-		documentSessionStore={documentSessionStore}
 		documentTabsStore={documentTabsStore}
 		fileSavedNotifier={mainStore.fileSavedNotifier}
 		eventSearchStore={eventSearchStore}

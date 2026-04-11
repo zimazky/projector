@@ -1,5 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
 
 /** Допустимые CSS именованные цвета */
 const CSS_COLOR_ALIASES = new Set([
@@ -258,6 +259,13 @@ class ProjectEditorStore {
 	private originalName: string = ''
 
 	/**
+	 * Получить ProjectsStore активного документа
+	 */
+	private get activeProjectsStore(): ProjectsStore | null {
+		return this.documentTabsStore.getActiveDocumentStores()?.projectsStore ?? null
+	}
+
+	/**
 	 * Получить цвет для ColorPicker (конвертирует алиасы в HEX)
 	 */
 	get colorForPicker(): string {
@@ -271,7 +279,7 @@ class ProjectEditorStore {
 		return colorToHex(this.formData.background)
 	}
 
-	constructor(private projectsStore: ProjectsStore) {
+	constructor(private documentTabsStore: DocumentTabsStore) {
 		makeAutoObservable(this)
 	}
 
@@ -289,7 +297,7 @@ class ProjectEditorStore {
 	 * @param projectName - наименование проекта для редактирования
 	 */
 	openEdit(projectName: string) {
-		const project = this.projectsStore.getByName(projectName)
+		const project = this.activeProjectsStore!.getByName(projectName)
 		if (!project) return
 
 		this.mode = 'edit'
@@ -333,12 +341,12 @@ class ProjectEditorStore {
 		// Валидация имени
 		if (this.formData.name.trim() === '') {
 			errors.name = 'Project name is required'
-		} else if (this.mode === 'add' && this.projectsStore.exists(this.formData.name.trim())) {
+		} else if (this.mode === 'add' && this.activeProjectsStore!.exists(this.formData.name.trim())) {
 			errors.name = 'Project with this name already exists'
 		} else if (
 			this.mode === 'edit' &&
 			this.formData.name.trim() !== this.originalName &&
-			this.projectsStore.exists(this.formData.name.trim())
+			this.activeProjectsStore!.exists(this.formData.name.trim())
 		) {
 			errors.name = 'Project with this name already exists'
 		}
@@ -369,7 +377,7 @@ class ProjectEditorStore {
 		const background = this.formData.background
 
 		if (this.mode === 'add') {
-			const success = this.projectsStore.add(name, color, background)
+			const success = this.activeProjectsStore!.add(name, color, background)
 			if (success) {
 				this.close()
 				return true
@@ -377,7 +385,7 @@ class ProjectEditorStore {
 			this.errors.name = 'Failed to add project'
 			return false
 		} else {
-			const success = this.projectsStore.update(this.originalName, {
+			const success = this.activeProjectsStore!.update(this.originalName, {
 				name,
 				color,
 				background

@@ -1,28 +1,21 @@
 import { makeAutoObservable } from 'mobx'
 
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
-import { EventsStore } from 'src/6-entities/Events/EventsStore'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
 import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListStore'
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
-import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import { MigrationService } from 'src/1-app/Stores/MigrationService'
 
 /** Главный orchestrator-стор приложения */
 export class MainStore {
-	/** Стор проектов */
-	projectsStore: ProjectsStore
-	/** Стор событий */
-	eventsStore: EventsStore
 	/** Кэш событий для календарных представлений */
 	eventsCache: EventsCache
 
 	private googleApiService: GoogleApiService
 	private storageService: StorageService
-	private documentSessionStore: DocumentSessionStore
 	private documentTabsStore: DocumentTabsStore
 
 	/**
@@ -35,20 +28,14 @@ export class MainStore {
 	fileSavedNotifier = new Observable<void>()
 
 	constructor(
-		projectsStore: ProjectsStore,
-		eventsStore: EventsStore,
 		eventsCache: EventsCache,
 		googleApiService: GoogleApiService,
 		storageService: StorageService,
-		documentSessionStore: DocumentSessionStore,
 		documentTabsStore: DocumentTabsStore
 	) {
-		this.projectsStore = projectsStore
-		this.eventsStore = eventsStore
 		this.eventsCache = eventsCache
 		this.googleApiService = googleApiService
 		this.storageService = storageService
-		this.documentSessionStore = documentSessionStore
 		this.documentTabsStore = documentTabsStore
 
 		this.driveExplorerPersistentState.set('drive', {
@@ -68,47 +55,44 @@ export class MainStore {
 		// Выполняем миграцию старых данных в новую структуру
 		MigrationService.migrateFromSingleDocument()
 
-		// Обработчик изменений событий назначаем до загрузки данных.
-		this.eventsStore.onChangeList = () => {
-			this.eventsStore.sort()
+		// НОВОЕ: Колбэк при изменении сторов любого документа
+		// Устанавливается ДО загрузки данных, чтобы реагировать на изменения
+		this.documentTabsStore.onStoresChange = (documentId, stores) => {
+			// Сортируем события и обновляем кэш
+			stores.eventsStore.sort()
 			this.eventsCache.init()
 			this.storageService.desyncWithStorages()
 
-			// Обновляем активный документ в DocumentTabsStore
+			// Обновляем данные документа в DocumentTabsStore
 			const activeDoc = this.documentTabsStore.activeDocument
-			if (activeDoc && !activeDoc.state.isLoading) {
+			if (activeDoc && !activeDoc.state.isLoading && activeDoc.id === documentId) {
 				this.documentTabsStore.updateActiveDocumentData({
-					projectsList: this.projectsStore.getList(),
-					...this.eventsStore.prepareToSave()
+					projectsList: stores.projectsStore.getList(),
+					...stores.eventsStore.prepareToSave()
 				})
 			}
 		}
 
-		// Обработчик изменений проектов
-		this.projectsStore.onChangeList = () => {
+		// НОВОЕ: Колбэк при переключении активного документа
+		// Очищаем кэш событий при переключении, чтобы не показывать старые данные
+		this.documentTabsStore.onActiveDocumentChange = _documentId => {
 			this.eventsCache.init()
 			this.storageService.desyncWithStorages()
-
-			// Обновляем активный документ в DocumentTabsStore
-			const activeDoc = this.documentTabsStore.activeDocument
-			if (activeDoc && !activeDoc.state.isLoading) {
-				this.documentTabsStore.updateActiveDocumentData({
-					projectsList: this.projectsStore.getList(),
-					...this.eventsStore.prepareToSave()
-				})
-			}
 		}
 
-		this.storageService.init()
-		this.eventsCache.init()
 		this.googleApiService.initGapi()
 
 		// Восстанавливаем сессию из localStorage через DocumentTabsStore
+		// (сторы создадутся автоматически внутри restoreFromLocalStorage)
 		void this.googleApiService
 			.waitForGapiReady()
 			.then(() => {
-				// Сначала пробуем восстановить новую multi-document сессию
 				return this.documentTabsStore.restoreFromLocalStorage()
+			})
+			.then(() => {
+				// Инициализируем кэш после восстановления всех сторов
+				// Вызываем напрямую, т.к. сторы уже созданы
+				this.eventsCache.init()
 			})
 			.catch(e => {
 				console.error('DocumentTabsStore restore failed:', e)

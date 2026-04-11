@@ -34,7 +34,10 @@ interface Fields {
 type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
 
 const EventForm: React.FC = () => {
-	const { eventFormStore, eventsCache, eventsStore, projectsStore } = useContext(StoreContext)
+	const { eventFormStore, eventsCache, documentTabsStore } = useContext(StoreContext)
+	const stores = documentTabsStore.getActiveDocumentStores()
+	const eventsStore = stores?.eventsStore
+	const projectsStore = stores?.projectsStore
 
 	const [tab, setTab] = React.useState(0)
 	const [deleteState, setDeleteState] = React.useState<DeleteState>(null)
@@ -64,7 +67,7 @@ const EventForm: React.FC = () => {
 	const isNew = eventFormStore.eventData.id !== null ? false : true
 
 	const handleConfirmDelete = () => {
-		if (deleteState === null) return
+		if (deleteState === null || !eventsStore) return
 		if (deleteState === 'DeleteCurrentRepeatable') {
 			eventsStore.deleteCurrentRepeatableEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp)
 			eventFormStore.hideForm()
@@ -77,7 +80,7 @@ const EventForm: React.FC = () => {
 
 	const handleSaveAsSingle = handleSubmit(e => {
 		const id = eventFormStore.eventData.id
-		if (id === null) return
+		if (id === null || !eventsStore) return
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
@@ -96,7 +99,7 @@ const EventForm: React.FC = () => {
 
 	const onCompleteHandle = handleSubmit(e => {
 		const isCompleted = eventFormStore.eventData.completed
-		if (isCompleted === undefined) return
+		if (isCompleted === undefined || !eventsStore) return
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
@@ -116,7 +119,7 @@ const EventForm: React.FC = () => {
 	// Изменение параметров события, для всех если событие повторяемое
 	const onChangeEventHandle = handleSubmit(e => {
 		const id = eventFormStore.eventData.id
-		if (id === null) return
+		if (id === null || !eventsStore) return
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
@@ -134,6 +137,7 @@ const EventForm: React.FC = () => {
 	})
 
 	const onAddHandle = handleSubmit(e => {
+		if (!eventsStore) return
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
@@ -206,9 +210,11 @@ const EventForm: React.FC = () => {
 					<Select
 						label="Project"
 						error={!!errors.project}
-						options={projectsStore.list.map(p => {
-							return { value: p.name, label: p.name }
-						})}
+						options={
+							projectsStore?.list.map(p => {
+								return { value: p.name, label: p.name }
+							}) ?? []
+						}
 						value={watch('project')}
 						{...register('project', { required: true })}
 					/>

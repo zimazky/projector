@@ -14,7 +14,9 @@ type CalendarEventItemProps = {
 }
 
 const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
-	const { eventFormStore, eventsStore, eventSearchStore } = useContext(StoreContext)
+	const { eventFormStore, documentTabsStore, eventSearchStore } = useContext(StoreContext)
+	const stores = documentTabsStore.getActiveDocumentStores()
+	const eventsStore = stores?.eventsStore
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
 	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days } = props.event
 
@@ -23,6 +25,7 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 
 	const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
 		e.stopPropagation()
+		if (!eventsStore) return
 		const s = eventsStore.getEventDto(id)
 		if (s === undefined) return
 		eventFormStore.setEventDto({ ...s, id, completed, timestamp: start })

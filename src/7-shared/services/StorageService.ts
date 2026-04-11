@@ -1,7 +1,8 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
-import { ProjectData, ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
-import { EventsStore, EventsStoreData } from 'src/6-entities/Events/EventsStore'
+import { ProjectData } from 'src/3-pages/Projects/ProjectsStore'
+import { EventsStoreData } from 'src/6-entities/Events/EventsStore'
+import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
 
 /** Сериализуемая структура данных приложения */
 export type MainStoreData = {
@@ -58,7 +59,10 @@ function normalizeMainStoreData(rawContent: unknown): MainStoreData {
 
 /**
  * Сервис хранения/загрузки данных приложения.
- * Отвечает за сериализацию, десериализацию и применение контента в сторы.
+ * Работает через DocumentTabsStore для доступа к per-document сторам.
+ *
+ * @deprecated Методы applyContent, resetToEmptyContent, init устарели —
+ * DocumentTabsStore теперь управляет сторами напрямую через DocumentStoreManager.
  */
 export class StorageService {
 	/** Флаг синхронизации с localStorage */
@@ -66,13 +70,11 @@ export class StorageService {
 	/** Флаг синхронизации с Google Drive */
 	isSyncWithGoogleDrive: boolean = false
 
-	private projectsStore: ProjectsStore
-	private eventsStore: EventsStore
+	private documentTabsStore: DocumentTabsStore
 	private onContentApplied?: () => void
 
-	constructor(projectsStore: ProjectsStore, eventsStore: EventsStore, onContentApplied?: () => void) {
-		this.projectsStore = projectsStore
-		this.eventsStore = eventsStore
+	constructor(documentTabsStore: DocumentTabsStore, onContentApplied?: () => void) {
+		this.documentTabsStore = documentTabsStore
 		this.onContentApplied = onContentApplied
 		makeAutoObservable(this)
 	}
@@ -88,30 +90,42 @@ export class StorageService {
 		this.isSyncWithGoogleDrive = true
 	}
 
-	/** Сохранить текущее состояние приложения в localStorage */
+	/**
+	 * Сохранить данные активного документа в localStorage.
+	 * Использует сторы активного документа через DocumentTabsStore.
+	 */
 	saveToLocalStorage = () => {
+		const stores = this.documentTabsStore.getActiveDocumentStores()
+		if (!stores) return
+
 		const data: MainStoreData = {
-			projectsList: this.projectsStore.getList(),
-			...this.eventsStore.prepareToSave()
+			projectsList: stores.projectsStore.getList(),
+			...stores.eventsStore.prepareToSave()
 		}
-		const dataString = JSON.stringify(data)
-		localStorage.setItem('data', dataString)
+		localStorage.setItem('data', JSON.stringify(data))
 		this.isSyncWithLocalstorage = true
 	}
 
-	/** Получить снапшот данных для сохранения во внешнее хранилище */
+	/**
+	 * Получить снапшот данных активного документа для сохранения во внешнее хранилище.
+	 */
 	getContentToSave = () => {
+		const stores = this.documentTabsStore.getActiveDocumentStores()
+		if (!stores) return null
+
 		const data: MainStoreData = {
-			projectsList: this.projectsStore.getList(),
-			...this.eventsStore.prepareToSave()
+			projectsList: stores.projectsStore.getList(),
+			...stores.eventsStore.prepareToSave()
 		}
 		return data
 	}
 
-	/** Сбросить данные приложения к пустому состоянию (без привязки к Drive-файлу) */
+	/**
+	 * @deprecated Не используется — DocumentTabsStore управляет сторами напрямую.
+	 * Сбросить данные приложения к пустому состоянию.
+	 */
 	resetToEmptyContent = () => {
-		this.projectsStore.init([])
-		this.eventsStore.init({ completedList: [], plannedList: [] })
+		console.warn('resetToEmptyContent is deprecated — use DocumentTabsStore.openNewDocument() instead')
 		runInAction(() => {
 			this.isSyncWithLocalstorage = false
 			this.isSyncWithGoogleDrive = false
@@ -120,13 +134,11 @@ export class StorageService {
 	}
 
 	/**
+	 * @deprecated Не используется — DocumentTabsStore применяет данные через DocumentStoreManager.
 	 * Применить контент документа к сторам приложения.
-	 * Используется как единая точка входа для загрузки из произвольных источников.
 	 */
 	applyContent = (content: unknown) => {
-		const normalized = normalizeMainStoreData(content)
-		this.projectsStore.init(normalized.projectsList)
-		this.eventsStore.init(normalized)
+		console.warn('applyContent is deprecated — DocumentTabsStore applies data via DocumentStoreManager')
 		runInAction(() => {
 			this.isSyncWithLocalstorage = false
 			this.isSyncWithGoogleDrive = true
@@ -134,26 +146,12 @@ export class StorageService {
 		})
 	}
 
-	/** Инициализация состояния приложения из localStorage с fallback на пустые данные */
+	/**
+	 * @deprecated Не используется — инициализация теперь происходит через DocumentTabsStore.restoreFromLocalStorage().
+	 * Инициализация состояния приложения из localStorage.
+	 */
 	init = () => {
-		const json = localStorage.getItem('data')
-		if (!json) {
-			this.projectsStore.init([])
-			this.eventsStore.init({ completedList: [], plannedList: [] })
-			this.isSyncWithLocalstorage = true
-			return
-		}
-
-		try {
-			const obj = normalizeMainStoreData(json)
-			this.projectsStore.init(obj.projectsList)
-			this.eventsStore.init(obj)
-			this.isSyncWithLocalstorage = true
-		} catch (e) {
-			console.error('Failed to initialize app data from localStorage:', e)
-			this.projectsStore.init([])
-			this.eventsStore.init({ completedList: [], plannedList: [] })
-			this.isSyncWithLocalstorage = true
-		}
+		console.warn('StorageService.init is deprecated — use DocumentTabsStore.restoreFromLocalStorage()')
+		this.isSyncWithLocalstorage = true
 	}
 }

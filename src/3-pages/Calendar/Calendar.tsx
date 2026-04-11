@@ -19,7 +19,9 @@ import { useCalendarScroll } from './useCalendarScroll'
 
 const Calendar: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
-	const { calendarStore, eventFormStore, eventsStore, uiStore } = useContext(StoreContext)
+	const { calendarStore, eventFormStore, documentTabsStore, uiStore } = useContext(StoreContext)
+	const stores = documentTabsStore.getActiveDocumentStores()
+	const eventsStore = stores?.eventsStore
 	const bodyRef = useRef<HTMLDivElement | null>(null)
 
 	const today = DateTime.getBeginDayTimestamp(Date.now() / 1000)
@@ -40,6 +42,7 @@ const Calendar: React.FC = observer(function () {
 		e.preventDefault()
 		console.log(e.dataTransfer)
 		const c = JSON.parse(e.dataTransfer.getData('event_item'))
+		if (!eventsStore) return
 		if (e.ctrlKey) eventsStore.copyToDate(c.id, timestamp)
 		else eventsStore.shiftToDate(c.id, timestamp, c.start)
 		forceUpdate()

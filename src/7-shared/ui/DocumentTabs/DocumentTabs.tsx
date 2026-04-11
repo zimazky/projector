@@ -78,6 +78,7 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 					key={doc.id}
 					className={`${styles.documentTab} ${doc.id === activeDocumentId ? styles.active : ''}`}
 					onClick={() => onActivate(doc.id)}
+					data-testid="document-tab"
 				>
 					<span className={styles.documentTabName}>{doc.ref?.name || 'Без названия'}</span>
 

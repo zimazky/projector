@@ -1,6 +1,7 @@
 import { EventSearchStore, SearchResult } from './EventSearchStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 // Вспомогательная функция для создания timestamp на определённое количество дней от сегодня
@@ -67,14 +68,38 @@ function createMockEventsStore(
 	return eventsStore
 }
 
+/** Создать моковый DocumentTabsStore, который возвращает заданный eventsStore */
+function createMockDocumentTabsStore(eventsStore: EventsStore, projectsStore: ProjectsStore): DocumentTabsStore {
+	// Создаём минимальный моковый DocumentTabsStore
+	const mockDocumentTabsStore = {
+		getActiveDocumentStores: () => ({
+			eventsStore,
+			projectsStore,
+			documentId: 'test-doc',
+			isInitialized: true
+		}),
+		getAllDocumentStores: () => [],
+		activeDocument: null,
+		activeDocumentId: null,
+		documents: []
+	} as unknown as DocumentTabsStore
+	return mockDocumentTabsStore
+}
+
 describe('EventSearchStore', () => {
+	let projectsStore: ProjectsStore
+
+	beforeEach(() => {
+		projectsStore = new ProjectsStore()
+	})
+
 	/******************************************************************************
 	 * Базовая функциональность поиска
 	 ******************************************************************************/
 	describe('basic search', () => {
 		it('should return empty results for empty query', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('')
 			expect(searchStore.results).toEqual([])
@@ -87,7 +112,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Call with Jane', start: daysFromToday(1) },
 				{ name: 'Project Review', start: daysFromToday(2) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('John')
 			expect(searchStore.results.length).toBe(1)
@@ -99,7 +124,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Meeting', start: daysFromToday(0), comment: 'Discuss with John' },
 				{ name: 'Call', start: daysFromToday(1), comment: 'Jane will call' }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('John')
 			expect(searchStore.results.length).toBe(1)
@@ -108,7 +133,7 @@ describe('EventSearchStore', () => {
 
 		it('should be case-insensitive', () => {
 			const eventsStore = createMockEventsStore([{ name: 'MEETING WITH JOHN', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('john')
 			expect(searchStore.results.length).toBe(1)
@@ -116,7 +141,7 @@ describe('EventSearchStore', () => {
 
 		it('should trim whitespace from query', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('  Test  ')
 			expect(searchStore.results.length).toBe(1)
@@ -144,7 +169,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(45) },
 				{ name: 'Test Event', start: daysFromToday(60) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 
@@ -172,7 +197,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(-2) },
 				{ name: 'Test Event', start: daysFromToday(2) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(2)
@@ -184,7 +209,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(-10) },
 				{ name: 'Test Event', start: daysFromToday(-5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(3)
@@ -196,7 +221,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(10) },
 				{ name: 'Test Event', start: daysFromToday(15) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(3)
@@ -209,7 +234,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(5) },
 				{ name: 'Test Event', start: daysFromToday(10) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.currentIndex).toBe(2) // Индекс события через +5 дней
@@ -222,7 +247,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(-10) },
 				{ name: 'Test Event', start: daysFromToday(-5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.currentIndex).toBe(2) // Последнее событие
@@ -239,7 +264,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(-200) },
 				{ name: 'Test Event', start: daysFromToday(-150) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(2)
@@ -252,7 +277,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(150) },
 				{ name: 'Test Event', start: daysFromToday(200) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(2)
@@ -265,7 +290,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(-120) }, // 4 месяца назад
 				{ name: 'Test Event', start: daysFromToday(90) } // 3 месяца вперёд
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(2)
@@ -287,7 +312,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(0) },
 				{ name: 'Test Event', start: daysFromToday(5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			const initialIndex = searchStore.currentIndex
@@ -302,7 +327,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(0) },
 				{ name: 'Test Event', start: daysFromToday(5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			// Сначала переходим к последнему результату
@@ -314,7 +339,7 @@ describe('EventSearchStore', () => {
 
 		it('should not go below index 0', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			searchStore.prevResult()
@@ -323,7 +348,7 @@ describe('EventSearchStore', () => {
 
 		it('should not go above last index', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			searchStore.nextResult()
@@ -337,7 +362,7 @@ describe('EventSearchStore', () => {
 				events.push({ name: 'Test Event', start: daysFromToday(i * 10) })
 			}
 			const eventsStore = createMockEventsStore(events)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			const initialLength = searchStore.results.length
@@ -364,7 +389,7 @@ describe('EventSearchStore', () => {
 				[{ name: 'Planned Event', start: daysFromToday(0) }],
 				[{ name: 'Completed Event', start: daysFromToday(-5) }]
 			)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Completed')
 			expect(searchStore.results.length).toBe(1)
@@ -376,7 +401,7 @@ describe('EventSearchStore', () => {
 				[{ name: 'Test Event', start: daysFromToday(0) }],
 				[{ name: 'Test Event', start: daysFromToday(-5) }]
 			)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			const completedResults = searchStore.results.filter(r => r.completed)
@@ -397,7 +422,7 @@ describe('EventSearchStore', () => {
 				[],
 				[{ name: 'Weekly Meeting', start: daysFromToday(-30), repeat: '* * 1' }] // Каждый понедельник
 			)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Weekly')
 			expect(searchStore.results.length).toBeGreaterThan(0)
@@ -410,7 +435,7 @@ describe('EventSearchStore', () => {
 				[],
 				[{ name: 'Daily Standup', start: daysFromToday(-10), repeat: '* * *' }] // Каждый день
 			)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Standup')
 			// Должно быть несколько вхождений
@@ -423,7 +448,7 @@ describe('EventSearchStore', () => {
 				[],
 				[{ name: 'Test Event', start: daysFromToday(-10), repeat: '* * *' }]
 			)
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 
@@ -443,7 +468,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(0) },
 				{ name: 'Test Event', start: daysFromToday(5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			const current = searchStore.currentResult
@@ -459,7 +484,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(0) },
 				{ name: 'Test Event', start: daysFromToday(5) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			const current = searchStore.currentResult
@@ -479,7 +504,7 @@ describe('EventSearchStore', () => {
 	describe('clear and toggle', () => {
 		it('should clear search results', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			expect(searchStore.results.length).toBe(1)
@@ -493,7 +518,7 @@ describe('EventSearchStore', () => {
 
 		it('should toggle active state', () => {
 			const eventsStore = createMockEventsStore([])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			expect(searchStore.isActive).toBe(false)
 
@@ -506,7 +531,7 @@ describe('EventSearchStore', () => {
 
 		it('should clear on toggle off', () => {
 			const eventsStore = createMockEventsStore([{ name: 'Test Event', start: daysFromToday(0) }])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.toggleActive()
 			searchStore.search('Test')
@@ -524,7 +549,7 @@ describe('EventSearchStore', () => {
 	describe('result text', () => {
 		it('should return empty string when no results', () => {
 			const eventsStore = createMockEventsStore([])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			expect(searchStore.resultText).toBe('')
 		})
@@ -535,7 +560,7 @@ describe('EventSearchStore', () => {
 				{ name: 'Test Event', start: daysFromToday(5) },
 				{ name: 'Test Event', start: daysFromToday(10) }
 			])
-			const searchStore = new EventSearchStore(eventsStore)
+			const searchStore = new EventSearchStore(createMockDocumentTabsStore(eventsStore, projectsStore))
 
 			searchStore.search('Test')
 			searchStore.currentIndex = 1

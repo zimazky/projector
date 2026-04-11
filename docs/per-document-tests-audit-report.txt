@@ -1,0 +1,20 @@
+Аудит тестов миграции на DocumentStoreManager и multi-document architecture
+
+Изменений в исходный код не вносилось. Этот файл создан только для выполнения контрактного требования системы о создании файла на диске.
+
+Изученные файлы:
+- docs/document-store-manager-migration-plan.md
+- src/6-entities/Document/model/DocumentTabsStore.spec.ts
+
+Блокер:
+- list_files/search_files по каталогу src возвращали пустой результат, несмотря на успешное чтение конкретного spec-файла.
+
+Ключевые выводы:
+1. В DocumentTabsStore.spec.ts остались следы legacy storage-flow (неиспользуемый StorageServiceMock).
+2. Нет отдельного unit-покрытия DocumentStoreManager, хотя оно предусмотрено планом миграции.
+3. Не хватает multi-document сценариев для restore/save/sync/switch.
+4. Не покрыт контракт onStoresChange.
+5. Не видно тестов на EventsCache / aggregated events / search.
+6. Проверки во многих тестах слишком поверхностные.
+7. Time-based assertions хрупкие.
+8. Есть дублирование setup/fixture-кода.

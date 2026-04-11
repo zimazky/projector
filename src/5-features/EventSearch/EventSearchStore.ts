@@ -1,6 +1,7 @@
 import { makeAutoObservable } from 'mobx'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron, { ParsedSchedule } from 'src/7-shared/libs/ZCron/ZCron'
+import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { RepeatableEventModel } from 'src/6-entities/Events/RepeatableEventModel'
 import { SingleEventModel } from 'src/6-entities/Events/SingleEventModel'
@@ -39,13 +40,18 @@ export class EventSearchStore {
 	hasMoreBefore: boolean = true
 	hasMoreAfter: boolean = true
 
-	private eventsStore: EventsStore
+	private documentTabsStore: DocumentTabsStore
 	/** Кэш скомпилированных расписаний */
 	private scheduleCache: Map<string, ParsedSchedule> = new Map()
 
-	constructor(eventsStore: EventsStore) {
-		this.eventsStore = eventsStore
+	constructor(documentTabsStore: DocumentTabsStore) {
+		this.documentTabsStore = documentTabsStore
 		makeAutoObservable(this)
+	}
+
+	/** Получить EventsStore активного документа */
+	private get activeEventsStore(): EventsStore | null {
+		return this.documentTabsStore.getActiveDocumentStores()?.eventsStore ?? null
 	}
 
 	/**
@@ -119,21 +125,21 @@ export class EventSearchStore {
 		const candidates: SearchResult[] = []
 
 		// 1. Одиночные события (планируемые)
-		for (const event of this.eventsStore.planned) {
+		for (const event of this.activeEventsStore!.planned) {
 			if (event.start >= fromTimestamp && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, false))
 			}
 		}
 
 		// 2. Завершённые события
-		for (const event of this.eventsStore.completed) {
+		for (const event of this.activeEventsStore!.completed) {
 			if (event.start >= fromTimestamp && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, true))
 			}
 		}
 
 		// 3. Повторяемые события — инкрементальная генерация только limit вхождений
-		for (const event of this.eventsStore.plannedRepeatable) {
+		for (const event of this.activeEventsStore!.plannedRepeatable) {
 			if (this.matchesEvent(event)) {
 				// Ищем с дня перед fromTimestamp, чтобы включить совпадения на fromTimestamp
 				const searchFrom = DateTime.getBeginDayTimestamp(fromTimestamp) - 86400
@@ -151,21 +157,21 @@ export class EventSearchStore {
 		const candidates: SearchResult[] = []
 
 		// 1. Одиночные события (планируемые)
-		for (const event of this.eventsStore.planned) {
+		for (const event of this.activeEventsStore!.planned) {
 			if (event.start < beforeTimestamp && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, false))
 			}
 		}
 
 		// 2. Завершённые события
-		for (const event of this.eventsStore.completed) {
+		for (const event of this.activeEventsStore!.completed) {
 			if (event.start < beforeTimestamp && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, true))
 			}
 		}
 
 		// 3. Повторяемые события — инкрементальная генерация назад
-		for (const event of this.eventsStore.plannedRepeatable) {
+		for (const event of this.activeEventsStore!.plannedRepeatable) {
 			if (this.matchesEvent(event)) {
 				const occurrences = this.getOccurrencesBefore(event, beforeTimestamp, limit)
 				candidates.push(...occurrences)
@@ -313,19 +319,19 @@ export class EventSearchStore {
 		const candidates: SearchResult[] = []
 
 		// Одиночные события
-		for (const event of this.eventsStore.planned) {
+		for (const event of this.activeEventsStore!.planned) {
 			if (event.start > this.latestFound && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, false))
 			}
 		}
-		for (const event of this.eventsStore.completed) {
+		for (const event of this.activeEventsStore!.completed) {
 			if (event.start > this.latestFound && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, true))
 			}
 		}
 
 		// Повторяемые события
-		for (const event of this.eventsStore.plannedRepeatable) {
+		for (const event of this.activeEventsStore!.plannedRepeatable) {
 			if (this.matchesEvent(event)) {
 				const occurrences = this.getOccurrencesAfter(event, this.latestFound, COUNT_LOAD + 1)
 				candidates.push(...occurrences)
@@ -362,19 +368,19 @@ export class EventSearchStore {
 		const candidates: SearchResult[] = []
 
 		// Одиночные события
-		for (const event of this.eventsStore.planned) {
+		for (const event of this.activeEventsStore!.planned) {
 			if (event.start < this.earliestFound && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, false))
 			}
 		}
-		for (const event of this.eventsStore.completed) {
+		for (const event of this.activeEventsStore!.completed) {
 			if (event.start < this.earliestFound && this.matchesEvent(event)) {
 				candidates.push(this.singleEventToResult(event, true))
 			}
 		}
 
 		// Повторяемые события
-		for (const event of this.eventsStore.plannedRepeatable) {
+		for (const event of this.activeEventsStore!.plannedRepeatable) {
 			if (this.matchesEvent(event)) {
 				const occurrences = this.getOccurrencesBefore(event, this.earliestFound, COUNT_LOAD + 1)
 				candidates.push(...occurrences)

@@ -50,9 +50,8 @@ function createStorageServiceMock(): StorageServiceMock {
 
 function createStore() {
 	const googleApiService = createGoogleApiServiceMock()
-	const storageService = createStorageServiceMock()
-	const store = new DocumentTabsStore(googleApiService as any, storageService as any)
-	return { store, googleApiService, storageService }
+	const store = new DocumentTabsStore(googleApiService as any)
+	return { store, googleApiService }
 }
 
 function clearLocalStorage() {
@@ -90,12 +89,15 @@ describe('DocumentTabsStore', () => {
 			expect(store.activeDocument?.state.syncStatus).toBe('offline')
 		})
 
-		it('применяет пустые данные к storageService', () => {
-			const { store, storageService } = createStore()
+		it('создаёт сторы для нового документа через DocumentStoreManager', () => {
+			const { store } = createStore()
 
 			store.openNewDocument('Тест')
 
-			expect(storageService.applyContent).toHaveBeenCalled()
+			// Проверяем что сторы созданы
+			const stores = store.getActiveDocumentStores()
+			expect(stores).not.toBeNull()
+			expect(stores?.documentId).toBe(store.activeDocument?.id)
 		})
 
 		it('сохраняет метаданные в localStorage', () => {
@@ -138,13 +140,17 @@ describe('DocumentTabsStore', () => {
 			expect(store.activeDocumentId).toBeNull()
 		})
 
-		it('вызывает resetToEmptyContent при закрытии последнего документа', () => {
-			const { store, storageService } = createStore()
+		it('удаляет сторы при закрытии последнего документа', () => {
+			const { store } = createStore()
 
 			store.openNewDocument('Doc 1')
-			store.closeDocument(store.activeDocument!.id)
+			const docId = store.activeDocument!.id
+			store.closeDocument(docId)
 
-			expect(storageService.resetToEmptyContent).toHaveBeenCalled()
+			expect(store.documents.length).toBe(0)
+			expect(store.activeDocumentId).toBeNull()
+			// Сторы удалены через DocumentStoreManager
+			expect(store.getAllDocumentStores().length).toBe(0)
 		})
 	})
 
@@ -161,16 +167,25 @@ describe('DocumentTabsStore', () => {
 			expect(store.activeDocument?.id).toBe(doc1Id)
 		})
 
-		it('применяет данные активного документа к storageService', () => {
-			const { store, storageService } = createStore()
+		it('убеждается что сторы существуют без очистки/перезагрузки', () => {
+			const { store } = createStore()
 
 			store.openNewDocument('Doc 1')
+			const doc1Id = store.activeDocument!.id
 			store.openNewDocument('Doc 2')
-			const doc1Id = store.documents[0].id
 
+			// Переключаемся на Doc 1 и получаем сторы
 			store.activateDocument(doc1Id)
+			const storesForDoc1 = store.getActiveDocumentStores()
 
-			expect(storageService.applyContent).toHaveBeenCalled()
+			// Переключаемся на Doc 2 и обратно
+			store.openNewDocument('Doc 3')
+			store.activateDocument(doc1Id)
+			const storesForDoc1Again = store.getActiveDocumentStores()
+
+			// Сторы для Doc 1 те же самые (не пересозданы)
+			expect(storesForDoc1Again).toBe(storesForDoc1)
+			expect(storesForDoc1Again?.documentId).toBe(doc1Id)
 		})
 
 		it('обновляет lastAccessedAt', () => {
@@ -323,7 +338,7 @@ describe('DocumentTabsStore', () => {
 		})
 
 		it('возвращает success при отсутствии изменений', async () => {
-			const { store, googleApiService, storageService } = createStore()
+			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
@@ -346,7 +361,9 @@ describe('DocumentTabsStore', () => {
 			const result = await store.syncActiveDocumentWithDrive()
 
 			expect(result.status).toBe('success')
-			expect(storageService.applyContent).toHaveBeenCalled()
+			// Сторы обновлены через DocumentStoreManager
+			const stores = store.getActiveDocumentStores()
+			expect(stores).not.toBeNull()
 			expect(session.state.syncStatus).toBe('synced')
 		})
 	})

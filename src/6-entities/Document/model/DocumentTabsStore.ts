@@ -1,7 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
-import { StorageService } from 'src/7-shared/services/StorageService'
 import {
 	DocumentId,
 	DocumentSession,
@@ -18,6 +17,8 @@ import {
 	parseDocumentTabsSnapshot,
 	DocumentRef
 } from './DocumentTabsStore.types'
+import { DocumentStoreManager } from './DocumentStoreManager'
+import { DocumentStores } from './DocumentStoreManager.types'
 
 const DOCUMENT_TABS_KEY = 'documentTabs'
 const DOCUMENT_DATA_PREFIX = 'document_'
@@ -28,16 +29,19 @@ const DOCUMENT_DATA_PREFIX = 'document_'
  */
 export class DocumentTabsStore {
 	private state: DocumentTabsState
+	/** Менеджер сторов документов (композиция) */
+	private documentStoreManager: DocumentStoreManager
 
-	constructor(
-		private readonly googleApiService: GoogleApiService,
-		private readonly storageService: StorageService
-	) {
+	constructor(private readonly googleApiService: GoogleApiService) {
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
 			documentOrder: []
 		}
+
+		// Создаём менеджер внутри конструктора (композиция)
+		this.documentStoreManager = new DocumentStoreManager(documentId => this.getDocumentSession(documentId))
+
 		makeAutoObservable(this)
 	}
 
@@ -67,8 +71,11 @@ export class DocumentTabsStore {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		// Применить пустые данные к сторам
-		this.storageService.applyContent(session.data)
+		// НОВОЕ: Сторы создаются через DocumentStoreManager
+		this.documentStoreManager.getOrCreateStores(id)
+
+		// НОВОЕ: Уведомляем о смене активного документа (для обновления EventsCache)
+		this.documentStoreManager.onActiveDocumentChange?.(id)
 
 		this.persistToLocalStorage()
 		this.persistDocumentDataToLocalStorage(id)
@@ -125,8 +132,15 @@ export class DocumentTabsStore {
 			loadedSession.state.lastLoadedAt = Date.now()
 			loadedSession.state.lastSyncedAt = Date.now()
 
-			// Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
-			this.storageService.applyContent(loadedSession.data)
+			// НОВОЕ: Обновляем сторы через менеджер
+			this.documentStoreManager.updateStoresData(id, {
+				projectsList: loadedSession.data.projectsList,
+				completedList: loadedSession.data.completedList,
+				plannedList: loadedSession.data.plannedList
+			})
+
+			// НОВОЕ: Уведомляем о смене активного документа (для обновления EventsCache)
+			this.documentStoreManager.onActiveDocumentChange?.(id)
 
 			// Сбрасываем isLoading и явно очищаем isDirty после применения данных
 			loadedSession.state.isLoading = false
@@ -189,11 +203,13 @@ export class DocumentTabsStore {
 			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
 		}
 
-		// Если закрыли последний документ, сбросить данные в сторам
-		if (this.state.documentOrder.length === 0) {
-			this.storageService.resetToEmptyContent()
-		} else if (this.state.activeDocumentId) {
-			// Активировать новый документ (с блокировкой onChangeList)
+		// НОВОЕ: Удаляем сторы через менеджер
+		this.documentStoreManager.removeStores(documentId)
+
+		// Если закрыли последний документ — сторы уже удалены, ничего не делаем
+		// (раньше вызывался storageService.resetToEmptyContent())
+		if (this.state.documentOrder.length > 0 && this.state.activeDocumentId) {
+			// Активировать новый документ (сторы создадутся автоматически)
 			this.activateDocument(this.state.activeDocumentId)
 		}
 
@@ -209,15 +225,11 @@ export class DocumentTabsStore {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
-		// Временно устанавливаем isLoading для блокировки onChangeList
-		const previousLoadingState = session.state.isLoading
-		session.state.isLoading = true
+		// НОВОЕ: Убеждаемся что сторы существуют (без очистки/перезагрузки)
+		this.documentStoreManager.getOrCreateStores(documentId)
 
-		// Применить данные активного документа к основным сторам
-		this.storageService.applyContent(session.data)
-
-		// Восстанавливаем состояние isLoading
-		session.state.isLoading = previousLoadingState
+		// НОВОЕ: Уведомляем о переключении документа (для обновления EventsCache)
+		this.documentStoreManager.onActiveDocumentChange?.(documentId)
 
 		this.persistToLocalStorage()
 	}
@@ -373,11 +385,13 @@ export class DocumentTabsStore {
 			// Нет изменений — загружаем для проверки и синхронизируем
 			const content = await this.googleApiService.downloadFileContent(session.ref.fileId)
 
-			// Устанавливаем isLoading для блокировки onChangeList во время применения данных
-			session.state.isLoading = true
+			// Обновляем данные сессии и сторы через менеджер
 			session.data = parseDocumentContent(content)
-			this.storageService.applyContent(session.data)
-			session.state.isLoading = false
+			this.documentStoreManager.updateStoresData(session.id, {
+				projectsList: session.data.projectsList,
+				completedList: session.data.completedList,
+				plannedList: session.data.plannedList
+			})
 
 			session.state.syncStatus = 'synced'
 			session.state.lastSyncedAt = Date.now()
@@ -500,7 +514,7 @@ export class DocumentTabsStore {
 		this.state.documentOrder = snapshot.documentOrder
 		this.state.activeDocumentId = snapshot.activeDocumentId
 
-		// Загрузка данных каждого документа из localStorage
+		// Загрузка данных каждого документа из localStorage и создание сторов
 		for (const docSnapshot of snapshot.documents) {
 			const dataJson = localStorage.getItem(`${DOCUMENT_DATA_PREFIX}${docSnapshot.id}`)
 			if (dataJson) {
@@ -508,23 +522,21 @@ export class DocumentTabsStore {
 					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
 					const session = this.state.documents.get(docSnapshot.id)!
 					session.data = dataSnapshot.data
+
+					// НОВОЕ: Создаём сторы для каждого документа
+					this.documentStoreManager.updateStoresData(docSnapshot.id, {
+						projectsList: session.data.projectsList,
+						completedList: session.data.completedList,
+						plannedList: session.data.plannedList
+					})
 				} catch (e) {
 					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
 				}
 			}
 		}
 
-		// Применить данные активного документа
-		if (this.state.activeDocumentId) {
-			const activeSession = this.state.documents.get(this.state.activeDocumentId)
-			if (activeSession) {
-				// Временно устанавливаем isLoading для блокировки onChangeList
-				activeSession.state.isLoading = true
-				this.storageService.applyContent(activeSession.data)
-				activeSession.state.isLoading = false
-			}
-		}
-
+		// НОВОЕ: Больше не нужно применять данные к глобальным сторам
+		// Сторы уже созданы для всех документов выше
 		return true
 	}
 
@@ -583,5 +595,49 @@ export class DocumentTabsStore {
 			}
 		}
 		keysToRemove.forEach(key => localStorage.removeItem(key))
+		// Очищаем сторы через менеджер
+		this.documentStoreManager.clear()
+	}
+
+	// === Методы доступа к сторам документов ===
+
+	/**
+	 * Получить сторы активного документа.
+	 * Если сторы ещё не созданы, создаёт их автоматически.
+	 */
+	getActiveDocumentStores(): DocumentStores | null {
+		return this.documentStoreManager.getActiveStores(() => this.state.activeDocumentId)
+	}
+
+	/**
+	 * Получить все сторы документов (для общего календаря).
+	 * Возвращает массив сторов для всех открытых документов.
+	 */
+	getAllDocumentStores(): DocumentStores[] {
+		return this.documentStoreManager.getAllStores()
+	}
+
+	/**
+	 * Колбэк при изменении сторов (устанавливается в MainStore.init).
+	 * Вызывается при каждом изменении событий или проектов.
+	 */
+	set onStoresChange(callback: (documentId: DocumentId, stores: DocumentStores) => void) {
+		this.documentStoreManager.onStoresChange = callback
+	}
+
+	/**
+	 * Колбэк при переключении активного документа (устанавливается в MainStore.init).
+	 * Вызывается при каждом переключении между вкладками документов.
+	 */
+	set onActiveDocumentChange(callback: (documentId: DocumentId) => void) {
+		this.documentStoreManager.onActiveDocumentChange = callback
+	}
+
+	/**
+	 * Получить сессию документа (для DocumentStoreManager).
+	 * Публичный геттер для использования в менеджере сторов.
+	 */
+	getDocumentSession(documentId: DocumentId): DocumentSession | null {
+		return this.state.documents.get(documentId) ?? null
 	}
 }
