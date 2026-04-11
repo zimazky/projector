@@ -5,16 +5,16 @@ const DOCUMENT_TABS_KEY = 'documentTabs'
 
 type GoogleApiServiceMock = {
 	isGoogleLoggedIn: boolean
-	getFileMetadata: jasmine.Spy
-	downloadFileContent: jasmine.Spy
-	saveFile: jasmine.Spy
-	logIn: jasmine.Spy
+	getFileMetadata: jest.Mock
+	downloadFileContent: jest.Mock
+	saveFile: jest.Mock
+	logIn: jest.Mock
 }
 
 type StorageServiceMock = {
-	applyContent: jasmine.Spy
-	getContentToSave: jasmine.Spy
-	desyncWithStorages: jasmine.Spy
+	applyContent: jest.Mock
+	getContentToSave: jest.Mock
+	desyncWithStorages: jest.Mock
 }
 
 function createGoogleApiServiceMock(): GoogleApiServiceMock {
@@ -27,30 +27,31 @@ function createGoogleApiServiceMock(): GoogleApiServiceMock {
 		set isGoogleLoggedIn(value: boolean) {
 			loggedIn = value
 		},
-		getFileMetadata: jasmine.createSpy('getFileMetadata'),
-		downloadFileContent: jasmine.createSpy('downloadFileContent'),
-		saveFile: jasmine.createSpy('saveFile'),
-		logIn: jasmine.createSpy('logIn')
+		getFileMetadata: jest.fn(),
+		downloadFileContent: jest.fn(),
+		saveFile: jest.fn(),
+		logIn: jest.fn()
 	}
 }
 
 function createStorageServiceMock(): StorageServiceMock {
 	return {
-		applyContent: jasmine.createSpy('applyContent'),
-		getContentToSave: jasmine.createSpy('getContentToSave').and.returnValue({
+		applyContent: jest.fn(),
+		getContentToSave: jest.fn().mockReturnValue({
 			projectsList: [],
 			completedList: [],
 			plannedList: []
 		}),
-		desyncWithStorages: jasmine.createSpy('desyncWithStorages')
+		desyncWithStorages: jest.fn()
 	}
 }
 
 function createStore() {
 	const googleApiService = createGoogleApiServiceMock()
 	const storageService = createStorageServiceMock()
-	const store = new DocumentTabsStore(googleApiService as any, storageService as any)
-	return { store, googleApiService, storageService }
+	const uiStore = { usePerDocumentStores: false }
+	const store = new DocumentTabsStore(googleApiService as any, storageService as any, uiStore as any)
+	return { store, googleApiService, storageService, uiStore }
 }
 
 function clearLocalStorage() {
@@ -84,7 +85,7 @@ describe('DocumentTabsStore', () => {
 			expect(store.documents.length).toBe(1)
 			expect(store.activeDocument?.ref?.name).toBe('Тестовый документ')
 			expect(store.activeDocument?.ref?.fileId).toBeNull()
-			expect(store.activeDocument?.state.isDirty).toBeFalse()
+			expect(store.activeDocument?.state.isDirty).toBe(false)
 			expect(store.activeDocument?.state.syncStatus).toBe('offline')
 		})
 
@@ -184,7 +185,7 @@ describe('DocumentTabsStore', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
-			expect(store.activeDocument?.state.isDirty).toBeFalse()
+			expect(store.activeDocument?.state.isDirty).toBe(false)
 
 			store.updateActiveDocumentData({
 				projectsList: [],
@@ -192,7 +193,7 @@ describe('DocumentTabsStore', () => {
 				plannedList: []
 			})
 
-			expect(store.activeDocument?.state.isDirty).toBeTrue()
+			expect(store.activeDocument?.state.isDirty).toBe(true)
 		})
 
 		it('не обновляет isDirty, если документ сохраняется', () => {
@@ -208,7 +209,7 @@ describe('DocumentTabsStore', () => {
 				plannedList: []
 			})
 
-			expect(session.state.isDirty).toBeFalse()
+			expect(session.state.isDirty).toBe(false)
 		})
 
 		it('устанавливает syncStatus = needs-sync при изменении синхронизированного документа', () => {
@@ -272,7 +273,7 @@ describe('DocumentTabsStore', () => {
 				plannedList: []
 			})
 
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
@@ -283,7 +284,7 @@ describe('DocumentTabsStore', () => {
 
 			expect(result.status).toBe('conflict')
 			if (result.status === 'conflict') {
-				expect(result.hasLocalChanges).toBeTrue()
+				expect(result.hasLocalChanges).toBe(true)
 			}
 		})
 
@@ -296,7 +297,7 @@ describe('DocumentTabsStore', () => {
 			session.state.lastSavedAt = Date.now() - 10000 // 10 секунд назад
 
 			const futureDate = new Date(Date.now() + 10000).toISOString()
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
@@ -307,7 +308,7 @@ describe('DocumentTabsStore', () => {
 
 			expect(result.status).toBe('conflict')
 			if (result.status === 'conflict') {
-				expect(result.hasRemoteChanges).toBeTrue()
+				expect(result.hasRemoteChanges).toBe(true)
 			}
 		})
 
@@ -319,14 +320,14 @@ describe('DocumentTabsStore', () => {
 			session.ref!.fileId = 'file-1'
 			session.state.lastSavedAt = Date.now()
 
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
 				modifiedTime: new Date().toISOString()
 			})
 
-			googleApiService.downloadFileContent.and.resolveTo({
+			googleApiService.downloadFileContent.mockResolvedValue({
 				projectsList: [],
 				completedList: [],
 				plannedList: []
@@ -346,7 +347,7 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
+			expect(result).toBe(false)
 		})
 
 		it('возвращает false, если у документа нет fileId', async () => {
@@ -356,7 +357,7 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
+			expect(result).toBe(false)
 		})
 
 		it('сохраняет документ в Drive и сбрасывает isDirty', async () => {
@@ -367,7 +368,7 @@ describe('DocumentTabsStore', () => {
 			session.ref!.fileId = 'file-1'
 			session.state.isDirty = true
 
-			googleApiService.saveFile.and.resolveTo({
+			googleApiService.saveFile.mockResolvedValue({
 				status: 'success',
 				file: {
 					id: 'file-1',
@@ -380,9 +381,9 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeTrue()
+			expect(result).toBe(true)
 			expect(googleApiService.saveFile).toHaveBeenCalled()
-			expect(session.state.isDirty).toBeFalse()
+			expect(session.state.isDirty).toBe(false)
 			expect(session.state.syncStatus).toBe('synced')
 		})
 
@@ -393,14 +394,14 @@ describe('DocumentTabsStore', () => {
 			const session = store.activeDocument!
 			session.ref!.fileId = 'file-1'
 
-			googleApiService.saveFile.and.resolveTo({
+			googleApiService.saveFile.mockResolvedValue({
 				status: 'error',
 				message: 'Network error'
 			})
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
+			expect(result).toBe(false)
 			expect(session.state.error).toBe('Network error')
 		})
 	})
@@ -427,7 +428,7 @@ describe('DocumentTabsStore', () => {
 
 			const restored = await store.restoreFromLocalStorage()
 
-			expect(restored).toBeTrue()
+			expect(restored).toBe(true)
 			expect(store.documents.length).toBe(1)
 			expect(store.activeDocument?.ref?.name).toBe(docName)
 		})
@@ -437,7 +438,7 @@ describe('DocumentTabsStore', () => {
 
 			const restored = await store.restoreFromLocalStorage()
 
-			expect(restored).toBeFalse()
+			expect(restored).toBe(false)
 		})
 
 		it('загружает данные каждого документа из localStorage', async () => {

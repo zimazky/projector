@@ -2,6 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { StorageService } from 'src/7-shared/services/StorageService'
+import type { UIStore } from 'src/1-app/Stores/UIStore'
 import {
 	DocumentId,
 	DocumentSession,
@@ -34,7 +35,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	constructor(
 		private readonly googleApiService: GoogleApiService,
-		private readonly storageService: StorageService
+		private readonly storageService: StorageService,
+		private readonly uiStore: UIStore
 	) {
 		this.state = {
 			documents: new Map(),
@@ -106,8 +108,13 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		// Применить пустые данные к сторам
-		this.storageService.applyContent(session.data)
+		if (this.uiStore.usePerDocumentStores) {
+			// НОВОЕ: Сторы создаются через DocumentStoreManager
+			this.documentStoreManager.getOrCreateStores(id)
+		} else {
+			// СТАРОЕ: Применить пустые данные к глобальным сторам
+			this.storageService.applyContent(session.data)
+		}
 
 		this.persistToLocalStorage()
 		this.persistDocumentDataToLocalStorage(id)
@@ -164,8 +171,17 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			loadedSession.state.lastLoadedAt = Date.now()
 			loadedSession.state.lastSyncedAt = Date.now()
 
-			// Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
-			this.storageService.applyContent(loadedSession.data)
+			if (this.uiStore.usePerDocumentStores) {
+				// НОВОЕ: Обновляем сторы через менеджер
+				this.documentStoreManager.updateStoresData(id, {
+					projectsList: loadedSession.data.projectsList,
+					completedList: loadedSession.data.completedList,
+					plannedList: loadedSession.data.plannedList
+				})
+			} else {
+				// СТАРОЕ: Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
+				this.storageService.applyContent(loadedSession.data)
+			}
 
 			// Сбрасываем isLoading и явно очищаем isDirty после применения данных
 			loadedSession.state.isLoading = false
@@ -228,6 +244,11 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
 		}
 
+		if (this.uiStore.usePerDocumentStores) {
+			// НОВОЕ: Удаляем сторы
+			this.documentStoreManager.removeStores(documentId)
+		}
+
 		if (this.state.activeDocumentId) {
 			// Активировать новый документ (с блокировкой onChangeList)
 			this.activateDocument(this.state.activeDocumentId)
@@ -245,15 +266,16 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
-		// Временно устанавливаем isLoading для блокировки onChangeList
-		const previousLoadingState = session.state.isLoading
-		session.state.isLoading = true
-
-		// Применить данные активного документа к основным сторам
-		this.storageService.applyContent(session.data)
-
-		// Восстанавливаем состояние isLoading
-		session.state.isLoading = previousLoadingState
+		if (this.uiStore.usePerDocumentStores) {
+			// НОВОЕ: Убеждаемся что сторы существуют (данные уже в памяти!)
+			this.documentStoreManager.getOrCreateStores(documentId)
+		} else {
+			// СТАРОЕ: Применить данные активного документа к глобальным сторам
+			const previousLoadingState = session.state.isLoading
+			session.state.isLoading = true
+			this.storageService.applyContent(session.data)
+			session.state.isLoading = previousLoadingState
+		}
 
 		this.persistToLocalStorage()
 	}
@@ -409,11 +431,21 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			// Нет изменений — загружаем для проверки и синхронизируем
 			const content = await this.googleApiService.downloadFileContent(session.ref.fileId)
 
-			// Устанавливаем isLoading для блокировки onChangeList во время применения данных
-			session.state.isLoading = true
 			session.data = parseDocumentContent(content)
-			this.storageService.applyContent(session.data)
-			session.state.isLoading = false
+
+			if (this.uiStore.usePerDocumentStores) {
+				// НОВОЕ: Обновляем сторы через менеджер
+				this.documentStoreManager.updateStoresData(session.id, {
+					projectsList: session.data.projectsList,
+					completedList: session.data.completedList,
+					plannedList: session.data.plannedList
+				})
+			} else {
+				// СТАРОЕ: Применить данные к глобальным сторам
+				session.state.isLoading = true
+				this.storageService.applyContent(session.data)
+				session.state.isLoading = false
+			}
 
 			session.state.syncStatus = 'synced'
 			session.state.lastSyncedAt = Date.now()
@@ -544,20 +576,31 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
 					const session = this.state.documents.get(docSnapshot.id)!
 					session.data = dataSnapshot.data
+
+					if (this.uiStore.usePerDocumentStores) {
+						// НОВОЕ: Создаём сторы
+						this.documentStoreManager.updateStoresData(docSnapshot.id, {
+							projectsList: session.data.projectsList,
+							completedList: session.data.completedList,
+							plannedList: session.data.plannedList
+						})
+					}
 				} catch (e) {
 					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
 				}
 			}
 		}
 
-		// Применить данные активного документа
-		if (this.state.activeDocumentId) {
-			const activeSession = this.state.documents.get(this.state.activeDocumentId)
-			if (activeSession) {
-				// Временно устанавливаем isLoading для блокировки onChangeList
-				activeSession.state.isLoading = true
-				this.storageService.applyContent(activeSession.data)
-				activeSession.state.isLoading = false
+		// СТАРОЕ: Применить данные активного документа к глобальным сторам
+		if (!this.uiStore.usePerDocumentStores) {
+			if (this.state.activeDocumentId) {
+				const activeSession = this.state.documents.get(this.state.activeDocumentId)
+				if (activeSession) {
+					// Временно устанавливаем isLoading для блокировки onChangeList
+					activeSession.state.isLoading = true
+					this.storageService.applyContent(activeSession.data)
+					activeSession.state.isLoading = false
+				}
 			}
 		}
 

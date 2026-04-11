@@ -33,7 +33,7 @@ export const googleApiService = new GoogleApiService()
 export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
 
 // 4. Менеджер вкладок документов (multi-document support)
-export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService)
+export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService, uiStore)
 
 // 5. Оркестратор приложения
 export const mainStore = new MainStore(

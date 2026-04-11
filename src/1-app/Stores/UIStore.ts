@@ -10,6 +10,8 @@ export class UIStore {
 	isMenuOpen: boolean = false
 	/** Триггер принудительного обновления UI */
 	mustForceUpdate: {} = {}
+	/** Feature toggle: использовать пер-документные сторы */
+	usePerDocumentStores: boolean = false
 
 	constructor() {
 		makeAutoObservable(this)

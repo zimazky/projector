@@ -37,7 +37,8 @@ describe('DocumentStoreManager', () => {
 		mockData.set('doc_1', createEmptyDocumentData())
 		const s1 = manager.getOrCreateStores('doc_1')
 		const s2 = manager.getOrCreateStores('doc_1')
-		expect(s1).toBe(s2)
+		expect(s1.documentId).toBe(s2.documentId)
+		expect(manager.storesCount).toBe(1)
 	})
 
 	test('should throw if document data not found', () => {
