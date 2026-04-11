@@ -4,14 +4,14 @@ import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 
+import type { IEventsStoreProvider } from 'src/6-entities/Document/model/DocumentStoreManager.types'
+
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
 export class EventsCache {
-	/** Ссылка на хранилище проектов */
-	projectsStore: ProjectsStore
-	/** Ссылка на хранилище событий */
-	eventsStore: EventsStore
+	/** Провайдер сторов документов (для доступа к активным и всем сторам) */
+	private provider: IEventsStoreProvider
 	/** Кэш событий (хэш-таблица по временным меткам) */
 	private cachedEvents: EventCacheStructure[][] = []
 	/** Кэш фактического баланса  (хэш-таблица по временным меткам) */
@@ -25,9 +25,8 @@ export class EventsCache {
 	/** Временная метка первого завершенного события */
 	firstActualBalanceDate = 0
 
-	constructor(projectsStore: ProjectsStore, eventsStore: EventsStore) {
-		this.projectsStore = projectsStore
-		this.eventsStore = eventsStore
+	constructor(provider: IEventsStoreProvider) {
+		this.provider = provider
 	}
 
 	/** Инициализация кэша событий (очищение кэша) */
@@ -35,11 +34,20 @@ export class EventsCache {
 		this.cachedEvents = []
 		this.cachedActualBalance = []
 		this.cachedPlannedBalance = []
+
+		const eventsStore = this.provider.activeEventsStore
+		if (!eventsStore) {
+			this.lastActualBalance = 0
+			this.lastActualBalanceDate = 0
+			this.firstActualBalanceDate = 0
+			return
+		}
+
 		this.lastActualBalance = this.calculateActualBalance()
-		this.lastActualBalanceDate = this.eventsStore.completed.length
-			? this.eventsStore.completed[this.eventsStore.completed.length - 1].start
+		this.lastActualBalanceDate = eventsStore.completed.length
+			? eventsStore.completed[eventsStore.completed.length - 1].start
 			: 0
-		this.firstActualBalanceDate = this.eventsStore.completed.length ? this.eventsStore.completed[0].start : 0
+		this.firstActualBalanceDate = eventsStore.completed.length ? eventsStore.completed[0].start : 0
 	}
 
 	/**
@@ -50,29 +58,32 @@ export class EventsCache {
 	 */
 	getEvents(date: timestamp): EventCacheStructure[] {
 		if (this.cachedEvents[date] !== undefined) return this.cachedEvents[date]
-		const events: EventCacheStructure[] = this.eventsStore.planned.reduce((a, e) => {
+
+		const eventsStore = this.provider.activeEventsStore
+		const projectsStore = this.provider.activeProjectsStore
+		if (!eventsStore || !projectsStore) return []
+
+		const events: EventCacheStructure[] = eventsStore.planned.reduce((a, e) => {
 			if (date < e.start || date >= e.end) return a
-			const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
-			const background = this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+			const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+			const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
 			a.push(singleEventToEventCache(e, date, false, color, background))
 			return a
 		}, [] as EventCacheStructure[])
-		this.eventsStore.plannedRepeatable.reduce((a, e) => {
+		eventsStore.plannedRepeatable.reduce((a, e) => {
 			if (date < e.start) return a
 			if (e.end && date + (e.time === null ? 0 : e.time) >= e.end) return a
 			if (ZCron.isMatch(e.repeat, e.start, date)) {
-				const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
-				const background =
-					this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+				const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+				const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
 				a.push(repeatableEventToEventCache(e, date, false, color, background))
 			}
 			return a
 		}, events)
-		this.eventsStore.completed.reduce((a, e) => {
+		eventsStore.completed.reduce((a, e) => {
 			if (date >= e.start && date < e.end) {
-				const color = this.projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
-				const background =
-					this.projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+				const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+				const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
 				a.push(singleEventToEventCache(e, date, true, color, background))
 			}
 			return a
@@ -179,7 +190,9 @@ export class EventsCache {
 
 	/** Вычисление фактического баланса на момент последнего выполненного события */
 	calculateActualBalance(): number {
-		return this.eventsStore.completed.reduce((balance, e) => balance + e.credit - e.debit, 0)
+		const eventsStore = this.provider.activeEventsStore
+		if (!eventsStore) return 0
+		return eventsStore.completed.reduce((balance, e) => balance + e.credit - e.debit, 0)
 	}
 
 	/**
@@ -192,7 +205,9 @@ export class EventsCache {
 		if (date < this.firstActualBalanceDate) return 0
 		if (date > this.lastActualBalanceDate) return this.lastActualBalance
 		if (this.cachedActualBalance[date] !== undefined) return this.cachedActualBalance[date]
-		const balance = this.eventsStore.completed.reduce((a, e) => {
+		const eventsStore = this.provider.activeEventsStore
+		if (!eventsStore) return 0
+		const balance = eventsStore.completed.reduce((a, e) => {
 			if (date > e.start + (e.time === null ? 0 : e.time)) a += e.credit - e.debit
 			return a
 		}, 0)
@@ -226,12 +241,82 @@ export class EventsCache {
 
 	/** Получить дату первого запланированного события */
 	getFirstPlannedEventDate(): timestamp {
-		if (this.eventsStore.planned.length === 0) return 0
-		let first = this.eventsStore.planned[0].start
-		this.eventsStore.plannedRepeatable.forEach(e => {
+		const eventsStore = this.provider.activeEventsStore
+		if (!eventsStore || eventsStore.planned.length === 0) return 0
+		let first = eventsStore.planned[0].start
+		eventsStore.plannedRepeatable.forEach(e => {
 			if (e.start < first) first = e.start
 		})
 		return first
+	}
+
+	// === Методы агрегации (для общего календаря) ===
+
+	/** Получить агрегированные события за день из всех документов (для общего календаря) */
+	getAggregatedEvents(date: timestamp): EventCacheStructure[] {
+		const allEvents: EventCacheStructure[] = []
+
+		for (const docStores of this.provider.getAllDocumentStores()) {
+			const { eventsStore, projectsStore } = docStores
+
+			eventsStore.planned.forEach(e => {
+				if (date < e.start || date >= e.end) return
+				const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+				const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+				allEvents.push({
+					...singleEventToEventCache(e, date, false, color, background),
+					sourceDocumentId: docStores.documentId
+				})
+			})
+
+			eventsStore.plannedRepeatable.forEach(e => {
+				if (date < e.start) return
+				if (e.end && date + (e.time === null ? 0 : e.time) >= e.end) return
+				if (ZCron.isMatch(e.repeat, e.start, date)) {
+					const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+					const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+					allEvents.push({
+						...repeatableEventToEventCache(e, date, false, color, background),
+						sourceDocumentId: docStores.documentId
+					})
+				}
+			})
+
+			eventsStore.completed.forEach(e => {
+				if (date >= e.start && date < e.end) {
+					const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
+					const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
+					allEvents.push({
+						...singleEventToEventCache(e, date, true, color, background),
+						sourceDocumentId: docStores.documentId
+					})
+				}
+			})
+		}
+
+		allEvents.sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start) || (a.time ?? 0) - (b.time ?? 0))
+		return allEvents
+	}
+
+	/** Получить агрегированный баланс из всех документов */
+	getAggregatedBalance(): { lastActualBalance: number; lastActualBalanceDate: number; firstActualBalanceDate: number } {
+		let totalActual = 0
+		let maxDate = 0
+		let minDate = Infinity
+
+		for (const docStores of this.provider.getAllDocumentStores()) {
+			totalActual += docStores.eventsStore.completed.reduce((b, e) => b + e.credit - e.debit, 0)
+			if (docStores.eventsStore.completed.length) {
+				maxDate = Math.max(maxDate, docStores.eventsStore.completed[docStores.eventsStore.completed.length - 1].start)
+				minDate = Math.min(minDate, docStores.eventsStore.completed[0].start)
+			}
+		}
+
+		return {
+			lastActualBalance: totalActual,
+			lastActualBalanceDate: maxDate,
+			firstActualBalanceDate: minDate === Infinity ? 0 : minDate
+		}
 	}
 }
 

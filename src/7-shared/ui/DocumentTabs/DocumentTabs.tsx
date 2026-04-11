@@ -19,14 +19,7 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 	onClose,
 	onNew
 }) {
-	const getSyncStatusTitle = (status: string, hasUnsyncedChanges: boolean, isDirty: boolean): string => {
-		// Приоритет: изменения в сессии > изменения с прошлой сессии > статус синхронизации
-		if (isDirty) {
-			return 'Есть несохранённые изменения'
-		}
-		if (hasUnsyncedChanges) {
-			return 'Есть несохранённые изменения с предыдущей сессии'
-		}
+	const getSyncStatusTitle = (status: string): string => {
 		switch (status) {
 			case 'offline':
 				return 'Документ работает в офлайн-режиме'
@@ -45,14 +38,7 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 		}
 	}
 
-	const getSyncStatusIcon = (status: string, hasUnsyncedChanges: boolean, isDirty: boolean): string => {
-		// Приоритет: изменения в сессии > изменения с прошлой сессии > статус синхронизации
-		if (isDirty) {
-			return '*'
-		}
-		if (hasUnsyncedChanges) {
-			return '⚠️'
-		}
+	const getSyncStatusIcon = (status: string): string => {
 		switch (status) {
 			case 'offline':
 				return '📴'
@@ -76,18 +62,31 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 			{documents.map(doc => (
 				<div
 					key={doc.id}
+					data-testid="document-tab"
 					className={`${styles.documentTab} ${doc.id === activeDocumentId ? styles.active : ''}`}
 					onClick={() => onActivate(doc.id)}
 				>
 					<span className={styles.documentTabName}>{doc.ref?.name || 'Без названия'}</span>
 
-					{/* Индикатор статуса синхронизации */}
+					{/* Индикатор несохранённых изменений */}
+					{(doc.state.isDirty || doc.state.hasUnsyncedChanges) && (
+						<span
+							className={styles.modifiedIndicator}
+							title={
+								doc.state.isDirty ? 'Есть несохранённые изменения' : 'Есть несохранённые изменения с предыдущей сессии'
+							}
+						>
+							*
+						</span>
+					)}
+
+					{/* Индикатор статуса синхронизации (только для документов с fileId) */}
 					{doc.ref?.fileId && (
 						<span
 							className={`${styles.syncStatus} ${styles[`syncStatus--${doc.state.syncStatus}`]}`}
-							title={getSyncStatusTitle(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
+							title={getSyncStatusTitle(doc.state.syncStatus)}
 						>
-							{getSyncStatusIcon(doc.state.syncStatus, doc.state.hasUnsyncedChanges, doc.state.isDirty)}
+							{getSyncStatusIcon(doc.state.syncStatus)}
 						</span>
 					)}
 

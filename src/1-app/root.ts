@@ -16,26 +16,28 @@ import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/Proj
 
 // 1. Основные доменные сторы
 export const projectsStore = new ProjectsStore()
-export const projectEditorStore = new ProjectEditorStore(projectsStore)
 export const eventsStore = new EventsStore(projectsStore)
-export const eventsCache = new EventsCache(projectsStore, eventsStore)
 
-// 2. Сторы представления и функций приложения
+// 2. Инфраструктурные сервисы
+export const uiStore = new UIStore()
+export const googleApiService = new GoogleApiService()
+export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
+
+// 3. Менеджер вкладок документов (multi-document support)
+export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService, uiStore)
+
+// 4. Кэш событий (через IEventsStoreProvider)
+export const eventsCache = new EventsCache(documentTabsStore)
+
+// 5. Сторы представления и функций приложения
 export const weatherStore = new WeatherStore()
 export const calendarStore = new CalendarStore(eventsCache, weatherStore)
 export const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
 export const eventFormStore = new EventFormStore()
 export const eventSearchStore = new EventSearchStore(eventsStore)
+export const projectEditorStore = new ProjectEditorStore(projectsStore)
 
-// 3. Инфраструктурные сервисы
-export const uiStore = new UIStore()
-export const googleApiService = new GoogleApiService()
-export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
-
-// 4. Менеджер вкладок документов (multi-document support)
-export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService, uiStore)
-
-// 5. Оркестратор приложения
+// 6. Оркестратор приложения
 export const mainStore = new MainStore(
 	projectsStore,
 	eventsStore,
