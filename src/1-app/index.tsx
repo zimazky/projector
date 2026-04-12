@@ -7,9 +7,7 @@ import './index.css'
 
 import {
 	mainStore,
-	projectsStore,
 	projectEditorStore,
-	eventsStore,
 	eventsCache,
 	weatherStore,
 	calendarStore,
@@ -17,7 +15,6 @@ import {
 	eventFormStore,
 	uiStore,
 	googleApiService,
-	storageService,
 	saveToDriveStore,
 	documentTabsStore,
 	eventSearchStore
@@ -33,9 +30,7 @@ const root = createRoot(rootElement)
 root.render(
 	<StoreProvider
 		mainStore={mainStore}
-		projectsStore={projectsStore}
 		projectEditorStore={projectEditorStore}
-		eventsStore={eventsStore}
 		eventsCache={eventsCache}
 		weatherStore={weatherStore}
 		calendarStore={calendarStore}
@@ -43,7 +38,6 @@ root.render(
 		eventFormStore={eventFormStore}
 		uiStore={uiStore}
 		googleApiService={googleApiService}
-		storageService={storageService}
 		saveToDriveStore={saveToDriveStore}
 		documentTabsStore={documentTabsStore}
 		fileSavedNotifier={mainStore.fileSavedNotifier}

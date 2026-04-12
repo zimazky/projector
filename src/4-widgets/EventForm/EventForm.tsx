@@ -34,7 +34,9 @@ interface Fields {
 type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
 
 const EventForm: React.FC = () => {
-	const { eventFormStore, eventsCache, eventsStore, projectsStore } = useContext(StoreContext)
+	const { eventFormStore, eventsCache, documentTabsStore } = useContext(StoreContext)
+	const eventsStore = documentTabsStore.activeEventsStore
+	const projectsStore = documentTabsStore.activeProjectsStore
 
 	const [tab, setTab] = React.useState(0)
 	const [deleteState, setDeleteState] = React.useState<DeleteState>(null)
@@ -65,6 +67,7 @@ const EventForm: React.FC = () => {
 
 	const handleConfirmDelete = () => {
 		if (deleteState === null) return
+		if (!eventsStore) return
 		if (deleteState === 'DeleteCurrentRepeatable') {
 			eventsStore.deleteCurrentRepeatableEvent(eventFormStore.eventData.id, eventFormStore.eventData.timestamp)
 			eventFormStore.hideForm()
@@ -76,6 +79,7 @@ const EventForm: React.FC = () => {
 	}
 
 	const handleSaveAsSingle = handleSubmit(e => {
+		if (!eventsStore) return
 		const id = eventFormStore.eventData.id
 		if (id === null) return
 		const eventDto: EventDto = {
@@ -95,6 +99,7 @@ const EventForm: React.FC = () => {
 	})
 
 	const onCompleteHandle = handleSubmit(e => {
+		if (!eventsStore) return
 		const isCompleted = eventFormStore.eventData.completed
 		if (isCompleted === undefined) return
 		const eventDto: EventDto = {
@@ -115,6 +120,7 @@ const EventForm: React.FC = () => {
 
 	// Изменение параметров события, для всех если событие повторяемое
 	const onChangeEventHandle = handleSubmit(e => {
+		if (!eventsStore) return
 		const id = eventFormStore.eventData.id
 		if (id === null) return
 		const eventDto: EventDto = {
@@ -134,6 +140,7 @@ const EventForm: React.FC = () => {
 	})
 
 	const onAddHandle = handleSubmit(e => {
+		if (!eventsStore) return
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
@@ -206,9 +213,11 @@ const EventForm: React.FC = () => {
 					<Select
 						label="Project"
 						error={!!errors.project}
-						options={projectsStore.list.map(p => {
-							return { value: p.name, label: p.name }
-						})}
+						options={
+							projectsStore?.list.map(p => {
+								return { value: p.name, label: p.name }
+							}) ?? []
+						}
 						value={watch('project')}
 						{...register('project', { required: true })}
 					/>

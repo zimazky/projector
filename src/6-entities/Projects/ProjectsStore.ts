@@ -149,6 +149,7 @@ export class ProjectsStore {
 					return { ...p, events: 0 }
 				})
 			]
+		this.onChangeList?.()
 	}
 
 	/** Получить список проектов ProjectData[] для сохранения во внешних хранилищах */

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { waitFor } from '@testing-library/dom'
 import '@testing-library/jest-dom'
 import React from 'react'
@@ -8,9 +8,7 @@ import StoreProvider from 'src/1-app/Providers/StoreProvider'
 
 // Импорты сторов
 import {
-	projectsStore,
 	projectEditorStore,
-	eventsStore,
 	eventsCache,
 	weatherStore,
 	calendarStore,
@@ -18,7 +16,6 @@ import {
 	eventFormStore,
 	uiStore,
 	googleApiService,
-	storageService,
 	mainStore,
 	documentTabsStore,
 	saveToDriveStore,
@@ -44,9 +41,7 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 }))
 
 const stores = {
-	projectsStore,
 	projectEditorStore,
-	eventsStore,
 	eventsCache,
 	weatherStore,
 	calendarStore,
@@ -54,7 +49,6 @@ const stores = {
 	eventFormStore,
 	uiStore,
 	googleApiService,
-	storageService,
 	mainStore,
 	documentTabsStore,
 	saveToDriveStore,
@@ -72,7 +66,9 @@ describe('App Integration Tests', () => {
 	afterEach(() => {
 		// Очистка после теста
 		localStorage.clear()
-		documentTabsStore.clear()
+		act(() => {
+			documentTabsStore.clear()
+		})
 	})
 
 	test('переключение между вкладками обновляет контент', async () => {
@@ -136,7 +132,7 @@ describe('App Integration Tests', () => {
 		expect(dialogText).toBeTruthy()
 	})
 
-	test('создание нового документа при наличии изменений показывает диалог', async () => {
+	test('создание нового документа при наличии изменений НЕ показывает диалог и сохраняет старую вкладку', async () => {
 		render(
 			<StoreProvider {...stores}>
 				<App />
@@ -157,12 +153,22 @@ describe('App Integration Tests', () => {
 			plannedList: []
 		})
 
+		const firstDocId = documentTabsStore.activeDocument!.id
+
 		// Создать второй документ
 		fireEvent.click(newDocButton)
 
-		// Проверить появление диалога подтверждения
-		const dialogText = await screen.findByText(/Есть несохранённые изменения/i)
-		expect(dialogText).toBeTruthy()
+		// Проверить, что диалог НЕ появился
+		await waitFor(() => {
+			expect(documentTabsStore.documents.length).toBe(2)
+		})
+		const dialogText = screen.queryByText(/Есть несохранённые изменения/i)
+		expect(dialogText).toBeNull()
+
+		// Проверить, что первый документ всё ещё открыт с isDirty=true
+		const firstDoc = documentTabsStore.documents.find(d => d.id === firstDocId)
+		expect(firstDoc).toBeTruthy()
+		expect(firstDoc!.state.isDirty).toBe(true)
 	})
 
 	test('индикатор isDirty отображается в табе', async () => {

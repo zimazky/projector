@@ -6,6 +6,16 @@ import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import type { DocumentId, DocumentData } from './DocumentTabsStore.types'
 import type { DocumentStores, IDocumentDataProvider } from './DocumentStoreManager.types'
 
+/** Колбэки при изменении данных в пер-документных сторах */
+export interface DocumentStoreCallbacks {
+	/** Колбэк при изменении событий в любом документе */
+	onEventsChanged?: (stores: DocumentStores) => void
+	/** Колбэк при изменении проектов в любом документе */
+	onProjectsChanged?: (stores: DocumentStores) => void
+	/** Колбэк при смене активного документа (переключение вкладки) */
+	onActiveDocumentChanged?: (documentId: DocumentId) => void
+}
+
 /**
  * Менеджер сторов документов (приватный для DocumentTabsStore).
  * НЕ экспортируется в StoreContext.
@@ -17,29 +27,37 @@ export class DocumentStoreManager {
 	private stores: Map<DocumentId, DocumentStores> = new Map()
 	private dataProvider: IDocumentDataProvider
 
-	constructor(dataProvider: IDocumentDataProvider) {
+	/** Колбэк при изменении событий в любом документе */
+	private onEventsChanged?: (stores: DocumentStores) => void
+	/** Колбэк при изменении проектов в любом документе */
+	private onProjectsChanged?: (stores: DocumentStores) => void
+
+	constructor(dataProvider: IDocumentDataProvider, callbacks?: DocumentStoreCallbacks) {
 		this.dataProvider = dataProvider
+		this.onEventsChanged = callbacks?.onEventsChanged
+		this.onProjectsChanged = callbacks?.onProjectsChanged
 		makeAutoObservable(this, {}, { autoBind: true })
+	}
+
+	/** Установить колбэки после создания (вызывается из DocumentTabsStore) */
+	setCallbacks(callbacks: DocumentStoreCallbacks): void {
+		this.onEventsChanged = callbacks.onEventsChanged
+		this.onProjectsChanged = callbacks.onProjectsChanged
 	}
 
 	// === Создание и доступ ===
 
-	/** Получить или создать сторы для документа */
-	getOrCreateStores(documentId: DocumentId): DocumentStores {
-		const existing = this.stores.get(documentId)
-		if (existing) return existing
+	/** Создать сторы для документа (бросит ошибку, если уже существуют) */
+	createStores(documentId: DocumentId): DocumentStores {
+		if (this.stores.has(documentId)) {
+			throw new Error(`Stores already exist for document: ${documentId}`)
+		}
 
 		const data = this.dataProvider.getDocumentData(documentId)
 		if (!data) throw new Error(`Document data not found: ${documentId}`)
 
 		const projectsStore = new ProjectsStore()
-		projectsStore.init(data.projectsList)
-
 		const eventsStore = new EventsStore(projectsStore)
-		eventsStore.init({
-			completedList: data.completedList,
-			plannedList: data.plannedList
-		})
 
 		const stores: DocumentStores = {
 			projectsStore,
@@ -48,8 +66,27 @@ export class DocumentStoreManager {
 			isInitialized: true
 		}
 
+		// Устанавливаем колбэки ДО init(), чтобы они сработали при инициализации
+		eventsStore.onChangeList = () => {
+			this.onEventsChanged?.(stores)
+		}
+		projectsStore.onChangeList = () => {
+			this.onProjectsChanged?.(stores)
+		}
+
+		projectsStore.init(data.projectsList)
+		eventsStore.init({
+			completedList: data.completedList,
+			plannedList: data.plannedList
+		})
+
 		this.stores.set(documentId, stores)
 		return stores
+	}
+
+	/** Получить или создать сторы для документа (композиция getStores + createStores) */
+	getOrCreateStores(documentId: DocumentId): DocumentStores {
+		return this.getStores(documentId) ?? this.createStores(documentId)
 	}
 
 	/** Проверить наличие сторов для документа */
@@ -62,10 +99,10 @@ export class DocumentStoreManager {
 		return this.stores.get(documentId) ?? null
 	}
 
-	/** Получить сторы активного документа */
+	/** Получить сторы активного документа (без создания) */
 	get activeStores(): DocumentStores | null {
 		const activeId = this.dataProvider.activeDocumentId
-		return activeId ? this.getOrCreateStores(activeId) : null
+		return activeId ? this.getStores(activeId) : null
 	}
 
 	/** Получить активный EventsStore (удобный геттер) */
@@ -80,9 +117,10 @@ export class DocumentStoreManager {
 
 	// === Модификация ===
 
-	/** Обновить данные сторов документа (при загрузке из Drive) */
+	/** Обновить данные сторов документа (при загрузке из Drive). Бросает ошибку, если сторы не найдены. */
 	updateStoresData(documentId: DocumentId, data: DocumentData): void {
-		const stores = this.getOrCreateStores(documentId)
+		const stores = this.getStores(documentId)
+		if (!stores) throw new Error(`Stores not found for document: ${documentId}`)
 		stores.projectsStore.init(data.projectsList)
 		stores.eventsStore.init({
 			completedList: data.completedList,

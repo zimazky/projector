@@ -75,15 +75,7 @@ const App: React.FC = observer(function () {
 		documentTabsStore.closeDocument(id)
 	}
 
-	const handleNew = async () => {
-		const activeDoc = documentTabsStore.activeDocument
-		if (activeDoc?.state.isDirty || activeDoc?.state.hasUnsyncedChanges) {
-			const decision = await requestUnsavedDecision(activeDoc.id, activeDoc.state.hasUnsyncedChanges)
-			if (decision === 'cancel') return
-			if (decision === 'yes') {
-				await documentTabsStore.saveActiveDocument()
-			}
-		}
+	const handleNew = () => {
 		documentTabsStore.openNewDocument()
 	}
 

@@ -1,8 +1,6 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
-import { StorageService } from 'src/7-shared/services/StorageService'
-import type { UIStore } from 'src/1-app/Stores/UIStore'
 import {
 	DocumentId,
 	DocumentSession,
@@ -21,6 +19,8 @@ import {
 } from './DocumentTabsStore.types'
 import { DocumentStoreManager } from './DocumentStoreManager'
 import type { DocumentStores, IEventsStoreProvider } from './DocumentStoreManager.types'
+import type { DocumentStoreCallbacks } from './DocumentStoreManager'
+import { normalizeMainStoreData } from './DocumentTabsStore.utils'
 
 const DOCUMENT_TABS_KEY = 'documentTabs'
 const DOCUMENT_DATA_PREFIX = 'document_'
@@ -33,11 +33,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private state: DocumentTabsState
 	private documentStoreManager: DocumentStoreManager
 
-	constructor(
-		private readonly googleApiService: GoogleApiService,
-		private readonly storageService: StorageService,
-		private readonly uiStore: UIStore
-	) {
+	constructor(private readonly googleApiService: GoogleApiService) {
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
@@ -54,6 +50,19 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		})
 
 		makeAutoObservable(this)
+	}
+
+	/** Установить колбэки при изменении данных в пер-документных сторах (вызывается из MainStore) */
+	setOnStoresChanged(callbacks: DocumentStoreCallbacks): void {
+		this.documentStoreManager.setCallbacks(callbacks)
+	}
+
+	/** Колбэк при смене активного документа (для инвалидации кэша и т.п.) */
+	private onActiveDocumentChanged?: (documentId: DocumentId) => void
+
+	/** Установить колбэк при смене активного документа (вызывается из MainStore) */
+	setOnActiveDocumentChanged(callback: (documentId: DocumentId) => void): void {
+		this.onActiveDocumentChanged = callback
 	}
 
 	// === Методы доступа к сторам (делегирование к DocumentStoreManager) ===
@@ -108,13 +117,11 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		if (this.uiStore.usePerDocumentStores) {
-			// НОВОЕ: Сторы создаются через DocumentStoreManager
-			this.documentStoreManager.getOrCreateStores(id)
-		} else {
-			// СТАРОЕ: Применить пустые данные к глобальным сторам
-			this.storageService.applyContent(session.data)
-		}
+		// Создаём сторы через DocumentStoreManager
+		// Блокируем onChangeList на время загрузки
+		session.state.isLoading = true
+		this.documentStoreManager.createStores(id)
+		session.state.isLoading = false
 
 		this.persistToLocalStorage()
 		this.persistDocumentDataToLocalStorage(id)
@@ -171,20 +178,12 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			loadedSession.state.lastLoadedAt = Date.now()
 			loadedSession.state.lastSyncedAt = Date.now()
 
-			if (this.uiStore.usePerDocumentStores) {
-				// НОВОЕ: Обновляем сторы через менеджер
-				this.documentStoreManager.updateStoresData(id, {
-					projectsList: loadedSession.data.projectsList,
-					completedList: loadedSession.data.completedList,
-					plannedList: loadedSession.data.plannedList
-				})
-			} else {
-				// СТАРОЕ: Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
-				this.storageService.applyContent(loadedSession.data)
-			}
-
-			// Сбрасываем isLoading и явно очищаем isDirty после применения данных
+			// Создаём сторы через менеджер (с блокировкой onChangeList)
+			// Данные уже загружены в session.data, dataProvider вернёт их при createStores
+			loadedSession.state.isLoading = true
+			this.documentStoreManager.createStores(id)
 			loadedSession.state.isLoading = false
+
 			loadedSession.state.isDirty = false
 
 			this.persistDocumentDataToLocalStorage(id)
@@ -244,13 +243,10 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
 		}
 
-		if (this.uiStore.usePerDocumentStores) {
-			// НОВОЕ: Удаляем сторы
-			this.documentStoreManager.removeStores(documentId)
-		}
+		// Удаляем сторы
+		this.documentStoreManager.removeStores(documentId)
 
 		if (this.state.activeDocumentId) {
-			// Активировать новый документ (с блокировкой onChangeList)
 			this.activateDocument(this.state.activeDocumentId)
 		}
 
@@ -266,16 +262,18 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
-		if (this.uiStore.usePerDocumentStores) {
-			// НОВОЕ: Убеждаемся что сторы существуют (данные уже в памяти!)
-			this.documentStoreManager.getOrCreateStores(documentId)
-		} else {
-			// СТАРОЕ: Применить данные активного документа к глобальным сторам
-			const previousLoadingState = session.state.isLoading
-			session.state.isLoading = true
-			this.storageService.applyContent(session.data)
-			session.state.isLoading = previousLoadingState
+		// Убеждаемся что сторы существуют (данные уже в памяти!)
+		// Блокируем onChangeList чтобы не было ложного isDirty
+		const previousLoadingState = session.state.isLoading
+		session.state.isLoading = true
+		if (!this.documentStoreManager.hasStores(documentId)) {
+			this.documentStoreManager.createStores(documentId)
 		}
+
+		session.state.isLoading = previousLoadingState
+
+		// Уведомляем об изменении активного документа (инвалидация кэша и т.п.)
+		this.onActiveDocumentChanged?.(documentId)
 
 		this.persistToLocalStorage()
 	}
@@ -433,19 +431,14 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 			session.data = parseDocumentContent(content)
 
-			if (this.uiStore.usePerDocumentStores) {
-				// НОВОЕ: Обновляем сторы через менеджер
-				this.documentStoreManager.updateStoresData(session.id, {
-					projectsList: session.data.projectsList,
-					completedList: session.data.completedList,
-					plannedList: session.data.plannedList
-				})
-			} else {
-				// СТАРОЕ: Применить данные к глобальным сторам
-				session.state.isLoading = true
-				this.storageService.applyContent(session.data)
-				session.state.isLoading = false
-			}
+			// Обновляем сторы через менеджер (с блокировкой onChangeList)
+			session.state.isLoading = true
+			this.documentStoreManager.updateStoresData(session.id, {
+				projectsList: session.data.projectsList,
+				completedList: session.data.completedList,
+				plannedList: session.data.plannedList
+			})
+			session.state.isLoading = false
 
 			session.state.syncStatus = 'synced'
 			session.state.lastSyncedAt = Date.now()
@@ -502,6 +495,46 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		return results
 	}
 
+	// === Методы для замены StorageService ===
+
+	/**
+	 * Применить контент к активному документу.
+	 * Нормализует данные, обновляет сторы и сессию.
+	 * Используется при выборе удалённой версии при конфликте.
+	 */
+	applyContentToActiveDocument(content: unknown): void {
+		const session = this.activeDocument
+		if (!session) return
+
+		const normalized = normalizeMainStoreData(content)
+
+		// Обновляем данные сессии
+		session.data = normalized
+
+		// Обновляем сторы (с блокировкой onChangeList)
+		session.state.isLoading = true
+		this.documentStoreManager.updateStoresData(session.id, {
+			projectsList: normalized.projectsList,
+			completedList: normalized.completedList,
+			plannedList: normalized.plannedList
+		})
+		session.state.isLoading = false
+
+		session.state.syncStatus = 'synced'
+		session.state.lastSyncedAt = Date.now()
+		session.state.lastLoadedAt = Date.now()
+
+		this.persistDocumentDataToLocalStorage(session.id)
+		this.persistToLocalStorage()
+	}
+
+	/** Получить данные документа для сохранения */
+	getDocumentDataForSave(documentId?: DocumentId): DocumentData | null {
+		const docId = documentId ?? this.state.activeDocumentId
+		if (!docId) return null
+		return this.documentStoreManager.getDocumentDataForSave(docId)
+	}
+
 	// === Персистентность ===
 
 	/** Сохранить метаданные вкладок в localStorage */
@@ -538,11 +571,11 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
 
-		const dataSnapshot: DocumentDataSnapshot = {
+		const snapshot: DocumentDataSnapshot = {
 			data: session.data,
 			savedAt: Date.now()
 		}
-		localStorage.setItem(`${DOCUMENT_DATA_PREFIX}${documentId}`, JSON.stringify(dataSnapshot))
+		localStorage.setItem(`${DOCUMENT_DATA_PREFIX}${documentId}`, JSON.stringify(snapshot))
 	}
 
 	/** Удалить данные документа из localStorage */
@@ -577,29 +610,13 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 					const session = this.state.documents.get(docSnapshot.id)!
 					session.data = dataSnapshot.data
 
-					if (this.uiStore.usePerDocumentStores) {
-						// НОВОЕ: Создаём сторы
-						this.documentStoreManager.updateStoresData(docSnapshot.id, {
-							projectsList: session.data.projectsList,
-							completedList: session.data.completedList,
-							plannedList: session.data.plannedList
-						})
-					}
+					// Создаём сторы (с блокировкой onChangeList)
+					// Данные уже загружены в session.data, dataProvider вернёт их при createStores
+					session.state.isLoading = true
+					this.documentStoreManager.createStores(docSnapshot.id)
+					session.state.isLoading = false
 				} catch (e) {
 					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
-				}
-			}
-		}
-
-		// СТАРОЕ: Применить данные активного документа к глобальным сторам
-		if (!this.uiStore.usePerDocumentStores) {
-			if (this.state.activeDocumentId) {
-				const activeSession = this.state.documents.get(this.state.activeDocumentId)
-				if (activeSession) {
-					// Временно устанавливаем isLoading для блокировки onChangeList
-					activeSession.state.isLoading = true
-					this.storageService.applyContent(activeSession.data)
-					activeSession.state.isLoading = false
 				}
 			}
 		}
@@ -652,6 +669,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			activeDocumentId: null,
 			documentOrder: []
 		}
+		this.documentStoreManager.clear()
 		// Очистка localStorage
 		localStorage.removeItem('documentTabs')
 		const keysToRemove: string[] = []

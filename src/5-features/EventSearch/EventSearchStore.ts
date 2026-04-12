@@ -4,6 +4,7 @@ import ZCron, { ParsedSchedule } from 'src/7-shared/libs/ZCron/ZCron'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { RepeatableEventModel } from 'src/6-entities/Events/RepeatableEventModel'
 import { SingleEventModel } from 'src/6-entities/Events/SingleEventModel'
+import type { DocumentTabsStore } from 'src/6-entities/Document/model'
 
 export interface SearchResult {
 	eventId: number
@@ -39,13 +40,17 @@ export class EventSearchStore {
 	hasMoreBefore: boolean = true
 	hasMoreAfter: boolean = true
 
-	private eventsStore: EventsStore
+	private documentTabsStore: DocumentTabsStore
 	/** Кэш скомпилированных расписаний */
 	private scheduleCache: Map<string, ParsedSchedule> = new Map()
 
-	constructor(eventsStore: EventsStore) {
-		this.eventsStore = eventsStore
+	constructor(documentTabsStore: DocumentTabsStore) {
+		this.documentTabsStore = documentTabsStore
 		makeAutoObservable(this)
+	}
+
+	private get eventsStore(): EventsStore | null {
+		return this.documentTabsStore.activeEventsStore
 	}
 
 	/**
@@ -116,6 +121,7 @@ export class EventSearchStore {
 
 	/** Найти ближайшие N событий ПОСЛЕ указанной даты (включительно) */
 	private findNearestAfter(fromTimestamp: timestamp, limit: number): SearchResult[] {
+		if (!this.eventsStore) return []
 		const candidates: SearchResult[] = []
 
 		// 1. Одиночные события (планируемые)
@@ -148,6 +154,7 @@ export class EventSearchStore {
 
 	/** Найти ближайшие N событий ДО указанной даты (строго до) */
 	private findNearestBefore(beforeTimestamp: timestamp, limit: number): SearchResult[] {
+		if (!this.eventsStore) return []
 		const candidates: SearchResult[] = []
 
 		// 1. Одиночные события (планируемые)
@@ -307,7 +314,7 @@ export class EventSearchStore {
 
 	/** Загрузить ещё результаты в будущем (инкрементально) */
 	private loadMoreAfter() {
-		if (!this.hasMoreAfter || !this.query) return
+		if (!this.hasMoreAfter || !this.query || !this.eventsStore) return
 
 		// Ищем только COUNT_LOAD + 1 событий строго ПОСЛЕ latestFound
 		const candidates: SearchResult[] = []
@@ -356,7 +363,7 @@ export class EventSearchStore {
 
 	/** Загрузить ещё результаты в прошлом (инкрементально) */
 	private loadMoreBefore() {
-		if (!this.hasMoreBefore || !this.query) return
+		if (!this.hasMoreBefore || !this.query || !this.eventsStore) return
 
 		// Ищем только COUNT_LOAD + 1 событий строго ДО earliestFound
 		const candidates: SearchResult[] = []

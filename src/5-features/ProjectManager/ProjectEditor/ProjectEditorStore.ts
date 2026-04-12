@@ -1,5 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
+import type { DocumentTabsStore } from 'src/6-entities/Document/model'
 
 /** Допустимые CSS именованные цвета */
 const CSS_COLOR_ALIASES = new Set([
@@ -271,8 +272,12 @@ class ProjectEditorStore {
 		return colorToHex(this.formData.background)
 	}
 
-	constructor(private projectsStore: ProjectsStore) {
+	constructor(private documentTabsStore: DocumentTabsStore) {
 		makeAutoObservable(this)
+	}
+
+	private get projectsStore(): ProjectsStore | null {
+		return this.documentTabsStore.activeProjectsStore
 	}
 
 	/** Открыть форму для добавления нового проекта */
@@ -289,6 +294,7 @@ class ProjectEditorStore {
 	 * @param projectName - наименование проекта для редактирования
 	 */
 	openEdit(projectName: string) {
+		if (!this.projectsStore) return
 		const project = this.projectsStore.getByName(projectName)
 		if (!project) return
 
@@ -333,12 +339,12 @@ class ProjectEditorStore {
 		// Валидация имени
 		if (this.formData.name.trim() === '') {
 			errors.name = 'Project name is required'
-		} else if (this.mode === 'add' && this.projectsStore.exists(this.formData.name.trim())) {
+		} else if (this.mode === 'add' && this.projectsStore?.exists(this.formData.name.trim())) {
 			errors.name = 'Project with this name already exists'
 		} else if (
 			this.mode === 'edit' &&
 			this.formData.name.trim() !== this.originalName &&
-			this.projectsStore.exists(this.formData.name.trim())
+			this.projectsStore?.exists(this.formData.name.trim())
 		) {
 			errors.name = 'Project with this name already exists'
 		}
@@ -363,6 +369,7 @@ class ProjectEditorStore {
 	 */
 	save(): boolean {
 		if (!this.validate()) return false
+		if (!this.projectsStore) return false
 
 		const name = this.formData.name.trim()
 		const color = this.formData.color

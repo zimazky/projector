@@ -33,8 +33,7 @@ function fullScreen() {
 }
 
 const CalendarIconBar: React.FC = observer(function () {
-	const { uiStore, googleApiService, storageService, weatherStore, saveToDriveStore, documentTabsStore } =
-		useContext(StoreContext)
+	const { uiStore, googleApiService, weatherStore, saveToDriveStore, documentTabsStore } = useContext(StoreContext)
 
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [unsavedDialogActionName, setUnsavedDialogActionName] = useState('')
@@ -60,7 +59,8 @@ const CalendarIconBar: React.FC = observer(function () {
 			alert('Нет активного документа для сохранения')
 			return
 		}
-		const dataToSave = storageService.getContentToSave()
+		const dataToSave = documentTabsStore.getDocumentDataForSave(activeDoc.id)
+		if (!dataToSave) return
 		const fileName = activeDoc.ref?.name || `calendar_data_${new Date().toISOString().slice(0, 10)}.json`
 		const mimeType = activeDoc.ref?.mimeType || 'application/json'
 		saveToDriveStore.open(fileName, JSON.stringify(dataToSave, null, 2), mimeType)
@@ -117,19 +117,7 @@ const CalendarIconBar: React.FC = observer(function () {
 
 		try {
 			const content = await googleApiService.downloadFileContent(activeDoc.ref.fileId)
-
-			// Применение данных
-			const session = documentTabsStore.activeDocument
-			if (session) {
-				session.data = content as any
-				session.state.syncStatus = 'synced'
-				session.state.lastSyncedAt = Date.now()
-				session.state.lastLoadedAt = Date.now()
-
-				// Применение к сторам
-				storageService.applyContent(session.data)
-			}
-
+			documentTabsStore.applyContentToActiveDocument(content)
 			handleCloseConflictDialog()
 		} catch (error: any) {
 			alert(error.message)
@@ -168,10 +156,7 @@ const CalendarIconBar: React.FC = observer(function () {
 		return true
 	}
 
-	const handleCreateNewDocument = async () => {
-		const canProceed = await ensureSafeTransition('Новый документ')
-		if (!canProceed) return
-
+	const handleCreateNewDocument = () => {
 		documentTabsStore.openNewDocument('Новый документ')
 	}
 
@@ -184,9 +169,7 @@ const CalendarIconBar: React.FC = observer(function () {
 		}
 	}
 
-	const handleOpenDriveFilePicker = async () => {
-		const canProceed = await ensureSafeTransition('Открыть документ')
-		if (!canProceed) return
+	const handleOpenDriveFilePicker = () => {
 		setIsPickerOpen(true)
 	}
 
