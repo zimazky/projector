@@ -78,14 +78,16 @@ describe('App Integration Tests', () => {
 			</StoreProvider>
 		)
 
-		// Создать два документа
-		const newDocButton = screen.getByTitle('Новый документ')
-		fireEvent.click(newDocButton)
+		// Создать первый документ (кнопка в EmptyState)
+		const newDocButtonEmptyState = screen.getByTitle('Новый документ')
+		fireEvent.click(newDocButtonEmptyState)
 		await waitFor(() => {
 			expect(documentTabsStore.documents.length).toBe(1)
 		})
 
-		fireEvent.click(newDocButton)
+		// Создать второй документ (кнопка "+" в DocumentTabs)
+		const newDocButtonTabs = screen.getByTestId('new-document-button')
+		fireEvent.click(newDocButtonTabs)
 		await waitFor(() => {
 			expect(documentTabsStore.documents.length).toBe(2)
 		})
@@ -106,9 +108,9 @@ describe('App Integration Tests', () => {
 			</StoreProvider>
 		)
 
-		// Создать документ
-		const newDocButton = screen.getByTitle('Новый документ')
-		fireEvent.click(newDocButton)
+		// Создать документ (кнопка в EmptyState)
+		const newDocButtonEmptyState = screen.getByTitle('Новый документ')
+		fireEvent.click(newDocButtonEmptyState)
 		await waitFor(() => {
 			expect(documentTabsStore.documents.length).toBe(1)
 		})
@@ -139,9 +141,9 @@ describe('App Integration Tests', () => {
 			</StoreProvider>
 		)
 
-		// Создать первый документ
-		const newDocButton = screen.getByTitle('Новый документ')
-		fireEvent.click(newDocButton)
+		// Создать первый документ (кнопка в EmptyState)
+		const newDocButtonEmptyState = screen.getByTitle('Новый документ')
+		fireEvent.click(newDocButtonEmptyState)
 		await waitFor(() => {
 			expect(documentTabsStore.documents.length).toBe(1)
 		})
@@ -155,8 +157,9 @@ describe('App Integration Tests', () => {
 
 		const firstDocId = documentTabsStore.activeDocument!.id
 
-		// Создать второй документ
-		fireEvent.click(newDocButton)
+		// Создать второй документ (кнопка "+" в DocumentTabs)
+		const newDocButtonTabs = screen.getByTestId('new-document-button')
+		fireEvent.click(newDocButtonTabs)
 
 		// Проверить, что диалог НЕ появился
 		await waitFor(() => {
@@ -178,28 +181,36 @@ describe('App Integration Tests', () => {
 			</StoreProvider>
 		)
 
-		// Создать документ
-		const newDocButton = screen.getByTitle('Новый документ')
-		fireEvent.click(newDocButton)
+		// Создать документ (кнопка в EmptyState)
+		const newDocButtonEmptyState = screen.getByTitle('Новый документ')
+		fireEvent.click(newDocButtonEmptyState)
 		await waitFor(() => {
 			expect(documentTabsStore.documents.length).toBe(1)
 		})
 
 		// Проверить отсутствие индикатора изменений
-		let indicator = screen.queryByText('*')
+		let tabs = screen.getAllByTestId('document-tab')
+		let tab = tabs[0]
+		let indicator = tab.querySelector('.modifiedIndicator')
 		expect(indicator).toBeNull()
 
-		// Изменить документ
-		documentTabsStore.updateActiveDocumentData({
-			projectsList: [],
-			completedList: [],
-			plannedList: []
+		// Изменить документ (оборачиваем в act для корректного обновления DOM)
+		await act(async () => {
+			documentTabsStore.updateActiveDocumentData({
+				projectsList: [],
+				completedList: [],
+				plannedList: []
+			})
 		})
 
-		// Проверить появление индикатора
-		indicator = screen.getByText('*')
+		// Перенайти таб после обновления DOM
+		tabs = screen.getAllByTestId('document-tab')
+		tab = tabs[0]
+
+		// Проверить появление индикатора внутри таба
+		indicator = tab.querySelector('.modifiedIndicator')
 		expect(indicator).toBeTruthy()
-		expect(indicator?.className).toContain('modifiedIndicator')
+		expect(indicator?.textContent).toBe('*')
 	})
 
 	test('индикатор syncStatus отображается для документа с fileId', async () => {

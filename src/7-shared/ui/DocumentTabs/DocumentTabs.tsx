@@ -102,7 +102,12 @@ const DocumentTabs: React.FC<DocumentTabsProps> = observer(function ({
 					</button>
 				</div>
 			))}
-			<button className={styles.documentTabNew} onClick={onNew} title="Новый документ">
+			<button
+				className={styles.documentTabNew}
+				onClick={onNew}
+				title="Новый документ"
+				data-testid="new-document-button"
+			>
 				+
 			</button>
 		</div>

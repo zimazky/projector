@@ -234,11 +234,27 @@ describe('DocumentStoreManager', () => {
 			onProjectsChanged
 		})
 
-		managerWithCallbacks.createStores('doc_1')
+		const stores = managerWithCallbacks.createStores('doc_1')
 
-		// init() triggers onChangeList on eventsStore
+		// Add a completed event to trigger onEventsChanged
+		const now = Date.now()
+		const event = {
+			name: 'Test Event',
+			repeat: '',
+			comment: '',
+			project: 'Default',
+			start: now,
+			time: 60,
+			duration: 60,
+			end: now + 60 * 60 * 1000,
+			credit: 0,
+			debit: 0
+		}
+		stores.eventsStore.addCompletedEventModel(event, true)
+
 		expect(onEventsChanged).toHaveBeenCalledTimes(1)
 		expect(onEventsChanged.mock.calls[0][0].documentId).toBe('doc_1')
+		expect(onProjectsChanged).not.toHaveBeenCalled()
 	})
 
 	test('should call onProjectsChanged callback when projects change', () => {
@@ -259,10 +275,14 @@ describe('DocumentStoreManager', () => {
 			onProjectsChanged
 		})
 
-		managerWithCallbacks.createStores('doc_1')
+		const stores = managerWithCallbacks.createStores('doc_1')
 
-		// init() on projectsStore triggers onChangeList
-		expect(onProjectsChanged).toHaveBeenCalled()
+		// Add a project to trigger onProjectsChanged
+		stores.projectsStore.add('Test Project', '#ff0000', '#00ff00')
+
+		expect(onProjectsChanged).toHaveBeenCalledTimes(1)
+		expect(onProjectsChanged.mock.calls[0][0].documentId).toBe('doc_1')
+		expect(onEventsChanged).not.toHaveBeenCalled()
 	})
 
 	test('should set callbacks via setCallbacks', () => {
@@ -280,11 +300,39 @@ describe('DocumentStoreManager', () => {
 		}
 
 		const managerNoCallbacks = new DocumentStoreManager(dataProvider)
+
+		// Create stores without callbacks set yet
+		const stores = managerNoCallbacks.createStores('doc_1')
+
+		// Verify callbacks are not triggered yet
+		expect(onEventsChanged).not.toHaveBeenCalled()
+		expect(onProjectsChanged).not.toHaveBeenCalled()
+
+		// Set callbacks after stores creation
 		managerNoCallbacks.setCallbacks({ onEventsChanged, onProjectsChanged })
 
-		managerNoCallbacks.createStores('doc_1')
+		// Now perform operations that should trigger the callbacks
+		const now = Date.now()
+		stores.eventsStore.addCompletedEventModel(
+			{
+				name: 'Test Event',
+				repeat: '',
+				comment: '',
+				project: 'Default',
+				start: now,
+				time: 60,
+				duration: 60,
+				end: now + 60 * 60 * 1000,
+				credit: 0,
+				debit: 0
+			},
+			true
+		)
 
-		expect(onEventsChanged).toHaveBeenCalled()
-		expect(onProjectsChanged).toHaveBeenCalled()
+		stores.projectsStore.add('Test Project', '#ff0000', '#00ff00')
+
+		// Now callbacks should have been called
+		expect(onEventsChanged).toHaveBeenCalledTimes(1)
+		expect(onProjectsChanged).toHaveBeenCalledTimes(1)
 	})
 })

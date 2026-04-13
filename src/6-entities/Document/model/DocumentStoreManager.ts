@@ -66,19 +66,18 @@ export class DocumentStoreManager {
 			isInitialized: true
 		}
 
-		// Устанавливаем колбэки ДО init(), чтобы они сработали при инициализации
+		projectsStore.init(data.projectsList)
+		eventsStore.init({
+			completedList: data.completedList,
+			plannedList: data.plannedList
+		})
+
 		eventsStore.onChangeList = () => {
 			this.onEventsChanged?.(stores)
 		}
 		projectsStore.onChangeList = () => {
 			this.onProjectsChanged?.(stores)
 		}
-
-		projectsStore.init(data.projectsList)
-		eventsStore.init({
-			completedList: data.completedList,
-			plannedList: data.plannedList
-		})
 
 		this.stores.set(documentId, stores)
 		return stores
