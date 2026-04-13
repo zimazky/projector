@@ -125,6 +125,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 		this.persistToLocalStorage()
 		this.persistDocumentDataToLocalStorage(id)
+
+		this.onActiveDocumentChanged?.(id)
 	}
 
 	/** Открыть документ из Google Drive */
