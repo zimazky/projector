@@ -190,6 +190,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 			this.persistDocumentDataToLocalStorage(id)
 			this.persistToLocalStorage()
+
+			this.onActiveDocumentChanged?.(id)
 		} catch (error: any) {
 			const failedSession = this.state.documents.get(id)!
 			failedSession.state.error = error.message
