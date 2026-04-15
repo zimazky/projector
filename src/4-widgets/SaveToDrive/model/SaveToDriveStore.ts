@@ -90,22 +90,14 @@ export class SaveToDriveStore {
 					if (result.status === 'success') {
 						this.mainStore.fileSavedNotifier.fire()
 						const documentSpace = spaces === 'appDataFolder' ? 'appDataFolder' : 'drive'
-						// Обновляем активный документ через DocumentTabsStore
+						// Обновляем активный документ через централизованный метод DocumentTabsStore
 						const activeDoc = this.documentTabsStore.activeDocument
 						if (activeDoc) {
-							activeDoc.ref = {
-								...activeDoc.ref!,
-								fileId: result.file.id,
-								name: result.file.name,
-								mimeType: result.file.mimeType || this.mimeType,
-								space: documentSpace,
-								parentFolderId: result.file.parents?.[0] ?? selectedFolderId,
-								webViewLink: result.file.webViewLink
-							}
-							activeDoc.state.isDirty = false
-							activeDoc.state.lastSavedAt = Date.now()
-							activeDoc.state.syncStatus = 'synced'
-							activeDoc.state.lastSyncedAt = Date.now()
+							this.documentTabsStore.markDocumentSavedToDrive(
+								activeDoc.id,
+								result.file,
+								documentSpace
+							)
 						}
 						this.close()
 					} else if (result.status === 'conflict') {

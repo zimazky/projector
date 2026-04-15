@@ -4,8 +4,46 @@ import type { DriveSpace, ProjectDocumentData } from './types'
 /** Уникальный идентификатор документа в сессии */
 export type DocumentId = string
 
-/** Статус синхронизации документа с Google Drive */
+/** Статус синхронизации документа с Google Drive (legacy) */
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'needs-sync' | 'update-available' | 'error'
+
+/** Текущая операция синхронизации */
+export type SyncOperation = 'idle' | 'checking' | 'saving' | 'pulling'
+
+/** Состояние ошибки операции */
+export type SyncErrorState = {
+	code: string
+	message: string
+	at: number
+} | null
+
+/** Доступность Drive на уровне приложения */
+export type AppDriveAvailability = 'drive-unavailable' | 'drive-available'
+
+/** Происхождение документа */
+export type DocumentOrigin = 'new-local' | 'drive' | 'restored-local'
+
+/** Снимок синхронизации документа — новая модель состояния */
+export type DocumentSyncSnapshot = {
+	/** Отпечаток текущих локальных данных */
+	localFingerprint: string | null
+	/** Отпечаток базовой синхронизированной версии */
+	baseFingerprint: string | null
+	/** Отпечаток удалённой версии (если известна) */
+	remoteFingerprint: string | null
+	/** ID ревизии, от которой началось локальное редактирование */
+	baseRevisionId: string | null
+	/** ID последней известной удалённой ревизии */
+	remoteRevisionId: string | null
+	/** Время последней успешной синхронизации */
+	lastSyncAt: number | null
+	/** Время последней проверки удалённой версии */
+	lastRemoteCheckAt: number | null
+	/** Требуется ли проверка удалённой версии */
+	needsRemoteCheck: boolean
+	/** Происхождение документа */
+	origin: DocumentOrigin
+}
 
 /** Результат синхронизации с Google Drive */
 export type SyncResult =
@@ -57,6 +95,14 @@ export type DocumentSession = {
 	ref: DocumentRef | null
 	data: DocumentData
 	state: DocumentState
+	/** Новая модель синхронизации (этап 2+) */
+	sync: DocumentSyncSnapshot
+	/** Текущая операция */
+	operation: SyncOperation
+	/** Состояние ошибки */
+	error: SyncErrorState
+	/** Токен текущей операции для защиты от устаревших результатов */
+	operationToken: number | null
 	createdAt: number
 	lastAccessedAt: number
 }
@@ -79,6 +125,9 @@ export type DocumentTabsSnapshot = {
 			lastSyncedAt: number | null
 			hasUnsyncedChanges: boolean
 		}
+		/** Новая модель синхронизации (сериализуется для миграции) */
+		sync?: DocumentSyncSnapshot
+		operation?: SyncOperation
 		lastAccessedAt: number
 	}>
 	savedAt: number
@@ -145,6 +194,21 @@ export function createInitialDocumentState(): DocumentState {
 		syncStatus: 'offline',
 		lastSyncedAt: null,
 		hasUnsyncedChanges: false
+	}
+}
+
+/** Создать новый DocumentSyncSnapshot для локального документа */
+export function createInitialSyncSnapshot(origin: DocumentOrigin = 'new-local'): DocumentSyncSnapshot {
+	return {
+		localFingerprint: null,
+		baseFingerprint: null,
+		remoteFingerprint: null,
+		baseRevisionId: null,
+		remoteRevisionId: null,
+		lastSyncAt: null,
+		lastRemoteCheckAt: null,
+		needsRemoteCheck: false,
+		origin
 	}
 }
 
