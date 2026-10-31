@@ -2,6 +2,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react'
 import { waitFor } from '@testing-library/dom'
 import '@testing-library/jest-dom'
 import React from 'react'
+import { deferred } from 'src/test-utils/deferred'
 
 import App from 'src/1-app/App/App'
 import StoreProvider from 'src/1-app/Providers/StoreProvider'
@@ -77,6 +78,8 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = false
 		saveToDriveStore.close()
 		;(googleApiService.saveFile as jest.Mock).mockReset()
+		;(googleApiService.getFileMetadata as jest.Mock).mockReset()
+		;(googleApiService.downloadFileContent as jest.Mock).mockReset()
 		jest.spyOn(window, 'alert').mockImplementation(() => {})
 	})
 
@@ -382,7 +385,7 @@ describe('App Integration Tests', () => {
 		documentTabsStore.openNewDocument('Demo')
 		const document = documentTabsStore.activeDocument!
 		document.ref!.fileId = 'fake'
-		document.state.isDirty = true
+		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 		render(
 			<StoreProvider {...stores}>
 				<App />
@@ -398,7 +401,7 @@ describe('App Integration Tests', () => {
 
 	test('отмена «Сохранить как» разрешает повторное закрытие без сохранения', async () => {
 		documentTabsStore.openNewDocument('Demo')
-		documentTabsStore.activeDocument!.state.isDirty = true
+		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 		render(
 			<StoreProvider {...stores}>
 				<App />
@@ -450,7 +453,7 @@ describe('App Integration Tests', () => {
 		})
 		documentTabsStore.openNewDocument('Demo')
 		const document = documentTabsStore.activeDocument!
-		document.state.isDirty = true
+		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 		render(
 			<StoreProvider {...stores}>
 				<App />
@@ -474,4 +477,58 @@ describe('App Integration Tests', () => {
 		expect(JSON.parse(localStorage.getItem(`document_${document.id}`)!).data.plannedList[0].name).toBe('New local edit')
 		expect(JSON.parse((googleApiService.saveFile as jest.Mock).mock.calls[0][1]).plannedList).toEqual([])
 	})
+
+	test.each(['local', 'remote'] as const)(
+		'решение конфликта %s не меняет другую вкладку после переключения',
+		async choice => {
+			googleApiService.isGoogleLoggedIn = true
+			documentTabsStore.openNewDocument('A')
+			const a = documentTabsStore.activeDocument!
+			a.ref!.fileId = 'file-a'
+			documentTabsStore.getDocumentStores(a.id)!.projectsStore.add('Local A', 'black', 'white')
+			documentTabsStore.openNewDocument('B')
+			const b = documentTabsStore.activeDocument!
+			documentTabsStore.activateDocument(a.id)
+			;(googleApiService.getFileMetadata as jest.Mock).mockResolvedValue({
+				id: 'file-a',
+				name: 'A',
+				mimeType: 'application/json',
+				modifiedTime: '2026-11-01T00:00:00Z'
+			})
+			const response = deferred<any>()
+			;(googleApiService.saveFile as jest.Mock).mockReturnValue(response.promise)
+			;(googleApiService.downloadFileContent as jest.Mock).mockReturnValue(response.promise)
+			render(
+				<StoreProvider {...stores}>
+					<App />
+				</StoreProvider>
+			)
+			fireEvent.click(screen.getByTitle('Синхронизировать с Google Drive'))
+			const command = await screen.findByRole('button', {
+				name: choice === 'local' ? /Сохранить локальную версию/ : /Загрузить версию с Drive/
+			})
+			fireEvent.click(command)
+			act(() => {
+				documentTabsStore.activateDocument(b.id)
+			})
+			await act(async () => {
+				response.resolve(
+					choice === 'local'
+						? { status: 'success', file: { id: 'file-a', name: 'A', mimeType: 'application/json' } }
+						: {
+								projectsList: [{ name: 'Remote A', color: 'black', background: 'white' }],
+								completedList: [],
+								plannedList: []
+							}
+				)
+			})
+			await waitFor(() => expect(a.operation).toBe('idle'))
+			expect(documentTabsStore.activeDocumentId).toBe(b.id)
+			expect(b.ref!.fileId).toBeNull()
+			expect(b.data.projectsList).toEqual([])
+			expect(a.data.projectsList[0].name).toBe(choice === 'local' ? 'Local A' : 'Remote A')
+			if (choice === 'local') expect((googleApiService.saveFile as jest.Mock).mock.calls[0][5]).toBe('file-a')
+			else expect(googleApiService.downloadFileContent).toHaveBeenCalledWith('file-a')
+		}
+	)
 })

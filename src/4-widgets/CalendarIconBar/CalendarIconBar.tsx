@@ -67,47 +67,31 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 			return
 		}
 
-		const result = await documentTabsStore.syncActiveDocumentWithDrive()
+		const result = await documentTabsStore.checkDocument(activeDoc.id)
 		if (result.status === 'conflict') {
-			setConflictDialogData({
+			if (!documentTabsStore.isDocumentOperationCurrent(result.context)) return
+			// Решение относится к проверенной сессии, даже если пользователь переключит вкладку.
+			const chooseVersion = async (choice: 'local' | 'remote') => {
+				const resolved = await documentTabsStore.resolveDocumentConflict(result.context, choice)
+				if (resolved.status === 'failed' || resolved.status === 'conflict') alert(resolved.message)
+				else closeThisConflict()
+			}
+			const closeThisConflict = () => setConflictDialogData(current => (current === dialog ? null : current))
+			const dialog: ConflictDialogProps = {
 				open: true,
 				localModifiedAt: result.localModifiedAt,
 				remoteModifiedAt: result.remoteModifiedAt,
 				hasLocalChanges: result.hasLocalChanges,
 				hasRemoteChanges: result.hasRemoteChanges,
 				remoteMetadata: result.remoteMetadata,
-				onChooseLocal: handleChooseLocalVersion,
-				onChooseRemote: handleChooseRemoteVersion,
-				onCancel: handleCloseConflictDialog
-			})
+				onChooseLocal: () => void chooseVersion('local'),
+				onChooseRemote: () => void chooseVersion('remote'),
+				onCancel: closeThisConflict
+			}
+			setConflictDialogData(dialog)
 		} else if (result.status === 'error') {
 			alert(result.message)
 		}
-	}
-
-	const handleChooseLocalVersion = async () => {
-		const saved = await documentTabsStore.saveActiveDocument()
-		if (saved) {
-			handleCloseConflictDialog()
-		} else if (activeDoc?.state.error) {
-			alert(activeDoc.state.error)
-		}
-	}
-
-	const handleChooseRemoteVersion = async () => {
-		if (!activeDoc?.ref?.fileId) return
-
-		try {
-			const content = await googleApiService.downloadFileContent(activeDoc.ref.fileId)
-			documentTabsStore.applyContentToActiveDocument(content)
-			handleCloseConflictDialog()
-		} catch (error: any) {
-			alert(error.message)
-		}
-	}
-
-	const handleCloseConflictDialog = () => {
-		setConflictDialogData(null)
 	}
 
 	const handleCreateNewDocument = () => {
@@ -241,10 +225,8 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		console.log('Selected file:', file)
 		if (file.isFolder()) return
 
-		await documentTabsStore.openFromDrive(file.id)
-		if (activeDoc?.state.error) {
-			alert(activeDoc.state.error)
-		}
+		const result = await documentTabsStore.openFromDrive(file.id)
+		if (result.status === 'failed' || result.status === 'conflict') alert(result.message)
 	}
 
 	return (

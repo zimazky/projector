@@ -266,7 +266,7 @@ describe('DocumentTabsStore', () => {
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
 			session.ref!.fileId = 'file-1'
-			session.state.lastSavedAt = Date.now() - 10000 // 10 секунд назад
+			session.sync.lastSyncAt = Date.now() - 10000 // 10 секунд назад
 
 			const futureDate = new Date(Date.now() + 10000).toISOString()
 			googleApiService.getFileMetadata.mockResolvedValue({
@@ -290,13 +290,14 @@ describe('DocumentTabsStore', () => {
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
 			session.ref!.fileId = 'file-1'
-			session.state.lastSavedAt = Date.now()
+			const syncedAt = Date.parse('2026-10-31T10:00:00Z')
+			session.sync.lastSyncAt = syncedAt
 
 			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
-				modifiedTime: new Date().toISOString()
+				modifiedTime: new Date(syncedAt).toISOString()
 			})
 
 			googleApiService.downloadFileContent.mockResolvedValue({
@@ -448,6 +449,7 @@ describe('DocumentTabsStore', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
+			store.activeDocument!.ref!.fileId = 'file-1'
 
 			store.applyContentToActiveDocument({
 				projectsList: [{ name: 'Новый проект', color: '#00ff00', background: '#ffffff' }],

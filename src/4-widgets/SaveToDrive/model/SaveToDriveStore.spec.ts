@@ -30,6 +30,58 @@ function setup() {
 describe('Сохранить как и конфликт имени', () => {
 	beforeEach(() => localStorage.clear())
 
+	it('старый снимок диалога не подтверждает более новые правки исходной вкладки', async () => {
+		const { store, api, documents, document } = setup()
+		const projects = documents.getDocumentStores(document.id)!.projectsStore
+		projects.add('Aa', 'black', 'white')
+		const completion = store.openForDocument(document.id)
+		const sentVersion = document.sync.localVersion
+		projects.update('Aa', { name: 'BB' })
+		documents.openNewDocument('B')
+		const b = documents.activeDocument!
+		api.saveFile.mockResolvedValue(success)
+		expect((await store.saveFile('folder', 'drive')).status).toBe('saved')
+		expect((await completion).status).toBe('saved')
+		expect(JSON.parse(api.saveFile.mock.calls[0][1]).projectsList[0].name).toBe('Aa')
+		expect(document.sync.baseLocalVersion).toBe(sentVersion)
+		expect(document.data.projectsList[0].name).toBe('BB')
+		expect(document.state.isDirty).toBe(true)
+		expect(JSON.parse(localStorage.getItem('document_' + document.id)!).data.projectsList[0].name).toBe('BB')
+		expect(b.ref!.fileId).toBeNull()
+		expect(documents.activeDocumentId).toBe(b.id)
+	})
+
+	it('не отправляет снимок закрытого документа из оставшегося диалога', async () => {
+		const { store, api, documents, document } = setup()
+		const completion = store.openForDocument(document.id)
+		documents.closeDocument(document.id)
+		documents.openNewDocument('B')
+		expect(await store.saveFile('folder', 'drive')).toEqual({ status: 'cancelled' })
+		expect(await completion).toEqual({ status: 'cancelled' })
+		expect(api.saveFile).not.toHaveBeenCalled()
+		expect(documents.activeDocument!.ref!.fileId).toBeNull()
+		store.close()
+	})
+
+	test.each(['success', 'error'])('поздний %s «Сохранить как» закрытой вкладки игнорируется', async outcome => {
+		const { store, api, documents, document, fire } = setup()
+		const completion = store.openForDocument(document.id)
+		const response = deferred<any>()
+		api.saveFile.mockReturnValue(response.promise)
+		const saving = store.saveFile('folder', 'drive')
+		documents.closeDocument(document.id)
+		documents.openNewDocument('B')
+		const b = documents.activeDocument!
+		if (outcome === 'success') response.resolve(success)
+		else response.reject(new Error('Late failure'))
+		expect(await saving).toEqual({ status: 'cancelled' })
+		expect(await completion).toEqual({ status: 'cancelled' })
+		expect(b.ref!.fileId).toBeNull()
+		expect(b.error).toBeNull()
+		expect(fire).not.toHaveBeenCalled()
+		store.close()
+	})
+
 	it('отмена завершает Promise и позволяет открыть повторно', async () => {
 		const { store, document } = setup()
 		const saving = store.openForDocument(document.id)

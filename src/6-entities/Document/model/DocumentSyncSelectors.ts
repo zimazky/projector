@@ -1,4 +1,4 @@
-import type { DocumentSession, SyncOperation, AppDriveAvailability } from './DocumentTabsStore.types'
+import type { DocumentSession, AppDriveAvailability } from './DocumentTabsStore.types'
 
 /**
  * TTL для проверки актуальности удалённой проверки (в миллисекундах).
@@ -8,15 +8,11 @@ export const REMOTE_CHECK_TTL_MS = 60 * 1000
 
 /**
  * Вычисляет, есть ли локальные изменения относительно базовой версии.
- * localFingerprint !== baseFingerprint
+ * Локальная версия сравнивается с подтверждённой базой; хэши не доказывают равенство.
  */
 export function getIsDirty(session: DocumentSession): boolean {
-	const { localFingerprint, baseFingerprint } = session.sync
-	// Если оба null — считаем что изменений нет
-	if (localFingerprint === null && baseFingerprint === null) return false
-	// Если один из них null — считаем что есть (данные загружены, но base не установлен)
-	if (localFingerprint === null || baseFingerprint === null) return true
-	return localFingerprint !== baseFingerprint
+	const { localVersion, baseLocalVersion } = session.sync
+	return baseLocalVersion === null || localVersion !== baseLocalVersion
 }
 
 /**
@@ -95,8 +91,8 @@ export function getUiSyncStatus(session: DocumentSession): UiSyncStatus {
  * Предупреждаем если есть локальные изменения или конфликт.
  */
 export function getShouldWarnOnClose(session: DocumentSession): boolean {
-	const status = getUiSyncStatus(session)
-	return status === 'dirty' || status === 'conflict' || status === 'new'
+	if (session.operation === 'opening') return false
+	return getIsDirty(session) || getHasRemoteAhead(session) || !!(session.ref?.fileId && session.sync.needsRemoteCheck)
 }
 
 /**
@@ -230,6 +226,8 @@ export function syncLegacyStateFromNewModel(session: DocumentSession): void {
 
 	// Обновляем isDirty
 	session.state.isDirty = isDirty
+	session.state.isSaving = session.operation === 'saving'
+	session.state.error = session.error?.message ?? null
 
 	// Обновляем syncStatus
 	if (uiStatus === 'syncing') {
@@ -243,10 +241,13 @@ export function syncLegacyStateFromNewModel(session: DocumentSession): void {
 		session.state.syncStatus = 'update-available'
 	} else if (isDirty) {
 		session.state.syncStatus = 'needs-sync'
+	} else if (uiStatus === 'new' || session.sync.needsRemoteCheck) {
+		session.state.syncStatus = 'offline'
 	} else {
 		session.state.syncStatus = 'synced'
 	}
 
 	// hasUnsyncedChanges: true если есть конфликт или remote-ahead
-	session.state.hasUnsyncedChanges = hasRemoteAhead || hasConflict
+	session.state.hasUnsyncedChanges =
+		hasRemoteAhead || hasConflict || !!(session.ref?.fileId && session.sync.needsRemoteCheck)
 }

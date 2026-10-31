@@ -1,0 +1,87 @@
+{
+  "date": "2026-10-31",
+  "timezone": "Europe/Moscow",
+  "stage": 3,
+  "baselineCommit": "682a3f55955881628de13f203703fdd368f3fd04",
+  "branch": "per_document_stores_glm5_v1",
+  "node": "v24.12.0",
+  "platform": "win32",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "verification": {
+    "typecheck": {
+      "status": "passed"
+    },
+    "e2eTypecheck": {
+      "status": "passed"
+    },
+    "lint": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 10
+    },
+    "jest": {
+      "status": "passed",
+      "suites": 16,
+      "tests": 3544,
+      "failed": 0,
+      "newRegressionCases": 28
+    },
+    "browser": {
+      "status": "passed",
+      "engine": "Chromium",
+      "expected": 6,
+      "unexpected": 0,
+      "flaky": 0,
+      "errors": 0,
+      "realDrive": false
+    },
+    "build": {
+      "status": "passed"
+    },
+    "pages": {
+      "status": "passed",
+      "files": 14
+    }
+  },
+  "coverage": [
+    "document-session identity and operation-token guards",
+    "immutable sent snapshots and local versions",
+    "same-document save deduplication",
+    "independent responses in reverse order",
+    "close during open/save and session ID reuse",
+    "inactive-document edits and reload persistence",
+    "conflict choice bound to original check",
+    "pull rejects intervening edits and stale responses",
+    "Aa/BB and exact return to base",
+    "legacy snapshots and interrupted local persistence",
+    "React UI choices across tab switches",
+    "Chromium reload of two documents and CSS/TSX HMR"
+  ],
+  "deferred": [
+    "server-side conflict/write protocol and consistent Drive reads (stage 4)",
+    "complete EventDto validation, offline initialization and storage quota handling (stage 5)",
+    "complete UI selectors migration and legacy removal"
+  ],
+  "sourceSha256": {
+    "e2e/documents.spec.ts": "30be83c26d25abf69fda411685b2c9139002c4f57eb422b05f210f0b1e7c0e05",
+    "src/1-app/App/App.spec.tsx": "87616ba1c4481e00fe42ce3c86447cfc8bed5048fbc2af7b5e52b7674ce2b0f9",
+    "src/1-app/Stores/MainStore.ts": "8032ae5a8180b469b7e0503716d5927e39b2f9fbe502a1dace95737bd5747f31",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "90ae793355538fbd3fff36a3bdba521ec7c1f8428f5766e2d6fa1dce644c4a3a",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "3bd1352605757bba6dcbe689ef604d38a6a53cbd4e013457bcf30d2651015d87",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.ts": "27bcf075079b0742941a276b9a7017f16ad711a44556ef6b77cf34741b9b0fd6",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "6088ec81dba7fba1a0aef986beccfa05ceb4c8da74e819279f3a9d67856b9696",
+    "src/6-entities/Document/model/DocumentSyncFingerprint.ts": "7632b178318a59f17e06c3f4595f3fc316039cef4ca826180fc505485c62c65f",
+    "src/6-entities/Document/model/DocumentSyncSelectors.ts": "92af89a100861a176b5185397437e8a18f4a3cce2c5723b9c8f8f35ac33c9071",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "d21184eb5b8f689b8c56069e1e17fa87169dc493ea423b4b744a865abbfa0cb1",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "01bc24dba30a2a6bcfb090511175c4513a3a620a8d3ee167126f04cea76dbf0f",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "c31462da0bc955803f1cd905354746f1c91e58901ae1a50ce3b5cc8990968d80",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "ea2f07a276d1b7c836cefb9e8d2c6a485577ac27453646645195eae5d0e22ea5"
+  },
+  "artifacts": {
+    "logs": "artifacts/remediation-stage3",
+    "jest": "artifacts/remediation-stage3/jest.json",
+    "browser": "artifacts/playwright/results.json",
+    "browserHtml": "artifacts/playwright/report/index.html"
+  }
+}

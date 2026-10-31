@@ -4,7 +4,7 @@ import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { DriveFileMetadata } from 'src/7-shared/services/gapi'
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { DocumentTabsStore } from 'src/6-entities/Document/model'
-import type { DocumentData, DocumentSaveResult } from 'src/6-entities/Document/model/DocumentTabsStore.types'
+import type { DocumentSnapshot, DocumentSaveResult } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import { GoogleLoginCancelledError } from 'src/7-shared/services/GoogleAuthError'
 
 type SaveRequest = {
@@ -14,6 +14,7 @@ type SaveRequest = {
 	content: string | Blob
 	mime: string
 	documentId: string | null
+	snapshot: DocumentSnapshot | null
 }
 
 export class SaveToDriveStore {
@@ -28,6 +29,7 @@ export class SaveToDriveStore {
 	newFileNameForConflict = ''
 	selectedConflictFileId = ''
 	private documentId: string | null = null
+	private sourceSnapshot: DocumentSnapshot | null = null
 	private conflictRequest: SaveRequest | null = null
 	private completion: ((result: DocumentSaveResult) => void) | null = null
 
@@ -58,10 +60,13 @@ export class SaveToDriveStore {
 		documentId: string | null = null
 	): Promise<DocumentSaveResult> => {
 		if (this.isOpen) return Promise.resolve({ status: 'failed', message: 'Завершите открытое сохранение.' })
+		const snapshot = documentId ? this.documentTabsStore.captureDocumentSnapshot(documentId) : null
+		if (documentId && !snapshot) return Promise.resolve({ status: 'cancelled' })
 		this.isOpen = true
 		this.documentId = documentId
+		this.sourceSnapshot = snapshot
 		this.fileName = initialFileName
-		this.fileContent = content
+		this.fileContent = snapshot ? JSON.stringify(snapshot.data, null, 2) : content
 		this.mimeType = mime
 		this.error = null
 		this.resetConflictState()
@@ -77,6 +82,7 @@ export class SaveToDriveStore {
 		this.fileName = ''
 		this.fileContent = null
 		this.documentId = null
+		this.sourceSnapshot = null
 		this.error = null
 		this.resetConflictState()
 	}
@@ -104,9 +110,10 @@ export class SaveToDriveStore {
 			folderId,
 			space,
 			name: this.fileName.trim(),
-			content: this.fileContent,
+			content: this.sourceSnapshot ? JSON.stringify(this.sourceSnapshot.data, null, 2) : this.fileContent,
 			mime: this.mimeType,
-			documentId: this.documentId
+			documentId: this.documentId,
+			snapshot: this.sourceSnapshot
 		})
 	}
 
@@ -114,10 +121,21 @@ export class SaveToDriveStore {
 		request: SaveRequest,
 		overwriteId: string | null = null
 	): Promise<DocumentSaveResult> => {
+		const context = request.snapshot
+			? this.documentTabsStore.beginDocumentOperation(request.snapshot.documentId, 'saving', request.snapshot)
+			: null
+		if (request.documentId && !context) {
+			this.complete({ status: 'cancelled' })
+			return { status: 'cancelled' }
+		}
 		this.isSaving = true
 		this.error = null
 		try {
 			if (!this.googleApiService.isGoogleLoggedIn) await this.googleApiService.logIn()
+			if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
+				this.complete({ status: 'cancelled' })
+				return { status: 'cancelled' }
+			}
 			if (!this.googleApiService.isGoogleLoggedIn) {
 				this.complete({ status: 'cancelled' })
 				return { status: 'cancelled' }
@@ -131,14 +149,16 @@ export class SaveToDriveStore {
 				overwriteId
 			)
 			return runInAction(() => {
+				if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
+					this.complete({ status: 'cancelled' })
+					return { status: 'cancelled' }
+				}
 				if (result.status === 'success') {
-					if (request.documentId) {
-						const savedData: DocumentData = JSON.parse(request.content as string)
+					if (context) {
 						this.documentTabsStore.markDocumentSavedToDrive(
-							request.documentId,
+							context,
 							result.file,
-							request.space === 'appDataFolder' ? 'appDataFolder' : 'drive',
-							savedData
+							request.space === 'appDataFolder' ? 'appDataFolder' : 'drive'
 						)
 					}
 					this.complete({ status: 'saved' })
@@ -155,9 +175,15 @@ export class SaveToDriveStore {
 					this.showConflictDialog = true
 					return { status: 'conflict', message: 'Файл с таким именем уже существует.' }
 				}
+				if (context) this.documentTabsStore.failDocumentOperation(context, new Error(result.message))
 				return this.fail(result.message)
 			})
 		} catch (error: unknown) {
+			if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
+				this.complete({ status: 'cancelled' })
+				return { status: 'cancelled' }
+			}
+			if (context) this.documentTabsStore.failDocumentOperation(context, error)
 			if (error instanceof GoogleLoginCancelledError) {
 				return runInAction(() => {
 					this.complete({ status: 'cancelled' })
@@ -168,6 +194,7 @@ export class SaveToDriveStore {
 				this.fail(error instanceof Error ? error.message : 'Не удалось сохранить файл на Google Drive.')
 			)
 		} finally {
+			if (context) this.documentTabsStore.finishDocumentOperation(context)
 			runInAction(() => {
 				this.isSaving = false
 			})

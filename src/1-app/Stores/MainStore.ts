@@ -50,26 +50,10 @@ export class MainStore {
 			onEventsChanged: (stores: DocumentStores) => {
 				stores.eventsStore.sort()
 				this.eventsCache.init()
-
-				const activeDoc = this.documentTabsStore.activeDocument
-				if (activeDoc && !activeDoc.state.isLoading && activeDoc.id === stores.documentId) {
-					this.documentTabsStore.updateActiveDocumentData({
-						projectsList: stores.projectsStore.getList(),
-						...stores.eventsStore.prepareToSave()
-					})
-				}
 			},
 			// onProjectsChanged
-			onProjectsChanged: (stores: DocumentStores) => {
+			onProjectsChanged: () => {
 				this.eventsCache.init()
-
-				const activeDoc = this.documentTabsStore.activeDocument
-				if (activeDoc && !activeDoc.state.isLoading && activeDoc.id === stores.documentId) {
-					this.documentTabsStore.updateActiveDocumentData({
-						projectsList: stores.projectsStore.getList(),
-						...stores.eventsStore.prepareToSave()
-					})
-				}
 			}
 		})
 

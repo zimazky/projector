@@ -17,7 +17,7 @@ export type DocumentCloseResult = { status: 'closed' } | Exclude<DocumentSaveRes
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'needs-sync' | 'update-available' | 'error'
 
 /** Текущая операция синхронизации */
-export type SyncOperation = 'idle' | 'checking' | 'saving' | 'pulling'
+export type SyncOperation = 'idle' | 'opening' | 'checking' | 'saving' | 'pulling'
 
 /** Состояние ошибки операции */
 export type SyncErrorState = {
@@ -34,6 +34,10 @@ export type DocumentOrigin = 'new-local' | 'drive' | 'restored-local'
 
 /** Снимок синхронизации документа — новая модель состояния */
 export type DocumentSyncSnapshot = {
+	/** Монотонная версия локального содержимого, сохраняется между перезапусками. */
+	localVersion: number
+	/** Локальная версия подтверждённого снимка; null означает неизвестную базу. */
+	baseLocalVersion: number | null
 	/** Отпечаток текущих локальных данных */
 	localFingerprint: string | null
 	/** Отпечаток базовой синхронизированной версии */
@@ -57,8 +61,10 @@ export type DocumentSyncSnapshot = {
 /** Результат синхронизации с Google Drive */
 export type SyncResult =
 	| { status: 'success' }
+	| { status: 'cancelled' }
 	| {
 			status: 'conflict'
+			context: DocumentOperationContext
 			message: string
 			remoteMetadata: DriveFileMetadata
 			localModifiedAt: number
@@ -67,6 +73,23 @@ export type SyncResult =
 			hasRemoteChanges: boolean
 	  }
 	| { status: 'error'; message: string }
+
+/** Снимок адреса, сессии и данных в момент начала команды или открытия «Сохранить как». */
+export type DocumentSnapshot = Readonly<{
+	documentId: DocumentId
+	session: DocumentSession
+	ref: DocumentRef | null
+	data: DocumentData
+	localVersion: number
+}>
+
+/** Токен защищает все продолжения операции, включая ошибки и finally. */
+export type DocumentOperationContext = DocumentSnapshot & Readonly<{ token: number }>
+
+export type DocumentPullResult = { status: 'pulled' } | Exclude<DocumentSaveResult, { status: 'saved' }>
+export type DocumentResolveResult = DocumentSaveResult | DocumentPullResult
+export type DocumentOpenResult =
+	{ status: 'opened'; documentId: DocumentId } | Exclude<DocumentSaveResult, { status: 'saved' }>
 
 /** Данные одного документа (проекты и события) */
 export type DocumentData = {
@@ -209,6 +232,8 @@ export function createInitialDocumentState(): DocumentState {
 /** Создать новый DocumentSyncSnapshot для локального документа */
 export function createInitialSyncSnapshot(origin: DocumentOrigin = 'new-local'): DocumentSyncSnapshot {
 	return {
+		localVersion: 0,
+		baseLocalVersion: origin === 'new-local' ? 0 : null,
 		localFingerprint: null,
 		baseFingerprint: null,
 		remoteFingerprint: null,

@@ -2,13 +2,14 @@ import { expect } from '@jest/globals'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import type { DocumentSaveResult } from './DocumentTabsStore.types'
 import { deferred } from 'src/test-utils/deferred'
+import { syncLegacyStateFromNewModel } from './DocumentSyncSelectors'
 
 function setup() {
 	const api = { saveFile: jest.fn() }
 	const store = new DocumentTabsStore(api as any)
 	store.openNewDocument('Demo')
 	const document = store.activeDocument!
-	document.state.isDirty = true
+	store.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 	return { store, document, api }
 }
 
@@ -57,8 +58,10 @@ describe('Общая команда закрытия документа', () => 
 
 	it('предупреждает о несинхронизированной предыдущей сессии даже без isDirty', async () => {
 		const { store, document } = setup()
-		document.state.isDirty = false
-		document.state.hasUnsyncedChanges = true
+		document.ref!.fileId = 'fake'
+		document.sync.baseLocalVersion = document.sync.localVersion
+		document.sync.needsRemoteCheck = true
+		syncLegacyStateFromNewModel(document)
 		const decide = jest.fn().mockResolvedValue('cancel')
 		await store.requestCloseDocument(document.id, decide, jest.fn())
 		expect(decide).toHaveBeenCalledWith(true)

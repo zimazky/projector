@@ -1,67 +1,30 @@
 import type { DocumentData } from './DocumentTabsStore.types'
 
 /**
- * Вычисляет детерминированный отпечаток данных документа.
- * Используется для сравнения версий документа без依赖 от timestamp.
- *
- * Алгоритм:
- * 1. Сериализуем DocumentData в JSON с отсортированными ключами
- * 2. Вычисляем простой hash от строки
- *
- * Это не криптографический hash — достаточно быстрое сравнение
- * для определения изменений локальных данных.
+ * Точное каноническое JSON-представление, а не 32-битный хэш.
+ * Первый проход проверяет сериализуемость и раскрывает общие ссылки по правилам JSON.
+ * Ошибки сериализации передаются вызывающему коду, случайной «версии» вместо ошибки нет.
+ * Имя сохранено для совместимости полей snapshot; старые хэши не являются новой базой.
  */
 export function computeFingerprint(data: DocumentData): string {
-	try {
-		const serialized = JSON.stringify(data, getSortedReplacer())
-		return simpleHash(serialized)
-	} catch {
-		// В случае ошибок сериализации возвращаем null-hash
-		return 'error_' + Date.now().toString(36)
-	}
-}
-
-/**
- * Создать replacer для JSON.stringify, который гарантирует
- * детерминированный порядок ключей.
- */
-function getSortedReplacer(): (key: string, value: unknown) => unknown {
-	const seen = new WeakSet()
-
-	return function replacer(key: string, value: unknown): unknown {
-		if (typeof value === 'object' && value !== null) {
-			if (seen.has(value)) {
-				return '[circular]'
-			}
-			seen.add(value)
-
-			// Сортируем ключи объектов
-			if (Array.isArray(value)) {
-				return value
-			}
-
-			const sorted: Record<string, unknown> = {}
-			const keys = Object.keys(value).sort()
-			for (const k of keys) {
-				sorted[k] = (value as Record<string, unknown>)[k]
-			}
-			return sorted
+	return JSON.stringify(JSON.parse(JSON.stringify(data)), (_key, value: unknown) => {
+		if (value && typeof value === 'object' && !Array.isArray(value)) {
+			return Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
 		}
 		return value
-	}
+	})
 }
 
-/**
- * Простой hash строки — быстрый и достаточно уникальный
- * для сравнения версий документа.
- */
-function simpleHash(str: string): string {
-	let hash = 0
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i)
-		hash = (hash << 5) - hash + char
-		hash = hash & hash // Convert to 32-bit integer
+/** Независимая копия: изменения доменных сторов не меняют отправленные данные. */
+export function cloneDocumentData(data: DocumentData): DocumentData {
+	return JSON.parse(computeFingerprint(data)) as DocumentData
+}
+
+/** Рекурсивно запрещает изменение отправленного JSON-снимка. */
+export function freezeSnapshot<T>(value: T): T {
+	if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+		Object.values(value).forEach(freezeSnapshot)
+		Object.freeze(value)
 	}
-	// Возвращаем hex-строку
-	return Math.abs(hash).toString(16).padStart(8, '0')
+	return value
 }
