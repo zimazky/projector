@@ -43,12 +43,7 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 		!currentOpenedFolderId
 
 	const handleResolveConflict = (resolution: 'overwrite' | 'rename' | 'cancel') => {
-		// Ensure currentOpenedFolderId is available when resolving conflict
-		if (currentOpenedFolderId) {
-			saveToDriveStore.resolveConflict(resolution, currentOpenedFolderId, currentSpace)
-		} else {
-			saveToDriveStore.error = 'Не выбрана папка для сохранения.'
-		}
+		void saveToDriveStore.resolveConflict(resolution)
 	}
 
 	const conflictingFileName =
@@ -80,13 +75,17 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 							{saveToDriveStore.isSaving ? <Spinner /> : 'Сохранить'}
 						</TextButton>
 					</div>
+					{saveToDriveStore.error && <p role="alert">{saveToDriveStore.error}</p>}
 				</div>
 			</Modal>
 
 			<FileConflictResolver
 				isOpen={saveToDriveStore.showConflictDialog}
-				onClose={saveToDriveStore.closeConflictDialog}
 				conflictingFileName={conflictingFileName}
+				conflictingFiles={saveToDriveStore.conflictingFiles}
+				selectedFileId={saveToDriveStore.selectedConflictFileId}
+				onSelectedFileIdChange={saveToDriveStore.setSelectedConflictFileId}
+				error={saveToDriveStore.error}
 				isSaving={saveToDriveStore.isSaving}
 				newFileNameForConflict={saveToDriveStore.newFileNameForConflict}
 				onNewFileNameChange={saveToDriveStore.setNewFileNameForConflict}

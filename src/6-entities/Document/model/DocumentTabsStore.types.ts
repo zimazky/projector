@@ -4,6 +4,15 @@ import type { DriveSpace, ProjectDocumentData } from './types'
 /** Уникальный идентификатор документа в сессии */
 export type DocumentId = string
 
+export type DocumentSaveResult =
+	| { status: 'saved' }
+	| { status: 'cancelled' }
+	| { status: 'failed'; message: string }
+	| { status: 'conflict'; message: string }
+
+export type DocumentCloseDecision = 'save' | 'discard' | 'cancel'
+export type DocumentCloseResult = { status: 'closed' } | Exclude<DocumentSaveResult, { status: 'saved' }>
+
 /** Статус синхронизации документа с Google Drive (legacy) */
 export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'needs-sync' | 'update-available' | 'error'
 

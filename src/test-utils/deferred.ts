@@ -1,0 +1,10 @@
+/** Управляемый ответ API для тестов без таймеров и ожидания реальной сети. */
+export function deferred<T>() {
+	let resolve!: (value: T | PromiseLike<T>) => void
+	let reject!: (reason?: unknown) => void
+	const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+		resolve = resolvePromise
+		reject = rejectPromise
+	})
+	return { promise, resolve, reject }
+}

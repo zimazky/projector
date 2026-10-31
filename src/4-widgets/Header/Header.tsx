@@ -13,7 +13,7 @@ import { EventSearchInput } from 'src/5-features/EventSearch/EventSearchInput'
 
 import styles from './Header.module.css'
 
-const Header: React.FC = observer(function () {
+const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({ onCloseDocument }) {
 	const { calendarStore, uiStore, documentTabsStore, googleApiService } = useContext(StoreContext)
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const activeDoc = documentTabsStore.activeDocument
@@ -32,7 +32,7 @@ const Header: React.FC = observer(function () {
 
 	return (
 		<header className={styles.header}>
-			<CalendarIconBar />
+			<CalendarIconBar onCloseDocument={onCloseDocument} />
 			<EventSearchInput />
 			<span className={styles.documentName}>{documentTitle}</span>
 			<span className={styles.caption}>{calendarStore.caption}</span>

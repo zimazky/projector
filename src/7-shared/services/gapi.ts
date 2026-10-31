@@ -1,3 +1,5 @@
+import { GoogleLoginCancelledError } from './GoogleAuthError'
+
 const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
 const SCOPES = [
@@ -15,7 +17,7 @@ function prom(gapiCall: (arg: any) => Promise<any>, argObj: any) {
 		gapiCall(argObj)
 			.then(resp => resolve(resp))
 			.catch(err => {
-				console.log('GAPI call failed', err)
+				console.error('GAPI call failed')
 				if (
 					err.result.error.code == 401 ||
 					(err.result.error.code == 403 && err.result.error.status == 'PERMISSION_DENIED')
@@ -88,20 +90,33 @@ export default class GAPI {
 			const _gapi = loadScriptPromise('https://apis.google.com/js/api.js')
 			await _gsi
 
-			GAPI.tokenClient = google.accounts.oauth2.initTokenClient({
+			// error_callback поддерживается GIS, но отсутствует в установленных старых типах.
+			const tokenConfig: google.accounts.oauth2.TokenClientConfig & {
+				error_callback: (error: { type: string }) => void
+			} = {
 				client_id: CLIENT_ID,
 				scope: SCOPES,
 				prompt: '',
 				callback: tokenResponse => {
-					console.log('tokenResponse', tokenResponse)
 					if (tokenResponse?.error) {
-						rejectLoginWaiters(tokenResponse)
+						rejectLoginWaiters(
+							tokenResponse.error === 'access_denied'
+								? new GoogleLoginCancelledError()
+								: new Error('Не удалось войти в Google.')
+						)
 						return
 					}
 					onSignIn()
 					resolveLoginWaiters()
-				}
-			})
+				},
+				error_callback: error =>
+					rejectLoginWaiters(
+						error.type === 'popup_closed'
+							? new GoogleLoginCancelledError()
+							: new Error('Не удалось открыть окно входа в Google.')
+					)
+			}
+			GAPI.tokenClient = google.accounts.oauth2.initTokenClient(tokenConfig)
 			console.log('gis inited')
 			await _gapi
 			gapi.load('client', () => {
@@ -138,16 +153,16 @@ export default class GAPI {
 			return pendingLoginPromise
 		}
 
-		pendingLoginPromise = new Promise<void>((resolve, reject) => {
+		const loginPromise = new Promise<void>((resolve, reject) => {
 			loginWaiters.push({ resolve, reject })
-			try {
-				GAPI.tokenClient.requestAccessToken({ prompt })
-			} catch (e) {
-				rejectLoginWaiters(e)
-			}
 		})
-
-		return pendingLoginPromise
+		pendingLoginPromise = loginPromise
+		try {
+			GAPI.tokenClient.requestAccessToken({ prompt })
+		} catch {
+			rejectLoginWaiters(new Error('Не удалось открыть окно входа в Google.'))
+		}
+		return loginPromise
 	}
 
 	/** Отзыв токена и выход из аккаунта. */
@@ -155,7 +170,6 @@ export default class GAPI {
 		const token = gapi.client.getToken()
 		if (token !== null) {
 			google.accounts.oauth2.revoke(token.access_token, () => {
-				console.log('revoke', token.access_token)
 				gapi.client.setToken(null)
 			})
 		}

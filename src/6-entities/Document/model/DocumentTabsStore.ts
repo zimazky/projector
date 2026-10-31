@@ -1,6 +1,7 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
+import { GoogleLoginCancelledError } from 'src/7-shared/services/GoogleAuthError'
 import {
 	DocumentId,
 	DocumentSession,
@@ -20,6 +21,7 @@ import {
 	DocumentSyncSnapshot,
 	DocumentOrigin
 } from './DocumentTabsStore.types'
+import type { DocumentSaveResult, DocumentCloseDecision, DocumentCloseResult } from './DocumentTabsStore.types'
 import { DocumentStoreManager } from './DocumentStoreManager'
 import type { DocumentStores, IEventsStoreProvider } from './DocumentStoreManager.types'
 import type { DocumentStoreCallbacks } from './DocumentStoreManager'
@@ -273,16 +275,44 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.documentOrder.push(id)
 	}
 
-	/** Закрыть документ */
+	/** Общий сценарий закрытия для вкладки и меню. */
+	async requestCloseDocument(
+		documentId: DocumentId,
+		requestDecision: (hasUnsyncedChanges: boolean) => Promise<DocumentCloseDecision>,
+		save: (id: DocumentId) => Promise<DocumentSaveResult>
+	): Promise<DocumentCloseResult> {
+		const session = this.state.documents.get(documentId)
+		if (!session) return { status: 'cancelled' }
+		if (session.state.isSaving) return { status: 'failed', message: 'Дождитесь завершения сохранения.' }
+		if (session.state.isDirty || session.state.hasUnsyncedChanges) {
+			const decision = await requestDecision(session.state.hasUnsyncedChanges)
+			if (this.state.documents.get(documentId) !== session || decision === 'cancel') return { status: 'cancelled' }
+			if (decision === 'save') {
+				const beforeSave = JSON.stringify(this.getDocumentDataForSave(documentId) ?? session.data)
+				let result: DocumentSaveResult
+				try {
+					result = await save(documentId)
+				} catch {
+					return { status: 'failed', message: 'Не удалось сохранить документ.' }
+				}
+				if (result.status !== 'saved') return result
+				if (this.state.documents.get(documentId) !== session) return { status: 'cancelled' }
+				if (beforeSave !== JSON.stringify(this.getDocumentDataForSave(documentId) ?? session.data)) {
+					return {
+						status: 'failed',
+						message: 'Во время сохранения появились новые изменения. Вкладка оставлена открытой.'
+					}
+				}
+			}
+		}
+		this.closeDocument(documentId)
+		return { status: 'closed' }
+	}
+
+	/** Удалить документ после подтверждения закрытия. */
 	closeDocument(documentId: DocumentId) {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
-
-		// Проверка несохранённых изменений (в сессии или с предыдущей сессии)
-		if (session.state.isDirty || session.state.hasUnsyncedChanges) {
-			// TODO: Показать диалог подтверждения
-			console.warn('Closing document with unsaved changes')
-		}
 
 		this.state.documents.delete(documentId)
 		this.state.documentOrder = this.state.documentOrder.filter(id => id !== documentId)
@@ -335,8 +365,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		const session = this.state.documents.get(this.state.activeDocumentId)
 		if (!session) return
 
-		// Не обновляем isDirty, если документ сейчас сохраняется или загружается
-		if (session.state.isSaving || session.state.isLoading) return
+		if (session.state.isLoading) return
 
 		session.data = data
 		session.state.isDirty = true
@@ -378,14 +407,17 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			parents?: string[]
 			webViewLink?: string
 		},
-		space: 'drive' | 'appDataFolder' = 'drive'
+		space: 'drive' | 'appDataFolder' = 'drive',
+		savedData?: DocumentData
 	): void {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
 
 		runInAction(() => {
 			// Вычисляем fingerprint текущих данных
-			const fingerprint = computeFingerprint(session.data)
+			if (savedData) session.data = this.getDocumentDataForSave(documentId) ?? session.data
+			const fingerprint = computeFingerprint(savedData ?? session.data)
+			const hasNewChanges = savedData !== undefined && JSON.stringify(session.data) !== JSON.stringify(savedData)
 
 			session.state.isDirty = false
 			session.state.hasUnsyncedChanges = false
@@ -396,7 +428,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			session.state.error = null
 
 			// Обновляем sync-модель: локальная версия становится базовой
-			session.sync.localFingerprint = fingerprint
+			session.sync.localFingerprint = computeFingerprint(session.data)
 			session.sync.baseFingerprint = fingerprint
 			session.sync.baseRevisionId = fileMetadata.id
 			session.sync.remoteRevisionId = fileMetadata.id
@@ -415,35 +447,51 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 			// Синхронизируем legacy-поля с новой моделью
 			syncLegacyStateFromNewModel(session)
+			// Точное сравнение защищает закрытие, даже если старые 32-битные отпечатки совпали.
+			if (hasNewChanges) {
+				session.state.isDirty = true
+				session.state.hasUnsyncedChanges = true
+				session.state.syncStatus = 'needs-sync'
+			}
 		})
 
+		this.persistDocumentDataToLocalStorage(documentId)
 		this.persistToLocalStorage()
 	}
 
 	/** Сохранить активный документ в Google Drive */
 	async saveActiveDocument(): Promise<boolean> {
 		if (!this.state.activeDocumentId) return false
+		return (await this.saveDocument(this.state.activeDocumentId)).status === 'saved'
+	}
 
-		const session = this.state.documents.get(this.state.activeDocumentId)
-		if (!session || !session.ref?.fileId) return false
+	async saveDocument(documentId: DocumentId): Promise<DocumentSaveResult> {
+		const session = this.state.documents.get(documentId)
+		if (!session || !session.ref?.fileId) return { status: 'failed', message: 'Нет связанного файла для сохранения.' }
+		if (session.state.isSaving) return { status: 'failed', message: 'Документ уже сохраняется.' }
+		const content = JSON.stringify(this.getDocumentDataForSave(documentId) ?? session.data, null, 2)
+		const savedData: DocumentData = JSON.parse(content)
+		session.data = savedData
+		this.persistDocumentDataToLocalStorage(documentId)
+		const ref = { ...session.ref }
 
 		session.state.isSaving = true
 		this.persistToLocalStorage()
 
 		try {
-			const content = JSON.stringify(session.data, null, 2)
 			const result = await this.googleApiService.saveFile(
-				session.ref.name,
+				ref.name,
 				content,
-				session.ref.mimeType,
-				session.ref.parentFolderId || 'root',
-				session.ref.space || 'drive',
-				session.ref.fileId
+				ref.mimeType,
+				ref.parentFolderId || 'root',
+				ref.space || 'drive',
+				ref.fileId
 			)
+			if (this.state.documents.get(documentId) !== session) return { status: 'cancelled' }
 
 			if (result.status === 'success') {
-				this.markDocumentSavedToDrive(session.id, result.file, session.ref!.space || 'drive')
-				return true
+				this.markDocumentSavedToDrive(session.id, result.file, ref.space || 'drive', savedData)
+				return { status: 'saved' }
 			} else {
 				runInAction(() => {
 					session.state.error = result.status === 'error' ? result.message : 'Conflict while saving'
@@ -451,19 +499,21 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 					session.state.syncStatus = 'error'
 				})
 				this.persistToLocalStorage()
-				return false
+				return result.status === 'conflict'
+					? { status: 'conflict', message: 'Конфликт при сохранении документа.' }
+					: { status: 'failed', message: result.message }
 			}
-		} catch (error: any) {
+		} catch (error: unknown) {
+			if (this.state.documents.get(documentId) !== session) return { status: 'cancelled' }
+			const message = error instanceof Error ? error.message : 'Не удалось сохранить документ.'
 			runInAction(() => {
-				const session = this.state.documents.get(this.state.activeDocumentId!)
-				if (session) {
-					session.state.error = error.message
-					session.state.isSaving = false
-					session.state.syncStatus = 'error'
-				}
+				session.state.error = message
+				session.state.isSaving = false
+				session.state.syncStatus = 'error'
 			})
 			this.persistToLocalStorage()
-			return false
+			if (error instanceof GoogleLoginCancelledError) return { status: 'cancelled' }
+			return { status: 'failed', message }
 		}
 	}
 
@@ -563,9 +613,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 			// Загрузка только метаданных для проверки версии
 			const remoteMetadata = await this.googleApiService.getFileMetadata(session.ref.fileId)
-			const remoteModifiedAt = remoteMetadata.modifiedTime
-				? new Date(remoteMetadata.modifiedTime).getTime()
-				: 0
+			const remoteModifiedAt = remoteMetadata.modifiedTime ? new Date(remoteMetadata.modifiedTime).getTime() : 0
 			const localModifiedAt = session.state.lastSavedAt ?? 0
 
 			// Определение наличия изменений

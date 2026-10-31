@@ -31,8 +31,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Check lint
+        run: npm run lint-check
+
+      - name: Test
+        run: npm test -- --runInBand
+
       - name: Build
-        run: npm run build
+        run: npm run build:pages
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           OPEN_WEATHER_KEY: ${{ secrets.OPEN_WEATHER_KEY }}
@@ -40,8 +49,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Deploy the repository root so that index.html is at site root
-          path: .
+          path: artifacts/pages
 
   deploy:
     environment:

@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
@@ -17,10 +17,6 @@ import {
 	Sync
 } from 'src/7-shared/ui/Icons/Icons'
 
-import YesNoCancelConfirmation, {
-	YesNoCancelDecision
-} from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
-
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
 import { IDriveItem } from 'src/7-shared/types/IDriveItem'
@@ -32,14 +28,13 @@ function fullScreen() {
 	document.getElementById('root')?.requestFullscreen()
 }
 
-const CalendarIconBar: React.FC = observer(function () {
+const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({
+	onCloseDocument
+}) {
 	const { uiStore, googleApiService, weatherStore, saveToDriveStore, documentTabsStore } = useContext(StoreContext)
 
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
-	const [unsavedDialogActionName, setUnsavedDialogActionName] = useState('')
-	const [isUnsavedDialogOpen, setIsUnsavedDialogOpen] = useState(false)
 	const [conflictDialogData, setConflictDialogData] = useState<ConflictDialogProps | null>(null)
-	const unsavedDecisionResolverRef = useRef<((decision: YesNoCancelDecision) => void) | null>(null)
 
 	const activeDoc = documentTabsStore.activeDocument
 
@@ -54,29 +49,16 @@ const CalendarIconBar: React.FC = observer(function () {
 		}
 	}, [])
 
-	const handleSaveAsToDrive = () => {
-		if (!activeDoc) {
-			alert('Нет активного документа для сохранения')
-			return
-		}
-		const dataToSave = documentTabsStore.getDocumentDataForSave(activeDoc.id)
-		if (!dataToSave) return
-		const fileName = activeDoc.ref?.name || `calendar_data_${new Date().toISOString().slice(0, 10)}.json`
-		const mimeType = activeDoc.ref?.mimeType || 'application/json'
-		saveToDriveStore.open(fileName, JSON.stringify(dataToSave, null, 2), mimeType)
+	const handleSaveAsToDrive = async () => {
+		if (activeDoc) await saveToDriveStore.openForDocument(activeDoc.id)
 	}
 
 	const handleSaveCurrentDocument = async () => {
-		if (!activeDoc?.ref?.fileId) {
-			alert('Нет открытого документа для сохранения. Используйте "Сохранить как...".')
-			return false
-		}
-
-		const isSaved = await documentTabsStore.saveActiveDocument()
-		if (!isSaved && activeDoc.state.error) {
-			alert(activeDoc.state.error)
-		}
-		return isSaved
+		if (!activeDoc) return
+		const result = activeDoc.ref?.fileId
+			? await documentTabsStore.saveDocument(activeDoc.id)
+			: await saveToDriveStore.openForDocument(activeDoc.id)
+		if (result.status === 'failed' || result.status === 'conflict') window.alert(result.message)
 	}
 
 	const handleSyncWithDrive = async () => {
@@ -128,45 +110,12 @@ const CalendarIconBar: React.FC = observer(function () {
 		setConflictDialogData(null)
 	}
 
-	const requestUnsavedDecision = (actionName: string): Promise<YesNoCancelDecision> => {
-		setUnsavedDialogActionName(actionName)
-		setIsUnsavedDialogOpen(true)
-		return new Promise<YesNoCancelDecision>(resolve => {
-			unsavedDecisionResolverRef.current = resolve
-		})
-	}
-
-	const resolveUnsavedDecision = (decision: YesNoCancelDecision) => {
-		setIsUnsavedDialogOpen(false)
-		setUnsavedDialogActionName('')
-		const resolver = unsavedDecisionResolverRef.current
-		unsavedDecisionResolverRef.current = null
-		resolver?.(decision)
-	}
-
-	const ensureSafeTransition = async (actionName: string): Promise<boolean> => {
-		if (!activeDoc?.state.isDirty) return true
-
-		const decision = await requestUnsavedDecision(actionName)
-		if (decision === 'cancel') return false
-		if (decision === 'yes') {
-			const saved = await handleSaveCurrentDocument()
-			return Boolean(saved)
-		}
-		return true
-	}
-
 	const handleCreateNewDocument = () => {
 		documentTabsStore.openNewDocument('Новый документ')
 	}
 
 	const handleCloseDocument = async () => {
-		const canProceed = await ensureSafeTransition('Закрыть документ')
-		if (!canProceed) return
-
-		if (activeDoc) {
-			documentTabsStore.closeDocument(activeDoc.id)
-		}
+		if (activeDoc) await onCloseDocument(activeDoc.id)
 	}
 
 	const handleOpenDriveFilePicker = () => {
@@ -304,7 +253,13 @@ const CalendarIconBar: React.FC = observer(function () {
 			<Drawer open={uiStore.isMenuOpen} onClose={() => uiStore.toggleMenu(false)}>
 				<List>
 					{menu.map((m, i) => (
-						<ListItem key={i} onClick={m.fn}>
+						<ListItem
+							key={i}
+							onClick={() => {
+								uiStore.toggleMenu(false)
+								m.fn()
+							}}
+						>
 							{m.name}
 						</ListItem>
 					))}
@@ -312,16 +267,6 @@ const CalendarIconBar: React.FC = observer(function () {
 			</Drawer>
 			<DriveFilePicker isOpen={isPickerOpen} onClose={() => setIsPickerOpen(false)} onSelect={handleFileSelect} />
 			<SaveToDrive />
-			<YesNoCancelConfirmation
-				open={isUnsavedDialogOpen}
-				onDecision={resolveUnsavedDecision}
-				yesLabel="Сохранить"
-				noLabel="Не сохранять"
-			>
-				Есть несохраненные изменения.
-				<br />
-				Что сделать перед действием "{unsavedDialogActionName}"?
-			</YesNoCancelConfirmation>
 			{conflictDialogData && (
 				<ConflictDialog
 					open={conflictDialogData.open}

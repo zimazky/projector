@@ -18,21 +18,27 @@ import './App.css'
 
 const App: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
-	const { uiStore, documentTabsStore, mainStore } = useContext(StoreContext)
+	const { uiStore, documentTabsStore, saveToDriveStore } = useContext(StoreContext)
 
 	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 
 	const [unsavedDialogOpen, setUnsavedDialogOpen] = React.useState(false)
-	const [pendingDocumentId, setPendingDocumentId] = React.useState<string | null>(null)
 	const [dialogMessage, setDialogMessage] = React.useState('Есть несохранённые изменения.')
 	const unsavedDecisionResolverRef = React.useRef<((decision: YesNoCancelDecision) => void) | null>(null)
+	const closePendingRef = React.useRef(false)
+	React.useEffect(
+		() => () => {
+			unsavedDecisionResolverRef.current?.('cancel')
+			unsavedDecisionResolverRef.current = null
+		},
+		[]
+	)
 
 	const handleActivate = (id: string) => {
 		documentTabsStore.activateDocument(id)
 	}
 
-	const requestUnsavedDecision = (documentId: string, hasUnsyncedChanges: boolean): Promise<YesNoCancelDecision> => {
-		setPendingDocumentId(documentId)
+	const requestUnsavedDecision = (hasUnsyncedChanges: boolean): Promise<YesNoCancelDecision> => {
 		setDialogMessage(
 			hasUnsyncedChanges ? 'Документ не синхронизирован с предыдущей сессии.' : 'Есть несохранённые изменения.'
 		)
@@ -45,34 +51,31 @@ const App: React.FC = observer(function () {
 	const resolveUnsavedDecision = (decision: YesNoCancelDecision) => {
 		setUnsavedDialogOpen(false)
 		const resolver = unsavedDecisionResolverRef.current
-		const docId = pendingDocumentId
 		unsavedDecisionResolverRef.current = null
-		setPendingDocumentId(null)
-
-		if (docId && resolver) {
-			if (decision === 'yes') {
-				// Save and close
-				documentTabsStore.activateDocument(docId)
-				documentTabsStore.saveActiveDocument().then(() => {
-					documentTabsStore.closeDocument(docId)
-				})
-			} else if (decision === 'no') {
-				// Close without saving
-				documentTabsStore.closeDocument(docId)
-			}
-			// 'cancel' - do nothing
-		}
+		resolver?.(decision)
 	}
 
 	const handleClose = async (id: string) => {
-		const doc = documentTabsStore.documents.find(d => d.id === id)
-		if (doc?.state.isDirty || doc?.state.hasUnsyncedChanges) {
-			const decision = await requestUnsavedDecision(id, doc.state.hasUnsyncedChanges)
-			if (decision === 'cancel') return
-			// Decision is handled in resolveUnsavedDecision
-			return
+		if (closePendingRef.current) return
+		closePendingRef.current = true
+		try {
+			const result = await documentTabsStore.requestCloseDocument(
+				id,
+				async hasUnsyncedChanges => {
+					const decision = await requestUnsavedDecision(hasUnsyncedChanges)
+					return decision === 'yes' ? 'save' : decision === 'no' ? 'discard' : 'cancel'
+				},
+				documentId => {
+					const doc = documentTabsStore.documents.find(document => document.id === documentId)
+					return doc?.ref?.fileId
+						? documentTabsStore.saveDocument(documentId)
+						: saveToDriveStore.openForDocument(documentId)
+				}
+			)
+			if (result.status === 'failed' || result.status === 'conflict') window.alert(result.message)
+		} finally {
+			closePendingRef.current = false
 		}
-		documentTabsStore.closeDocument(id)
 	}
 
 	const handleNew = () => {
@@ -103,7 +106,7 @@ const App: React.FC = observer(function () {
 
 	return (
 		<>
-			<Header />
+			<Header onCloseDocument={handleClose} />
 			{documentTabsStore.documents.length > 0 && (
 				<div data-testid="document-tabs-wrapper">
 					<DocumentTabs

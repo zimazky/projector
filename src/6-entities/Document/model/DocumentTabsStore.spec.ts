@@ -165,20 +165,23 @@ describe('DocumentTabsStore', () => {
 			expect(store.activeDocument?.state.isDirty).toBe(true)
 		})
 
-		it('не обновляет isDirty, если документ сохраняется', () => {
+		it('сохраняет новые правки и isDirty, пока предыдущий снимок записывается', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
 			session.state.isSaving = true
 
-			store.updateActiveDocumentData({
+			const data = {
 				projectsList: [],
 				completedList: [],
-				plannedList: []
-			})
+				plannedList: [{ name: 'Изменение в полёте', start: '2026.10.31' }]
+			}
+			store.updateActiveDocumentData(data)
 
-			expect(session.state.isDirty).toBe(false)
+			expect(session.state.isDirty).toBe(true)
+			expect(session.data).toEqual(data)
+			expect(JSON.parse(localStorage.getItem(`document_${session.id}`)!).data).toEqual(data)
 		})
 
 		it('устанавливает syncStatus = needs-sync при изменении синхронизированного документа', () => {

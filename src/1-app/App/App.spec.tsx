@@ -6,6 +6,11 @@ import React from 'react'
 import App from 'src/1-app/App/App'
 import StoreProvider from 'src/1-app/Providers/StoreProvider'
 
+jest.mock('src/4-widgets/DriveContentExplorer/DriveContentExplorer', () => ({
+	__esModule: true,
+	default: () => null
+}))
+
 // Импорты сторов
 import {
 	projectEditorStore,
@@ -24,20 +29,28 @@ import {
 
 // Мокирование внешних зависимостей
 jest.mock('src/7-shared/services/GoogleApiService', () => ({
-	GoogleApiService: jest.fn().mockImplementation(() => ({
-		isGoogleLoggedIn: false,
-		userName: null,
-		userEmail: null,
-		userAvatarUrl: null,
-		initGapi: jest.fn(),
-		waitForGapiReady: jest.fn().mockResolvedValue(undefined),
-		logIn: jest.fn().mockResolvedValue(undefined),
-		logOut: jest.fn(),
-		getFileMetadata: jest.fn(),
-		downloadFileContent: jest.fn(),
-		saveFile: jest.fn(),
-		showPicker: jest.fn()
-	}))
+	GoogleApiService: jest.fn().mockImplementation(() => {
+		let loggedIn = false
+		return {
+			get isGoogleLoggedIn() {
+				return loggedIn
+			},
+			set isGoogleLoggedIn(value: boolean) {
+				loggedIn = value
+			},
+			userName: null,
+			userEmail: null,
+			userAvatarUrl: null,
+			initGapi: jest.fn(),
+			waitForGapiReady: jest.fn().mockResolvedValue(undefined),
+			logIn: jest.fn().mockResolvedValue(undefined),
+			logOut: jest.fn(),
+			getFileMetadata: jest.fn(),
+			downloadFileContent: jest.fn(),
+			saveFile: jest.fn(),
+			showPicker: jest.fn()
+		}
+	})
 }))
 
 const stores = {
@@ -61,6 +74,10 @@ describe('App Integration Tests', () => {
 		// Очистка localStorage и сброс сторов
 		localStorage.clear()
 		documentTabsStore.clear()
+		googleApiService.isGoogleLoggedIn = false
+		saveToDriveStore.close()
+		;(googleApiService.saveFile as jest.Mock).mockReset()
+		jest.spyOn(window, 'alert').mockImplementation(() => {})
 	})
 
 	afterEach(() => {
@@ -68,7 +85,9 @@ describe('App Integration Tests', () => {
 		localStorage.clear()
 		act(() => {
 			documentTabsStore.clear()
+			saveToDriveStore.close()
 		})
+		jest.restoreAllMocks()
 	})
 
 	test('переключение между вкладками обновляет контент', async () => {
@@ -325,5 +344,134 @@ describe('App Integration Tests', () => {
 		// Проверить восстановление
 		expect(documentTabsStore.documents.length).toBe(1)
 		expect(documentTabsStore.activeDocument?.ref?.name).toBe('Тестовый документ')
+	})
+
+	test.each(['tab', 'menu'])('закрытие из %s ждёт результата «Сохранить как»', async source => {
+		googleApiService.isGoogleLoggedIn = true
+		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({
+			status: 'success',
+			file: { id: 'fake', name: 'Demo', mimeType: 'application/json' }
+		})
+		documentTabsStore.openNewDocument('Demo')
+		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
+		const documentId = documentTabsStore.activeDocument!.id
+		render(
+			<StoreProvider {...stores}>
+				<App />
+			</StoreProvider>
+		)
+		if (source === 'tab') fireEvent.click(screen.getByTitle('Закрыть вкладку'))
+		else {
+			fireEvent.click(screen.getByTitle(''))
+			fireEvent.click(screen.getByText('Закрыть документ'))
+			expect(uiStore.isMenuOpen).toBe(false)
+		}
+		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
+		await waitFor(() => expect(saveToDriveStore.isOpen).toBe(true))
+		expect(documentTabsStore.documents.length).toBe(1)
+		await act(async () => {
+			await saveToDriveStore.saveFile('root', 'drive')
+		})
+		await waitFor(() => expect(documentTabsStore.documents.length).toBe(0))
+		expect(localStorage.getItem(`document_${documentId}`)).toBeNull()
+	})
+
+	test.each(['tab', 'menu'])('закрытие из %s сохраняет вкладку при отказе записи', async source => {
+		googleApiService.isGoogleLoggedIn = true
+		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({ status: 'error', message: 'Offline' })
+		documentTabsStore.openNewDocument('Demo')
+		const document = documentTabsStore.activeDocument!
+		document.ref!.fileId = 'fake'
+		document.state.isDirty = true
+		render(
+			<StoreProvider {...stores}>
+				<App />
+			</StoreProvider>
+		)
+		if (source === 'tab') fireEvent.click(screen.getByTitle('Закрыть вкладку'))
+		else fireEvent.click(screen.getByText('Закрыть документ'))
+		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
+		await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Offline'))
+		expect(documentTabsStore.documents.length).toBe(1)
+		expect(localStorage.getItem(`document_${document.id}`)).not.toBeNull()
+	})
+
+	test('отмена «Сохранить как» разрешает повторное закрытие без сохранения', async () => {
+		documentTabsStore.openNewDocument('Demo')
+		documentTabsStore.activeDocument!.state.isDirty = true
+		render(
+			<StoreProvider {...stores}>
+				<App />
+			</StoreProvider>
+		)
+		fireEvent.click(screen.getByTitle('Закрыть вкладку'))
+		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
+		await waitFor(() => expect(saveToDriveStore.isOpen).toBe(true))
+		await act(async () => {
+			saveToDriveStore.close()
+		})
+		expect(documentTabsStore.documents.length).toBe(1)
+		fireEvent.click(screen.getByTitle('Закрыть вкладку'))
+		fireEvent.click(await screen.findByText('Не сохранять', { selector: 'button' }))
+		await waitFor(() => expect(documentTabsStore.documents.length).toBe(0))
+	})
+
+	test('UI требует выбрать ID среди файлов с одинаковым именем', async () => {
+		googleApiService.isGoogleLoggedIn = true
+		documentTabsStore.openNewDocument('Demo')
+		const files = [
+			{ id: 'first', name: 'Demo', mimeType: 'application/json' },
+			{ id: 'second', name: 'Demo', mimeType: 'application/json' }
+		]
+		;(googleApiService.saveFile as jest.Mock)
+			.mockResolvedValueOnce({ status: 'conflict', existingFiles: files })
+			.mockResolvedValueOnce({ status: 'success', file: files[1] })
+		render(
+			<StoreProvider {...stores}>
+				<App />
+			</StoreProvider>
+		)
+		fireEvent.click(screen.getByTitle('Сохранить как...'))
+		await act(async () => {
+			await saveToDriveStore.saveFile('root', 'drive')
+		})
+		expect((screen.getByText('Перезаписать') as HTMLButtonElement).disabled).toBe(true)
+		fireEvent.change(screen.getByLabelText('Файл для перезаписи'), { target: { value: 'second' } })
+		fireEvent.click(screen.getByText('Перезаписать'))
+		await waitFor(() => expect(documentTabsStore.activeDocument?.ref?.fileId).toBe('second'))
+		expect((googleApiService.saveFile as jest.Mock).mock.calls[1][5]).toBe('second')
+	})
+
+	test('новая правка при открытом «Сохранить как» остаётся локально и не закрывает вкладку', async () => {
+		googleApiService.isGoogleLoggedIn = true
+		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({
+			status: 'success',
+			file: { id: 'fake', name: 'Demo', mimeType: 'application/json' }
+		})
+		documentTabsStore.openNewDocument('Demo')
+		const document = documentTabsStore.activeDocument!
+		document.state.isDirty = true
+		render(
+			<StoreProvider {...stores}>
+				<App />
+			</StoreProvider>
+		)
+		fireEvent.click(screen.getByTitle('Закрыть вкладку'))
+		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
+		await waitFor(() => expect(saveToDriveStore.isOpen).toBe(true))
+		act(() => {
+			documentTabsStore
+				.getDocumentStores(document.id)!
+				.eventsStore.addPlannedEventDto({ name: 'New local edit', start: '2026.10.31' })
+		})
+		await act(async () => {
+			await saveToDriveStore.saveFile('root', 'drive')
+		})
+		await waitFor(() => expect(window.alert).toHaveBeenCalled())
+		expect(documentTabsStore.documents.length).toBe(1)
+		expect(document.state.isDirty).toBe(true)
+		expect(document.data.plannedList[0].name).toBe('New local edit')
+		expect(JSON.parse(localStorage.getItem(`document_${document.id}`)!).data.plannedList[0].name).toBe('New local edit')
+		expect(JSON.parse((googleApiService.saveFile as jest.Mock).mock.calls[0][1]).plannedList).toEqual([])
 	})
 })

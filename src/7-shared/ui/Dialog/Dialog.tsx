@@ -16,12 +16,14 @@ type state = 'hidden' | 'open' | 'closing'
 const Dialog: React.FC<DialogProps> = ({ open = false, onClose = () => {}, title, children = null }) => {
 	const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
 	React.useEffect(() => {
-		if (open) setState('open')
-		else if (state === 'open') {
-			setState('closing')
-			setTimeout(() => {
+		if (open) {
+			setState('open')
+		} else {
+			setState(previous => (previous === 'hidden' ? 'hidden' : 'closing'))
+			const timer = setTimeout(() => {
 				setState('hidden')
 			}, 300)
+			return () => clearTimeout(timer)
 		}
 	}, [open])
 

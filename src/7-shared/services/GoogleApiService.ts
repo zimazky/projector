@@ -118,8 +118,8 @@ export class GoogleApiService {
 				this.userAvatarUrl = info.picture ?? null
 				this.userEmail = info.email ?? null
 			})
-		} catch (e) {
-			console.error('Failed to load Google user profile', e)
+		} catch {
+			console.error('Failed to load Google user profile')
 		}
 	}
 
@@ -233,7 +233,7 @@ export class GoogleApiService {
 			await GAPI.upload(createdFileMetadata.id, content)
 			return { status: 'success', file: createdFileMetadata }
 		} catch (e: any) {
-			console.error('Failed to save file to Drive:', e)
+			console.error('Failed to save file to Drive')
 			return { status: 'error', message: e.message || 'Failed to save file to Drive.' }
 		}
 	}

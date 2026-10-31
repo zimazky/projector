@@ -49,14 +49,7 @@ export function getHasConflict(session: DocumentSession): boolean {
  * - 'syncing' — идёт операция
  * - 'error' — последняя операция завершилась ошибкой
  */
-export type UiSyncStatus =
-	| 'new'
-	| 'dirty'
-	| 'synced'
-	| 'remote-ahead'
-	| 'conflict'
-	| 'syncing'
-	| 'error'
+export type UiSyncStatus = 'new' | 'dirty' | 'synced' | 'remote-ahead' | 'conflict' | 'syncing' | 'error'
 
 export function getUiSyncStatus(session: DocumentSession): UiSyncStatus {
 	// Операция в процессе

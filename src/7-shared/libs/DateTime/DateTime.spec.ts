@@ -1,5 +1,18 @@
 import DateTime from './DateTime'
 
+// Local generator: leaves Math.random in application code and other tests unchanged.
+const seed = Number(process.env.DATETIME_TEST_SEED ?? 20261031)
+if (!Number.isInteger(seed) || seed < 0 || seed > 0xffffffff) {
+	throw new Error('DATETIME_TEST_SEED must be an unsigned 32-bit integer')
+}
+let randomState = seed
+function random() {
+	randomState = (randomState + 0x6d2b79f5) | 0
+	let value = Math.imul(randomState ^ (randomState >>> 15), randomState | 1)
+	value ^= value + Math.imul(value ^ (value >>> 7), value | 61)
+	return ((value ^ (value >>> 14)) >>> 0) / 4294967296
+}
+
 /**
  * Функция для замыкания аргументов внутри функции без аргументов
  * @param f функция для вызова
@@ -19,7 +32,7 @@ function test(
 	startweek: number = 1
 ) {
 	it(
-		`test timestamp=${timestamp} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp)}), timezone=${timezone.toFixed(1)}, startweek=${startweek}`,
+		`test timestamp=${timestamp} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp)}), timezone=${timezone.toFixed(1)}, startweek=${startweek}, seed=${seed}`,
 		callf(f, timestamp, timezone, startweek)
 	)
 }
@@ -32,7 +45,7 @@ function test2(
 	startweek: number = 1
 ) {
 	it(
-		`test timestamp1=${timestamp1} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp1)}), timestamp2=${timestamp1} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp2)}), timezone=${timezone.toFixed(1)}, startweek=${startweek}`,
+		`test timestamp1=${timestamp1} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp1)}), timestamp2=${timestamp2} (${DateTime.getUTCYYYYMMDDTHHMM(timestamp2)}), timezone=${timezone.toFixed(1)}, startweek=${startweek}, seed=${seed}`,
 		callf(f, timestamp1, timestamp2, timezone, startweek)
 	)
 }
@@ -112,8 +125,8 @@ describe('DateTime getDaysInMonth', () => {
 
 describe('DateTime getYearMonthDay short test of set random positive timestamps in range less then 2100 year', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -130,8 +143,8 @@ describe('DateTime getYearMonthDay short test of set random positive timestamps 
 /*
 describe('DateTime getYearMonthDay long test of set random negative timestamps', ()=>{
   for(let i = 0; i < 4000; i++) {
-    const timestamp = - Math.floor(Math.random()*4294967296*1024)
-    const timezone = Math.round(Math.random()*240)/10 - 12
+    const timestamp = - Math.floor(random()*4294967296*1024)
+    const timezone = Math.round(random()*240)/10 - 12
     test((t,tz)=>{
       DateTime.initLocale(tz)
       const re = DateTime.getYearMonthDay(t)
@@ -144,8 +157,8 @@ describe('DateTime getYearMonthDay long test of set random negative timestamps',
 
 describe('DateTime getYearMonthDay long test of set random positive timestamps', ()=>{
   for(let i = 0; i < 4000; i++) {
-    const timestamp = Math.floor(Math.random()*4294967296*1024)
-    const timezone = Math.round(Math.random()*240)/10 - 12
+    const timestamp = Math.floor(random()*4294967296*1024)
+    const timezone = Math.round(random()*240)/10 - 12
     test((t,tz)=>{
       DateTime.initLocale(tz)
       const re = DateTime.getYearMonthDay(t)
@@ -162,8 +175,8 @@ describe('DateTime getYearMonthDay long test of set random positive timestamps',
  ******************************************************************************/
 describe('DateTime YYYYMMDDToTimestampUTC', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -179,8 +192,8 @@ describe('DateTime YYYYMMDDToTimestampUTC', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -202,8 +215,8 @@ describe('DateTime YYYYMMDDToTimestampUTC', () => {
  ******************************************************************************/
 describe('DateTime YYYYMMDDToTimestamp', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -219,8 +232,8 @@ describe('DateTime YYYYMMDDToTimestamp', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -242,8 +255,8 @@ describe('DateTime YYYYMMDDToTimestamp', () => {
  ******************************************************************************/
 describe('DateTime getWeekday', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -257,8 +270,8 @@ describe('DateTime getWeekday', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -278,8 +291,8 @@ describe('DateTime getWeekday', () => {
  ******************************************************************************/
 describe('DateTime getUTCBeginDayTimestamp', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -293,8 +306,8 @@ describe('DateTime getUTCBeginDayTimestamp', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -314,8 +327,8 @@ describe('DateTime getUTCBeginDayTimestamp', () => {
  ******************************************************************************/
 describe('DateTime getBeginDayTimestamp', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -329,8 +342,8 @@ describe('DateTime getBeginDayTimestamp', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -350,8 +363,8 @@ describe('DateTime getBeginDayTimestamp', () => {
  ******************************************************************************/
 describe('DateTime getEndDayTimestamp', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -365,8 +378,8 @@ describe('DateTime getEndDayTimestamp', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -386,9 +399,9 @@ describe('DateTime getEndDayTimestamp', () => {
  ******************************************************************************/
 describe('DateTime getBeginWeekTimestamp', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
-		const startweek = Math.floor(Math.random() * 10)
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
+		const startweek = Math.floor(random() * 10)
 		test(
 			(t, tz, sw) => {
 				DateTime.initLocale(tz, sw)
@@ -405,9 +418,9 @@ describe('DateTime getBeginWeekTimestamp', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
-		const startweek = 7 //Math.round(Math.random()*7)
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
+		const startweek = 7 //Math.round(random()*7)
 		test(
 			(t, tz, sw) => {
 				DateTime.initLocale(tz, sw)
@@ -430,8 +443,8 @@ describe('DateTime getBeginWeekTimestamp', () => {
  ******************************************************************************/
 describe('DateTime getDayMonthWeekday', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -445,8 +458,8 @@ describe('DateTime getDayMonthWeekday', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -466,8 +479,8 @@ describe('DateTime getDayMonthWeekday', () => {
  ******************************************************************************/
 describe('DateTime getTime', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -481,8 +494,8 @@ describe('DateTime getTime', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -502,8 +515,8 @@ describe('DateTime getTime', () => {
  ******************************************************************************/
 describe('DateTime getTimeToEndDay', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -517,8 +530,8 @@ describe('DateTime getTimeToEndDay', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -538,9 +551,9 @@ describe('DateTime getTimeToEndDay', () => {
  ******************************************************************************/
 describe('DateTime getDifferenceInDays', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp1 = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timestamp2 = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp1 = -Math.floor(random() * 4294967296 * 1024)
+		const timestamp2 = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test2(
 			(t1, t2, tz) => {
 				DateTime.initLocale(tz)
@@ -556,9 +569,9 @@ describe('DateTime getDifferenceInDays', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp1 = Math.floor(Math.random() * 4294967296 * 1024)
-		const timestamp2 = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp1 = Math.floor(random() * 4294967296 * 1024)
+		const timestamp2 = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test2(
 			(t1, t2, tz) => {
 				DateTime.initLocale(tz)
@@ -580,8 +593,8 @@ describe('DateTime getDifferenceInDays', () => {
  ******************************************************************************/
 describe('DateTime getYYYYMMDD', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -598,8 +611,8 @@ describe('DateTime getYYYYMMDD', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -622,8 +635,8 @@ describe('DateTime getYYYYMMDD', () => {
  ******************************************************************************/
 describe('DateTime getHoursMinutes', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -639,8 +652,8 @@ describe('DateTime getHoursMinutes', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -662,8 +675,8 @@ describe('DateTime getHoursMinutes', () => {
  ******************************************************************************/
 describe('DateTime getHHMM', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -679,8 +692,8 @@ describe('DateTime getHHMM', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -702,8 +715,8 @@ describe('DateTime getHHMM', () => {
  ******************************************************************************/
 describe('DateTime getYYYYMMDDTHHMM', () => {
 	for (let i = 0; i < 100; i++) {
-		const timestamp = -Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = -Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
@@ -723,8 +736,8 @@ describe('DateTime getYYYYMMDDTHHMM', () => {
 		)
 	}
 	for (let i = 0; i < 100; i++) {
-		const timestamp = Math.floor(Math.random() * 4294967296 * 1024)
-		const timezone = Math.round(Math.random() * 240) / 10 - 12
+		const timestamp = Math.floor(random() * 4294967296 * 1024)
+		const timezone = Math.round(random() * 240) / 10 - 12
 		test(
 			(t, tz) => {
 				DateTime.initLocale(tz)
