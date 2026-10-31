@@ -1,0 +1,85 @@
+{
+  "reviewedOn": "2026-10-31",
+  "nextReviewOn": "2026-11-14",
+  "owner": "Projector maintainer",
+  "trackingOnly": true,
+  "suppressesNpmOrCi": false,
+  "advisories": [
+    {
+      "package": "minimatch",
+      "advisory": "GHSA-g3hv-75wg-m249",
+      "patchedVersion": "11.0.1",
+      "parentConstraints": [
+        "@eslint/config-array: ^10.2.4",
+        "@typescript-eslint/typescript-estree: ^10.2.2",
+        "eslint: ^10.2.6",
+        "glob 13: ^10.2.2",
+        "test-exclude: ^10.2.2",
+        "glob 10: ^9.0.4"
+      ],
+      "condition": "Attacker-controlled glob pattern with optimizationLevel >= 2.",
+      "projectAssessment": "Patterns come from reviewed local tooling configuration; application document contents do not configure Jest or ESLint. This is a configuration-based inference.",
+      "mitigation": "Keep tooling configuration and patterns trusted; do not expose glob patterns from imported application data.",
+      "nextAction": "Review parent updates or compatible backports; do not override minimatch 9/10 with major 11 without parent support.",
+      "severity": "moderate",
+      "url": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+      "installed": [
+        {
+          "path": "node_modules/minimatch",
+          "version": "10.2.6"
+        },
+        {
+          "path": "node_modules/test-exclude/node_modules/glob/node_modules/minimatch",
+          "version": "9.0.9"
+        }
+      ]
+    },
+    {
+      "package": "glob",
+      "advisory": "GHSA-3g3m-2fjr-6pw4",
+      "patchedVersion": "14.0.2",
+      "parentConstraints": [
+        "@jest/reporters: ^13.0.6",
+        "jest-config: ^13.0.6",
+        "jest-runtime: ^13.0.6",
+        "test-exclude: ^10.4.1"
+      ],
+      "condition": "AbortSignal cancellation used as a resource budget on attacker-influenced filesystem trees.",
+      "projectAssessment": "Glob is used in local Jest/coverage tooling, not an application filesystem service. Direct Jest callers use glob.sync; coverage also has an async path.",
+      "mitigation": "Do not treat AbortSignal as the sole resource limit for untrusted trees; use reviewed local checkout patterns.",
+      "nextAction": "Review Jest/test-exclude updates or compatible backports; no cross-major override to glob 14.",
+      "severity": "moderate",
+      "url": "https://github.com/advisories/GHSA-3g3m-2fjr-6pw4",
+      "installed": [
+        {
+          "path": "node_modules/glob",
+          "version": "13.0.6"
+        },
+        {
+          "path": "node_modules/test-exclude/node_modules/glob",
+          "version": "10.5.0"
+        }
+      ]
+    },
+    {
+      "package": "deepmerge",
+      "advisory": "GHSA-gcqx-w48m-w2h4",
+      "patchedVersion": null,
+      "parentConstraints": [
+        "jest-config: ^4.3.1"
+      ],
+      "condition": "Merging attacker-controlled source objects.",
+      "projectAssessment": "Used to merge Jest configuration, presets and globals; imported application documents are not supplied as Jest configuration. This is a configuration-based inference.",
+      "mitigation": "Keep test configuration/presets trusted; do not merge imported application data into Jest options.",
+      "nextAction": "Review upstream fix or parent replacement of deepmerge; no fixed version is currently published.",
+      "severity": "low",
+      "url": "https://github.com/advisories/GHSA-gcqx-w48m-w2h4",
+      "installed": [
+        {
+          "path": "node_modules/deepmerge",
+          "version": "4.3.1"
+        }
+      ]
+    }
+  ]
+}

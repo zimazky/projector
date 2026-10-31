@@ -28,6 +28,9 @@ jobs:
           node-version: '24.12.0'
           cache: 'npm'
 
+      - name: Use npm 11.12.1
+        run: npm install --global npm@11.12.1
+
       - name: Install dependencies
         run: npm ci
 
@@ -39,6 +42,26 @@ jobs:
 
       - name: Test
         run: npm test -- --runInBand
+
+      - name: Check browser test types
+        run: npm run typecheck:e2e
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test in Chromium
+        run: npm run test:e2e
+
+      - name: Upload browser test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            artifacts/playwright/report
+            artifacts/playwright/results
+            artifacts/playwright/results.json
+          retention-days: 7
 
       - name: Build
         run: npm run build:pages

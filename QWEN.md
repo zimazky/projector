@@ -18,7 +18,7 @@
 | **Forms** | react-hook-form |
 | **Icons** | @iconify/react |
 | **Build Tool** | Webpack 5 |
-| **Testing** | Jest + jsdom, Karma + Jasmine |
+| **Testing** | Jest + ts-jest + jest-environment-jsdom; Playwright (Chromium) |
 | **Linting** | ESLint 10 + Prettier |
 | **CSS** | CSS Modules |
 
@@ -91,6 +91,8 @@ npm run build
 ```
 
 ### Testing
+
+Браузерные сценарии: `npm run browser:install`, затем `npm run test:e2e`. Интерактивный режим: `npm run test:e2e:ui`. Изоляция и отчёты описаны в [инструкции](docs/browser_testing_ru.md).
 
 ```bash
 # Run Jest tests
@@ -204,7 +206,7 @@ The `7-shared/ui` folder contains reusable components:
 | `tsconfig.json` | TypeScript configuration |
 | `webpack.config.cjs` | Webpack build configuration |
 | `jest.config.cjs` | Jest test configuration |
-| `karma.conf.js` | Karma test runner config |
+| `playwright.config.ts` | Конфигурация браузерных тестов |
 | `.eslintrc.json` | ESLint rules |
 | `.prettierrc` | Prettier formatting rules |
 | `index.html` | HTML entry point |

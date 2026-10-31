@@ -1,0 +1,311 @@
+{
+  "commit": "b892472cd38f97fe360af65e8058c7d497b942ed",
+  "node": "v24.12.0",
+  "npm": "11.12.1",
+  "platform": "win32",
+  "timezone": "UTC",
+  "dateTimeSeed": "20261031",
+  "lockfileSha256": "7f3ef76eaf4fe6855628ff8a232d3e7ea6e660b6874addf9c10332a4a9901e05",
+  "startedAt": "2026-10-31T17:00:55.065Z",
+  "finishedAt": "2026-10-31T17:02:49.302Z",
+  "checks": [
+    {
+      "name": "typecheck",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 7829
+    },
+    {
+      "name": "lint",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 16637
+    },
+    {
+      "name": "jest",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 41609
+    },
+    {
+      "name": "jest-repeat",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 10756
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 11528
+    },
+    {
+      "name": "audit",
+      "exitCode": 1,
+      "status": "advisories",
+      "durationMs": 23407
+    },
+    {
+      "name": "audit-production",
+      "exitCode": 0,
+      "status": "passed",
+      "durationMs": 2186
+    }
+  ],
+  "jest": {
+    "numTotalTestSuites": 15,
+    "numPassedTestSuites": 15,
+    "numTotalTests": 3516,
+    "numPassedTests": 3516,
+    "numFailedTests": 0
+  },
+  "jest-repeat": {
+    "numTotalTestSuites": 15,
+    "numPassedTestSuites": 15,
+    "numTotalTests": 3516,
+    "numPassedTests": 3516,
+    "numFailedTests": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 12
+  },
+  "audit": {
+    "info": 0,
+    "low": 4,
+    "moderate": 27,
+    "high": 0,
+    "critical": 0,
+    "total": 31
+  },
+  "audit-production": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "beforeAudit": {
+    "info": 0,
+    "low": 7,
+    "moderate": 46,
+    "high": 26,
+    "critical": 4,
+    "total": 83
+  },
+  "compatibleAudit": {
+    "info": 0,
+    "low": 7,
+    "moderate": 40,
+    "high": 21,
+    "critical": 3,
+    "total": 71
+  },
+  "packageEntries": {
+    "before": 895,
+    "after": 833
+  },
+  "productionVersionsUnchanged": true,
+  "cleanInstall": {
+    "isolated": {
+      "exitCode": 0,
+      "packagesAdded": 795,
+      "log": "artifacts/remediation-stage2/ci-refined.log"
+    },
+    "workspace": {
+      "exitCode": null,
+      "packagesAdded": 795,
+      "log": "artifacts/remediation-stage2/ci-workspace.log",
+      "note": "Command session was lost on disconnect; completion verified from install log, npm ls exit 0 and subsequent checks."
+    },
+    "npmLsExitCode": 0
+  },
+  "devServer": {
+    "startedAt": "2026-10-31T16:47:29.849Z",
+    "http": [
+      {
+        "path": "/",
+        "status": 200
+      },
+      {
+        "path": "/index.html",
+        "status": 200
+      },
+      {
+        "path": "/dist/main.js",
+        "status": 200
+      },
+      {
+        "path": "/dist/main.css",
+        "status": 200
+      },
+      {
+        "path": "/dist/favicons/stencil/web/icons8-16.png",
+        "status": 200
+      },
+      {
+        "path": "/package.json",
+        "status": 404
+      },
+      {
+        "path": "/src/1-app/index.tsx",
+        "status": 404
+      },
+      {
+        "path": "/node_modules/webpack/package.json",
+        "status": 404
+      },
+      {
+        "path": "/docs/remediation_plan_2026-10-31_ru.md",
+        "status": 404
+      },
+      {
+        "path": "/.env",
+        "status": 404
+      },
+      {
+        "path": "/index.html",
+        "host": "outside.invalid",
+        "status": 403
+      },
+      {
+        "path": "/dist/main.js",
+        "origin": "http://outside.invalid",
+        "status": 403
+      }
+    ],
+    "messages": [
+      {
+        "type": "hot"
+      },
+      {
+        "type": "liveReload"
+      },
+      {
+        "type": "reconnect",
+        "data": 10
+      },
+      {
+        "type": "overlay",
+        "data": true
+      },
+      {
+        "type": "hash",
+        "data": "fb562e916d11cf9e4495"
+      },
+      {
+        "type": "ok"
+      },
+      {
+        "name": "",
+        "action": "sync",
+        "time": 7250,
+        "hash": "fb562e916d11cf9e4495",
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "type": "invalid"
+      },
+      {
+        "action": "building",
+        "file": "E:\\@projects\\projector\\.remediation-tmp\\d01\\src\\7-shared\\ui\\EmptyState\\EmptyState.tsx"
+      },
+      {
+        "type": "hash",
+        "data": "ad0b0b8a4ab7b8d5de16"
+      },
+      {
+        "type": "ok"
+      },
+      {
+        "name": "",
+        "action": "built",
+        "time": 5132,
+        "hash": "ad0b0b8a4ab7b8d5de16",
+        "warnings": [],
+        "errors": []
+      },
+      {
+        "type": "invalid"
+      },
+      {
+        "action": "building",
+        "file": "E:\\@projects\\projector\\.remediation-tmp\\d01\\src\\7-shared\\ui\\EmptyState\\EmptyState.module.css"
+      },
+      {
+        "type": "hash",
+        "data": "39520a1ab2adbc2cc948"
+      },
+      {
+        "type": "ok"
+      },
+      {
+        "name": "",
+        "action": "built",
+        "time": 82,
+        "hash": "39520a1ab2adbc2cc948",
+        "warnings": [],
+        "errors": []
+      }
+    ],
+    "updates": [
+      {
+        "marker": "D01-TSX-PROBE",
+        "previousHash": "fb562e916d11cf9e4495",
+        "nextHash": "ad0b0b8a4ab7b8d5de16",
+        "manifestStatus": 200,
+        "chunkStatus": 200,
+        "resourceStatus": 200
+      },
+      {
+        "marker": "D01-CSS-PROBE",
+        "previousHash": "ad0b0b8a4ab7b8d5de16",
+        "nextHash": "39520a1ab2adbc2cc948",
+        "manifestStatus": 200,
+        "chunkStatus": 200,
+        "resourceStatus": 200
+      }
+    ],
+    "browserRenderingVerified": false,
+    "crossOriginWebSocketRejected": true,
+    "status": "passed",
+    "sourceRestored": true,
+    "finishedAt": "2026-10-31T16:47:35.464Z"
+  },
+  "publication": {
+    "exitCode": 0,
+    "files": [
+      "dist/favicons/stencil/android/icons8-72.png",
+      "dist/favicons/stencil/android/icons8-96.png",
+      "dist/favicons/stencil/ios/icons8-57.png",
+      "dist/favicons/stencil/ios/icons8-60.png",
+      "dist/favicons/stencil/ios/icons8-72.png",
+      "dist/favicons/stencil/ios/icons8-76.png",
+      "dist/favicons/stencil/web/icons8-16.png",
+      "dist/favicons/stencil/web/icons8-32.png",
+      "dist/favicons/stencil/web/icons8-96.png",
+      "dist/favicons/stencil/windows/icons8-70.png",
+      "dist/main.css",
+      "dist/main.js",
+      "dist/main.js.LICENSE.txt",
+      "index.html"
+    ]
+  },
+  "sourceSha256": {
+    "package.json": "4265dcaf815e2b235dff6e137b1dedcdcafc9b7ce7e47aa018dbffb493dbb887",
+    "package-lock.json": "7f3ef76eaf4fe6855628ff8a232d3e7ea6e660b6874addf9c10332a4a9901e05",
+    "webpack.config.cjs": "97a74f79b2c4beedde0ac0a37498c2ebe7a3d910af3bc16fa14903788ecb0b5d",
+    "eslint.config.js": "8658f5fe61b4c30032c11c8241a2422e29e62fb50a2d3a6765bae4639de7ccc8",
+    "jest.setup.js": "89ac8ae6ffc0c1824145187ddc8ec6249b6847d2657c9a2894729d69673cadf7",
+    ".github/workflows/build.yml": "748072b43e5f6b44860319fbc98693444f1e45fd9eeba1cfc22997c42e19d1d1",
+    ".nvmrc": "38d8d1f43fc6a2759abe574ea7a05eae49e3b894110006ec85dba94603c5e226"
+  },
+  "removedFiles": [
+    "karma.conf.js",
+    "webpack.config.test.cjs",
+    "src/declarations.d.ts"
+  ],
+  "applicationCodeUnchanged": true
+}

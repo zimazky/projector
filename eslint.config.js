@@ -36,6 +36,12 @@ export default [
 		}
 	},
 	{
+		files: ['e2e/**/*.ts', 'playwright.config.ts'],
+		languageOptions: {
+			parserOptions: { project: ['./tsconfig.e2e.json'] }
+		}
+	},
+	{
 		files: ['**/*.{ts,tsx}'],
 		rules: {
 			'no-undef': 'off',
@@ -61,7 +67,7 @@ export default [
 		}
 	},
 	{
-		files: ['webpack.config.cjs', 'webpack.config.test.cjs', 'jest.config.cjs'],
+		files: ['webpack.config.cjs', 'jest.config.cjs'],
 		languageOptions: {
 			globals: {
 				...globals.node
@@ -73,7 +79,6 @@ export default [
 		languageOptions: {
 			globals: {
 				...globals.jest,
-				...globals.jasmine,
 				...globals.browser,
 				...globals.node
 			}

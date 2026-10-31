@@ -27,7 +27,7 @@ module.exports = {
     rules: [
       {
         test: /\.tsx?$/,
-        exclude: '/node_modules/',
+        exclude: /node_modules/,
         loader: 'ts-loader'
       },
       {
@@ -69,12 +69,33 @@ module.exports = {
   ],
 
   devServer: {
-    open: ['/index.html'],
+    host: '127.0.0.1',
+    port: process.env.PROJECTOR_DEV_PORT ? Number(process.env.PROJECTOR_DEV_PORT) : 8080,
+    allowedHosts: 'auto',
+    open: false,
+    hot: true,
     client: {
       overlay: true
     },
     static: {
-      directory: __dirname
+      directory: path.resolve(__dirname, 'dist/favicons'),
+      publicPath: '/dist/favicons',
+      watch: false
+    },
+    watchFiles: ['index.html'],
+    setupMiddlewares: middlewares => {
+      // Проверки Host/Origin остаются перед маршрутом индекса.
+      middlewares.push({
+        name: 'projector-index',
+        middleware: (request, response, next) => {
+          if (['GET', 'HEAD'].includes(request.method) && ['/', '/index.html'].includes(request.path)) {
+            response.sendFile('index.html', { root: __dirname })
+          } else {
+            next()
+          }
+        }
+      })
+      return middlewares
     }
   }
 }
