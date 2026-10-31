@@ -32,6 +32,19 @@ describe('Запись Drive создаёт отдельные версии', ()
 		expect(upload).not.toHaveBeenCalled()
 	})
 
+	it('после отказа инициализации вход повторяет init вместо ожидания отклонённого Promise', async () => {
+		const api = new GoogleApiService()
+		const init = jest
+			.spyOn(GAPI, 'init')
+			.mockImplementationOnce(async options => options.onFailure?.())
+			.mockImplementationOnce(async options => options.onSuccess?.())
+		jest.spyOn(GAPI, 'logIn').mockResolvedValue(undefined)
+		jest.spyOn(GAPI, 'isLoggedIn').mockReturnValue(false)
+		await expect(api.logIn()).rejects.toThrow('initialize')
+		await expect(api.logIn()).resolves.toBeUndefined()
+		expect(init).toHaveBeenCalledTimes(2)
+	})
+
 	it('изменившаяся ожидаемая версия возвращает конфликт до записи', async () => {
 		const { api, metadata, create } = setup()
 		metadata.mockResolvedValue(file('source', '2'))

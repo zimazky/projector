@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { expect } from '@jest/globals'
 import { DocumentTabsStore } from './DocumentTabsStore'
@@ -28,7 +29,7 @@ describe('Общая команда закрытия документа', () => 
 		{ status: 'conflict', message: 'Conflict' }
 	])('оставляет документ и его локальный снимок при $status', async result => {
 		const { store, document } = setup()
-		const before = localStorage.getItem(`document_${document.id}`)
+		const before = storedDocument(document.id)
 		expect(
 			await store.requestCloseDocument(
 				document.id,
@@ -37,7 +38,7 @@ describe('Общая команда закрытия документа', () => 
 			)
 		).toEqual(result)
 		expect(store.activeDocument?.id).toBe(document.id)
-		expect(localStorage.getItem(`document_${document.id}`)).toBe(before)
+		expect(storedDocument(document.id)).toEqual(before)
 	})
 
 	it('закрывает новый документ только после подтверждённого сохранения', async () => {
@@ -50,7 +51,7 @@ describe('Общая команда закрытия документа', () => 
 		expect(store.documents).toHaveLength(1)
 		response.resolve({ status: 'saved' })
 		expect(await closing).toEqual({ status: 'closed' })
-		expect(localStorage.getItem(`document_${document.id}`)).toBeNull()
+		expect(storedDocument(document.id)).toBeNull()
 	})
 
 	test.each(['discard', 'cancel'] as const)('завершает решение %s без сохранения', async decision => {
@@ -133,6 +134,6 @@ describe('Общая команда закрытия документа', () => 
 		expect((await saving).status).toBe('saved')
 		expect(document.state.isDirty).toBe(true)
 		expect(document.data).toEqual(data('BB'))
-		expect(JSON.parse(localStorage.getItem(`document_${document.id}`)!).data).toEqual(data('BB'))
+		expect(storedDocument(document.id)!.data).toEqual(data('BB'))
 	})
 })

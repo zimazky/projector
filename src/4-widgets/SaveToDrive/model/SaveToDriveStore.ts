@@ -1,3 +1,4 @@
+import { serializeDocumentData } from 'src/6-entities/Document/model/DocumentFormat'
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
@@ -47,7 +48,7 @@ export class SaveToDriveStore {
 		if (!document || !data) return Promise.resolve({ status: 'failed', message: 'Нет документа для сохранения.' })
 		return this.open(
 			document.ref?.name || 'calendar.json',
-			JSON.stringify(data, null, 2),
+			serializeDocumentData(data),
 			document.ref?.mimeType || 'application/json',
 			documentId
 		)
@@ -66,7 +67,7 @@ export class SaveToDriveStore {
 		this.documentId = documentId
 		this.sourceSnapshot = snapshot
 		this.fileName = initialFileName
-		this.fileContent = snapshot ? JSON.stringify(snapshot.data, null, 2) : content
+		this.fileContent = snapshot ? serializeDocumentData(snapshot.data) : content
 		this.mimeType = mime
 		this.error = null
 		this.resetConflictState()
@@ -110,7 +111,7 @@ export class SaveToDriveStore {
 			folderId,
 			space,
 			name: this.fileName.trim(),
-			content: this.sourceSnapshot ? JSON.stringify(this.sourceSnapshot.data, null, 2) : this.fileContent,
+			content: this.sourceSnapshot ? serializeDocumentData(this.sourceSnapshot.data) : this.fileContent,
 			mime: this.mimeType,
 			documentId: this.documentId,
 			snapshot: this.sourceSnapshot

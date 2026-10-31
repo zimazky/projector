@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { expect } from '@jest/globals'
 import { SaveToDriveStore } from './SaveToDriveStore'
 import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
@@ -46,7 +47,7 @@ describe('Сохранить как и конфликт имени', () => {
 		expect(document.sync.baseLocalVersion).toBe(sentVersion)
 		expect(document.data.projectsList[0].name).toBe('BB')
 		expect(document.state.isDirty).toBe(true)
-		expect(JSON.parse(localStorage.getItem('document_' + document.id)!).data.projectsList[0].name).toBe('BB')
+		expect(storedDocument(document.id)!.data.projectsList[0].name).toBe('BB')
 		expect(b.ref!.fileId).toBeNull()
 		expect(documents.activeDocumentId).toBe(b.id)
 	})

@@ -65,17 +65,13 @@ export class MainStore {
 		})
 
 		this.eventsCache.init()
+		// Локальные данные не зависят от сети, GIS и успешного входа.
+		void this.documentTabsStore.restoreFromLocalStorage()
 		this.googleApiService.initGapi()
-
-		// Восстанавливаем сессию из localStorage через DocumentTabsStore
-		void this.googleApiService
-			.waitForGapiReady()
-			.then(() => {
-				return this.documentTabsStore.restoreFromLocalStorage()
-			})
-			.catch(e => {
-				console.error('DocumentTabsStore restore failed:', e)
-			})
+		// Обработчик ошибки подключается сразу, даже если никто не запрашивает вход.
+		void this.googleApiService.waitForGapiReady().catch(() => {
+			console.error('Google API недоступен; локальные документы доступны.')
+		})
 	}
 
 	startSyncCoordinator(): void {

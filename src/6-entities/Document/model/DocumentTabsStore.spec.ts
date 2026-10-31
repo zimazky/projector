@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import { DocumentSession } from './DocumentTabsStore.types'
@@ -184,7 +185,7 @@ describe('DocumentTabsStore', () => {
 
 			expect(session.state.isDirty).toBe(true)
 			expect(session.data).toEqual(data)
-			expect(JSON.parse(localStorage.getItem(`document_${session.id}`)!).data).toEqual(data)
+			expect(storedDocument(session.id)!.data).toEqual(data)
 		})
 
 		it('устанавливает syncStatus = needs-sync при изменении синхронизированного документа', () => {
@@ -434,7 +435,7 @@ describe('DocumentTabsStore', () => {
 
 			// Сохраняем snapshot и данные перед закрытием
 			const tabsSnapshot = localStorage.getItem(DOCUMENT_TABS_KEY)
-			const dataSnapshot = localStorage.getItem(`document_${docId}`)
+			const dataSnapshot = storedDocument(docId)
 
 			// Закрываем и восстанавливаем
 			store.closeDocument(docId)
@@ -443,7 +444,7 @@ describe('DocumentTabsStore', () => {
 				localStorage.setItem(DOCUMENT_TABS_KEY, tabsSnapshot)
 			}
 			if (dataSnapshot) {
-				localStorage.setItem(`document_${docId}`, dataSnapshot)
+				localStorage.setItem(`document_${docId}`, JSON.stringify(dataSnapshot))
 			}
 
 			await store.restoreFromLocalStorage()

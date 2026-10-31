@@ -1,4 +1,4 @@
-import GAPI, { DriveFileMetadata, DRIVE_DOCUMENT_FIELDS } from './gapi'
+import GAPI, { DriveFileMetadata, DRIVE_DOCUMENT_FIELDS, driveQueryLiteral } from './gapi'
 import { driveErrorMessage } from './DriveApiError'
 import { makeAutoObservable, runInAction } from 'mobx'
 
@@ -30,6 +30,7 @@ export class GoogleApiService {
 			this.resolveGapiReady = resolve
 			this.rejectGapiReady = reject
 		})
+		void this.gapiReadyPromise.catch(() => {})
 	}
 
 	/**
@@ -88,6 +89,7 @@ export class GoogleApiService {
 	 * @returns Promise<void>
 	 */
 	logIn = async () => {
+		if (!this.isGapiInitStarted) this.initGapi()
 		await this.waitForGapiReady()
 		await GAPI.logIn()
 		runInAction(() => {
@@ -241,8 +243,12 @@ export class GoogleApiService {
 					')' +
 					extension
 			} else {
-				const literal = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-				const existing = await GAPI.find("name = '" + literal + "'", parentFolderId, DRIVE_DOCUMENT_FIELDS, spaces)
+				const existing = await GAPI.find(
+					'name = ' + driveQueryLiteral(name),
+					parentFolderId,
+					DRIVE_DOCUMENT_FIELDS,
+					spaces
+				)
 				if (existing.length) return { status: 'conflict', existingFiles: existing }
 			}
 			const folder = spaces === 'appDataFolder' && parentFolderId === 'root' ? 'appDataFolder' : parentFolderId

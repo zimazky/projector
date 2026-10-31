@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { deferred } from 'src/test-utils/deferred'
 import { DocumentTabsStore } from './DocumentTabsStore'
@@ -49,8 +50,8 @@ describe('Адресация асинхронных команд и версии
 		store.openNewDocument('B')
 		const b = store.activeDocument!
 		edit(store, a, 'BB')
-		expect(JSON.parse(localStorage.getItem('document_' + a.id)!).data).toEqual(data('BB'))
-		expect(JSON.parse(api.saveFile.mock.calls[0][1])).toEqual(data('Aa'))
+		expect(storedDocument(a.id)!.data).toEqual(data('BB'))
+		expect(JSON.parse(api.saveFile.mock.calls[0][1])).toEqual({ schemaVersion: 1, ...data('Aa') })
 		response.resolve(success())
 		expect(await saving).toEqual({ status: 'saved' })
 		expect(a.sync.baseLocalVersion).toBe(sentVersion)
@@ -82,7 +83,7 @@ describe('Адресация асинхронных команд и версии
 		await Promise.all([first, second])
 		expect(getIsDirty(a)).toBe(true)
 		await store.saveDocument(a.id)
-		expect(JSON.parse(api.saveFile.mock.calls[1][1])).toEqual(data('BB'))
+		expect(JSON.parse(api.saveFile.mock.calls[1][1])).toEqual({ schemaVersion: 1, ...data('BB') })
 		expect(getIsDirty(a)).toBe(false)
 	})
 
@@ -119,12 +120,25 @@ describe('Адресация асинхронных команд и версии
 		const saving = store.saveDocument(a.id)
 		await Promise.resolve()
 		store.closeDocument(a.id)
-		store.openFromLocalStorageSnapshot({
-			id: a.id,
-			ref: { ...a.ref!, name: 'Replacement' },
-			state: { ...a.state },
-			lastAccessedAt: Date.now()
-		})
+		localStorage.setItem(
+			'documentTabs',
+			JSON.stringify({
+				schemaVersion: 1,
+				activeDocumentId: a.id,
+				documentOrder: [a.id],
+				savedAt: Date.now(),
+				documents: [
+					{
+						id: a.id,
+						ref: { ...a.ref!, name: 'Replacement' },
+						state: { ...a.state },
+						data: a.data,
+						lastAccessedAt: Date.now()
+					}
+				]
+			})
+		)
+		await store.restoreFromLocalStorage()
 		const replacement = store.documents[0]
 		if (outcome === 'success') response.resolve(success())
 		else response.reject(new Error('Late failure'))
@@ -183,7 +197,7 @@ describe('Адресация асинхронных команд и версии
 		expect(await opening).toEqual({ status: 'cancelled' })
 		expect(store.activeDocumentId).toBe(activeId)
 		expect(store.documents.some(document => document.id === id)).toBe(false)
-		expect(localStorage.getItem('document_' + id)).toBeNull()
+		expect(storedDocument(id)).toBeNull()
 	})
 
 	it('пакетное сохранение не переключает вкладку и не отменяет выбор пользователя', async () => {
@@ -229,7 +243,7 @@ describe('Адресация асинхронных команд и версии
 		expect((await pulling).status).toBe('conflict')
 		expect(a.data).toEqual(data('Local'))
 		expect(getIsDirty(a)).toBe(true)
-		expect(JSON.parse(localStorage.getItem('document_' + a.id)!).data).toEqual(data('Local'))
+		expect(storedDocument(a.id)!.data).toEqual(data('Local'))
 	})
 
 	it('старый pull не заменяет результат нового', async () => {
@@ -303,6 +317,9 @@ describe('Адресация асинхронных команд и версии
 		edit(store, a, 'Aa')
 		api.saveFile.mockResolvedValue(success())
 		await store.saveDocument(a.id)
+		const legacy = JSON.parse(localStorage.getItem('documentTabs')!)
+		delete legacy.schemaVersion
+		localStorage.setItem('documentTabs', JSON.stringify(legacy))
 		localStorage.setItem('document_' + a.id, JSON.stringify({ data: data('BB'), savedAt: Date.now() }))
 		const restored = new DocumentTabsStore(api as any)
 		await restored.restoreFromLocalStorage()

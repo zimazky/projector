@@ -12,12 +12,10 @@ import {
 	SyncResult,
 	RestoredDocumentSnapshot,
 	DocumentTabsSnapshot,
-	DocumentDataSnapshot,
 	createEmptyDocumentData,
 	generateDocumentId,
 	createInitialDocumentState,
 	createInitialSyncSnapshot,
-	parseDocumentTabsSnapshot,
 	DocumentSyncSnapshot,
 	DocumentOrigin
 } from './DocumentTabsStore.types'
@@ -46,8 +44,10 @@ import {
 	syncLegacyStateFromNewModel
 } from './DocumentSyncSelectors'
 
-const DOCUMENT_TABS_KEY = 'documentTabs'
-const DOCUMENT_DATA_PREFIX = 'document_'
+import { LocalDocumentPersistence, type DocumentPersistence } from './DocumentPersistence'
+import { serializeDocumentData } from './DocumentFormat'
+import { parseSessionSnapshot } from './DocumentSessionFormat'
+import { storageDiagnostic, storageFailureMessage, type StorageDiagnostic } from './DocumentStorageDiagnostic'
 
 /**
  * Store для управления несколькими открытыми документами.
@@ -58,8 +58,20 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private documentStoreManager: DocumentStoreManager
 	private operationSequence = 0
 	private pendingSaves = new Map<DocumentSession, Promise<DocumentSaveResult>>()
+	private storeCallbacks: DocumentStoreCallbacks = {}
+	private recoveryBlocked = false
+	persistenceError: string | null = null
+	persistenceDiagnostic: StorageDiagnostic | null = null
+	isPersistingLocalSession = false
+	isRestoringLocalSession = false
+	private localSaveSequence = 0
+	private localRestoreSequence = 0
+	private pendingLocalSave: Promise<void> | null = null
 
-	constructor(private readonly googleApiService: GoogleApiService) {
+	constructor(
+		private readonly googleApiService: GoogleApiService,
+		private readonly persistence: DocumentPersistence = new LocalDocumentPersistence()
+	) {
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
@@ -76,14 +88,27 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		})
 
 		this.setOnStoresChanged({})
-		makeAutoObservable<this, 'pendingSaves' | 'operationSequence'>(this, {
+		makeAutoObservable<
+			this,
+			| 'pendingSaves'
+			| 'operationSequence'
+			| 'persistence'
+			| 'pendingLocalSave'
+			| 'localSaveSequence'
+			| 'localRestoreSequence'
+		>(this, {
 			pendingSaves: false,
+			persistence: false,
+			pendingLocalSave: false,
+			localSaveSequence: false,
+			localRestoreSequence: false,
 			operationSequence: false
 		})
 	}
 
 	/** Установить колбэки при изменении данных в пер-документных сторах (вызывается из MainStore) */
 	setOnStoresChanged(callbacks: DocumentStoreCallbacks): void {
+		this.storeCallbacks = callbacks
 		// Персистентность принадлежит документу, а не наличию MainStore или активной вкладке.
 		this.documentStoreManager.setCallbacks({
 			onEventsChanged: stores => {
@@ -225,6 +250,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	/** Создать новый документ */
 	openNewDocument(name: string = 'Новый документ') {
+		if (this.isRestoringLocalSession) return
 		const id = generateDocumentId()
 		const data = createEmptyDocumentData()
 		const sync = createInitialSyncSnapshot('new-local')
@@ -262,13 +288,13 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.state.isLoading = false
 
 		this.persistToLocalStorage()
-		this.persistDocumentDataToLocalStorage(id)
 
 		this.onActiveDocumentChanged?.(id)
 	}
 
 	/** Открыть документ из Google Drive */
 	async openFromDrive(fileId: string, space?: 'drive' | 'appDataFolder'): Promise<DocumentOpenResult> {
+		if (this.isRestoringLocalSession) return { status: 'cancelled' }
 		// Проверка: уже открыт такой документ?
 		const existing = this.findDocumentByFileId(fileId)
 		if (existing) {
@@ -339,7 +365,10 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	 * Открыть документ из localStorage без синхронизации с Google Drive.
 	 * Документ помечается как 'offline' и требует явной синхронизации пользователем.
 	 */
-	openFromLocalStorageSnapshot(docSnapshot: RestoredDocumentSnapshot, syncSnapshot?: DocumentSyncSnapshot) {
+	private createRestoredSession(
+		docSnapshot: RestoredDocumentSnapshot,
+		syncSnapshot?: DocumentSyncSnapshot
+	): DocumentSession {
 		const id = docSnapshot.id
 		const origin: DocumentOrigin = docSnapshot.ref?.fileId ? 'restored-local' : 'new-local'
 		const sync = { ...createInitialSyncSnapshot(origin), ...syncSnapshot }
@@ -380,8 +409,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			createdAt: docSnapshot.lastAccessedAt,
 			lastAccessedAt: docSnapshot.lastAccessedAt
 		}
-		this.state.documents.set(id, session)
-		this.state.documentOrder.push(id)
+		return session
 	}
 
 	/** Общий сценарий закрытия для вкладки и меню. */
@@ -437,7 +465,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			this.activateDocument(this.state.activeDocumentId)
 		}
 
-		this.removeDocumentDataFromLocalStorage(documentId)
 		this.persistToLocalStorage()
 	}
 
@@ -486,7 +513,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		}
 		session.lastAccessedAt = Date.now()
 		syncLegacyStateFromNewModel(session)
-		this.persistDocumentDataToLocalStorage(documentId)
 		this.persistToLocalStorage()
 	}
 
@@ -525,7 +551,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			webViewLink: metadata.webViewLink
 		}
 		syncLegacyStateFromNewModel(session)
-		this.persistDocumentDataToLocalStorage(context.documentId)
 		this.persistToLocalStorage()
 		return true
 	}
@@ -598,7 +623,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			if (!decision && !getIsDirty(context.session)) return { status: 'saved' }
 			const result = await this.googleApiService.saveFile(
 				ref.name,
-				JSON.stringify(context.data, null, 2),
+				serializeDocumentData(context.data),
 				ref.mimeType,
 				ref.parentFolderId || 'root',
 				ref.space || 'drive',
@@ -801,7 +826,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		// Синхронизируем legacy-поля с новой моделью
 		syncLegacyStateFromNewModel(session)
 
-		this.persistDocumentDataToLocalStorage(session.id)
 		this.persistToLocalStorage()
 		if (this.activeDocumentId === documentId) this.onActiveDocumentChanged?.(documentId)
 	}
@@ -815,15 +839,17 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	// === Персистентность ===
 
-	/** Сохранить метаданные вкладок в localStorage */
-	private persistToLocalStorage() {
-		const snapshot: DocumentTabsSnapshot = {
+	/** Полный атомарный снимок метаданных и содержимого всех вкладок. */
+	private createLocalSnapshot(): DocumentTabsSnapshot {
+		return {
+			schemaVersion: 1,
 			activeDocumentId: this.state.activeDocumentId,
 			documentOrder: this.state.documentOrder,
 			documents: this.state.documentOrder.map(id => {
 				const session = this.state.documents.get(id)!
 				return {
 					id: session.id,
+					data: session.data,
 					ref: session.ref!,
 					state: {
 						isDirty: session.state.isDirty,
@@ -845,81 +871,167 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			}),
 			savedAt: Date.now()
 		}
-		localStorage.setItem(DOCUMENT_TABS_KEY, JSON.stringify(snapshot))
 	}
 
-	/** Сохранить данные документа в localStorage */
-	private persistDocumentDataToLocalStorage(documentId: DocumentId) {
-		const session = this.state.documents.get(documentId)
-		if (!session) return
-
-		const snapshot: DocumentDataSnapshot = {
-			data: session.data,
-			savedAt: Date.now()
+	private persistToLocalStorage(): void {
+		if (this.recoveryBlocked) return
+		const sequence = ++this.localSaveSequence
+		const success = () => {
+			if (sequence !== this.localSaveSequence) return
+			this.persistenceError = null
+			this.persistenceDiagnostic = null
+			this.isPersistingLocalSession = false
 		}
-		localStorage.setItem(`${DOCUMENT_DATA_PREFIX}${documentId}`, JSON.stringify(snapshot))
+		const failure = (error: unknown) => {
+			if (sequence !== this.localSaveSequence) return
+			this.persistenceDiagnostic = storageDiagnostic(error)
+			this.persistenceError = storageFailureMessage(this.persistenceDiagnostic)
+			this.isPersistingLocalSession = false
+		}
+		try {
+			const saving = this.persistence.save(this.createLocalSnapshot())
+			if (saving) {
+				this.isPersistingLocalSession = true
+				this.pendingLocalSave = saving.then(
+					() => runInAction(success),
+					error => runInAction(() => failure(error))
+				)
+			} else success()
+		} catch (error: unknown) {
+			failure(error)
+		}
 	}
 
-	/** Удалить данные документа из localStorage */
-	private removeDocumentDataFromLocalStorage(documentId: DocumentId) {
-		localStorage.removeItem(`${DOCUMENT_DATA_PREFIX}${documentId}`)
+	async waitForLocalPersistence(): Promise<boolean> {
+		let pending: Promise<void> | null
+		do {
+			pending = this.pendingLocalSave
+			await pending
+		} while (pending !== this.pendingLocalSave)
+		return !this.persistenceError && !this.recoveryBlocked
 	}
 
-	/**
-	 * Восстановление сессии из localStorage.
-	 * Все документы восстанавливаются из локального кэша без синхронизации.
-	 * Поддерживает миграцию: если есть новая sync-модель в snapshot — использует её.
-	 */
+	/** Повтор после освобождения квоты; не маскирует повреждённый исходный снимок. */
+	retryLocalPersistence(): void {
+		if (!this.recoveryBlocked) this.persistToLocalStorage()
+	}
+
+	get canPersistLocalSession(): boolean {
+		return !this.recoveryBlocked
+	}
+
+	exportLocalSession(): string {
+		return JSON.stringify(this.createLocalSnapshot(), null, 2)
+	}
+
+	exportRecoverySource(): string | Promise<string> {
+		return this.persistence.exportSource()
+	}
+
+	/** Архив сессии добавляет копии вкладок; уже открытые документы остаются в сессии. */
+	importLocalSession(json: string): number {
+		if (this.isRestoringLocalSession || this.documents.some(document => document.operation !== 'idle'))
+			throw new Error('Дождитесь завершения текущих операций перед импортом сессии.')
+		const imported = parseSessionSnapshot(json, () => null)
+		if (!imported.documents.length) throw new Error('В архиве сессии нет документов.')
+		const merged = this.createLocalSnapshot()
+		const ids = new Map<string, string>()
+		for (const document of imported.documents) ids.set(document.id, generateDocumentId())
+		const order = imported.documentOrder.map(id => ids.get(id)!)
+		merged.documents.push(
+			...imported.documents.map(document => ({
+				...document,
+				id: ids.get(document.id)!,
+				ref: { ...document.ref, name: document.ref.name + ' (восстановлено)' }
+			}))
+		)
+		merged.documentOrder = [...merged.documentOrder, ...order]
+		merged.activeDocumentId = ids.get(imported.activeDocumentId!)!
+		// Проверяем весь объединённый снимок до замены доменных сторов.
+		this.installRestoredSnapshot(parseSessionSnapshot(JSON.stringify(merged), () => null))
+		this.persistToLocalStorage()
+		return imported.documents.length
+	}
+
+	/** Полная проверка и подготовка сторов предшествуют атомарной замене сессии в памяти. */
 	async restoreFromLocalStorage(): Promise<boolean> {
-		const tabsJson = localStorage.getItem(DOCUMENT_TABS_KEY)
-		if (!tabsJson) return false
-
-		const snapshot = parseDocumentTabsSnapshot(tabsJson)
-		if (!snapshot) return false
-
-		// Восстановление метаданных
-		for (const docSnapshot of snapshot.documents) {
-			// Передаём новую sync-модель если она есть в snapshot
-			this.openFromLocalStorageSnapshot(docSnapshot, docSnapshot.sync)
-		}
-		this.state.documentOrder = snapshot.documentOrder
-		this.state.activeDocumentId = snapshot.activeDocumentId
-
-		// Загрузка данных каждого документа из localStorage
-		for (const docSnapshot of snapshot.documents) {
-			const dataJson = localStorage.getItem(`${DOCUMENT_DATA_PREFIX}${docSnapshot.id}`)
-			if (dataJson) {
-				try {
-					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
-					const session = this.state.documents.get(docSnapshot.id)!
-					session.data = dataSnapshot.data
-
-					// Вычисляем fingerprint для восстановленных данных
-					const fingerprint = computeFingerprint(session.data)
-					// Данные записываются перед метаданными: при прерывании между двумя записями
-					// новый контент не должен получить старую «чистую» локальную версию.
-					if (session.sync.localFingerprint !== fingerprint && session.sync.baseLocalVersion !== null) {
-						session.sync.localVersion = Math.max(session.sync.localVersion, session.sync.baseLocalVersion) + 1
-					}
-					session.sync.localFingerprint = fingerprint
-					if (session.sync.baseFingerprint === fingerprint) {
-						session.sync.baseLocalVersion = session.sync.localVersion
-					}
-
-					// Синхронизируем legacy-поля с новой моделью
-					syncLegacyStateFromNewModel(session)
-
-					// Создаём сторы (с блокировкой onChangeList)
-					// Данные уже загружены в session.data, dataProvider вернёт их при createStores
-					session.state.isLoading = true
-					this.documentStoreManager.createStores(docSnapshot.id)
-					session.state.isLoading = false
-				} catch (e) {
-					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
+		if (this.documents.length) return false
+		const restoreSequence = ++this.localRestoreSequence
+		this.isRestoringLocalSession = true
+		this.recoveryBlocked = true
+		try {
+			const loading = this.persistence.load()
+			const snapshot = loading instanceof Promise ? await loading : loading
+			return runInAction(() => {
+				if (restoreSequence !== this.localRestoreSequence) return false
+				if (this.documents.length) {
+					this.persistenceError =
+						'Во время восстановления открыты новые документы. Экспортируйте их перед повторным запуском; исходная сессия не перезаписана.'
+					return false
 				}
-			}
+				if (!snapshot) {
+					this.recoveryBlocked = false
+					this.persistenceError = null
+					this.persistenceDiagnostic = null
+					return false
+				}
+				const restored = this.installRestoredSnapshot(snapshot)
+				if (restored && loading instanceof Promise) this.persistToLocalStorage()
+				return restored
+			})
+		} catch (error: unknown) {
+			return runInAction(() => {
+				if (restoreSequence !== this.localRestoreSequence) return false
+				this.persistenceDiagnostic = null
+				this.recoveryBlocked = true
+				this.persistenceError =
+					'Не удалось восстановить локальную сессию. ' +
+					(error instanceof Error ? error.message : 'Хранилище недоступно.')
+				return false
+			})
+		} finally {
+			runInAction(() => {
+				if (restoreSequence === this.localRestoreSequence) this.isRestoringLocalSession = false
+			})
 		}
+	}
 
+	private installRestoredSnapshot(snapshot: DocumentTabsSnapshot): boolean {
+		const nextState: DocumentTabsState = {
+			documents: new Map(),
+			documentOrder: [...snapshot.documentOrder],
+			activeDocumentId: snapshot.activeDocumentId
+		}
+		for (const item of snapshot.documents) {
+			const session = this.createRestoredSession(item, item.sync)
+			session.data = cloneDocumentData(item.data!)
+			const fingerprint = computeFingerprint(session.data)
+			if (session.sync.localFingerprint !== fingerprint && session.sync.baseLocalVersion !== null) {
+				session.sync.localVersion = Math.max(session.sync.localVersion, session.sync.baseLocalVersion) + 1
+			}
+			session.sync.localFingerprint = fingerprint
+			if (session.sync.baseFingerprint === fingerprint) session.sync.baseLocalVersion = session.sync.localVersion
+			syncLegacyStateFromNewModel(session)
+			nextState.documents.set(item.id, session)
+		}
+		let installed = false
+		const self = this
+		const manager = new DocumentStoreManager({
+			getDocumentData: id => (installed ? self.state : nextState).documents.get(id)?.data ?? null,
+			get activeDocumentId() {
+				return (installed ? self.state : nextState).activeDocumentId
+			}
+		})
+		for (const id of nextState.documentOrder) manager.createStores(id)
+		this.documentStoreManager.dispose()
+		this.state = nextState
+		installed = true
+		this.documentStoreManager = manager
+		this.setOnStoresChanged(this.storeCallbacks)
+		this.recoveryBlocked = false
+		this.persistenceError = null
+		this.persistenceDiagnostic = null
+		if (this.activeDocumentId) this.onActiveDocumentChanged?.(this.activeDocumentId)
 		return true
 	}
 
@@ -963,21 +1075,39 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	/** Очистить состояние стора (для тестов) */
 	clear() {
+		++this.localRestoreSequence
+		this.isRestoringLocalSession = false
+		const saveSequence = ++this.localSaveSequence
+		this.pendingLocalSave = null
+		this.isPersistingLocalSession = false
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
 			documentOrder: []
 		}
 		this.documentStoreManager.clear()
-		// Очистка localStorage
-		localStorage.removeItem('documentTabs')
-		const keysToRemove: string[] = []
-		for (let i = 0; i < localStorage.length; i++) {
-			const key = localStorage.key(i)
-			if (key && key.startsWith('document_')) {
-				keysToRemove.push(key)
+		this.recoveryBlocked = false
+		this.persistenceError = null
+		this.persistenceDiagnostic = null
+		try {
+			const clearing = this.persistence.clear()
+			if (clearing) {
+				this.isPersistingLocalSession = true
+				this.pendingLocalSave = clearing.then(
+					() =>
+						runInAction(() => {
+							if (saveSequence === this.localSaveSequence) this.isPersistingLocalSession = false
+						}),
+					() =>
+						runInAction(() => {
+							if (saveSequence !== this.localSaveSequence) return
+							this.isPersistingLocalSession = false
+							this.persistenceError = 'Не удалось очистить локальную сессию.'
+						})
+				)
 			}
+		} catch {
+			this.persistenceError = 'Не удалось очистить локальную сессию.'
 		}
-		keysToRemove.forEach(key => localStorage.removeItem(key))
 	}
 }

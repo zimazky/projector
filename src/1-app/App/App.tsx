@@ -15,17 +15,37 @@ import YesNoCancelConfirmation, {
 } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
 
 import './App.css'
+import { downloadJson } from 'src/7-shared/libs/downloadJson'
 import type { DocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
+import {
+	storageGroupLabels,
+	storageOperationLabels,
+	storageSizeLabel
+} from 'src/6-entities/Document/model/DocumentStorageDiagnostic'
 
 const App: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
 	const { uiStore, documentTabsStore, saveToDriveStore, mainStore } = useContext(StoreContext)
+	const storageFailure = documentTabsStore.persistenceDiagnostic
 	React.useEffect(() => {
 		mainStore.startSyncCoordinator()
 		return () => mainStore.stopSyncCoordinator()
 	}, [mainStore])
 
 	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
+	React.useEffect(() => {
+		const warn = (event: BeforeUnloadEvent) => {
+			if (
+				documentTabsStore.isPersistingLocalSession ||
+				(documentTabsStore.persistenceError && documentTabsStore.documents.length)
+			) {
+				event.preventDefault()
+				event.returnValue = ''
+			}
+		}
+		window.addEventListener('beforeunload', warn)
+		return () => window.removeEventListener('beforeunload', warn)
+	}, [documentTabsStore])
 
 	const [unsavedDialogOpen, setUnsavedDialogOpen] = React.useState(false)
 	const [dialogMessage, setDialogMessage] = React.useState('Есть несохранённые изменения.')
@@ -84,6 +104,14 @@ const App: React.FC = observer(function () {
 	const handleNew = () => {
 		documentTabsStore.openNewDocument()
 	}
+	const exportSession = async (source = false) => {
+		try {
+			const content = source ? await documentTabsStore.exportRecoverySource() : documentTabsStore.exportLocalSession()
+			downloadJson(content, source ? 'projector-recovery-source.json' : 'projector-session.json')
+		} catch {
+			window.alert('Не удалось экспортировать данные. Доступ к хранилищу может быть запрещён.')
+		}
+	}
 
 	const handleOpenFromDrive = () => {
 		// Открываем Drive file picker через кастомное событие
@@ -122,7 +150,52 @@ const App: React.FC = observer(function () {
 				</div>
 			)}
 			<main>
-				{documentTabsStore.documents.length === 0 ? (
+				{documentTabsStore.isPersistingLocalSession && (
+					<div role="status" data-testid="local-save-pending">
+						Сохраняется локальная копия…
+					</div>
+				)}
+				{documentTabsStore.persistenceError && (
+					<div role="alert" className="local-storage-error">
+						<p>{documentTabsStore.persistenceError}</p>
+						{documentTabsStore.canPersistLocalSession ? (
+							<button onClick={() => documentTabsStore.retryLocalPersistence()}>Повторить локальное сохранение</button>
+						) : documentTabsStore.documents.length === 0 ? (
+							<button onClick={() => void documentTabsStore.restoreFromLocalStorage()}>Повторить восстановление</button>
+						) : null}
+						<button onClick={() => exportSession()}>Экспортировать открытую сессию</button>
+						<button onClick={() => exportSession(true)}>Экспортировать исходный снимок</button>
+						{storageFailure && (
+							<details className="local-storage-diagnostic">
+								<summary>Подробности ошибки</summary>
+								<dl>
+									<dt>Хранилище</dt>
+									<dd>{storageFailure.backend}</dd>
+									<dt>Ошибка браузера</dt>
+									<dd>{storageFailure.errorName}</dd>
+									<dt>Операция</dt>
+									<dd>{storageOperationLabels[storageFailure.operation]}</dd>
+									<dt>Размер неудавшейся записи</dt>
+									<dd>{storageSizeLabel(storageFailure.attemptedBytes)}</dd>
+									<dt>Оценка объёма localStorage</dt>
+									<dd>{storageSizeLabel(storageFailure.storedBytes)}</dd>
+									{storageFailure.groups.map(item => (
+										<React.Fragment key={item.group}>
+											<dt>
+												{storageGroupLabels[item.group]} ({item.entries})
+											</dt>
+											<dd>{storageSizeLabel(item.bytes)}</dd>
+										</React.Fragment>
+									))}
+								</dl>
+								<p>Размеры — оценка строк UTF-16. Лимит хранилища и свободное место браузер здесь не сообщает.</p>
+							</details>
+						)}
+					</div>
+				)}
+				{documentTabsStore.isRestoringLocalSession ? (
+					<div role="status">Восстановление локальных документов…</div>
+				) : documentTabsStore.documents.length === 0 ? (
 					<EmptyState onCreateNew={handleNew} onOpenFromDrive={handleOpenFromDrive} />
 				) : (
 					renderPage()

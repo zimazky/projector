@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { waitFor } from '@testing-library/dom'
@@ -384,7 +385,7 @@ describe('App Integration Tests', () => {
 			await saveToDriveStore.saveFile('root', 'drive')
 		})
 		await waitFor(() => expect(documentTabsStore.documents.length).toBe(0))
-		expect(localStorage.getItem(`document_${documentId}`)).toBeNull()
+		expect(storedDocument(documentId)).toBeNull()
 	})
 
 	test.each(['tab', 'menu'])('закрытие из %s сохраняет вкладку при отказе записи', async source => {
@@ -404,7 +405,7 @@ describe('App Integration Tests', () => {
 		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
 		await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Offline'))
 		expect(documentTabsStore.documents.length).toBe(1)
-		expect(localStorage.getItem(`document_${document.id}`)).not.toBeNull()
+		expect(storedDocument(document.id)).not.toBeNull()
 	})
 
 	test('отмена «Сохранить как» разрешает повторное закрытие без сохранения', async () => {
@@ -482,7 +483,7 @@ describe('App Integration Tests', () => {
 		expect(documentTabsStore.documents.length).toBe(1)
 		expect(document.state.isDirty).toBe(true)
 		expect(document.data.plannedList[0].name).toBe('New local edit')
-		expect(JSON.parse(localStorage.getItem(`document_${document.id}`)!).data.plannedList[0].name).toBe('New local edit')
+		expect(storedDocument(document.id)!.data.plannedList[0].name).toBe('New local edit')
 		expect(JSON.parse((googleApiService.saveFile as jest.Mock).mock.calls[0][1]).plannedList).toEqual([])
 	})
 

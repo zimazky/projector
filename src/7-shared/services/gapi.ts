@@ -1,6 +1,14 @@
 import { GoogleLoginCancelledError } from './GoogleAuthError'
 import { driveErrorCode, driveErrorMessage } from './DriveApiError'
 
+export const GOOGLE_LOGIN_TIMEOUT_MS = 120000
+const GOOGLE_INIT_TIMEOUT_MS = 15000
+
+/** Литерал Drive q: экранирование до URL-кодирования клиентской библиотекой. */
+export function driveQueryLiteral(value: string): string {
+	return "'" + value.replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'"
+}
+
 export const DRIVE_DOCUMENT_FIELDS =
 	'id,name,mimeType,parents,iconLink,webViewLink,modifiedTime,version,headRevisionId,md5Checksum,trashed'
 
@@ -25,18 +33,31 @@ async function prom(gapiCall: (arg: any) => Promise<any>, argObj: any) {
 			gapi.client.setToken(null)
 			expiredTokenHandle()
 		}
-		throw new Error(driveErrorMessage(error), { cause: error })
+		throw Object.assign(new Error(driveErrorMessage(error), { cause: error }), { status: code })
 	}
 }
 
-/** Загрузка внешнего скрипта через Promise. */
-function loadScriptPromise(url: string) {
+/** Загрузка скрипта с ограниченным ожиданием и очисткой обработчиков. */
+function loadScriptPromise(url: string, signal: AbortSignal): Promise<void> {
 	return new Promise((resolve, reject) => {
 		const script = document.createElement('script')
+		const finish = (error?: Error) => {
+			clearTimeout(timer)
+			signal.removeEventListener('abort', abort)
+			script.onload = null
+			script.onerror = null
+			if (error) {
+				script.remove()
+				reject(error)
+			} else resolve()
+		}
+		const abort = () => finish(new Error('Загрузка Google API отменена.'))
+		const timer = setTimeout(() => finish(new Error('Истекло время загрузки Google API.')), GOOGLE_INIT_TIMEOUT_MS)
+		signal.addEventListener('abort', abort, { once: true })
 		script.src = url
 		script.async = true
-		script.onerror = reject
-		script.onload = resolve
+		script.onerror = () => finish(new Error('Не удалось загрузить Google API.'))
+		script.onload = () => finish()
 		document.head.appendChild(script)
 	})
 }
@@ -45,8 +66,16 @@ function loadScriptPromise(url: string) {
 let loginWaiters: Array<{ resolve: () => void; reject: (reason?: unknown) => void }> = []
 /** Текущий in-flight промис авторизации (дедупликация параллельных logIn). */
 let pendingLoginPromise: Promise<void> | null = null
+let loginTimer: ReturnType<typeof setTimeout> | null = null
+let loginGeneration = 0
+let refreshTokenClient: (() => void) | null = null
+function clearLoginTimer() {
+	if (loginTimer !== null) clearTimeout(loginTimer)
+	loginTimer = null
+}
 
 function resolveLoginWaiters() {
+	clearLoginTimer()
 	const waiters = loginWaiters
 	loginWaiters = []
 	waiters.forEach(w => w.resolve())
@@ -54,6 +83,7 @@ function resolveLoginWaiters() {
 }
 
 function rejectLoginWaiters(reason?: unknown) {
+	clearLoginTimer()
 	const waiters = loginWaiters
 	loginWaiters = []
 	waiters.forEach(w => w.reject(reason))
@@ -85,58 +115,80 @@ export default class GAPI {
 	/** Инициализация GIS + GAPI. */
 	static async init({ onSuccess = () => {}, onFailure = () => {}, onSignIn = () => {}, onExpiredToken = () => {} }) {
 		expiredTokenHandle = onExpiredToken
+		const controller = new AbortController()
 		try {
-			const _gsi = loadScriptPromise('https://accounts.google.com/gsi/client')
-			const _gapi = loadScriptPromise('https://apis.google.com/js/api.js')
-			await _gsi
-
-			// error_callback поддерживается GIS, но отсутствует в установленных старых типах.
-			const tokenConfig: google.accounts.oauth2.TokenClientConfig & {
-				error_callback: (error: { type: string }) => void
-			} = {
-				client_id: CLIENT_ID,
-				scope: SCOPES,
-				prompt: '',
-				callback: tokenResponse => {
-					if (tokenResponse?.error) {
+			await Promise.all([
+				loadScriptPromise('https://accounts.google.com/gsi/client', controller.signal),
+				loadScriptPromise('https://apis.google.com/js/api.js', controller.signal)
+			])
+			refreshTokenClient = () => {
+				const generation = loginGeneration
+				const current = () => pendingLoginPromise !== null && generation === loginGeneration
+				const tokenConfig: google.accounts.oauth2.TokenClientConfig & {
+					error_callback: (error: { type: string }) => void
+				} = {
+					client_id: CLIENT_ID,
+					scope: SCOPES,
+					prompt: '',
+					callback: tokenResponse => {
+						if (!current()) return
+						if (tokenResponse?.error) {
+							rejectLoginWaiters(
+								tokenResponse.error === 'access_denied'
+									? new GoogleLoginCancelledError()
+									: new Error('Не удалось войти в Google.')
+							)
+							return
+						}
+						if (!tokenResponse?.access_token) {
+							rejectLoginWaiters(new Error('Google не вернул токен входа.'))
+							return
+						}
+						gapi.client.setToken(tokenResponse)
+						try {
+							onSignIn()
+							resolveLoginWaiters()
+						} catch {
+							rejectLoginWaiters(new Error('Не удалось завершить вход в Google.'))
+						}
+					},
+					error_callback: error => {
+						if (!current()) return
 						rejectLoginWaiters(
-							tokenResponse.error === 'access_denied'
+							error.type === 'popup_closed'
 								? new GoogleLoginCancelledError()
-								: new Error('Не удалось войти в Google.')
+								: new Error('Не удалось открыть окно входа в Google.')
 						)
-						return
 					}
-					onSignIn()
-					resolveLoginWaiters()
-				},
-				error_callback: error =>
-					rejectLoginWaiters(
-						error.type === 'popup_closed'
-							? new GoogleLoginCancelledError()
-							: new Error('Не удалось открыть окно входа в Google.')
-					)
+				}
+				GAPI.tokenClient = google.accounts.oauth2.initTokenClient(tokenConfig)
 			}
-			GAPI.tokenClient = google.accounts.oauth2.initTokenClient(tokenConfig)
-			console.log('gis inited')
-			await _gapi
-			gapi.load('client', () => {
-				gapi.client
-					.init({
-						apiKey: getKey(),
-						discoveryDocs: [DISCOVERY_DOC]
+			refreshTokenClient()
+			let initTimer: ReturnType<typeof setTimeout> | undefined
+			let active = true
+			try {
+				await new Promise<void>((resolve, reject) => {
+					initTimer = setTimeout(() => {
+						active = false
+						reject(new Error('Истекло время инициализации Google API.'))
+					}, GOOGLE_INIT_TIMEOUT_MS)
+					gapi.load('client', () => {
+						if (!active) return
+						Promise.resolve()
+							.then(() => gapi.client.init({ apiKey: getKey(), discoveryDocs: [DISCOVERY_DOC] }))
+							.then(() => resolve(), reject)
 					})
-					.then(() => {
-						console.log('gapi inited')
-						onSuccess()
-					})
-					.catch(() => {
-						console.log('gapi init error')
-						onFailure()
-					})
-			})
+				})
+			} finally {
+				active = false
+				clearTimeout(initTimer)
+			}
+			onSuccess()
 		} catch (_) {
 			console.log('error gapi or gis load')
 			onFailure()
+		} finally {
+			controller.abort()
 		}
 	}
 
@@ -153,11 +205,17 @@ export default class GAPI {
 			return pendingLoginPromise
 		}
 
+		const generation = ++loginGeneration
 		const loginPromise = new Promise<void>((resolve, reject) => {
 			loginWaiters.push({ resolve, reject })
 		})
 		pendingLoginPromise = loginPromise
+		loginTimer = setTimeout(() => {
+			if (generation === loginGeneration)
+				rejectLoginWaiters(new Error('Истекло время входа в Google. Повторите попытку.'))
+		}, GOOGLE_LOGIN_TIMEOUT_MS)
 		try {
+			refreshTokenClient?.()
 			GAPI.tokenClient.requestAccessToken({ prompt })
 		} catch {
 			rejectLoginWaiters(new Error('Не удалось открыть окно входа в Google.'))
@@ -167,6 +225,7 @@ export default class GAPI {
 
 	/** Отзыв токена и выход из аккаунта. */
 	static logOut() {
+		rejectLoginWaiters(new GoogleLoginCancelledError())
 		const token = gapi.client.getToken()
 		if (token !== null) {
 			google.accounts.oauth2.revoke(token.access_token, () => {
@@ -297,7 +356,7 @@ export default class GAPI {
 		const effectiveQueryParts: string[] = ['trashed = false']
 
 		if (folderId) {
-			effectiveQueryParts.unshift(`'${folderId}' in parents`)
+			effectiveQueryParts.unshift(driveQueryLiteral(folderId) + ' in parents')
 		}
 
 		if (query) {
@@ -347,8 +406,8 @@ export default class GAPI {
 		try {
 			await prom(gapi.client.drive.files.delete, { fileId: fileId })
 			return true
-		} catch (err: any) {
-			if (err.status === 404) return false
+		} catch (err: unknown) {
+			if (driveErrorCode(err) === 404) return false
 			throw err
 		}
 	}

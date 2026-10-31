@@ -1,3 +1,4 @@
+import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -75,6 +76,6 @@ describe('Обезличенные документы исходного фор�
 		expect(await saving).toBe(false)
 		expect(store.activeDocument?.id).toBe(document.id)
 		expect(document.data).toEqual(data)
-		expect(JSON.parse(localStorage.getItem(`document_${document.id}`)!).data).toEqual(data)
+		expect(storedDocument(document.id)!.data).toEqual(data)
 	})
 })

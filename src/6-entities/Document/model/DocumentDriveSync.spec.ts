@@ -121,8 +121,8 @@ describe('Серверная база и безопасные версии Drive
 		expect((await a.saveDocument(a.activeDocumentId!)).status).toBe('saved')
 		expect((await b.saveDocument(b.activeDocumentId!)).status).toBe('saved')
 		expect(server.files.get('source')!.data).toEqual(data('Base'))
-		expect(server.files.get(a.activeDocument!.ref!.fileId!)!.data).toEqual(data('Local A'))
-		expect(server.files.get(b.activeDocument!.ref!.fileId!)!.data).toEqual(data('Local B'))
+		expect(server.files.get(a.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local A') })
+		expect(server.files.get(b.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local B') })
 		expect(a.activeDocument!.ref!.fileId).not.toBe(b.activeDocument!.ref!.fileId)
 		expect(getDocumentUiState(a.activeDocument!).status).toBe('synced')
 	})
@@ -151,7 +151,7 @@ describe('Серверная база и безопасные версии Drive
 		if (check.status !== 'conflict') throw new Error('Expected conflict')
 		expect((await store.resolveDocumentConflict(check.context, 'local')).status).toBe('saved')
 		expect(server.files.get('source')!.data).toEqual(data('Remote'))
-		expect(server.files.get(store.activeDocument!.ref!.fileId!)!.data).toEqual(data('Local'))
+		expect(server.files.get(store.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local') })
 	})
 
 	it('чтение повторяется при смене версии между metadata и content', async () => {

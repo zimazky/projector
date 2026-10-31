@@ -1,3 +1,4 @@
+import { readLocalSnapshot } from './storage'
 import { test, expect } from './fixtures'
 
 test.use({ driveMode: true })
@@ -131,7 +132,7 @@ for (const conflict of [false, true]) {
 			expect(writes).toBe(1)
 			expect(requests.every(request => request.method === 'POST')).toBe(true)
 			expect(original.projectsList[0].name).toBe('Base')
-			const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('documentTabs')!))
+			const stored = await readLocalSnapshot(page)
 			expect(stored.documents[0].ref.fileId).toBe('copy')
 			await page.screenshot({ path: testInfo.outputPath('drive-version.png'), fullPage: true })
 		}

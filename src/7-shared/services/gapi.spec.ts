@@ -1,5 +1,5 @@
 import { expect } from '@jest/globals'
-import GAPI, { DRIVE_DOCUMENT_FIELDS } from './gapi'
+import GAPI, { DRIVE_DOCUMENT_FIELDS, GOOGLE_LOGIN_TIMEOUT_MS, driveQueryLiteral } from './gapi'
 import { GoogleLoginCancelledError } from './GoogleAuthError'
 
 type TokenConfig = google.accounts.oauth2.TokenClientConfig & { error_callback: (error: { type: string }) => void }
@@ -41,10 +41,95 @@ describe('Отмена авторизации и безопасные логи',
 	})
 
 	afterEach(() => {
+		jest.useRealTimers()
 		globalThis.google = originalGoogle
 		globalThis.gapi = originalGapi
 		document.head.querySelectorAll('script').forEach(script => script.remove())
 		jest.restoreAllMocks()
+	})
+
+	it('таймаут завершает общий вход; поздний ответ не завершает следующую попытку', async () => {
+		jest.useFakeTimers()
+		const first = GAPI.logIn()
+		const oldConfig = config
+		const rejected = expect(first).rejects.toThrow('Истекло время входа')
+		jest.advanceTimersByTime(GOOGLE_LOGIN_TIMEOUT_MS)
+		await rejected
+		const retry = GAPI.logIn()
+		let finished = false
+		void retry.then(() => {
+			finished = true
+		})
+		oldConfig.callback({ access_token: 'OLD' } as any)
+		oldConfig.error_callback({ type: 'popup_closed' })
+		await Promise.resolve()
+		expect(finished).toBe(false)
+		config.callback({ access_token: 'NEW' } as any)
+		await retry
+		expect(gapi.client.setToken).toHaveBeenLastCalledWith({ access_token: 'NEW' })
+		expect(jest.getTimerCount()).toBe(0)
+	})
+
+	it('popup_failed_to_open очищает pending и разрешает повтор', async () => {
+		const first = GAPI.logIn()
+		const rejected = expect(first).rejects.toThrow('Не удалось открыть')
+		config.error_callback({ type: 'popup_failed_to_open' })
+		await rejected
+		const retry = GAPI.logIn()
+		config.callback({ access_token: 'NEW' } as any)
+		await retry
+	})
+
+	it('экранирует имя и ID папки как литералы q, сохраняет пагинацию', async () => {
+		const folder = "folder'\\ or trashed = true"
+		const name = "D'Angelo\\notes.json"
+		const list = jest
+			.fn()
+			.mockResolvedValueOnce({ result: { files: [{ id: 'a' }], nextPageToken: 'next' } })
+			.mockResolvedValueOnce({ result: { files: [{ id: 'b' }] } })
+		;(gapi.client as any).drive = { files: { list } }
+		expect(await GAPI.find('name = ' + driveQueryLiteral(name), folder)).toEqual([{ id: 'a' }, { id: 'b' }])
+		expect(list.mock.calls[0][0].q).toBe(
+			"'folder\\'\\\\ or trashed = true' in parents and trashed = false and (name = 'D\\'Angelo\\\\notes.json')"
+		)
+		expect(list.mock.calls[1][0].pageToken).toBe('next')
+	})
+
+	it('сохраняет код ошибки 404 при нормализации ошибки удаления', async () => {
+		;(gapi.client as any).drive = { files: { delete: jest.fn().mockRejectedValue({ status: 404 }) } }
+		expect(await GAPI.deleteFile('gone')).toBe(false)
+	})
+
+	it('отказ одного скрипта отменяет второй и освобождает оба таймера', async () => {
+		jest.useFakeTimers()
+		const onFailure = jest.fn()
+		const init = GAPI.init({ onFailure })
+		const scripts = Array.from(document.querySelectorAll('script')).slice(-2)
+		scripts[0].dispatchEvent(new Event('error'))
+		await init
+		expect(onFailure).toHaveBeenCalledTimes(1)
+		expect(jest.getTimerCount()).toBe(0)
+	})
+
+	it('таймаут client init завершает инициализацию без позднего onSuccess', async () => {
+		jest.useFakeTimers()
+		const onFailure = jest.fn(),
+			onSuccess = jest.fn()
+		let callback: () => void = () => {}
+		;(gapi.load as jest.Mock).mockImplementation((_name, done) => {
+			callback = done
+		})
+		const init = GAPI.init({ onFailure, onSuccess })
+		Array.from(document.querySelectorAll('script'))
+			.slice(-2)
+			.forEach(script => script.dispatchEvent(new Event('load')))
+		await jest.advanceTimersByTimeAsync(15000)
+		await init
+		expect(onFailure).toHaveBeenCalledTimes(1)
+		callback()
+		await Promise.resolve()
+		expect(onSuccess).not.toHaveBeenCalled()
+		expect(jest.getTimerCount()).toBe(0)
 	})
 
 	it('закрытие popup завершает общий Promise, следующий вход возможен', async () => {
@@ -65,7 +150,7 @@ describe('Отмена авторизации и безопасные логи',
 		})
 		await expect(GAPI.logIn()).rejects.toThrow('Не удалось открыть окно входа')
 		const retry = GAPI.logIn()
-		config.callback({} as any)
+		config.callback({ access_token: 'SYNTHETIC_SECRET' } as any)
 		await retry
 		expect(requestAccessToken).toHaveBeenCalledTimes(2)
 	})

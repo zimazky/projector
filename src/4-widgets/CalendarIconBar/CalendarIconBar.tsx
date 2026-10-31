@@ -1,3 +1,5 @@
+import { downloadJson } from 'src/7-shared/libs/downloadJson'
+import { serializeDocumentData } from 'src/6-entities/Document/model/DocumentFormat'
 import React, { useContext, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
@@ -42,6 +44,20 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	const activeDoc = documentTabsStore.activeDocument
 	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
 	const [saveNotice, setSaveNotice] = useState('')
+	const sessionInput = React.useRef<HTMLInputElement>(null)
+	const importSession = async (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.currentTarget.files?.[0]
+		event.currentTarget.value = ''
+		if (!file) return
+		try {
+			const count = documentTabsStore.importLocalSession(await file.text())
+			setSaveNotice(
+				'Восстановлено вкладок: ' + count + '. Прежние вкладки сохранены. Локальная запись выполняется отдельно.'
+			)
+		} catch (error: unknown) {
+			window.alert(error instanceof Error ? error.message : 'Не удалось прочитать архив сессии.')
+		}
+	}
 
 	// Слушаем кастомное событие для открытия Drive file picker из EmptyState
 	React.useEffect(() => {
@@ -194,6 +210,20 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		menu.push({ name: 'Закрыть документ', fn: handleCloseDocument })
 	}
 
+	menu.push({ name: 'Импортировать сессию из файла', fn: () => sessionInput.current?.click() })
+	if (activeDoc)
+		menu.push({
+			name: 'Экспортировать документ',
+			fn: () => {
+				try {
+					const data = documentTabsStore.getDocumentDataForSave(activeDoc.id) ?? activeDoc.data
+					downloadJson(serializeDocumentData(data), (activeDoc.ref?.name || 'projector') + '.json')
+				} catch {
+					alert('Не удалось экспортировать документ.')
+				}
+			}
+		})
+
 	icons.push({
 		name: 'Загрузить погоду',
 		jsx: (
@@ -242,6 +272,14 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 
 	return (
 		<>
+			<input
+				ref={sessionInput}
+				type="file"
+				accept=".json,application/json"
+				hidden
+				onChange={importSession}
+				data-testid="session-import-input"
+			/>
 			<IconBar icons={icons} />
 			{saveNotice && (
 				<div role="status" className={styles.saveNotice}>

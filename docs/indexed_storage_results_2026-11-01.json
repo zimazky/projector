@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "baselineCommit": "d5681420d9c359fdc407aa15ca7d354c7a064a2c",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "verification": {
+    "typecheck": "passed",
+    "e2eTypecheck": "passed",
+    "jest": {
+      "passed": true,
+      "tests": 3632,
+      "suites": 21
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 8
+    },
+    "browser": {
+      "expected": 14,
+      "unexpected": 0,
+      "flaky": 0,
+      "errors": 0,
+      "syntheticLargeCommentCharacters": 2400000,
+      "localDocumentWritesForbiddenInMigrationTest": true,
+      "atomicRollbackAndRetry": true,
+      "sessionImportAndReload": true
+    },
+    "pages": {
+      "passed": true,
+      "files": 14
+    }
+  },
+  "storage": {
+    "database": "projector-documents",
+    "version": 1,
+    "stores": [
+      "session",
+      "recovery"
+    ],
+    "currentKey": "current",
+    "oldLocalStorageDeleted": false,
+    "archiveAndSessionInOneTransaction": true,
+    "acknowledgement": "transaction.complete",
+    "writesQueuedInOrder": true,
+    "noFallbackToStaleLocalStorageOnDatabaseError": true,
+    "localStorageOnlyWhenIndexedDbApiAbsent": true,
+    "exportedSessionImportPreservesOpenTabs": true
+  },
+  "userBrowserAccessed": false,
+  "realDrive": false,
+  "published": false,
+  "committedByAgent": false,
+  "checkedFilesSha256": {
+    "src/6-entities/Document/model/DocumentPersistence.ts": "5d078a4aa1e6a9bd22eb71180fe78d878c7bccdcf669bdee339cf065aa9c6e6c",
+    "src/6-entities/Document/model/IndexedDocumentStorage.ts": "01e57023a7c4ff7e16c394ac633052bc8b63c376974d0088f6691c3f0522ce13",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "07b024dae6d36d6398daa70cbff0bb9e0b6d0b9c61d16d82fac1ee537ac8da49",
+    "src/6-entities/Document/model/DocumentStorageDiagnostic.ts": "a0f0100aea1e5a5206f899080072f445a116b2b29481a52d0c868b69ee77eae9",
+    "src/6-entities/Document/model/DocumentAsyncPersistence.spec.ts": "b997a1c5475f75f87f7d167a2ca79f8bb2b8ef62265e168da7727e7037de0846",
+    "src/1-app/App/App.tsx": "e1e22f9121b9a42e133baf50ee359f6fd532a9b72c0c27dce55732b02b2971b3",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "93273cdf0932e59da5184c09dba08ff8669fb8facad32bcac3ec3f6e4a0a7e6b",
+    "e2e/storage.ts": "a8f2d019282098ef9f5ad27997e52ed1d07eb9690b462600de0d42caec0c8fa4",
+    "e2e/indexed-storage.spec.ts": "2983c573f78b079643149d0944e80bc7f26893c22ff8f723112a2a7562425cf6",
+    "e2e/documents.spec.ts": "291ac905975fe61b38a57dc6ffb6b03cfdab8a618f2322ca6a19f2d2aed5056a",
+    "e2e/drive-sync.spec.ts": "5d5218b111e9446b60b2beca0e5a28a5e3e5fd5205a226d2e3557d7c92b2f06a",
+    "README.md": "b1d015f4355fcaa36abf6b7431728bd01ef4de33f76b466303b1e3f64a211ab1",
+    "docs/indexed_storage_migration_2026-11-01_ru.md": "1583671b7e709d59847b9919c625f9faa37b1918befd8a090cbb077077387bf8",
+    "docs/local_storage_diagnostics_ru.md": "2d676a442b73a6beed88178dd18087a0a3e9cfbbf34f3405f8f82136679f4c4a",
+    "docs/remediation_plan_2026-10-31_ru.md": "42095293dba556996550ace54b89a1b35980fa3748133dc194ff54c1f14db7e9",
+    "docs/browser_testing_ru.md": "a111c90d20055c82804c4a55c4ebbfafddd4cda37b46fd37b6b85fcb4cb4db1f",
+    "docs/remediation_stage5_2026-11-01_ru.md": "864b2a79e0f3bf07d83db3e44bb0a1753e8511e848f68be4ab281216db62e6b5"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4"
+}

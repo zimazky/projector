@@ -143,9 +143,11 @@ export type DocumentSession = {
 
 /** Снимок состояния вкладки для localStorage */
 export type DocumentTabsSnapshot = {
+	schemaVersion?: 1
 	activeDocumentId: DocumentId | null
 	documentOrder: DocumentId[]
 	documents: Array<{
+		data?: DocumentData
 		id: DocumentId
 		ref: DocumentRef
 		state: {
@@ -245,27 +247,5 @@ export function createInitialSyncSnapshot(origin: DocumentOrigin = 'new-local'):
 		lastRemoteCheckAt: null,
 		needsRemoteCheck: false,
 		origin
-	}
-}
-
-/** Парсить контент документа */
-export function parseDocumentContent(content: unknown): DocumentData {
-	if (typeof content === 'string') {
-		return JSON.parse(content) as DocumentData
-	}
-	return content as DocumentData
-}
-
-/** Валидировать и парсить снимок вкладок */
-export function parseDocumentTabsSnapshot(json: string): DocumentTabsSnapshot | null {
-	try {
-		const parsed = JSON.parse(json)
-		if (!parsed || typeof parsed !== 'object') return null
-		if (!Array.isArray(parsed.documents)) return null
-		if (!Array.isArray(parsed.documentOrder)) return null
-		if (typeof parsed.savedAt !== 'number') return null
-		return parsed as DocumentTabsSnapshot
-	} catch {
-		return null
 	}
 }
