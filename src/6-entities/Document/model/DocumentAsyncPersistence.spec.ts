@@ -128,4 +128,38 @@ describe('Асинхронное локальное хранилище', () => {
 		expect(store.activeDocument).toBe(original)
 		expect(store.getActiveDocumentStores()).toBe(stores)
 	})
+
+	it('очистка ждёт подтверждения последней записи и дедуплицирует нажатия', async () => {
+		const saved = deferred<void>(),
+			archived = deferred<any>()
+		const cleanupLegacy = jest.fn(() => archived.promise)
+		const store = setup({ save: () => saved.promise, cleanupLegacy })
+		store.openNewDocument()
+		const first = store.cleanupLegacyLocalStorage()
+		expect(store.cleanupLegacyLocalStorage()).toBe(first)
+		expect(store.isCleaningLegacyStorage).toBe(true)
+		expect(cleanupLegacy).not.toHaveBeenCalled()
+		saved.resolve()
+		await Promise.resolve()
+		await Promise.resolve()
+		await Promise.resolve()
+		expect(cleanupLegacy).toHaveBeenCalledTimes(1)
+		archived.resolve({ archivedEntries: 1, removedEntries: 1, changedEntries: 0, failedEntries: 0, freedBytes: 100 })
+		await first
+		expect(store.isCleaningLegacyStorage).toBe(false)
+	})
+
+	it('ошибка текущей записи запрещает очистку', async () => {
+		const cleanupLegacy = jest.fn()
+		const store = setup({
+			save: async () => {
+				throw new Error('Cannot save')
+			},
+			cleanupLegacy
+		})
+		store.openNewDocument()
+		await expect(store.cleanupLegacyLocalStorage()).rejects.toThrow('Локальная сессия не сохранена')
+		expect(cleanupLegacy).not.toHaveBeenCalled()
+		expect(store.isCleaningLegacyStorage).toBe(false)
+	})
 })

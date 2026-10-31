@@ -45,7 +45,7 @@ export class IndexedDocumentStorage {
 
 	private async transaction<T>(
 		mode: IDBTransactionMode,
-		action: (tx: IDBTransaction, result: (value: T) => void) => void
+		action: (tx: IDBTransaction, result: (value: T) => void, fail: (error: unknown) => void) => void
 	): Promise<T> {
 		const db = await this.open()
 		try {
@@ -72,13 +72,20 @@ export class IndexedDocumentStorage {
 				tx.onerror = event => {
 					failure ??= (event.target as IDBRequest).error ?? tx.error
 				}
-				try {
-					action(tx, result => {
-						value = result
-					})
-				} catch (error: unknown) {
+				const fail = (error: unknown) => {
 					failure = error
 					tx.abort()
+				}
+				try {
+					action(
+						tx,
+						result => {
+							value = result
+						},
+						fail
+					)
+				} catch (error: unknown) {
+					fail(error)
 				}
 			})
 		} finally {
@@ -97,6 +104,20 @@ export class IndexedDocumentStorage {
 		return this.transaction('readwrite', tx => {
 			if (original !== undefined) tx.objectStore('recovery').add(original)
 			tx.objectStore('session').put(snapshot, 'current')
+		})
+	}
+
+	archiveLegacy(archive: string, validate: (current: string | undefined) => void): Promise<void> {
+		return this.transaction('readwrite', (tx, _result, fail) => {
+			const request = tx.objectStore('session').get('current')
+			request.onsuccess = () => {
+				try {
+					validate(request.result)
+					tx.objectStore('recovery').add(archive)
+				} catch (error: unknown) {
+					fail(error)
+				}
+			}
 		})
 	}
 

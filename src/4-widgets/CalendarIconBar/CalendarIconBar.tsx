@@ -1,5 +1,6 @@
 import { downloadJson } from 'src/7-shared/libs/downloadJson'
 import { serializeDocumentData } from 'src/6-entities/Document/model/DocumentFormat'
+import { storageSizeLabel } from 'src/6-entities/Document/model/DocumentStorageDiagnostic'
 import React, { useContext, useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
@@ -45,6 +46,35 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
 	const [saveNotice, setSaveNotice] = useState('')
 	const sessionInput = React.useRef<HTMLInputElement>(null)
+	const cleanupOldStorage = async () => {
+		setSaveNotice('Архивирование и очистка старых локальных записей…')
+		try {
+			const result = await documentTabsStore.cleanupLegacyLocalStorage()
+			setSaveNotice(
+				result.archivedEntries === 0
+					? 'Старых локальных записей для очистки нет.'
+					: 'Удалено старых записей: ' +
+							result.removedEntries +
+							'. Освобождено примерно ' +
+							storageSizeLabel(result.freedBytes) +
+							'. Архив сохранён в IndexedDB.' +
+							(result.changedEntries ? ' Изменившихся записей оставлено: ' + result.changedEntries + '.' : '') +
+							(result.failedEntries
+								? ' Не удалось удалить записей: ' + result.failedEntries + '. Повторите очистку.'
+								: '')
+			)
+		} catch (error: unknown) {
+			setSaveNotice('Очистка не выполнена. Старые записи сохранены.')
+			window.alert(error instanceof Error ? error.message : 'Не удалось архивировать старые записи.')
+		}
+	}
+	const exportRecovery = async () => {
+		try {
+			downloadJson(await documentTabsStore.exportRecoverySource(), 'projector-recovery-source.json')
+		} catch {
+			window.alert('Не удалось экспортировать резервные снимки.')
+		}
+	}
 	const importSession = async (event: React.ChangeEvent<HTMLInputElement>) => {
 		const file = event.currentTarget.files?.[0]
 		event.currentTarget.value = ''
@@ -211,6 +241,11 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	}
 
 	menu.push({ name: 'Импортировать сессию из файла', fn: () => sessionInput.current?.click() })
+	menu.push({ name: 'Экспортировать резервные снимки', fn: exportRecovery })
+	menu.push({
+		name: documentTabsStore.isCleaningLegacyStorage ? 'Очистка старых записей…' : 'Очистить старые локальные записи',
+		fn: cleanupOldStorage
+	})
 	if (activeDoc)
 		menu.push({
 			name: 'Экспортировать документ',

@@ -20,3 +20,23 @@ export async function readLocalSnapshot(page: Page) {
 		}
 	})
 }
+
+export async function readRecoveryArchives(page: Page): Promise<string[]> {
+	return page.evaluate(async () => {
+		const db = await new Promise<IDBDatabase>((resolve, reject) => {
+			const request = indexedDB.open('projector-documents', 1)
+			request.onsuccess = () => resolve(request.result)
+			request.onerror = () => reject(request.error)
+		})
+		try {
+			return await new Promise<string[]>((resolve, reject) => {
+				const tx = db.transaction('recovery', 'readonly')
+				const request = tx.objectStore('recovery').getAll()
+				tx.oncomplete = () => resolve(request.result)
+				tx.onabort = () => reject(tx.error)
+			})
+		} finally {
+			db.close()
+		}
+	})
+}

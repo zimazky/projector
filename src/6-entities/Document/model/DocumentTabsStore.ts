@@ -48,6 +48,7 @@ import { LocalDocumentPersistence, type DocumentPersistence } from './DocumentPe
 import { serializeDocumentData } from './DocumentFormat'
 import { parseSessionSnapshot } from './DocumentSessionFormat'
 import { storageDiagnostic, storageFailureMessage, type StorageDiagnostic } from './DocumentStorageDiagnostic'
+import type { LegacyStorageCleanupResult } from './DocumentStorageCleanup'
 
 /**
  * Store для управления несколькими открытыми документами.
@@ -67,6 +68,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private localSaveSequence = 0
 	private localRestoreSequence = 0
 	private pendingLocalSave: Promise<void> | null = null
+	isCleaningLegacyStorage = false
+	private pendingLegacyCleanup: Promise<LegacyStorageCleanupResult> | null = null
 
 	constructor(
 		private readonly googleApiService: GoogleApiService,
@@ -96,10 +99,12 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			| 'pendingLocalSave'
 			| 'localSaveSequence'
 			| 'localRestoreSequence'
+			| 'pendingLegacyCleanup'
 		>(this, {
 			pendingSaves: false,
 			persistence: false,
 			pendingLocalSave: false,
+			pendingLegacyCleanup: false,
 			localSaveSequence: false,
 			localRestoreSequence: false,
 			operationSequence: false
@@ -926,6 +931,27 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	exportRecoverySource(): string | Promise<string> {
 		return this.persistence.exportSource()
+	}
+
+	cleanupLegacyLocalStorage(): Promise<LegacyStorageCleanupResult> {
+		if (this.pendingLegacyCleanup) return this.pendingLegacyCleanup
+		this.isCleaningLegacyStorage = true
+		const cleanup = async () => {
+			if (this.isRestoringLocalSession || this.recoveryBlocked)
+				throw new Error('Сначала восстановите и сохраните текущую сессию. Старые записи не удалены.')
+			if (!(await this.waitForLocalPersistence()))
+				throw new Error('Локальная сессия не сохранена. Устраните ошибку записи перед очисткой.')
+			if (!this.persistence.cleanupLegacy) throw new Error('Это хранилище не поддерживает очистку старых записей.')
+			return this.persistence.cleanupLegacy()
+		}
+		const pending = cleanup().finally(() =>
+			runInAction(() => {
+				this.isCleaningLegacyStorage = false
+				this.pendingLegacyCleanup = null
+			})
+		)
+		this.pendingLegacyCleanup = pending
+		return pending
 	}
 
 	/** Архив сессии добавляет копии вкладок; уже открытые документы остаются в сессии. */

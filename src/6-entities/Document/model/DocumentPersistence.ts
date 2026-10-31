@@ -2,12 +2,14 @@ import { parseSessionSnapshot } from './DocumentSessionFormat'
 import type { DocumentTabsSnapshot } from './DocumentTabsStore.types'
 import { DocumentPersistenceError, type StorageOperation } from './DocumentStorageDiagnostic'
 import { IndexedDocumentStorage } from './IndexedDocumentStorage'
+import { cleanupLegacyStorage, isLegacyDocumentKey, type LegacyStorageCleanupResult } from './DocumentStorageCleanup'
 
 export interface DocumentPersistence {
 	load(): DocumentTabsSnapshot | null | Promise<DocumentTabsSnapshot | null>
 	save(snapshot: DocumentTabsSnapshot): void | Promise<void>
 	exportSource(): string | Promise<string>
 	clear(): void | Promise<void>
+	cleanupLegacy?(): Promise<LegacyStorageCleanupResult>
 }
 
 /** Одна запись содержит весь граф вкладок и контент. Ошибка setItem сохраняет предыдущую запись. */
@@ -141,10 +143,20 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 		const entries: Record<string, string | null> = {}
 		for (let i = 0; i < storage.length; i++) {
 			const key = storage.key(i)!
-			if (key === 'documentTabs' || key.startsWith('documentTabs.backup.') || key.startsWith('document_'))
-				entries[key] = storage.getItem(key)
+			if (isLegacyDocumentKey(key)) entries[key] = storage.getItem(key)
 		}
 		return JSON.stringify(entries, null, 2)
+	}
+
+	cleanupLegacy(): Promise<LegacyStorageCleanupResult> {
+		return this.enqueue(async () => {
+			const factory = this.indexedFactory()
+			if (!factory) throw new Error('Очистка доступна после переноса сессии в IndexedDB. Старые записи не удалены.')
+			const result = await cleanupLegacyStorage(this.storage(), new IndexedDocumentStorage(factory))
+			this.legacySource = null
+			this.migrationSource = undefined
+			return result
+		})
 	}
 
 	clear(): void | Promise<void> {
