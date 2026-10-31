@@ -60,11 +60,12 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 				<h3 className={styles.dialogTitle}>Конфликт имени файла</h3>
 				<DialogContent>
 					<p>Файл "{conflictingFileName}" уже существует в этой папке. Что вы хотите сделать?</p>
+					<p>Отдельная версия создаст новый файл. Существующие файлы сохранятся.</p>
 					{conflictingFiles.length > 1 && (
 						<label>
-							Файл для перезаписи
+							Исходный файл версии
 							<select
-								aria-label="Файл для перезаписи"
+								aria-label="Исходный файл версии"
 								value={selectedFileId}
 								disabled={isSaving}
 								onChange={event => onSelectedFileIdChange(event.target.value)}
@@ -90,7 +91,7 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 				</DialogContent>
 				<DialogActions>
 					<TextButton onClick={handleOverwrite} disabled={isSaving || !selectedFileId}>
-						Перезаписать
+						Создать отдельную версию
 					</TextButton>
 					<TextButton onClick={() => setShowRenameInput(true)} disabled={isSaving}>
 						Переименовать

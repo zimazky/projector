@@ -19,10 +19,13 @@ import {
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
 import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
+import { getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
+import type { SyncResult } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import { IDriveItem } from 'src/7-shared/types/IDriveItem'
 
 import SaveToDrive from 'src/4-widgets/SaveToDrive/SaveToDrive'
 import ConflictDialog, { type ConflictDialogProps } from 'src/7-shared/ui/ConflictDialog'
+import styles from './CalendarIconBar.module.css'
 
 function fullScreen() {
 	document.getElementById('root')?.requestFullscreen()
@@ -37,6 +40,8 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	const [conflictDialogData, setConflictDialogData] = useState<ConflictDialogProps | null>(null)
 
 	const activeDoc = documentTabsStore.activeDocument
+	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
+	const [saveNotice, setSaveNotice] = useState('')
 
 	// Слушаем кастомное событие для открытия Drive file picker из EmptyState
 	React.useEffect(() => {
@@ -58,7 +63,9 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		const result = activeDoc.ref?.fileId
 			? await documentTabsStore.saveDocument(activeDoc.id)
 			: await saveToDriveStore.openForDocument(activeDoc.id)
-		if (result.status === 'failed' || result.status === 'conflict') window.alert(result.message)
+		if (result.status === 'conflict' && result.conflict) presentConflict(result.conflict)
+		else if (result.status === 'failed' || result.status === 'conflict') window.alert(result.message)
+		else if (result.status === 'saved') setSaveNotice('Сохранение завершено. Исходные файлы Drive сохранены.')
 	}
 
 	const handleSyncWithDrive = async () => {
@@ -68,30 +75,36 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		}
 
 		const result = await documentTabsStore.checkDocument(activeDoc.id)
-		if (result.status === 'conflict') {
-			if (!documentTabsStore.isDocumentOperationCurrent(result.context)) return
-			// Решение относится к проверенной сессии, даже если пользователь переключит вкладку.
-			const chooseVersion = async (choice: 'local' | 'remote') => {
-				const resolved = await documentTabsStore.resolveDocumentConflict(result.context, choice)
+		if (result.status === 'conflict') presentConflict(result)
+		else if (result.status === 'error') alert(result.message)
+	}
+
+	const presentConflict = (result: Extract<SyncResult, { status: 'conflict' }>) => {
+		if (!documentTabsStore.isDocumentOperationCurrent(result.context)) return
+		// Решение относится к проверенной сессии, даже если пользователь переключит вкладку.
+		const chooseVersion = async (choice: 'local' | 'remote') => {
+			const resolved = await documentTabsStore.resolveDocumentConflict(result.context, choice)
+			if (resolved.status === 'conflict' && resolved.conflict) presentConflict(resolved.conflict)
+			else {
+				closeThisConflict()
 				if (resolved.status === 'failed' || resolved.status === 'conflict') alert(resolved.message)
-				else closeThisConflict()
+				else if (resolved.status === 'saved') setSaveNotice('Создана отдельная версия Drive. Исходный файл сохранён.')
 			}
-			const closeThisConflict = () => setConflictDialogData(current => (current === dialog ? null : current))
-			const dialog: ConflictDialogProps = {
-				open: true,
-				localModifiedAt: result.localModifiedAt,
-				remoteModifiedAt: result.remoteModifiedAt,
-				hasLocalChanges: result.hasLocalChanges,
-				hasRemoteChanges: result.hasRemoteChanges,
-				remoteMetadata: result.remoteMetadata,
-				onChooseLocal: () => void chooseVersion('local'),
-				onChooseRemote: () => void chooseVersion('remote'),
-				onCancel: closeThisConflict
-			}
-			setConflictDialogData(dialog)
-		} else if (result.status === 'error') {
-			alert(result.message)
 		}
+		const closeThisConflict = () => setConflictDialogData(current => (current === dialog ? null : current))
+		const dialog: ConflictDialogProps = {
+			ui: getDocumentUiState(result.context.session),
+			open: true,
+			localModifiedAt: result.localModifiedAt,
+			remoteModifiedAt: result.remoteModifiedAt,
+			hasLocalChanges: result.hasLocalChanges,
+			hasRemoteChanges: result.hasRemoteChanges,
+			remoteMetadata: result.remoteMetadata,
+			onChooseLocal: () => void chooseVersion('local'),
+			onChooseRemote: () => void chooseVersion('remote'),
+			onCancel: closeThisConflict
+		}
+		setConflictDialogData(dialog)
 	}
 
 	const handleCreateNewDocument = () => {
@@ -125,20 +138,21 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		menu.push({ name: 'Выйти', fn: googleApiService.logOut })
 		menu.push({ name: 'Новый документ', fn: handleCreateNewDocument })
 		menu.push({ name: 'Закрыть документ', fn: handleCloseDocument })
-		menu.push({ name: 'Сохранить', fn: handleSaveCurrentDocument })
+		menu.push({ name: 'Сохранить новую версию', fn: handleSaveCurrentDocument })
 		menu.push({ name: 'Сохранить как...', fn: handleSaveAsToDrive })
 		menu.push({ name: 'Открыть из Google Drive', fn: handleOpenDriveFilePicker })
 
 		icons.push({
-			name: 'Сохранить',
+			name: 'Сохранить новую версию',
 			jsx: (
 				<SwgIcon>
 					<Google />
 					<UploadSign />
-					{activeDoc?.state.isDirty ? <ModifiedAsterisk /> : null}
+					{documentUi?.showModifiedMark ? <ModifiedAsterisk /> : null}
 				</SwgIcon>
 			),
-			fn: handleSaveCurrentDocument
+			fn: handleSaveCurrentDocument,
+			disabled: !!activeDoc && activeDoc.operation !== 'idle'
 		})
 
 		icons.push({
@@ -168,14 +182,11 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 			jsx: (
 				<SwgIcon>
 					<Sync />
-					{activeDoc?.ref?.fileId &&
-						(activeDoc.state.syncStatus === 'needs-sync' ||
-							activeDoc.state.syncStatus === 'update-available' ||
-							activeDoc.state.syncStatus === 'offline') && <ModifiedAsterisk />}
+					{documentUi?.showSyncIcon && <ModifiedAsterisk />}
 				</SwgIcon>
 			),
 			fn: handleSyncWithDrive,
-			disabled: !activeDoc?.ref?.fileId
+			disabled: !documentUi?.canSync
 		})
 	} else {
 		menu.push({ name: 'Войти', fn: googleApiService.logIn })
@@ -232,6 +243,14 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	return (
 		<>
 			<IconBar icons={icons} />
+			{saveNotice && (
+				<div role="status" className={styles.saveNotice}>
+					{saveNotice}
+					<button type="button" title="Закрыть уведомление" onClick={() => setSaveNotice('')}>
+						×
+					</button>
+				</div>
+			)}
 			<Drawer open={uiStore.isMenuOpen} onClose={() => uiStore.toggleMenu(false)}>
 				<List>
 					{menu.map((m, i) => (
@@ -251,6 +270,7 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 			<SaveToDrive />
 			{conflictDialogData && (
 				<ConflictDialog
+					ui={conflictDialogData.ui}
 					open={conflictDialogData.open}
 					localModifiedAt={conflictDialogData.localModifiedAt}
 					remoteModifiedAt={conflictDialogData.remoteModifiedAt}

@@ -1,3 +1,4 @@
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import { DocumentSession } from './DocumentTabsStore.types'
 
@@ -21,7 +22,9 @@ function createGoogleApiServiceMock(): GoogleApiServiceMock {
 		set isGoogleLoggedIn(value: boolean) {
 			loggedIn = value
 		},
-		getFileMetadata: jest.fn(),
+		getFileMetadata: jest
+			.fn()
+			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' })),
 		downloadFileContent: jest.fn(),
 		saveFile: jest.fn(),
 		logIn: jest.fn()
@@ -188,7 +191,7 @@ describe('DocumentTabsStore', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.state.syncStatus = 'synced' as const
+			confirmedDocument(store.activeDocument!, 'file-1')
 
 			store.updateActiveDocumentData({
 				projectsList: [],
@@ -226,7 +229,7 @@ describe('DocumentTabsStore', () => {
 			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.ref!.fileId = 'file-1'
+			confirmedDocument(store.activeDocument!, 'file-1')
 			googleApiService.isGoogleLoggedIn = false
 
 			await store.syncActiveDocumentWithDrive()
@@ -238,7 +241,7 @@ describe('DocumentTabsStore', () => {
 			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.ref!.fileId = 'file-1'
+			confirmedDocument(store.activeDocument!, 'file-1')
 			store.updateActiveDocumentData({
 				projectsList: [],
 				completedList: [],
@@ -249,6 +252,7 @@ describe('DocumentTabsStore', () => {
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
+				version: '1',
 				modifiedTime: new Date().toISOString()
 			})
 
@@ -265,7 +269,7 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
+			confirmedDocument(session, 'file-1')
 			session.sync.lastSyncAt = Date.now() - 10000 // 10 секунд назад
 
 			const futureDate = new Date(Date.now() + 10000).toISOString()
@@ -273,6 +277,7 @@ describe('DocumentTabsStore', () => {
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
+				version: '2',
 				modifiedTime: futureDate
 			})
 
@@ -289,7 +294,7 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
+			confirmedDocument(session, 'file-1')
 			const syncedAt = Date.parse('2026-10-31T10:00:00Z')
 			session.sync.lastSyncAt = syncedAt
 
@@ -297,6 +302,7 @@ describe('DocumentTabsStore', () => {
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
+				version: '1',
 				modifiedTime: new Date(syncedAt).toISOString()
 			})
 
@@ -337,8 +343,8 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
-			session.state.isDirty = true
+			confirmedDocument(session, 'file-1')
+			store.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 
 			googleApiService.saveFile.mockResolvedValue({
 				status: 'success',
@@ -346,6 +352,7 @@ describe('DocumentTabsStore', () => {
 					id: 'file-1',
 					name: 'Тест',
 					mimeType: 'application/json',
+					version: '1',
 					parents: ['root'],
 					webViewLink: 'https://drive.google.com/file/d/file-1/view'
 				}
@@ -364,7 +371,8 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
+			confirmedDocument(session, 'file-1')
+			store.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 
 			googleApiService.saveFile.mockResolvedValue({
 				status: 'error',
@@ -445,11 +453,11 @@ describe('DocumentTabsStore', () => {
 	})
 
 	describe('applyContentToActiveDocument', () => {
-		it('применяет контент к активному документу', () => {
+		it('применяет контент без объявления неподтверждённой синхронизации', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.ref!.fileId = 'file-1'
+			confirmedDocument(store.activeDocument!, 'file-1')
 
 			store.applyContentToActiveDocument({
 				projectsList: [{ name: 'Новый проект', color: '#00ff00', background: '#ffffff' }],
@@ -458,7 +466,7 @@ describe('DocumentTabsStore', () => {
 			})
 
 			expect(store.activeDocument?.data.projectsList.length).toBe(1) // Новый проект (default добавляется только в ProjectsStore)
-			expect(store.activeDocument?.state.syncStatus).toBe('synced')
+			expect(store.activeDocument?.state.syncStatus).toBe('needs-sync')
 		})
 
 		it('не делает ничего, если нет активного документа', () => {

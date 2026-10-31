@@ -1,3 +1,4 @@
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
@@ -52,16 +53,22 @@ describe('Обезличенные документы исходного фор�
 	it('отказ отложенной записи сохраняет вкладку и локальные данные', async () => {
 		const response = deferred<never>()
 		const saveFile = jest.fn().mockReturnValue(response.promise)
-		const store = new DocumentTabsStore({ saveFile } as any)
+		const store = new DocumentTabsStore({
+			saveFile,
+			getFileMetadata: jest
+				.fn()
+				.mockResolvedValue({ id: 'fake-drive-id', name: 'Demo', mimeType: 'application/json', version: '1' })
+		} as any)
 		store.openNewDocument('Demo')
 		const document = store.activeDocument!
-		document.ref!.fileId = 'fake-drive-id'
+		confirmedDocument(document, 'fake-drive-id')
 		const data: DocumentData = JSON.parse(fixture('legacy-document.json'))
 		const domainStores = store.getDocumentStores(document.id)!
 		domainStores.projectsStore.init(data.projectsList)
 		domainStores.eventsStore.init(data)
 		store.updateActiveDocumentData(data)
 		const saving = store.saveActiveDocument()
+		await Promise.resolve()
 		expect(saveFile).toHaveBeenCalledTimes(1)
 		expect(document.state.isSaving).toBe(true)
 		response.reject(new Error('Synthetic network failure'))

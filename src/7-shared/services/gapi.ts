@@ -1,4 +1,8 @@
 import { GoogleLoginCancelledError } from './GoogleAuthError'
+import { driveErrorCode, driveErrorMessage } from './DriveApiError'
+
+export const DRIVE_DOCUMENT_FIELDS =
+	'id,name,mimeType,parents,iconLink,webViewLink,modifiedTime,version,headRevisionId,md5Checksum,trashed'
 
 const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
@@ -12,25 +16,17 @@ const SCOPES = [
 const DISCOVERY_DOC = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
 
 /** Обертка gapi-вызова в Promise с обработкой ошибок авторизации. */
-function prom(gapiCall: (arg: any) => Promise<any>, argObj: any) {
-	return new Promise<any>((resolve, reject) => {
-		gapiCall(argObj)
-			.then(resp => resolve(resp))
-			.catch(err => {
-				console.error('GAPI call failed')
-				if (
-					err.result.error.code == 401 ||
-					(err.result.error.code == 403 && err.result.error.status == 'PERMISSION_DENIED')
-				) {
-					console.log('401 denied')
-					gapi.client.setToken(null)
-					expiredTokenHandle()
-					reject(err)
-				} else {
-					reject(err)
-				}
-			})
-	})
+async function prom(gapiCall: (arg: any) => Promise<any>, argObj: any) {
+	try {
+		return await gapiCall(argObj)
+	} catch (error: unknown) {
+		const code = driveErrorCode(error)
+		if (code === 401) {
+			gapi.client.setToken(null)
+			expiredTokenHandle()
+		}
+		throw new Error(driveErrorMessage(error), { cause: error })
+	}
 }
 
 /** Загрузка внешнего скрипта через Promise. */
@@ -75,6 +71,10 @@ export interface DriveFileMetadata {
 	iconLink?: string
 	webViewLink?: string
 	modifiedTime?: string
+	version?: string
+	headRevisionId?: string
+	md5Checksum?: string
+	trashed?: boolean
 }
 
 /** Класс статических методов для работы с Google API. */
@@ -223,6 +223,48 @@ export default class GAPI {
 		return resp.result as DriveFileMetadata
 	}
 
+	/** Атомарное создание отдельного файла с полным содержимым, без PATCH исходного файла. */
+	static async createDocument(
+		name: string,
+		content: string | Blob,
+		mimeType: string,
+		parents: string[],
+		source?: DriveFileMetadata
+	): Promise<DriveFileMetadata> {
+		const text = typeof content === 'string' ? content : await content.text()
+		const boundary = 'projector_' + Date.now().toString(36) + Math.random().toString(36).slice(2)
+		const metadata = {
+			name,
+			mimeType,
+			parents,
+			...(source
+				? { appProperties: { projectorSourceFileId: source.id, projectorSourceVersion: source.version! } }
+				: {})
+		}
+		const body =
+			'--' +
+			boundary +
+			'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' +
+			JSON.stringify(metadata) +
+			'\r\n--' +
+			boundary +
+			'\r\nContent-Type: ' +
+			mimeType +
+			'\r\n\r\n' +
+			text +
+			'\r\n--' +
+			boundary +
+			'--'
+		const response = await prom(gapi.client.request, {
+			path: '/upload/drive/v3/files',
+			method: 'POST',
+			params: { uploadType: 'multipart', fields: DRIVE_DOCUMENT_FIELDS },
+			headers: { 'Content-Type': 'multipart/related; boundary=' + boundary },
+			body
+		})
+		return response.result as DriveFileMetadata
+	}
+
 	/** Запись контента в файл по его fileId. */
 	static async upload(fileId: string, content: string | object) {
 		return prom(gapi.client.request, {
@@ -295,7 +337,7 @@ export default class GAPI {
 	static async getFileMetadata(fileId: string): Promise<DriveFileMetadata> {
 		const resp = await prom(gapi.client.drive.files.get, {
 			fileId: fileId,
-			fields: 'id, name, mimeType, parents, iconLink, webViewLink'
+			fields: DRIVE_DOCUMENT_FIELDS
 		})
 		return resp.result as DriveFileMetadata
 	}

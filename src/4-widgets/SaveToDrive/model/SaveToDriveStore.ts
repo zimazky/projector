@@ -119,7 +119,8 @@ export class SaveToDriveStore {
 
 	private performSave = async (
 		request: SaveRequest,
-		overwriteId: string | null = null
+		overwriteId: string | null = null,
+		expectedVersion?: string
 	): Promise<DocumentSaveResult> => {
 		const context = request.snapshot
 			? this.documentTabsStore.beginDocumentOperation(request.snapshot.documentId, 'saving', request.snapshot)
@@ -146,7 +147,8 @@ export class SaveToDriveStore {
 				request.mime,
 				request.folderId,
 				request.space,
-				overwriteId
+				overwriteId,
+				expectedVersion
 			)
 			return runInAction(() => {
 				if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
@@ -211,6 +213,7 @@ export class SaveToDriveStore {
 		const request = this.conflictRequest
 		const newName = this.newFileNameForConflict.trim()
 		const selectedId = this.selectedConflictFileId
+		const selectedVersion = this.conflictingFiles.find(file => file.id === selectedId)?.version
 		if (!request) return this.fail('Нет конфликта для разрешения.')
 		if (resolution === 'rename' && !newName) return this.fail('Новое имя файла не может быть пустым.')
 		if (resolution === 'overwrite' && !this.conflictingFiles.some(file => file.id === selectedId)) {
@@ -221,7 +224,7 @@ export class SaveToDriveStore {
 			this.fileName = newName
 			return this.performSave({ ...request, name: newName })
 		}
-		return this.performSave(request, selectedId)
+		return this.performSave(request, selectedId, selectedVersion)
 	}
 
 	private complete = (result: DocumentSaveResult) => {

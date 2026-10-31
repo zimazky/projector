@@ -1,4 +1,5 @@
-import GAPI, { DriveFileMetadata } from './gapi'
+import GAPI, { DriveFileMetadata, DRIVE_DOCUMENT_FIELDS } from './gapi'
+import { driveErrorMessage } from './DriveApiError'
 import { makeAutoObservable, runInAction } from 'mobx'
 
 export type SaveFileResult =
@@ -201,64 +202,64 @@ export class GoogleApiService {
 		return GAPI.deleteFile(itemId)
 	}
 
+	/** Все записи документов создают отдельный файл. Существующие ID никогда не PATCH-ятся. */
 	async saveFile(
 		name: string,
 		content: string | Blob,
 		mimeType: string,
 		parentFolderId: string,
-		spaces: string = 'drive', // New parameter
-		existingFileIdToUpdate: string | null = null
+		spaces = 'drive',
+		sourceId: string | null = null,
+		expectedVersion?: string
 	): Promise<SaveFileResult> {
-		if (!this.isGoogleLoggedIn) {
-			await this.logIn()
-			if (!this.isGoogleLoggedIn) {
-				return { status: 'error', message: 'User not logged in to Google.' }
-			}
-		}
-
+		if (!this.isGoogleLoggedIn) await this.logIn()
+		if (!this.isGoogleLoggedIn) return { status: 'error', message: 'Войдите в Google для сохранения.' }
 		try {
-			if (existingFileIdToUpdate) {
-				const updatedFile = await this.updateFileContent(existingFileIdToUpdate, content, mimeType)
-				return { status: 'success', file: updatedFile }
+			let source: DriveFileMetadata | undefined
+			if (sourceId) {
+				source = await this.getFileMetadata(sourceId)
+				if (
+					source.id !== sourceId ||
+					typeof source.version !== 'string' ||
+					!/^\d+$/.test(source.version) ||
+					source.trashed
+				)
+					throw new Error('Не удалось подтвердить версию исходного файла.')
+				if (source.version !== expectedVersion) return { status: 'conflict', existingFiles: [source] }
+				const dot = name.lastIndexOf('.')
+				const stem = (dot > 0 ? name.slice(0, dot) : name).replace(
+					/\s+\(версия \d{4}-\d{2}-\d{2}T[\d-]+Z-[a-z0-9]*\)$/,
+					''
+				)
+				const extension = dot > 0 ? name.slice(dot) : '.json'
+				name =
+					stem +
+					' (версия ' +
+					new Date().toISOString().replace(/[:.]/g, '-') +
+					'-' +
+					Math.random().toString(36).slice(2, 8) +
+					')' +
+					extension
+			} else {
+				const literal = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+				const existing = await GAPI.find("name = '" + literal + "'", parentFolderId, DRIVE_DOCUMENT_FIELDS, spaces)
+				if (existing.length) return { status: 'conflict', existingFiles: existing }
 			}
-
-			const queryForFind = `name = '${name}'`
-			const existingFiles = await GAPI.find(queryForFind, parentFolderId, undefined, spaces) // Pass spaces here
-
-			if (existingFiles.length > 0) {
-				return { status: 'conflict', existingFiles }
+			const folder = spaces === 'appDataFolder' && parentFolderId === 'root' ? 'appDataFolder' : parentFolderId
+			const created = await GAPI.createDocument(name, content, mimeType, [folder], source)
+			if (
+				!created.id ||
+				typeof created.version !== 'string' ||
+				!/^\d+$/.test(created.version) ||
+				created.id === sourceId
+			) {
+				throw new Error(
+					'Файл отправлен, но Drive не подтвердил новую версию. Локальные данные сохранены; проверьте папку Drive перед повтором.'
+				)
 			}
-
-			const createdFileMetadata = await GAPI.createFileOrFolder(name, mimeType, [parentFolderId])
-			await GAPI.upload(createdFileMetadata.id, content)
-			return { status: 'success', file: createdFileMetadata }
-		} catch (e: any) {
-			console.error('Failed to save file to Drive')
-			return { status: 'error', message: e.message || 'Failed to save file to Drive.' }
+			return { status: 'success', file: created }
+		} catch (error: unknown) {
+			return { status: 'error', message: driveErrorMessage(error) }
 		}
-	}
-
-	async updateFileContent(fileId: string, content: string | Blob, mimeType: string): Promise<DriveFileMetadata> {
-		if (!this.isGoogleLoggedIn) {
-			await this.logIn()
-			if (!this.isGoogleLoggedIn) {
-				throw new Error('User not logged in to Google.') // Or handle more gracefully
-			}
-		}
-
-		// GAPI.upload can be used to update content of an existing file
-		await GAPI.upload(fileId, content)
-
-		// After updating, fetch and return the updated metadata
-		// Potentially update mimeType if it has changed, though GAPI.upload doesn't directly support that.
-		// A separate call to drive.files.update might be needed for mimeType.
-		// For now, we assume mimeType is not changing or will be handled by GAPI.upload.
-		// If we need to update mimeType, it would look like this:
-		// await prom(gapi.client.drive.files.update, {
-		//   fileId: fileId,
-		//   resource: { mimeType: mimeType }
-		// });
-
-		return GAPI.getFileMetadata(fileId)
 	}
 }

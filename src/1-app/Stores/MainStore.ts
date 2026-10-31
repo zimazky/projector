@@ -7,6 +7,7 @@ import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListSto
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
 import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import type { DocumentStores } from 'src/6-entities/Document/model/DocumentStoreManager.types'
+import { DriveSyncCoordinator } from 'src/6-entities/Document/model/DriveSyncCoordinator'
 
 /** Главный orchestrator-стор приложения */
 export class MainStore {
@@ -15,6 +16,7 @@ export class MainStore {
 
 	private googleApiService: GoogleApiService
 	private documentTabsStore: DocumentTabsStore
+	private syncCoordinator: DriveSyncCoordinator | null = null
 
 	/**
 	 * Сохраненное состояние проводника Google Drive по пространствам
@@ -74,6 +76,20 @@ export class MainStore {
 			.catch(e => {
 				console.error('DocumentTabsStore restore failed:', e)
 			})
+	}
+
+	startSyncCoordinator(): void {
+		this.syncCoordinator ??= new DriveSyncCoordinator(this.documentTabsStore, this.googleApiService)
+		this.syncCoordinator.start()
+	}
+
+	stopSyncCoordinator(): void {
+		this.syncCoordinator?.dispose()
+		this.syncCoordinator = null
+	}
+
+	dispose(): void {
+		this.stopSyncCoordinator()
 	}
 
 	/** Обновить сохраненное состояние проводника Drive */

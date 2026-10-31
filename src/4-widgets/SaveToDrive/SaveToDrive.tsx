@@ -54,6 +54,7 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 			<Modal open={saveToDriveStore.isOpen} onClose={saveToDriveStore.close}>
 				{/*<h3 className={styles.dialogTitle}>Сохранить на Google Диск</h3> */}
 				<div className={styles.container}>
+					<p>Сохранение создаёт отдельный файл; исходные файлы Drive сохраняются.</p>
 					<TextField
 						label="Имя файла"
 						value={saveToDriveStore.fileName}

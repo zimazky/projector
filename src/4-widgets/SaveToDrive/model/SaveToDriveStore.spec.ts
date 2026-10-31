@@ -4,7 +4,7 @@ import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsSto
 import { GoogleLoginCancelledError } from 'src/7-shared/services/GoogleAuthError'
 import { deferred } from 'src/test-utils/deferred'
 
-const file = (id = 'fake-file', name = 'Demo') => ({ id, name, mimeType: 'application/json' })
+const file = (id = 'fake-file', name = 'Demo') => ({ id, name, mimeType: 'application/json', version: '1' })
 const success = { status: 'success', file: file() }
 
 function setup() {

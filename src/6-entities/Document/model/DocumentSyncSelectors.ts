@@ -1,253 +1,169 @@
 import type { DocumentSession, AppDriveAvailability } from './DocumentTabsStore.types'
+import { isDriveVersion } from './DocumentDriveProtocol'
 
-/**
- * TTL для проверки актуальности удалённой проверки (в миллисекундах).
- * Активный документ: 60 секунд.
- */
 export const REMOTE_CHECK_TTL_MS = 60 * 1000
 
-/**
- * Вычисляет, есть ли локальные изменения относительно базовой версии.
- * Локальная версия сравнивается с подтверждённой базой; хэши не доказывают равенство.
- */
+/** Неизвестная локальная база не доказывает отсутствие изменений. */
 export function getIsDirty(session: DocumentSession): boolean {
-	const { localVersion, baseLocalVersion } = session.sync
-	return baseLocalVersion === null || localVersion !== baseLocalVersion
+	return session.sync.baseLocalVersion === null || session.sync.localVersion !== session.sync.baseLocalVersion
 }
 
-/**
- * Проверяет, есть ли на Drive более новая версия.
- * remoteRevisionId !== null && remoteRevisionId !== baseRevisionId
- */
 export function getHasRemoteAhead(session: DocumentSession): boolean {
-	const { remoteRevisionId, baseRevisionId } = session.sync
-	if (remoteRevisionId === null) return false
-	if (baseRevisionId === null) return true // Не знаем base — предполагаем что remote новее
-	return remoteRevisionId !== baseRevisionId
+	const { baseRevisionId, remoteRevisionId } = session.sync
+	return isDriveVersion(baseRevisionId) && isDriveVersion(remoteRevisionId) && baseRevisionId !== remoteRevisionId
 }
 
-/**
- * Проверяет, есть ли конфликт: обе стороны изменены.
- */
 export function getHasConflict(session: DocumentSession): boolean {
 	return getIsDirty(session) && getHasRemoteAhead(session)
 }
 
-/**
- * Вычисляет производный статус синхронизации для UI.
- *
- * Возможные значения:
- * - 'new' — новый локальный документ, ещё нигде не сохранён
- * - 'dirty' — есть локальные изменения относительно базовой версии
- * - 'synced' — локальная версия совпадает с базовой и удалённой
- * - 'remote-ahead' — на Drive есть более новая версия, локально изменений нет
- * - 'conflict' — изменены и локальная, и удалённая стороны
- * - 'syncing' — идёт операция
- * - 'error' — последняя операция завершилась ошибкой
- */
-export type UiSyncStatus = 'new' | 'dirty' | 'synced' | 'remote-ahead' | 'conflict' | 'syncing' | 'error'
+export function isRemoteCheckFresh(session: DocumentSession, now = Date.now(), ttl = REMOTE_CHECK_TTL_MS): boolean {
+	const checked = session.sync.lastRemoteCheckAt
+	return checked !== null && checked <= now && now - checked < ttl
+}
+
+export function getRemoteUnknown(session: DocumentSession): boolean {
+	return (
+		!!session.ref?.fileId &&
+		(session.sync.needsRemoteCheck ||
+			!isDriveVersion(session.sync.baseRevisionId) ||
+			!isDriveVersion(session.sync.remoteRevisionId) ||
+			!isRemoteCheckFresh(session))
+	)
+}
+
+export type UiSyncStatus = 'new' | 'dirty' | 'unknown' | 'synced' | 'remote-ahead' | 'conflict' | 'syncing' | 'error'
 
 export function getUiSyncStatus(session: DocumentSession): UiSyncStatus {
-	// Операция в процессе
-	if (session.operation !== 'idle') {
-		return 'syncing'
-	}
-
-	// Ошибка операции
-	if (session.error !== null) {
-		return 'error'
-	}
-
-	// Новый документ
-	const hasNoFileId = session.ref?.fileId === null || session.ref?.fileId === undefined
-	if (session.sync.origin === 'new-local' && hasNoFileId) {
-		return 'new'
-	}
-
-	const isDirty = getIsDirty(session)
-	const hasRemoteAhead = getHasRemoteAhead(session)
-
-	// Конфликт
-	if (isDirty && hasRemoteAhead) {
-		return 'conflict'
-	}
-
-	// Remote ahead
-	if (!isDirty && hasRemoteAhead) {
-		return 'remote-ahead'
-	}
-
-	// Dirty
-	if (isDirty && !hasRemoteAhead) {
-		return 'dirty'
-	}
-
-	// Synced
-	return 'synced'
+	if (session.operation !== 'idle') return 'syncing'
+	if (session.error) return 'error'
+	if (!session.ref?.fileId) return 'new'
+	if (getHasConflict(session)) return 'conflict'
+	if (getHasRemoteAhead(session)) return 'remote-ahead'
+	if (getIsDirty(session)) return 'dirty'
+	return getRemoteUnknown(session) ? 'unknown' : 'synced'
 }
 
-/**
- * Определяет, нужно ли предупреждать при закрытии документа.
- * Предупреждаем если есть локальные изменения или конфликт.
- */
 export function getShouldWarnOnClose(session: DocumentSession): boolean {
-	if (session.operation === 'opening') return false
-	return getIsDirty(session) || getHasRemoteAhead(session) || !!(session.ref?.fileId && session.sync.needsRemoteCheck)
+	return (
+		session.operation !== 'opening' && (getIsDirty(session) || getHasRemoteAhead(session) || getRemoteUnknown(session))
+	)
 }
 
-/**
- * Проверяет, можно ли сохранить документ в Drive.
- */
+/** Ошибка не запрещает новую попытку, фоновые проверки не требуют авторизации. */
 export function getCanSave(session: DocumentSession): boolean {
-	const status = getUiSyncStatus(session)
-	// Можно сохранить если есть fileId и статус не syncing/error
-	const hasFileId = session.ref?.fileId !== null && session.ref?.fileId !== undefined
-	return hasFileId && status !== 'syncing' && status !== 'error'
+	return !!session.ref?.fileId && session.operation === 'idle'
 }
 
-/**
- * Проверяет, можно ли загрузить версию из Drive.
- */
 export function getCanPullRemote(session: DocumentSession): boolean {
-	const status = getUiSyncStatus(session)
-	// Можно загрузить если есть fileId и не идёт операция
-	const hasFileId = session.ref?.fileId !== null && session.ref?.fileId !== undefined
-	return hasFileId && status !== 'syncing' && (status === 'remote-ahead' || status === 'conflict')
+	return getCanSave(session) && (getHasRemoteAhead(session) || getRemoteUnknown(session))
 }
 
-/**
- * Полный UI-статус документа для использования в компонентах.
- */
 export type DocumentUiState = {
 	status: UiSyncStatus
+	isDirty: boolean
+	remoteUnknown: boolean
+	hasRemoteAhead: boolean
+	hasConflict: boolean
 	showModifiedMark: boolean
 	showSyncIcon: boolean
 	titleSuffix: string
 	tooltip: string
+	statusIcon: string
 	canSave: boolean
 	canSync: boolean
+	canPull: boolean
+	shouldWarnOnClose: boolean
+	closeMessage: string
 }
 
+/** Единый контракт вкладки, заголовка, панели команд и подтверждения закрытия. */
 export function getDocumentUiState(session: DocumentSession): DocumentUiState {
-	const status = getUiSyncStatus(session)
-	const isDirty = getIsDirty(session)
-	const hasRemoteAhead = getHasRemoteAhead(session)
-	const hasConflict = getHasConflict(session)
-
-	let titleSuffix = ''
-	let tooltip = ''
-
-	switch (status) {
-		case 'new':
-			titleSuffix = ''
-			tooltip = 'Новый документ, ещё не сохранён в Drive'
-			break
-		case 'dirty':
-			titleSuffix = '*'
-			tooltip = 'Есть несохранённые изменения'
-			break
-		case 'synced':
-			titleSuffix = ''
-			tooltip = 'Синхронизировано с Drive'
-			break
-		case 'remote-ahead':
-			titleSuffix = ''
-			tooltip = 'На Drive есть более новая версия'
-			break
-		case 'conflict':
-			titleSuffix = ' ⚠'
-			tooltip = 'Конфликт: изменения и локально, и на Drive'
-			break
-		case 'syncing':
-			titleSuffix = ''
-			tooltip = 'Синхронизация...'
-			break
-		case 'error':
-			titleSuffix = ' ✕'
-			tooltip = session.error?.message ?? 'Ошибка синхронизации'
-			break
+	const status = getUiSyncStatus(session),
+		dirty = getIsDirty(session),
+		unknown = getRemoteUnknown(session)
+	const remote = getHasRemoteAhead(session),
+		conflict = getHasConflict(session)
+	const descriptions: Record<UiSyncStatus, string> = {
+		new: 'Новый документ, ещё не сохранён в Drive',
+		dirty: 'Есть несохранённые изменения',
+		unknown: 'Актуальность Drive не проверена',
+		synced: 'Синхронизировано с Google Drive',
+		'remote-ahead': 'На Drive есть другая версия',
+		conflict: 'Конфликт: изменения локально и на Drive',
+		syncing: 'Выполняется операция с Drive',
+		error: session.error?.message || 'Ошибка операции с Drive'
 	}
-
+	let tooltip = descriptions[status]
+	if (dirty && status !== 'dirty' && status !== 'conflict') tooltip += '. Есть несохранённые изменения'
+	if (unknown && status !== 'unknown' && status !== 'syncing') tooltip += '. Актуальность Drive не проверена'
+	const icons: Record<UiSyncStatus, string> = {
+		new: '',
+		dirty: '*',
+		unknown: '?',
+		synced: '✓',
+		'remote-ahead': '☁',
+		conflict: '⚠',
+		syncing: '↻',
+		error: '✕'
+	}
+	const closeMessage = conflict
+		? 'Изменения есть локально и на Drive.'
+		: dirty
+			? 'Есть несохранённые изменения.'
+			: remote
+				? 'На Drive есть другая версия.'
+				: unknown
+					? 'Актуальность Drive не проверена.'
+					: ''
 	return {
 		status,
-		showModifiedMark: isDirty || hasConflict,
-		showSyncIcon: hasRemoteAhead || hasConflict,
-		titleSuffix,
+		isDirty: dirty,
+		remoteUnknown: unknown,
+		hasRemoteAhead: remote,
+		hasConflict: conflict,
+		showModifiedMark: dirty,
+		showSyncIcon: remote || unknown,
+		titleSuffix: (dirty ? ' *' : '') + (status === 'unknown' ? ' ?' : remote ? ' ⚠' : ''),
 		tooltip,
+		statusIcon: icons[status],
 		canSave: getCanSave(session),
-		canSync: getCanSave(session) || getCanPullRemote(session)
+		canSync: getCanSave(session),
+		canPull: getCanPullRemote(session),
+		shouldWarnOnClose: getShouldWarnOnClose(session),
+		closeMessage
 	}
 }
 
-/**
- * Проверяет, свежа ли удалённая проверка (в пределах TTL).
- */
-export function isRemoteCheckFresh(
-	session: DocumentSession,
-	now: number = Date.now(),
-	ttl: number = REMOTE_CHECK_TTL_MS
-): boolean {
-	const { lastRemoteCheckAt } = session.sync
-	if (lastRemoteCheckAt === null) return false
-	return now - lastRemoteCheckAt < ttl
-}
-
-/**
- * Определяет, нужно ли проверять удалённую версию.
- */
 export function shouldCheckRemote(
 	session: DocumentSession,
 	availability: AppDriveAvailability,
-	now: number = Date.now(),
-	ttl: number = REMOTE_CHECK_TTL_MS
+	now = Date.now(),
+	ttl = REMOTE_CHECK_TTL_MS
 ): boolean {
-	// Drive недоступен — не проверяем
-	if (availability !== 'drive-available') return false
-
-	// Нет fileId — нечего проверять
-	if (!session.ref?.fileId) return false
-
-	// Явно требуется проверка
-	if (session.sync.needsRemoteCheck) return true
-
-	// Проверка устарела
-	return !isRemoteCheckFresh(session, now, ttl)
+	return (
+		availability === 'drive-available' &&
+		!!session.ref?.fileId &&
+		(session.sync.needsRemoteCheck || !isRemoteCheckFresh(session, now, ttl))
+	)
 }
 
-/**
- * Синхронизирует legacy-поля состояния (state) с новой моделью (sync).
- * Вызывается после изменений в sync-модели для поддержания совместимости.
- */
+/** Единственный адаптер из модели в legacy; потребители UI используют селектор выше. */
 export function syncLegacyStateFromNewModel(session: DocumentSession): void {
-	const isDirty = getIsDirty(session)
-	const hasRemoteAhead = getHasRemoteAhead(session)
-	const hasConflict = getHasConflict(session)
-	const uiStatus = getUiSyncStatus(session)
-
-	// Обновляем isDirty
-	session.state.isDirty = isDirty
+	const ui = getDocumentUiState(session)
+	session.state.isDirty = ui.isDirty
 	session.state.isSaving = session.operation === 'saving'
 	session.state.error = session.error?.message ?? null
-
-	// Обновляем syncStatus
-	if (uiStatus === 'syncing') {
-		session.state.syncStatus = 'syncing'
-	} else if (uiStatus === 'error') {
-		session.state.syncStatus = 'error'
-	} else if (hasConflict) {
-		// Конфликт: обе стороны изменены
-		session.state.syncStatus = 'needs-sync'
-	} else if (hasRemoteAhead) {
-		session.state.syncStatus = 'update-available'
-	} else if (isDirty) {
-		session.state.syncStatus = 'needs-sync'
-	} else if (uiStatus === 'new' || session.sync.needsRemoteCheck) {
-		session.state.syncStatus = 'offline'
-	} else {
-		session.state.syncStatus = 'synced'
-	}
-
-	// hasUnsyncedChanges: true если есть конфликт или remote-ahead
-	session.state.hasUnsyncedChanges =
-		hasRemoteAhead || hasConflict || !!(session.ref?.fileId && session.sync.needsRemoteCheck)
+	const mapping = {
+		new: 'offline',
+		dirty: 'needs-sync',
+		unknown: 'offline',
+		synced: 'synced',
+		'remote-ahead': 'update-available',
+		conflict: 'needs-sync',
+		syncing: 'syncing',
+		error: 'error'
+	} as const
+	session.state.syncStatus = mapping[ui.status]
+	session.state.hasUnsyncedChanges = ui.hasRemoteAhead || ui.remoteUnknown
 }

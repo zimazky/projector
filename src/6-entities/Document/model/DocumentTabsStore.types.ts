@@ -8,7 +8,7 @@ export type DocumentSaveResult =
 	| { status: 'saved' }
 	| { status: 'cancelled' }
 	| { status: 'failed'; message: string }
-	| { status: 'conflict'; message: string }
+	| { status: 'conflict'; message: string; conflict?: Extract<SyncResult, { status: 'conflict' }> }
 
 export type DocumentCloseDecision = 'save' | 'discard' | 'cancel'
 export type DocumentCloseResult = { status: 'closed' } | Exclude<DocumentSaveResult, { status: 'saved' }>
@@ -34,6 +34,8 @@ export type DocumentOrigin = 'new-local' | 'drive' | 'restored-local'
 
 /** Снимок синхронизации документа — новая модель состояния */
 export type DocumentSyncSnapshot = {
+	/** Серверная дата только для отображения, не для сравнения версий. */
+	serverModifiedAt?: string | null
 	/** Монотонная версия локального содержимого, сохраняется между перезапусками. */
 	localVersion: number
 	/** Локальная версия подтверждённого снимка; null означает неизвестную базу. */
@@ -84,7 +86,7 @@ export type DocumentSnapshot = Readonly<{
 }>
 
 /** Токен защищает все продолжения операции, включая ошибки и finally. */
-export type DocumentOperationContext = DocumentSnapshot & Readonly<{ token: number }>
+export type DocumentOperationContext = DocumentSnapshot & Readonly<{ token: number; checkedVersion?: string }>
 
 export type DocumentPullResult = { status: 'pulled' } | Exclude<DocumentSaveResult, { status: 'saved' }>
 export type DocumentResolveResult = DocumentSaveResult | DocumentPullResult

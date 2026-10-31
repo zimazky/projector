@@ -1,5 +1,5 @@
 import { expect } from '@jest/globals'
-import GAPI from './gapi'
+import GAPI, { DRIVE_DOCUMENT_FIELDS } from './gapi'
 import { GoogleLoginCancelledError } from './GoogleAuthError'
 
 type TokenConfig = google.accounts.oauth2.TokenClientConfig & { error_callback: (error: { type: string }) => void }
@@ -88,5 +88,18 @@ describe('Отмена авторизации и безопасные логи',
 		])
 		expect(diagnostics).not.toContain('SYNTHETIC_SECRET')
 		expect(diagnostics).not.toContain('access_token')
+	})
+
+	it('создаёт JSON multipart POST с version в ответе и не использует PATCH', async () => {
+		const request = jest.fn().mockResolvedValue({ result: { id: 'new', version: '1' } })
+		;(gapi.client as any).request = request
+		const source = { id: 'source', version: '9007199254740993', name: 'Demo.json', mimeType: 'application/json' }
+		await GAPI.createDocument('Demo.json', '{"local":true}', 'application/json', ['root'], source)
+		const args = request.mock.calls[0][0]
+		expect(args.method).toBe('POST')
+		expect(args.path).toBe('/upload/drive/v3/files')
+		expect(args.params).toEqual({ uploadType: 'multipart', fields: DRIVE_DOCUMENT_FIELDS })
+		expect(args.body).toContain('"local":true')
+		expect(args.body).toContain('"projectorSourceVersion":"9007199254740993"')
 	})
 })

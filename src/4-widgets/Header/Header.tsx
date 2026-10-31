@@ -12,13 +12,15 @@ import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
 import { EventSearchInput } from 'src/5-features/EventSearch/EventSearchInput'
 
 import styles from './Header.module.css'
+import { getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 
 const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({ onCloseDocument }) {
 	const { calendarStore, uiStore, documentTabsStore, googleApiService } = useContext(StoreContext)
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const activeDoc = documentTabsStore.activeDocument
+	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
 	const documentTitle = activeDoc
-		? `${activeDoc.ref?.name || 'Без названия'}${activeDoc.state.isDirty ? ' *' : ''}`
+		? `${activeDoc.ref?.name || 'Без названия'}${documentUi!.titleSuffix}`
 		: 'Документ не открыт'
 
 	const handleAvatarClick = () => {
@@ -34,7 +36,14 @@ const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = obs
 		<header className={styles.header}>
 			<CalendarIconBar onCloseDocument={onCloseDocument} />
 			<EventSearchInput />
-			<span className={styles.documentName}>{documentTitle}</span>
+			<span
+				className={styles.documentName}
+				title={documentUi?.tooltip}
+				data-testid="document-title"
+				data-sync-status={documentUi?.status}
+			>
+				{documentTitle}
+			</span>
 			<span className={styles.caption}>{calendarStore.caption}</span>
 			<span className={styles.rightSection}>
 				<Time

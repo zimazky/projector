@@ -1,3 +1,4 @@
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { waitFor } from '@testing-library/dom'
 import '@testing-library/jest-dom'
@@ -46,7 +47,9 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 			waitForGapiReady: jest.fn().mockResolvedValue(undefined),
 			logIn: jest.fn().mockResolvedValue(undefined),
 			logOut: jest.fn(),
-			getFileMetadata: jest.fn(),
+			getFileMetadata: jest
+				.fn()
+				.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' })),
 			downloadFileContent: jest.fn(),
 			saveFile: jest.fn(),
 			showPicker: jest.fn()
@@ -78,7 +81,9 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = false
 		saveToDriveStore.close()
 		;(googleApiService.saveFile as jest.Mock).mockReset()
-		;(googleApiService.getFileMetadata as jest.Mock).mockReset()
+		;(googleApiService.getFileMetadata as jest.Mock)
+			.mockReset()
+			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' }))
 		;(googleApiService.downloadFileContent as jest.Mock).mockReset()
 		jest.spyOn(window, 'alert').mockImplementation(() => {})
 	})
@@ -253,12 +258,14 @@ describe('App Integration Tests', () => {
 		const activeDoc = documentTabsStore.activeDocument
 		if (activeDoc) {
 			activeDoc.ref!.fileId = 'test-file-id'
-			activeDoc.state.syncStatus = 'offline'
+			documentTabsStore.requireRemoteCheck(activeDoc.id)
 		}
 
 		// Проверить отображение индикатора синхронизации
-		const syncIndicator = await screen.findByText('📴')
+		const syncIndicator = await screen.findByText('?')
 		expect(syncIndicator).toBeTruthy()
+		expect(screen.getByTestId('document-tab')).toHaveAttribute('data-sync-status', 'unknown')
+		expect(screen.getByTestId('document-title')).toHaveAttribute('data-sync-status', 'unknown')
 	})
 
 	test('переключение режима просмотра работает', async () => {
@@ -296,6 +303,7 @@ describe('App Integration Tests', () => {
 						fileId: null,
 						name: 'Тестовый документ',
 						mimeType: 'application/json',
+						version: '1',
 						space: null,
 						parentFolderId: null
 					},
@@ -353,7 +361,7 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = true
 		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({
 			status: 'success',
-			file: { id: 'fake', name: 'Demo', mimeType: 'application/json' }
+			file: { id: 'fake', name: 'Demo', mimeType: 'application/json', version: '1' }
 		})
 		documentTabsStore.openNewDocument('Demo')
 		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
@@ -384,7 +392,7 @@ describe('App Integration Tests', () => {
 		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({ status: 'error', message: 'Offline' })
 		documentTabsStore.openNewDocument('Demo')
 		const document = documentTabsStore.activeDocument!
-		document.ref!.fileId = 'fake'
+		confirmedDocument(document, 'fake')
 		documentTabsStore.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 		render(
 			<StoreProvider {...stores}>
@@ -423,8 +431,8 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = true
 		documentTabsStore.openNewDocument('Demo')
 		const files = [
-			{ id: 'first', name: 'Demo', mimeType: 'application/json' },
-			{ id: 'second', name: 'Demo', mimeType: 'application/json' }
+			{ id: 'first', name: 'Demo', mimeType: 'application/json', version: '1' },
+			{ id: 'second', name: 'Demo', mimeType: 'application/json', version: '1' }
 		]
 		;(googleApiService.saveFile as jest.Mock)
 			.mockResolvedValueOnce({ status: 'conflict', existingFiles: files })
@@ -438,9 +446,9 @@ describe('App Integration Tests', () => {
 		await act(async () => {
 			await saveToDriveStore.saveFile('root', 'drive')
 		})
-		expect((screen.getByText('Перезаписать') as HTMLButtonElement).disabled).toBe(true)
-		fireEvent.change(screen.getByLabelText('Файл для перезаписи'), { target: { value: 'second' } })
-		fireEvent.click(screen.getByText('Перезаписать'))
+		expect((screen.getByText('Создать отдельную версию') as HTMLButtonElement).disabled).toBe(true)
+		fireEvent.change(screen.getByLabelText('Исходный файл версии'), { target: { value: 'second' } })
+		fireEvent.click(screen.getByText('Создать отдельную версию'))
 		await waitFor(() => expect(documentTabsStore.activeDocument?.ref?.fileId).toBe('second'))
 		expect((googleApiService.saveFile as jest.Mock).mock.calls[1][5]).toBe('second')
 	})
@@ -449,7 +457,7 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = true
 		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({
 			status: 'success',
-			file: { id: 'fake', name: 'Demo', mimeType: 'application/json' }
+			file: { id: 'fake', name: 'Demo', mimeType: 'application/json', version: '1' }
 		})
 		documentTabsStore.openNewDocument('Demo')
 		const document = documentTabsStore.activeDocument!
@@ -484,7 +492,7 @@ describe('App Integration Tests', () => {
 			googleApiService.isGoogleLoggedIn = true
 			documentTabsStore.openNewDocument('A')
 			const a = documentTabsStore.activeDocument!
-			a.ref!.fileId = 'file-a'
+			confirmedDocument(a, 'file-a')
 			documentTabsStore.getDocumentStores(a.id)!.projectsStore.add('Local A', 'black', 'white')
 			documentTabsStore.openNewDocument('B')
 			const b = documentTabsStore.activeDocument!
@@ -493,7 +501,8 @@ describe('App Integration Tests', () => {
 				id: 'file-a',
 				name: 'A',
 				mimeType: 'application/json',
-				modifiedTime: '2026-11-01T00:00:00Z'
+				modifiedTime: '2026-11-01T00:00:00Z',
+				version: '2'
 			})
 			const response = deferred<any>()
 			;(googleApiService.saveFile as jest.Mock).mockReturnValue(response.promise)
@@ -503,6 +512,7 @@ describe('App Integration Tests', () => {
 					<App />
 				</StoreProvider>
 			)
+			await waitFor(() => expect(screen.getByTitle('Синхронизировать с Google Drive')).not.toBeDisabled())
 			fireEvent.click(screen.getByTitle('Синхронизировать с Google Drive'))
 			const command = await screen.findByRole('button', {
 				name: choice === 'local' ? /Сохранить локальную версию/ : /Загрузить версию с Drive/
@@ -514,7 +524,7 @@ describe('App Integration Tests', () => {
 			await act(async () => {
 				response.resolve(
 					choice === 'local'
-						? { status: 'success', file: { id: 'file-a', name: 'A', mimeType: 'application/json' } }
+						? { status: 'success', file: { id: 'file-a', name: 'A', mimeType: 'application/json', version: '1' } }
 						: {
 								projectsList: [{ name: 'Remote A', color: 'black', background: 'white' }],
 								completedList: [],

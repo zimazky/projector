@@ -1,3 +1,4 @@
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { expect } from '@jest/globals'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import type { DocumentSaveResult } from './DocumentTabsStore.types'
@@ -5,7 +6,12 @@ import { deferred } from 'src/test-utils/deferred'
 import { syncLegacyStateFromNewModel } from './DocumentSyncSelectors'
 
 function setup() {
-	const api = { saveFile: jest.fn() }
+	const api = {
+		saveFile: jest.fn(),
+		getFileMetadata: jest
+			.fn()
+			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' }))
+	}
 	const store = new DocumentTabsStore(api as any)
 	store.openNewDocument('Demo')
 	const document = store.activeDocument!
@@ -58,13 +64,13 @@ describe('Общая команда закрытия документа', () => 
 
 	it('предупреждает о несинхронизированной предыдущей сессии даже без isDirty', async () => {
 		const { store, document } = setup()
-		document.ref!.fileId = 'fake'
+		confirmedDocument(document, 'fake')
 		document.sync.baseLocalVersion = document.sync.localVersion
 		document.sync.needsRemoteCheck = true
 		syncLegacyStateFromNewModel(document)
 		const decide = jest.fn().mockResolvedValue('cancel')
 		await store.requestCloseDocument(document.id, decide, jest.fn())
-		expect(decide).toHaveBeenCalledWith(true)
+		expect(decide).toHaveBeenCalledWith(expect.objectContaining({ remoteUnknown: true }))
 	})
 
 	it('позволяет повторить закрытие после отклонённой записи', async () => {
@@ -91,10 +97,11 @@ describe('Общая команда закрытия документа', () => 
 
 	it('относит отказ записи исходной вкладке после переключения', async () => {
 		const { store, document, api } = setup()
-		document.ref!.fileId = 'fake-a'
+		confirmedDocument(document, 'fake-a')
 		const response = deferred<never>()
 		api.saveFile.mockReturnValue(response.promise)
 		const saving = store.saveDocument(document.id)
+		await Promise.resolve()
 		store.openNewDocument('B')
 		const other = store.activeDocument!
 		response.reject(new Error('Offline'))
@@ -105,7 +112,7 @@ describe('Общая команда закрытия документа', () => 
 
 	it('сохраняет новые данные во время записи и оставляет dirty при коллизии Aa/BB', async () => {
 		const { store, document, api } = setup()
-		document.ref!.fileId = 'fake-a'
+		confirmedDocument(document, 'fake-a')
 		const data = (name: string) => ({
 			projectsList: [],
 			completedList: [],
@@ -116,9 +123,13 @@ describe('Общая команда закрытия документа', () => 
 		const response = deferred<any>()
 		api.saveFile.mockReturnValue(response.promise)
 		const saving = store.saveDocument(document.id)
+		await Promise.resolve()
 		store.updateActiveDocumentData(data('BB'))
 		store.getDocumentStores(document.id)!.eventsStore.init(data('BB'))
-		response.resolve({ status: 'success', file: { id: 'fake-a', name: 'Demo', mimeType: 'application/json' } })
+		response.resolve({
+			status: 'success',
+			file: { id: 'fake-a', name: 'Demo', mimeType: 'application/json', version: '1' }
+		})
 		expect((await saving).status).toBe('saved')
 		expect(document.state.isDirty).toBe(true)
 		expect(document.data).toEqual(data('BB'))

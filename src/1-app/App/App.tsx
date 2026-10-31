@@ -15,10 +15,15 @@ import YesNoCancelConfirmation, {
 } from 'src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation'
 
 import './App.css'
+import type { DocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 
 const App: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
-	const { uiStore, documentTabsStore, saveToDriveStore } = useContext(StoreContext)
+	const { uiStore, documentTabsStore, saveToDriveStore, mainStore } = useContext(StoreContext)
+	React.useEffect(() => {
+		mainStore.startSyncCoordinator()
+		return () => mainStore.stopSyncCoordinator()
+	}, [mainStore])
 
 	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 
@@ -38,10 +43,8 @@ const App: React.FC = observer(function () {
 		documentTabsStore.activateDocument(id)
 	}
 
-	const requestUnsavedDecision = (hasUnsyncedChanges: boolean): Promise<YesNoCancelDecision> => {
-		setDialogMessage(
-			hasUnsyncedChanges ? 'Документ не синхронизирован с предыдущей сессии.' : 'Есть несохранённые изменения.'
-		)
+	const requestUnsavedDecision = (ui: DocumentUiState): Promise<YesNoCancelDecision> => {
+		setDialogMessage(ui.closeMessage)
 		setUnsavedDialogOpen(true)
 		return new Promise<YesNoCancelDecision>(resolve => {
 			unsavedDecisionResolverRef.current = resolve
@@ -61,8 +64,8 @@ const App: React.FC = observer(function () {
 		try {
 			const result = await documentTabsStore.requestCloseDocument(
 				id,
-				async hasUnsyncedChanges => {
-					const decision = await requestUnsavedDecision(hasUnsyncedChanges)
+				async ui => {
+					const decision = await requestUnsavedDecision(ui)
 					return decision === 'yes' ? 'save' : decision === 'no' ? 'discard' : 'cancel'
 				},
 				documentId => {

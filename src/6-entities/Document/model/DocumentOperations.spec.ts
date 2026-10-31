@@ -1,3 +1,4 @@
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { deferred } from 'src/test-utils/deferred'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import { computeFingerprint } from './DocumentSyncFingerprint'
@@ -9,7 +10,7 @@ const data = (name: string): DocumentData => ({
 	completedList: [],
 	plannedList: []
 })
-const metadata = (id = 'file-a') => ({ id, name: id, mimeType: 'application/json' })
+const metadata = (id = 'file-a') => ({ id, name: id, mimeType: 'application/json', version: '1' })
 const success = (id = 'file-a') => ({ status: 'success', file: metadata(id) })
 
 function setup() {
@@ -17,13 +18,13 @@ function setup() {
 		isGoogleLoggedIn: true,
 		logIn: jest.fn(),
 		saveFile: jest.fn(),
-		getFileMetadata: jest.fn(),
+		getFileMetadata: jest.fn().mockImplementation(async (id: string) => metadata(id)),
 		downloadFileContent: jest.fn()
 	}
 	const store = new DocumentTabsStore(api as any)
 	store.openNewDocument('A')
 	const a = store.activeDocument!
-	a.ref!.fileId = 'file-a'
+	confirmedDocument(a, 'file-a')
 	return { store, api, a }
 }
 
@@ -43,6 +44,7 @@ describe('Адресация асинхронных команд и версии
 		const response = deferred<any>()
 		api.saveFile.mockReturnValue(response.promise)
 		const saving = store.saveDocument(a.id)
+		await Promise.resolve()
 		const sentVersion = a.sync.localVersion
 		store.openNewDocument('B')
 		const b = store.activeDocument!
@@ -71,6 +73,7 @@ describe('Адресация асинхронных команд и версии
 		const response = deferred<any>()
 		api.saveFile.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success())
 		const first = store.saveDocument(a.id)
+		await Promise.resolve()
 		edit(store, a, 'BB')
 		const second = store.saveDocument(a.id)
 		expect(second).toBe(first)
@@ -88,11 +91,15 @@ describe('Адресация асинхронных команд и версии
 		const first = deferred<any>(),
 			second = deferred<any>()
 		api.saveFile.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+		edit(store, a, 'A edit')
 		const savingA = store.saveDocument(a.id)
+		await Promise.resolve()
 		store.openNewDocument('B')
 		const b = store.activeDocument!
-		b.ref!.fileId = 'file-b'
+		confirmedDocument(b, 'file-b')
+		edit(store, b, 'B edit')
 		const savingB = store.saveDocument(b.id)
+		await Promise.resolve()
 		second.resolve(success('file-b'))
 		await savingB
 		expect(a.operation).toBe('saving')
@@ -108,7 +115,9 @@ describe('Адресация асинхронных команд и версии
 		const { store, api, a } = setup()
 		const response = deferred<any>()
 		api.saveFile.mockReturnValue(response.promise)
+		edit(store, a, 'Before close')
 		const saving = store.saveDocument(a.id)
+		await Promise.resolve()
 		store.closeDocument(a.id)
 		store.openFromLocalStorageSnapshot({
 			id: a.id,
@@ -152,7 +161,7 @@ describe('Адресация асинхронных команд и версии
 		api.getFileMetadata.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
 		const oldCheck = store.checkDocument(a.id),
 			newCheck = store.checkDocument(a.id)
-		second.resolve({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z' })
+		second.resolve({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z', version: '2' })
 		expect((await newCheck).status).toBe('conflict')
 		const revision = a.sync.remoteRevisionId
 		first.resolve(metadata())
@@ -182,11 +191,12 @@ describe('Адресация асинхронных команд и версии
 		edit(store, a, 'Aa')
 		store.openNewDocument('B')
 		const b = store.activeDocument!
-		b.ref!.fileId = 'file-b'
+		confirmedDocument(b, 'file-b')
 		edit(store, b, 'B edit')
 		const response = deferred<any>()
 		api.saveFile.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success('file-b'))
 		const all = store.saveAllDirtyDocuments()
+		await Promise.resolve()
 		expect(store.activeDocumentId).toBe(b.id)
 		store.openNewDocument('C')
 		const c = store.activeDocumentId
@@ -227,8 +237,9 @@ describe('Адресация асинхронных команд и версии
 		const first = deferred<any>(),
 			second = deferred<any>()
 		api.downloadFileContent.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
-		const oldPull = store.pullDocument(a.id),
-			newPull = store.pullDocument(a.id)
+		const oldPull = store.pullDocument(a.id)
+		await Promise.resolve()
+		const newPull = store.pullDocument(a.id)
 		second.resolve(data('New remote'))
 		expect((await newPull).status).toBe('pulled')
 		first.resolve(data('Old remote'))
@@ -238,7 +249,7 @@ describe('Адресация асинхронных команд и версии
 
 	it('новые локальные правки делают старое решение конфликта недействительным', async () => {
 		const { store, api, a } = setup()
-		api.getFileMetadata.mockResolvedValue({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z' })
+		api.getFileMetadata.mockResolvedValue({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z', version: '2' })
 		const result = await store.checkDocument(a.id)
 		if (result.status !== 'conflict') throw new Error('Expected conflict')
 		edit(store, a, 'Local')
@@ -251,7 +262,7 @@ describe('Адресация асинхронных команд и версии
 
 	it('решение удалённого конфликта хранит ID исходной вкладки', async () => {
 		const { store, api, a } = setup()
-		api.getFileMetadata.mockResolvedValue({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z' })
+		api.getFileMetadata.mockResolvedValue({ ...metadata(), modifiedTime: '2026-11-01T00:00:00Z', version: '2' })
 		api.downloadFileContent.mockResolvedValue(data('Remote A'))
 		const result = await store.checkDocument(a.id)
 		if (result.status !== 'conflict') throw new Error('Expected conflict')

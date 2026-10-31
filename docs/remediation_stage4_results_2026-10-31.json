@@ -1,0 +1,157 @@
+{
+  "date": "2026-10-31",
+  "timezone": "Europe/Moscow",
+  "stage": 4,
+  "baselineCommit": "2002bc1199e22f08d41b22fc163de236de084909",
+  "branch": "per_document_stores_glm5_v1",
+  "node": "v24.12.0",
+  "platform": "win32",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "verification": {
+    "typecheck": {
+      "status": "passed"
+    },
+    "e2eTypecheck": {
+      "status": "passed"
+    },
+    "lint": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 8
+    },
+    "jest": {
+      "status": "passed",
+      "suites": 18,
+      "tests": 3576,
+      "newRegressionCases": 32
+    },
+    "browser": {
+      "status": "passed",
+      "engine": "Chromium",
+      "playwright": "1.64.1",
+      "expected": 8,
+      "unexpected": 0,
+      "flaky": 0,
+      "errors": 0,
+      "newScenarios": 2,
+      "googleApi": "network fixtures and local intercepted bridge",
+      "realDrive": false,
+      "screenshotsInspected": true
+    },
+    "build": {
+      "status": "passed"
+    },
+    "pages": {
+      "status": "passed",
+      "files": 14
+    }
+  },
+  "writePolicy": {
+    "strategy": "append-only full file versions",
+    "transport": "multipart POST create with content and metadata",
+    "sourceOverwrite": false,
+    "preflightRequired": true,
+    "conditionalWriteVerified": false,
+    "decisionBoundToServerVersion": true,
+    "recheckBeforeDecisionWrite": true,
+    "originalSharedLinksAdvanceAutomatically": false,
+    "possibleDuplicatesAfterLostAcknowledgement": true
+  },
+  "versionProtocol": {
+    "marker": "drive-v3:<fileId>:<version>",
+    "serverVersionType": "int64 string",
+    "clientTimeDeterminesConflict": false,
+    "readSequence": [
+      "metadata",
+      "content",
+      "metadata"
+    ],
+    "maxReadAttempts": 2,
+    "restoredFilesRequireCheck": true
+  },
+  "coordinator": {
+    "ttlMilliseconds": 60000,
+    "intervalMilliseconds": 30000,
+    "triggers": [
+      "sign-in",
+      "activation",
+      "linked-document changes",
+      "online",
+      "explicit check"
+    ],
+    "backgroundOAuth": false,
+    "sessionAndTokenDeduplication": true,
+    "disposeInvalidatesOwnedChecks": true
+  },
+  "coverage": [
+    "two independent clients observe one ID with different versions",
+    "client clock skew",
+    "mandatory save preflight despite fresh TTL",
+    "separate copies preserve local and concurrent remote data",
+    "decision rechecks exact server version",
+    "metadata/content consistency and bounded retry",
+    "incomplete JSON from changing revision is not applied",
+    "check does not mutate canonical data or local version",
+    "minimum EventDto validation and unknown errors",
+    "restore does not claim unconfirmed synced",
+    "batch uses model rather than legacy offline status",
+    "background TTL, availability, superseded request and dispose",
+    "multipart POST instead of source PATCH",
+    "filename version suffix remains bounded",
+    "matching tab/header UI statuses and browser conflict choice"
+  ],
+  "deferred": [
+    "independent local restore before GAPI (stage 5)",
+    "complete schemaVersion validation and migration (stage 5)",
+    "storage quota and transactional persistence (stage 5)",
+    "legacy field removal after stage 5",
+    "shared latest-version pointer and permission copying"
+  ],
+  "sourceSha256": {
+    "e2e/fixtures.ts": "934f820d102be22333831aa24442b9638a6808e528d1d9c79c0e38bcd4aaaf24",
+    "src/1-app/App/App.spec.tsx": "e077385aec36fd5d042a8f53f6544117a7e660599518b5dff11225d076ab662c",
+    "src/1-app/App/App.tsx": "b7c4cac8cc833976b1e5d6d2321422bc579a60cf251595d4c7b70077d91685d0",
+    "src/1-app/Stores/MainStore.ts": "fb3d931ecf56e37027e3d3bf9962969451f71ba80e128112e271d0242d834de1",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "1c851ee2a4d1e12acf8b2e079a5ebe48dc267774b0b047886fa354b8c65fc6a0",
+    "src/4-widgets/Header/Header.tsx": "10b33ca73799650f428506baa2d6224abcac78f2ecf6e84a13f4a9872dc1d992",
+    "src/4-widgets/SaveToDrive/SaveToDrive.tsx": "d55b59309f5c5f96afa9a714cad3548ab75e6ca47838a10395c7201d4dc3641b",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "5ef586d2b47c89ef93804adfb95fc908a2f5073fc7f0de79d54e09ad989aea6e",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.ts": "1f91d6b5d64cb174259d68be3133ac7afd49c32f55f9480f662e31b65158b02b",
+    "src/5-features/FileConflictResolver/FileConflictResolver.tsx": "46fba83879dd3ee09b8f1247d98f741adad2e09f1d84d51cf7eb29a3cc8c8fea",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "e79dc391ffe54fb6e764fa5f34afd64ffcef8da16f1b0cfc44d4339a98c5932a",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "460a1a8b6c14fda5551efa0f01a49e7941d6510a7c92affcfff642a179945d81",
+    "src/6-entities/Document/model/DocumentSyncSelectors.ts": "8787e84a08090ce7bc5d7d6289dd5e576c362b67ae1eb3dfb94c47ad10bd3f84",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "fe5543f83b4e17c28af8a3dc54586007786f729c8e2013139e52b16418a1504d",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "06fe83c571251dc5a7e102dc13dc9cf725c01aa72f1b421d9968027e37fa7b75",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "fa2d4472ccb8f437febaee148d0939844cad631ff0265d8b85e9a54b63c8e514",
+    "src/6-entities/Document/model/DocumentTabsStore.utils.ts": "ff8789cb3ea003609b44242d17b95359543663d48f6562cb4db8a2423ff7398c",
+    "src/7-shared/services/GoogleApiService.ts": "9e2d6a062c2b6fc5941f813aa7c50e82cda6236b8b61c286329b2156e46bbc31",
+    "src/7-shared/services/gapi.spec.ts": "16f86793ebe7b6badf87b7f51cc63efd5b8aec59d7e87eb0889b6430958de116",
+    "src/7-shared/services/gapi.ts": "d2e8d74220a6d7036ec21fa5b37b0235d7ec34b9eee5f8f5474b5c63f9a4dec8",
+    "src/7-shared/ui/ConflictDialog/ConflictDialog.tsx": "bc5a7fbbcf772c788cb6593aab57e9069c27da1216a1537b726a24bd9ccad753",
+    "src/7-shared/ui/ConflictDialog/types.ts": "910e34c89e0ce57877c94b3238164288633288016af9fb3daffad88151973490",
+    "src/7-shared/ui/DocumentTabs/DocumentTabs.module.css": "351b6cbabb3c91f7efd6c1b34ccd29269b9803b781290ae57e066fe103caa584",
+    "src/7-shared/ui/DocumentTabs/DocumentTabs.tsx": "a7079d151063d2d24892fe399a20587ce3f68a07fec8950d7ed82ff1e62c9d00",
+    "src/test-utils/DocumentFixtures.spec.ts": "7773a82807a4dd1854fcb0de5b559bced48ee31daefab68aa4eeef04ed76250b",
+    "e2e/drive-sync.spec.ts": "af80aea84825673bc997a6046f2af1a556430f2caffb5b4fbe87a37bcbec00b3",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.module.css": "f8734ba6c8eb0388da163f4cffa24ab055104b6ed6c21a5e48d692b6dedc536a",
+    "src/6-entities/Document/model/DocumentDriveProtocol.ts": "4957bd8b5a76eaf935fd9aaf58804711d47c2b946cd9221df66d09d23c055aa1",
+    "src/6-entities/Document/model/DocumentDriveSync.spec.ts": "d016df5426bf03800ea60aec304b68dacfef71b08828f8eebedecaae45cc87a7",
+    "src/6-entities/Document/model/DriveSyncCoordinator.ts": "109564b2b7070420b956b656b9ac04f428f45a55ceedbb9fb46240cef1921396",
+    "src/7-shared/services/DriveApiError.ts": "a477721c87aa09d7fce07a7c474c419cad43bec74b1b3132c5fc122634a4dbcf",
+    "src/7-shared/services/GoogleApiService.spec.ts": "b9fd658eec5c68c069239737c4ce7c9115c5fb37ee4ed2e2ba41c0b835c36658",
+    "src/test-utils/confirmedDocument.ts": "060ef9ee1e38bfd6210498b7282c12c2aeee9b73d86a64150085bc42839220e0"
+  },
+  "sources": [
+    "https://developers.google.com/workspace/drive/api/reference/rest/v3/files",
+    "https://developers.google.com/workspace/drive/api/reference/rest/v3/files/update",
+    "https://developers.google.com/workspace/drive/api/guides/manage-uploads#multipart"
+  ],
+  "artifacts": {
+    "logs": "artifacts/remediation-stage4",
+    "jest": "artifacts/remediation-stage4/jest.json",
+    "browser": "artifacts/playwright/results.json",
+    "browserHtml": "artifacts/playwright/report/index.html"
+  }
+}
