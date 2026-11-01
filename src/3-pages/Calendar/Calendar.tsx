@@ -3,7 +3,6 @@ import { observer } from 'mobx-react-lite'
 
 import { max, min } from 'src/7-shared/helpers/utils'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-import useUpdate from 'src/7-shared/hooks/useUpdate'
 
 import Modal from 'src/7-shared/ui/Modal/Modal'
 
@@ -18,13 +17,13 @@ import styles from './Calendar.module.css'
 import { useCalendarScroll } from './useCalendarScroll'
 
 const Calendar: React.FC = observer(function () {
-	const forceUpdate = useUpdate()
-	const { calendarStore, eventFormStore, documentTabsStore, uiStore } = useStores()
+	const { calendarStore, eventFormStore, documentTabsStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const bodyRef = useRef<HTMLDivElement | null>(null)
 
 	const today = DateTime.getBeginDayTimestamp(Date.now() / 1000)
 	const zeroPoint = calendarStore.week
+	const scrollRequest = calendarStore.scrollRequest
 
 	const calendarWeeks = calendarStore.getCalendarDataStructure(zeroPoint)
 	const { onScrollHandle } = useCalendarScroll({ calendarStore, calendarWeeks, zeroPoint })
@@ -32,10 +31,10 @@ const Calendar: React.FC = observer(function () {
 	React.useEffect(() => {
 		const container = bodyRef.current
 		if (!container) return
-		const selector = `[data-week-timestamp="${calendarStore.week}"]`
+		const selector = `[data-week-timestamp="${scrollRequest?.week ?? zeroPoint}"]`
 		const weekDiv = container.querySelector<HTMLElement>(selector)
 		weekDiv?.scrollIntoView({ block: 'start' })
-	}, [calendarStore.week, uiStore.mustForceUpdate])
+	}, [zeroPoint, scrollRequest])
 
 	const dragDrop = (e: React.DragEvent<HTMLElement>, timestamp: timestamp) => {
 		e.preventDefault()
@@ -44,7 +43,6 @@ const Calendar: React.FC = observer(function () {
 		const c = JSON.parse(e.dataTransfer.getData('event_item'))
 		if (e.ctrlKey) eventsStore.copyToDate(c.id, timestamp)
 		else eventsStore.shiftToDate(c.id, timestamp, c.start)
-		forceUpdate()
 	}
 
 	console.log('draw calendar')

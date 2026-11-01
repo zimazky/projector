@@ -8,7 +8,7 @@ import styles from './EventSearch.module.css'
 const DEBOUNCE_MS = 300
 
 export const EventSearchInput: React.FC = observer(() => {
-	const { eventSearchStore, calendarStore, uiStore } = useStores()
+	const { eventSearchStore, calendarStore } = useStores()
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	// Создаём debounced функцию поиска один раз при монтировании
@@ -20,10 +20,9 @@ export const EventSearchInput: React.FC = observer(() => {
 				const current = eventSearchStore.currentResult
 				if (current) {
 					calendarStore.setWeek(current.timestamp)
-					uiStore.forceUpdate()
 				}
 			}, DEBOUNCE_MS),
-		[eventSearchStore, calendarStore, uiStore]
+		[eventSearchStore, calendarStore]
 	)
 
 	// Очистка при unmount
@@ -64,7 +63,6 @@ export const EventSearchInput: React.FC = observer(() => {
 		const current = eventSearchStore.currentResult
 		if (current) {
 			calendarStore.setWeek(current.timestamp)
-			uiStore.forceUpdate()
 		}
 	}
 

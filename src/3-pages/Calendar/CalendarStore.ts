@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx'
+import { makeAutoObservable, observable } from 'mobx'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { max } from 'src/7-shared/helpers/utils'
@@ -43,6 +43,8 @@ export class CalendarStore {
 	 * Положительные числа определяют сдвиг в сторону более ранних недель
 	 */
 	shift: number = minBufferSize
+	/** Отдельная команда прокрутки: повторный переход к той же неделе тоже выполняется. */
+	scrollRequest: Readonly<{ week: timestamp }> | null = null
 
 	constructor(eventsCache: EventsCache, weatherStore: WeatherStore) {
 		this.eventsCache = eventsCache
@@ -51,12 +53,13 @@ export class CalendarStore {
 		const { year, month } = DateTime.getYearMonthDay(this.week)
 		this.year = year
 		this.month = month
-		makeAutoObservable(this)
+		makeAutoObservable(this, { scrollRequest: observable.ref })
 	}
 
 	setWeek(timestamp: timestamp) {
 		this.week = DateTime.getBegintWeekTimestamp(timestamp)
 		this.resetShift()
+		this.scrollRequest = { week: this.week }
 	}
 
 	setMonthYear(month: number, year: number) {

@@ -51,18 +51,12 @@ export class EventsCache {
 	}
 
 	private ensureCurrent() {
+		// Читать версии нужно и при попадании в кэш: observer/autorun подписывается
+		// на доменные изменения, сами LRU-контейнеры остаются ненаблюдаемыми.
 		const events = this.provider.activeEventsStore
 		const projects = this.provider.activeProjectsStore
 		const document = this.provider.activeDocument
-		const next = [
-			document,
-			document?.sync.localVersion,
-			events,
-			events?.version,
-			projects,
-			projects?.version,
-			DateTime.timezone
-		]
+		const next = [document, events, events?.version, projects, projects?.version, DateTime.timezone]
 		if (this.context && next.every((value, index) => value === this.context![index])) return
 		this.init()
 		this.context = next

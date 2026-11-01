@@ -35,7 +35,7 @@ interface Fields {
 type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
 
 const EventForm: React.FC = () => {
-	const { eventFormStore, eventsCache, documentTabsStore } = useStores()
+	const { eventFormStore, documentTabsStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const projectsStore = documentTabsStore.activeProjectsStore
 
@@ -158,7 +158,6 @@ const EventForm: React.FC = () => {
 			debit: Calc.calculate(e.debit)
 		}
 		eventsStore.addPlannedEventDto(eventDto)
-		eventsCache.init()
 		eventFormStore.hideForm()
 	})
 

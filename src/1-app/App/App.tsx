@@ -1,6 +1,5 @@
 import React from 'react'
 import { observer } from 'mobx-react-lite'
-import useUpdate from 'src/7-shared/hooks/useUpdate'
 
 import { useStores } from 'src/1-app/Providers/StoreContext'
 
@@ -24,11 +23,9 @@ import {
 } from 'src/6-entities/Document/model/DocumentStorageDiagnostic'
 
 const App: React.FC = observer(function () {
-	const forceUpdate = useUpdate()
 	const { uiStore, documentTabsStore, saveToDriveStore } = useStores()
 	const storageFailure = documentTabsStore.persistenceDiagnostic
 
-	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 	React.useEffect(() => {
 		const warn = (event: BeforeUnloadEvent) => {
 			if (

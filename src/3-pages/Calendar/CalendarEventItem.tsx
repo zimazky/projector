@@ -1,4 +1,5 @@
 import React from 'react'
+import { observer } from 'mobx-react-lite'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { useStores } from 'src/1-app/Providers/StoreContext'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
@@ -13,7 +14,7 @@ type CalendarEventItemProps = {
 	daysInCurrentWeek: number
 }
 
-const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
+const CalendarEventItem: React.FC<CalendarEventItemProps> = observer(props => {
 	const { eventFormStore, documentTabsStore, eventSearchStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
@@ -78,6 +79,6 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 			</div>
 		</div>
 	)
-}
+})
 
 export default CalendarEventItem

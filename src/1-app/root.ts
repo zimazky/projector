@@ -37,7 +37,7 @@ export function createApplication(
 	const eventFormStore = new EventFormStore()
 	const eventSearchStore = new EventSearchStore(documentTabsStore)
 	const projectEditorStore = new ProjectEditorStore(documentTabsStore)
-	const mainStore = new MainStore(eventsCache, googleApiService, documentTabsStore)
+	const mainStore = new MainStore(googleApiService, documentTabsStore)
 	const fileSavedNotifier = mainStore.fileSavedNotifier
 	const saveToDriveStore = new SaveToDriveStore(googleApiService, () => fileSavedNotifier.fire(), documentTabsStore)
 	const coordinator = new DriveSyncCoordinator(documentTabsStore, googleApiService)

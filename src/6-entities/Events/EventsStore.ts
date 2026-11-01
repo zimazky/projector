@@ -1,3 +1,4 @@
+import { action, makeObservable, observable } from 'mobx'
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
@@ -28,7 +29,8 @@ export class EventsStore {
 	/** Колбэк функция, вызывается при каждом изменении списка */
 	onChangeList = () => {}
 
-	private notifyChanged() {
+	private notifyChanged(shouldSort = true) {
+		if (shouldSort) this.sort()
 		this.version++
 		this.onChangeList()
 	}
@@ -64,6 +66,26 @@ export class EventsStore {
 			(e, isFinal) => this.singleEventManager.addPlanned(e, isFinal),
 			(e, isFinal) => this.singleEventManager.addCompleted(e, isFinal)
 		)
+		// Модели и менеджеры изменяются пакетными командами. Публикуем одну
+		// наблюдаемую версию после завершения команды, не превращая чтение в action.
+		makeObservable<this, 'notifyChanged'>(this, {
+			version: observable,
+			notifyChanged: action,
+			init: action,
+			addCompletedEventModel: action,
+			addCompletedEventDto: action,
+			addPlannedEventModel: action,
+			addPlannedEventDto: action,
+			deleteEvent: action,
+			deleteCurrentRepeatableEvent: action,
+			completeEvent: action,
+			uncompleteEvent: action,
+			updateEvent: action,
+			shiftToDate: action,
+			copyToDate: action,
+			saveAsSingleEvent: action,
+			sort: action
+		})
 	}
 
 	/** Загрузка данных со сбросом предшествующих данных */
@@ -77,7 +99,8 @@ export class EventsStore {
 		d.plannedList?.forEach(e => {
 			this.addPlannedEventDto(e, false)
 		})
-		this.notifyChanged()
+		// Восстановление сохраняет порядок исходного снимка; само чтение не создаёт dirty.
+		this.notifyChanged(false)
 	}
 
 	/** Подготовка для сохранения в хранилище */
