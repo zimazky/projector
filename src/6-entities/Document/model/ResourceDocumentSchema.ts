@@ -202,7 +202,12 @@ export const resourceDocumentSchema = shape(
 		balanceCategories: list(
 			shape({ id, name: id, dimension: choice('account', 'resource'), includeInGrandTotal: flag, showInSummary: flag })
 		),
-		priceHistory: list(shape({ id, commandId: id, resourceId: id, price }, { previousPrice: price }))
+		priceHistory: list(
+			shape(
+				{ id, commandId: id, resourceId: id, price },
+				{ previousPrice: price, undone: flag, previousPriceUnavailable: flag }
+			)
+		)
 	},
 	{
 		cashbackCategories: list(shape({ id, name: id })),

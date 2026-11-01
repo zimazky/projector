@@ -37,12 +37,14 @@ import type { DocumentPersistence } from './DocumentPersistence'
 import { legacyDocumentRuntime, type DocumentRuntime, type DocumentRuntimeSnapshot } from './DocumentRuntime'
 import { storageDiagnostic, storageFailureMessage, type StorageDiagnostic } from './DocumentStorageDiagnostic'
 import type { LegacyStorageCleanupResult } from './DocumentStorageCleanup'
+import { ResourceOperationCommands } from '../../Operations/ResourceOperationCommands'
 
 /**
  * Store для управления несколькими открытыми документами.
  * Поддерживает вкладки, персистентность в localStorage и синхронизацию с Google Drive.
  */
 export class DocumentTabsStore implements IEventsStoreProvider {
+	readonly resourceCommands: ResourceOperationCommands
 	private state: DocumentTabsState
 	private documentStoreManager: DocumentStoreManager
 	private operationSequence = 0
@@ -68,6 +70,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		persistence: DocumentPersistence<DocumentRuntimeSnapshot> | undefined = undefined,
 		private readonly runtime: DocumentRuntime = legacyDocumentRuntime
 	) {
+		this.resourceCommands = new ResourceOperationCommands(this)
 		this.persistence = persistence ?? runtime.createPersistence()
 		this.state = {
 			documents: new Map(),

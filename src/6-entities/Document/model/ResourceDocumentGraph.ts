@@ -75,9 +75,21 @@ export function validateResourceDocumentGraph(data: ResourceDocumentData): void 
 		if (!account.allowedResourceIds.includes(resourceId)) fail('счёт не разрешает ресурс ' + resourceId)
 		return account
 	}
-	const price = (value: ResourcePrice) => {
+	const historicalPrices = new Set(
+		data.priceHistory
+			.filter(change => change.undone)
+			.map(change =>
+				JSON.stringify([change.resourceId, change.price.sourceEventUid, change.price.commandId, change.price.revision])
+			)
+	)
+	const price = (value: ResourcePrice, resourceId: string, historical = false) => {
 		currency(value.quoteResourceId)
-		if (value.sourceEventUid && !completed.has(value.sourceEventUid))
+		if (
+			value.sourceEventUid &&
+			!completed.has(value.sourceEventUid) &&
+			(!historical ||
+				!historicalPrices.has(JSON.stringify([resourceId, value.sourceEventUid, value.commandId, value.revision])))
+		)
 			fail('источник цены не является выполненным событием')
 	}
 	for (const resource of data.resources) {
@@ -85,7 +97,7 @@ export function validateResourceDocumentGraph(data: ResourceDocumentData): void 
 		if (reference(categories, resource.categoryId, 'resource.categoryId').dimension !== 'resource')
 			fail('ресурсу назначена категория счетов')
 		if (resource.price) {
-			price(resource.price)
+			price(resource.price, resource.id)
 			const quote = reference(resources, resource.price.quoteResourceId, 'price.quoteResourceId')
 			if (quote.id !== base.id && quote.price && quote.price.quoteResourceId !== base.id)
 				fail('поддерживаются только прямая цена и один валютный шаг до основной валюты')
@@ -100,9 +112,21 @@ export function validateResourceDocumentGraph(data: ResourceDocumentData): void 
 	}
 	for (const change of data.priceHistory) {
 		reference(resources, change.resourceId, 'priceHistory.resourceId')
-		price(change.price)
+		if (change.price.commandId && change.price.commandId !== change.commandId)
+			fail('журнал цены ссылается на другую команду')
+		const current = resources.get(change.resourceId)?.price
+		if (
+			change.undone &&
+			change.price.commandId &&
+			current?.commandId === change.price.commandId &&
+			current?.revision === change.price.revision
+		)
+			fail('отменённая запись не может быть текущей ценой')
+		price(change.price, change.resourceId, true)
+		if (change.previousPriceUnavailable && change.previousPrice)
+			fail('неизвестная предыдущая цена не может содержать значение')
 		if (change.previousPrice) {
-			price(change.previousPrice)
+			price(change.previousPrice, change.resourceId, true)
 			if (change.previousPrice.revision >= change.price.revision) fail('ревизия новой цены должна возрастать')
 		}
 	}

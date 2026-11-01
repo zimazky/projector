@@ -13,9 +13,11 @@ import type { ResourceSessionSnapshot } from 'src/6-entities/Document/model/Reso
 import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
 import { createResourceDocumentRuntime } from 'src/6-entities/Document/model/ResourceDocumentRuntime'
 import type { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
+import { ResourceOperationCommands } from 'src/6-entities/Operations/ResourceOperationCommands'
 
 /** Подключается только отдельным entry из start-e2e-server, без запуска приложения. */
 const probe = {
+	commands: (tabs: DocumentTabsStore) => new ResourceOperationCommands(tabs, () => '2026.11.10'),
 	tabs: () =>
 		new DocumentTabsStore(
 			{} as GoogleApiService,

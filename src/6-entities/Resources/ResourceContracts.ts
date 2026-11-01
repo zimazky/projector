@@ -50,6 +50,10 @@ export type PriceChange = {
 	resourceId: string
 	previousPrice?: ResourcePrice
 	price: ResourcePrice
+	/** Отменённая запись остаётся в коротком журнале, чтобы её цена не воскресла при следующей отмене. */
+	undone?: boolean
+	/** Предыдущее значение неизвестно после усечения журнала или неподдержанного внешнего изменения. */
+	previousPriceUnavailable?: boolean
 }
 
 /** Набор неизменяем на всём горизонте одной оценки. */
