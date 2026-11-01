@@ -70,7 +70,7 @@ for (const abort of [false, true]) {
 		}
 		await expect(page.getByRole('alert')).toHaveCount(0)
 		const current = await readLocalSnapshot(page)
-		expect(current.schemaVersion).toBe(2)
+		expect(current.schemaVersion).toBe(3)
 		expect(current.documentOrder).toEqual(['fixture-a', 'fixture-b'])
 		for (const document of current.documents) {
 			expect(Object.keys(document).sort()).toEqual(['data', 'id', 'lastAccessedAt', 'ref', 'sync'])
@@ -81,7 +81,7 @@ for (const abort of [false, true]) {
 		expect(JSON.parse(archives[0]).indexedDB.current).toBe(original)
 		await page.reload()
 		await expect(page.getByTestId('document-tab')).toHaveCount(2)
-		expect((await readLocalSnapshot(page)).schemaVersion).toBe(2)
+		expect((await readLocalSnapshot(page)).schemaVersion).toBe(3)
 		expect(await readRecoveryArchives(page)).toEqual(archives)
 		await page.getByTestId('document-tab').first().click()
 		await page.getByTitle('Закрыть вкладку', { exact: true }).first().click()
@@ -102,7 +102,7 @@ test('импорт экспорта сессии v1 сохраняет суще�
 	})
 	await expect(page.getByTestId('document-tab')).toHaveCount(3)
 	const current = await readLocalSnapshot(page)
-	expect(current.schemaVersion).toBe(2)
+	expect(current.schemaVersion).toBe(3)
 	expect(current.documents[0].ref.name).toBe('Новый документ')
 	expect(current.documents.slice(1).map((document: any) => document.ref.name)).toEqual([
 		'Demo A (восстановлено)',

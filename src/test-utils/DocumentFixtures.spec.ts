@@ -45,8 +45,8 @@ describe('Обезличенные документы исходного фор�
 		expect(await store.restoreFromLocalStorage()).toBe(true)
 		expect(store.documents.map(document => document.id)).toEqual(['fixture-a', 'fixture-b'])
 		expect(store.activeDocument?.id).toBe('fixture-b')
-		expect(store.documents[0].data).toEqual(JSON.parse(fixture('legacy-document.json')))
-		expect(store.documents[1].data).toEqual(JSON.parse(fixture('repeating-document.json')))
+		expect(store.documents[0].data).toEqual(normalizeMainStoreData(fixture('legacy-document.json')))
+		expect(store.documents[1].data).toEqual(normalizeMainStoreData(fixture('repeating-document.json')))
 		// Исходный snapshot остаётся доступным для последующей проверки миграций.
 		expect(localStorage.getItem('documentTabs')).toBe(tabs)
 	})
@@ -63,7 +63,7 @@ describe('Обезличенные документы исходного фор�
 		store.openNewDocument('Demo')
 		const document = store.activeDocument!
 		confirmedDocument(document, 'fake-drive-id')
-		const data: DocumentData = JSON.parse(fixture('legacy-document.json'))
+		const data: DocumentData = normalizeMainStoreData(fixture('legacy-document.json'))
 		const domainStores = store.getDocumentStores(document.id)!
 		domainStores.projectsStore.init(data.projectsList)
 		domainStores.eventsStore.init(data)

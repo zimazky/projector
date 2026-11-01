@@ -14,8 +14,8 @@ export const EventSearchInput: React.FC = observer(() => {
 	// Создаём debounced функцию поиска один раз при монтировании
 	const debouncedSearch = useMemo(
 		() =>
-			debounce((query: string) => {
-				eventSearchStore.search(query)
+			debounce((query: string, request: number) => {
+				if (!eventSearchStore.search(query, request)) return
 				// Навигация к текущему результату после поиска
 				const current = eventSearchStore.currentResult
 				if (current) {
@@ -23,29 +23,32 @@ export const EventSearchInput: React.FC = observer(() => {
 					uiStore.forceUpdate()
 				}
 			}, DEBOUNCE_MS),
-		[]
+		[eventSearchStore, calendarStore, uiStore]
 	)
 
 	// Очистка при unmount
 	useEffect(() => {
-		return () => debouncedSearch.cancel()
-	}, [debouncedSearch])
+		return () => {
+			debouncedSearch.cancel()
+			eventSearchStore.clear()
+		}
+	}, [debouncedSearch, eventSearchStore])
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value
 		// Обновляем query немедленно для отображения в UI
-		eventSearchStore.setQuery(value)
+		const request = eventSearchStore.setQuery(value)
 		// Выполняем поиск с debounce
-		debouncedSearch(value)
+		debouncedSearch(value, request)
 	}
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === 'Enter') {
 			// При Enter выполняем поиск немедленно
 			debouncedSearch.cancel()
-			eventSearchStore.search(eventSearchStore.query)
-
-			if (e.shiftKey) {
+			if (eventSearchStore.isSearchPending) {
+				eventSearchStore.search(eventSearchStore.query)
+			} else if (e.shiftKey) {
 				eventSearchStore.prevResult()
 			} else {
 				eventSearchStore.nextResult()

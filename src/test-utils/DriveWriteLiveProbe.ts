@@ -132,7 +132,7 @@ export async function verifyDriveConditionalWrite(api: GoogleApiService): Promis
 		step = 'two-document-clients-open'
 		check('client-a-opened', (await a.openFromDrive(created.id)).status === 'opened')
 		check('client-b-opened', (await b.openFromDrive(created.id)).status === 'opened')
-		a.activeProjectsStore!.update('Repeat', { name: 'Client A' })
+		a.activeProjectsStore!.update(a.activeProjectsStore!.getByName('Repeat')!.id, { name: 'Client A' })
 		step = 'document-command-save'
 		const first = await a.saveDocument(a.activeDocumentId!)
 		report.operations.push({
@@ -143,7 +143,7 @@ export async function verifyDriveConditionalWrite(api: GoogleApiService): Promis
 		})
 		check('document-command-save', first.status === 'saved')
 		check('second-client-detects-change', (await b.checkDocument(b.activeDocumentId!)).status === 'conflict')
-		a.activeProjectsStore!.update('Client A', { name: 'Client A twice' })
+		a.activeProjectsStore!.update(a.activeProjectsStore!.getByName('Client A')!.id, { name: 'Client A twice' })
 		step = 'document-command-repeat'
 		const second = await a.saveDocument(a.activeDocumentId!)
 		report.operations.push({

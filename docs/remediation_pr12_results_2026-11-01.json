@@ -1,0 +1,116 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 12 / stage 6 / F11",
+  "baseCommit": "2aa711e769e18b26ffa9828588f50b805721531f",
+  "implementedLocally": true,
+  "committedByAgent": false,
+  "deployed": false,
+  "indexWrittenByAgent": false,
+  "formats": {
+    "document": 2,
+    "session": 3,
+    "indexedDatabase": 1,
+    "readDocumentVersions": [
+      "unversioned",
+      1,
+      2
+    ],
+    "readSessionVersions": [
+      "unversioned",
+      1,
+      2,
+      3
+    ]
+  },
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "e2eTypecheck": {
+      "command": "npm run typecheck:e2e",
+      "exitCode": 0
+    },
+    "lint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 8,
+      "artifact": "artifacts/remediation-pr12/lint.json",
+      "followup": "Corrected e2e import fixture checked separately and merged into final JSON"
+    },
+    "jest": {
+      "exitCode": 0,
+      "passed": 3711,
+      "failed": 0,
+      "suites": 24,
+      "artifact": "artifacts/remediation-pr12/jest.json"
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr12/webpack.json"
+    },
+    "chromium": {
+      "exitCode": 0,
+      "startTime": "2026-11-01T03:09:47.709Z",
+      "duration": 102602.283,
+      "expected": 30,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "artifact": "artifacts/remediation-pr12/playwright.json"
+    }
+  },
+  "regressionsAdded": {
+    "unit": 19,
+    "chromium": 2
+  },
+  "initialBrowserRun": {
+    "passed": 29,
+    "failed": 1,
+    "reason": "Old test appended a project without an ID to the new session export; fixture corrected",
+    "artifact": "artifacts/remediation-pr12/playwright-initial.json"
+  },
+  "dependenciesChanged": false,
+  "npmAuditRerun": false,
+  "realDriveVerificationRerun": false,
+  "nextStep": "F12: bounded balance calculation and shared cache invalidation/limits",
+  "hashes": {
+    "README.md": "b7fda9d82825cd6a680e3074ed73b4637fa115a1df4562c9aa2dbef0456a176f",
+    "docs/remediation_plan_2026-10-31_ru.md": "2b64b3f50e5853d73cecf2607f1e684939163532b3ae8f4a7f2fe0efd696ba94",
+    "e2e/indexed-storage.spec.ts": "6bc4f9e50b413dc0bff0134d5cfac329dc1dc2432db21e59e278bdfc2e0f5fcb",
+    "e2e/session-v2.spec.ts": "e1910d5987a8c3ab888649ad260da9b777505f319dce4ca636ddb99d69e1bfff",
+    "src/4-widgets/EventForm/EventForm.tsx": "af9da03dc300b96afc1d7a66b802a40454f98cbce304f3326f4ac641d5fd0083",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "4359814b609c6d945a96a587aeb73fa975b56873f7d371b6599bb2a902993d21",
+    "src/5-features/ProjectManager/ProjectEditor/ProjectEditorStore.ts": "e16922825020610abceb5df58775d01d4cf7d33b63b33090d017b50f7f310eea",
+    "src/5-features/ProjectManager/ProjectList/ProjectList.tsx": "0fb21494184e8005e7226f37c28701170b080d6b96a428f55d652acc5ce35bab",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "2477c67194a7dfb754ad3057f8d12fd1f764b7d5c188afb9bf9b70586283482d",
+    "src/6-entities/Document/model/DocumentDriveSync.spec.ts": "20deb9a0a0e6f03962aa0f5e942ab35d65513960e348db1dbccf5a812aaba1cf",
+    "src/6-entities/Document/model/DocumentFormat.ts": "ab36ee8064f6b6cd5b7c2a9b1e11af7cc59b9f49ba04205cd713e89fc5258457",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "6c84bebf59075235aba58e82c3901cb1dcdff97a4243fd56d9a9e1c1f7f1d1d4",
+    "src/6-entities/Document/model/DocumentPersistence.ts": "88d6df5fed33e5b6cc3d36a9400de93b67ffca98e8e414c499ca39f23b2bf616",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "a3423a7799e1299a7f942fff3367df4ff5e08ad396d02e9c8f2facabea953a7b",
+    "src/6-entities/Document/model/DocumentSessionFormat.spec.ts": "f4fe18ccfdeb5ce7a81aeeb6187921b3a15793999983200c3ed817311eb46951",
+    "src/6-entities/Document/model/DocumentSessionFormat.ts": "0fed5cc08f012a0cfd63b4047ecd7bda403ccbdb8e09e12a76bcca9322fa6411",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "c41e024abd7a7c8455f84ade52a714ccc3dac323b9f7c9946bbfdd459a885233",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "f720230164330ea6ac8a2dde278bdea60b1e2b7e7a806de82a7185d5e516f879",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "c1a6f8aafc4e572ef0c5d5ce04564ce3764eb9f5993f247dde3847cdac06156e",
+    "src/6-entities/Document/model/types.ts": "cb0947602200ca10abd9371c8a1470a65e9b0e7fa854363c39847860dde7c483",
+    "src/6-entities/Events/EventDto.ts": "b7e722994a68b27aad192e6d709726db34e398f1f51c44c60434b437e2d3cc9d",
+    "src/6-entities/Events/EventMappers.ts": "af9b79ea1b54a81619ea6460ded3fc55642b5877d0b6181f84db2c1f08da094b",
+    "src/6-entities/Events/IEventModel.ts": "b5aceaee04bbcd3d4ba118ea25dc24bc7ce18aa26070e679db2834b49fef0f27",
+    "src/6-entities/Events/RepeatableEventManager.ts": "c99d232e212a794016263162d32a831fe7748fd302295b3df65930189ccdab14",
+    "src/6-entities/Events/RepeatableEventModel.ts": "9cca57513560271f43962e63eb6643a5dc87d28732b77ada4da2739072ae4c24",
+    "src/6-entities/Events/SingleEventManager.ts": "5801da61854fbb7f55c82435693d1e128bb5dd10c5b8772095507a1646efc770",
+    "src/6-entities/Events/SingleEventModel.ts": "545eccbad47bffc214b3aa619b0dc4eea2c3b6fca2c22f8802b5c2bbecf14e12",
+    "src/6-entities/Projects/ProjectsStore.ts": "70ddc5ff42498d967e6289b12e40b9d757bd27665b838d1be64ac2917e91dc29",
+    "src/test-utils/DocumentFixtures.spec.ts": "a11c34f6af5cfcfff5a3422904cd1d14520a00ff93fd2c51e502dbcad8b82dd6",
+    "src/test-utils/DriveWriteLiveProbe.ts": "ac1006fa1f3e4d2376d9df208e5247eb79d3f5e9b7ce22b0316df47a283ccd41",
+    "docs/remediation_pr12_2026-11-01_ru.md": "6724704f748343c24cb37632dd855c8dfa2efdbc161fd0b5584b62987ef88a36",
+    "e2e/projects.spec.ts": "98d5a073c749954e1ff066ba1d23bcf124d1df35bd5a527ffa3fc981fbe758e8",
+    "src/6-entities/Projects/ProjectId.ts": "8b61231545b6a9287fbed40534428caf2b1b40907876cbc311962c6843997837",
+    "src/6-entities/Projects/ProjectsStore.spec.ts": "c3f4b716589cdfe21a56b935e4f1f73bc6811c14009e33a21498ff204efd791d"
+  }
+}

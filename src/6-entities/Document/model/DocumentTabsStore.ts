@@ -38,7 +38,7 @@ import { getIsDirty, getShouldWarnOnClose, getDocumentUiState } from './Document
 
 import { LocalDocumentPersistence, type DocumentPersistence } from './DocumentPersistence'
 import { serializeDocumentData } from './DocumentFormat'
-import { parseSessionSnapshot } from './DocumentSessionFormat'
+import { parseSessionSnapshot, SESSION_SCHEMA_VERSION } from './DocumentSessionFormat'
 import { storageDiagnostic, storageFailureMessage, type StorageDiagnostic } from './DocumentStorageDiagnostic'
 import type { LegacyStorageCleanupResult } from './DocumentStorageCleanup'
 
@@ -455,7 +455,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	updateDocumentData(documentId: DocumentId, data: DocumentData): void {
 		const session = this.state.documents.get(documentId)
 		if (!session || this.applyingContent.has(documentId)) return
-		const copy = cloneDocumentData(data)
+		const copy = cloneDocumentData(normalizeMainStoreData(data))
 		session.data = copy
 		session.sync.localVersion++
 		session.sync.localFingerprint = computeFingerprint(copy)
@@ -813,7 +813,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** Полный атомарный снимок метаданных и содержимого всех вкладок. */
 	private createLocalSnapshot(): DocumentTabsSnapshot {
 		return {
-			schemaVersion: 2,
+			schemaVersion: SESSION_SCHEMA_VERSION,
 			activeDocumentId: this.state.activeDocumentId,
 			documentOrder: this.state.documentOrder,
 			documents: this.state.documentOrder.map(id => {

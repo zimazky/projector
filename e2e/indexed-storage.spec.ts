@@ -125,7 +125,12 @@ test('импорт сохранённой сессии возвращает по
 	await page.getByRole('button', { name: 'Создать новый документ', exact: true }).click()
 	const exported = await readLocalSnapshot(page)
 	exported.documents[0].ref.name = 'Recovered export'
-	exported.documents[0].data.projectsList.push({ name: 'Latest exported project', color: 'black', background: 'white' })
+	exported.documents[0].data.projectsList.push({
+		id: 'exported-project',
+		name: 'Latest exported project',
+		color: 'black',
+		background: 'white'
+	})
 	await page.getByTestId('session-import-input').setInputFiles({
 		name: 'projector-session.json',
 		mimeType: 'application/json',

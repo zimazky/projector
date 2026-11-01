@@ -1,4 +1,4 @@
-import { parseSessionSnapshot } from './DocumentSessionFormat'
+import { parseSessionSnapshot, SESSION_SCHEMA_VERSION } from './DocumentSessionFormat'
 import type { DocumentTabsSnapshot } from './DocumentTabsStore.types'
 import { DocumentPersistenceError, type StorageOperation } from './DocumentStorageDiagnostic'
 import { IndexedDocumentStorage } from './IndexedDocumentStorage'
@@ -31,7 +31,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 				if (current !== undefined) {
 					try {
 						const snapshot = parseSessionSnapshot(current, () => null)
-						if (JSON.parse(current).schemaVersion !== 2)
+						if (JSON.parse(current).schemaVersion !== SESSION_SCHEMA_VERSION)
 							this.migrationSource = JSON.stringify({ indexedDB: { current } })
 						return snapshot
 					} catch (error: unknown) {
@@ -67,7 +67,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 			sources['document_' + id] = value
 			return value
 		})
-		if (JSON.parse(json).schemaVersion !== 2)
+		if (JSON.parse(json).schemaVersion !== SESSION_SCHEMA_VERSION)
 			this.legacySource = JSON.stringify({ documentTabs: json, documents: sources })
 		return snapshot
 	}
@@ -168,7 +168,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 			return this.enqueue(() =>
 				new IndexedDocumentStorage(factory).write(
 					JSON.stringify({
-						schemaVersion: 2,
+						schemaVersion: SESSION_SCHEMA_VERSION,
 						documents: [],
 						documentOrder: [],
 						activeDocumentId: null,

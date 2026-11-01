@@ -1,4 +1,5 @@
 import { parseDocumentData, record } from './DocumentFormat'
+import { computeFingerprint } from './DocumentSyncFingerprint'
 import {
 	createInitialSyncSnapshot,
 	type DocumentTabsSnapshot,
@@ -6,6 +7,7 @@ import {
 } from './DocumentTabsStore.types'
 
 export class SessionFormatError extends Error {}
+export const SESSION_SCHEMA_VERSION = 3
 function invalid(): never {
 	throw new SessionFormatError('Неверный снимок сессии. Исходные данные сохранены; экспортируйте резервную копию.')
 }
@@ -18,9 +20,10 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 	try {
 		const raw: unknown = JSON.parse(json)
 		if (!record(raw)) return invalid()
-		if (raw.schemaVersion !== undefined && raw.schemaVersion !== 1 && raw.schemaVersion !== 2) return invalid()
+		if (raw.schemaVersion !== undefined && ![1, 2, SESSION_SCHEMA_VERSION].includes(raw.schemaVersion as number))
+			return invalid()
 		const legacy = raw.schemaVersion === undefined
-		const oldState = raw.schemaVersion !== 2
+		const oldState = raw.schemaVersion === undefined || raw.schemaVersion === 1
 		if (!Array.isArray(raw.documents) || !Array.isArray(raw.documentOrder) || !time(raw.savedAt)) return invalid()
 		const ids = new Set<string>()
 		const documents = raw.documents.map(value => {
@@ -97,7 +100,18 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				if (!record(old) || !time(old.savedAt)) return invalid()
 				data = old.data
 			}
-			const parsed = parseDocumentData(!legacy && record(data) ? { schemaVersion: 1, ...data } : data)
+			if (
+				raw.schemaVersion === SESSION_SCHEMA_VERSION &&
+				record(data) &&
+				data.schemaVersion !== undefined &&
+				data.schemaVersion !== 2
+			)
+				return invalid()
+			const parsed = parseDocumentData(
+				!legacy && record(data)
+					? { schemaVersion: raw.schemaVersion === SESSION_SCHEMA_VERSION ? 2 : 1, ...data }
+					: data
+			)
 			const source = value.sync as Partial<DocumentSyncSnapshot> | undefined
 			const sync = createInitialSyncSnapshot(ref.fileId ? 'restored-local' : 'new-local')
 			// Только известные поля: state/operation/error не переносятся в новый снимок.
@@ -105,6 +119,18 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				if (source?.[key] !== undefined) Object.assign(sync, { [key]: source[key] })
 			}
 			if (source?.serverModifiedAt !== undefined) sync.serverModifiedAt = source.serverModifiedAt
+			if (raw.schemaVersion !== SESSION_SCHEMA_VERSION) {
+				// Переносим только точные JSON-базы; старые короткие хэши не доказывают равенство.
+				for (const key of ['localFingerprint', 'baseFingerprint', 'remoteFingerprint'] as const) {
+					if (!sync[key]) continue
+					try {
+						sync[key] = computeFingerprint(parseDocumentData(JSON.parse(sync[key]!)))
+					} catch {
+						sync[key] = null
+					}
+				}
+				if (source?.baseFingerprint && sync.baseFingerprint === null) sync.baseLocalVersion = null
+			}
 			if (!Number.isSafeInteger(source?.localVersion)) {
 				sync.localVersion = state?.isDirty || state?.hasUnsyncedChanges ? 1 : 0
 				sync.baseLocalVersion = null
@@ -140,7 +166,7 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 		)
 			return invalid()
 		return {
-			schemaVersion: 2,
+			schemaVersion: SESSION_SCHEMA_VERSION,
 			documents,
 			documentOrder: [...order],
 			activeDocumentId: raw.activeDocumentId,

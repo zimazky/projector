@@ -126,7 +126,7 @@ export type DocumentSession = {
 
 /** Формат сессии независим от формата документов Drive. Старые версии читает миграция. */
 export type DocumentTabsSnapshot = {
-	schemaVersion: 2
+	schemaVersion: 3
 	activeDocumentId: DocumentId | null
 	documentOrder: DocumentId[]
 	documents: Array<{

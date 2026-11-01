@@ -12,6 +12,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
 import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { DEFAULT_PROJECT_ID } from 'src/6-entities/Projects/ProjectId'
 import { EventDto } from 'src/6-entities/Events/EventDto'
 
 import YesCancelConfirmation from 'src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation'
@@ -21,7 +22,7 @@ import styles from './EventForm.module.css'
 interface Fields {
 	name: string
 	comment: string
-	project: string
+	projectId: string
 	repeat: string
 	start: string
 	time: string
@@ -52,7 +53,10 @@ const EventForm: React.FC = () => {
 		defaultValues: {
 			name: eventFormStore.eventData.name,
 			comment: eventFormStore.eventData.comment,
-			project: eventFormStore.eventData.project,
+			projectId:
+				eventFormStore.eventData.projectId ??
+				projectsStore?.getByName(eventFormStore.eventData.project || 'Default')?.id ??
+				DEFAULT_PROJECT_ID,
 			repeat: eventFormStore.eventData.repeat,
 			start: eventFormStore.eventData.start,
 			time: eventFormStore.eventData.time,
@@ -85,7 +89,7 @@ const EventForm: React.FC = () => {
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
+			projectId: e.projectId,
 			repeat: e.repeat,
 			start: e.start,
 			end: e.end,
@@ -105,7 +109,7 @@ const EventForm: React.FC = () => {
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
+			projectId: e.projectId,
 			start: e.start,
 			end: e.end,
 			time: e.time,
@@ -126,7 +130,7 @@ const EventForm: React.FC = () => {
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
+			projectId: e.projectId,
 			repeat: e.repeat,
 			start: e.start,
 			end: e.end,
@@ -144,7 +148,7 @@ const EventForm: React.FC = () => {
 		const eventDto: EventDto = {
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
+			projectId: e.projectId,
 			repeat: e.repeat,
 			start: e.start,
 			end: e.end,
@@ -212,14 +216,14 @@ const EventForm: React.FC = () => {
 					<TextArea label="Comment" {...register('comment')} />
 					<Select
 						label="Project"
-						error={!!errors.project}
+						error={!!errors.projectId}
 						options={
 							projectsStore?.list.map(p => {
-								return { value: p.name, label: p.name }
+								return { value: p.id, label: p.name }
 							}) ?? []
 						}
-						value={watch('project')}
-						{...register('project', { required: true })}
+						value={watch('projectId')}
+						{...register('projectId', { required: true })}
 					/>
 					<div className={styles.grid}>
 						{isRepeat || (

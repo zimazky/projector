@@ -1,0 +1,68 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 11 / stage 6 / F10",
+  "baseCommit": "2aa711e769e18b26ffa9828588f50b805721531f",
+  "implementedLocally": true,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "e2eTypecheck": {
+      "command": "npm run typecheck:e2e",
+      "exitCode": 0
+    },
+    "lint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 8,
+      "artifact": "artifacts/remediation-pr11/lint.json"
+    },
+    "jest": {
+      "exitCode": 0,
+      "passed": 3692,
+      "failed": 0,
+      "suites": 23,
+      "artifact": "artifacts/remediation-pr11/jest.json"
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr11/webpack.json"
+    },
+    "chromium": {
+      "exitCode": 0,
+      "startTime": "2026-11-01T02:48:42.763Z",
+      "duration": 80296.38,
+      "expected": 28,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "artifact": "artifacts/remediation-pr11/playwright.json"
+    }
+  },
+  "regressionsAdded": {
+    "unit": 10,
+    "chromium": 3
+  },
+  "formats": {
+    "driveDocument": 1,
+    "session": 2,
+    "changed": false
+  },
+  "dependenciesChanged": false,
+  "npmAuditRerun": false,
+  "nextStep": "F11: stable project IDs and reference migration",
+  "hashes": {
+    "src/5-features/EventSearch/EventSearchStore.ts": "011d9ae16a7d2791d80c68d908670f0dcb35a620c734b7e81b0aed48d8e0fab1",
+    "src/5-features/EventSearch/EventSearchInput.tsx": "c8b8e9d9fcf2a9d13f801ef8e743adc79bdf3783e8b4fb3854e2e03f18f52c3c",
+    "src/5-features/EventSearch/EventSearchStore.spec.ts": "85e6ec0304efdf3a85ed513ea842186114a4c90aa3797327215fe306a2858a07",
+    "e2e/event-search.spec.ts": "8f962119dfbfd925aab7fa123e0d52c4dfd0021a04b5f479c46184f94bf1cb56",
+    "docs/remediation_plan_2026-10-31_ru.md": "a04931bc5a9bd2ecd23e85bde1c000403c04382a683cb49ea28ca201736b8e39",
+    "docs/remediation_pr11_2026-11-01_ru.md": "c1a0dfb6e56c0e6fd01cd309c1818e403d509d5ec493c0a84cddd3f55d1386ca"
+  }
+}

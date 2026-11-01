@@ -8,8 +8,6 @@ export type SingleEventModel = {
 	name: string
 	/** Комментарий */
 	comment: string
-	/** Наименование проекта */
-	project: string
 	/** Дата события, указывает на начало дня по местному времени */
 	start: timestamp
 	/** Время начала события, количество секунд с начала дня. null - неопределено */
@@ -23,8 +21,8 @@ export type SingleEventModel = {
 	/** Списание средств со счета */
 	debit: number
 
-	/** Индекс записи проекта */
-	projectId: number
+	/** Стабильный идентификатор проекта */
+	projectId: string
 	/** Длительность события в днях */
 	days: number
 }

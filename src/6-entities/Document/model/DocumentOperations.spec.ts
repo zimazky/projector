@@ -8,7 +8,7 @@ import { getIsDirty } from './DocumentSyncSelectors'
 import type { DocumentData, DocumentSession } from './DocumentTabsStore.types'
 
 const data = (name: string): DocumentData => ({
-	projectsList: [{ name, color: 'black', background: 'white' }],
+	projectsList: [{ id: 'fixture-project', name, color: 'black', background: 'white' }],
 	completedList: [],
 	plannedList: []
 })
@@ -33,8 +33,8 @@ function setup() {
 /** Правка через настоящий доменный стор, без ручной установки legacy-флагов. */
 function edit(store: DocumentTabsStore, document: DocumentSession, name: string) {
 	const projects = store.getDocumentStores(document.id)!.projectsStore
-	if (projects.exists('Aa')) projects.update('Aa', { name })
-	else projects.add(name, 'black', 'white')
+	if (projects.exists('Aa')) projects.update(projects.getByName('Aa')!.id, { name })
+	else projects.init(data(name).projectsList)
 }
 
 describe('Адресация асинхронных команд и версии локальных данных', () => {
@@ -52,7 +52,7 @@ describe('Адресация асинхронных команд и версии
 		const b = store.activeDocument!
 		edit(store, a, 'BB')
 		expect(storedDocument(a.id)!.data).toEqual(data('BB'))
-		expect(JSON.parse(api.updateFileContent.mock.calls[0][1])).toEqual({ schemaVersion: 1, ...data('Aa') })
+		expect(JSON.parse(api.updateFileContent.mock.calls[0][1])).toEqual({ schemaVersion: 2, ...data('Aa') })
 		response.resolve(success())
 		expect(await saving).toEqual({ status: 'saved' })
 		expect(a.sync.baseLocalVersion).toBe(sentVersion)
@@ -84,7 +84,7 @@ describe('Адресация асинхронных команд и версии
 		await Promise.all([first, second])
 		expect(getIsDirty(a)).toBe(true)
 		await store.saveDocument(a.id)
-		expect(JSON.parse(api.updateFileContent.mock.calls[1][1])).toEqual({ schemaVersion: 1, ...data('BB') })
+		expect(JSON.parse(api.updateFileContent.mock.calls[1][1])).toEqual({ schemaVersion: 2, ...data('BB') })
 		expect(getIsDirty(a)).toBe(false)
 	})
 
@@ -210,7 +210,7 @@ describe('Адресация асинхронных команд и версии
 		const document = store.activeDocument!
 		// Повторная активация создаёт доменные сторы до завершения сети.
 		store.activateDocument(document.id)
-		store.activeProjectsStore!.add('Local while opening', 'black', 'white')
+		store.activeProjectsStore!.init(data('Local while opening').projectsList)
 		response.resolve(data('Remote'))
 		expect((await opening).status).toBe('conflict')
 		expect(document.ref!.name).toBe('loading')
@@ -319,7 +319,9 @@ describe('Адресация асинхронных команд и версии
 		expect(snapshot.data).toEqual(data('Aa'))
 		expect(computeFingerprint(data('Aa'))).not.toBe(computeFingerprint(data('BB')))
 		expect(getIsDirty(a)).toBe(true)
-		store.getDocumentStores(a.id)!.projectsStore.update('BB', { name: 'Aa' })
+		store
+			.getDocumentStores(a.id)!
+			.projectsStore.update(store.getDocumentStores(a.id)!.projectsStore.getByName('BB')!.id, { name: 'Aa' })
 		expect(getIsDirty(a)).toBe(false)
 	})
 

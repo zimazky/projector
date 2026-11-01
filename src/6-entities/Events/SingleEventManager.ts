@@ -30,14 +30,12 @@ export class SingleEventManager {
 	 * @param isFinal - Если true, вызывает onChange после добавления
 	 */
 	addCompleted(e: IEventModel, isFinal: boolean = true) {
-		let projectId = this.projects.getIdWithIncEventsCount(e.project)
-		if (projectId < 0) projectId = 0
+		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.completed.push({
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
 			projectId: projectId,
 			start: e.start,
 			time: e.time,
@@ -65,14 +63,12 @@ export class SingleEventManager {
 	 * @param isFinal - Если true, вызывает onChange после добавления
 	 */
 	addPlanned(e: IEventModel, isFinal: boolean = true) {
-		let projectId = this.projects.getIdWithIncEventsCount(e.project)
-		if (projectId < 0) projectId = 0
+		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.planned.push({
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
 			projectId: projectId,
 			start: e.start,
 			time: e.time,
@@ -100,6 +96,9 @@ export class SingleEventManager {
 	 * @returns true, если событие было удалено
 	 */
 	delete(id: number | null): boolean {
+		for (const event of [...this.completed, ...this.planned]) {
+			if (event.id === id) this.projects.changeEventsCount(event.projectId, -1)
+		}
 		const initialCompletedLength = this.completed.length
 		const initialPlannedLength = this.planned.length
 
@@ -250,6 +249,7 @@ export class SingleEventManager {
 	 * Сбрасывает списки событий.
 	 */
 	reset() {
+		for (const event of [...this.completed, ...this.planned]) this.projects.changeEventsCount(event.projectId, -1)
 		this.completed = []
 		this.planned = []
 	}

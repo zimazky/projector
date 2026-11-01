@@ -116,7 +116,7 @@ describe('Общая команда закрытия документа', () => 
 		const data = (name: string) => ({
 			projectsList: [],
 			completedList: [],
-			plannedList: [{ name, start: '2026.10.31' }]
+			plannedList: [{ name, start: '2026.10.31', projectId: 'default' }]
 		})
 		store.updateActiveDocumentData(data('Aa'))
 		store.getDocumentStores(document.id)!.eventsStore.init(data('Aa'))

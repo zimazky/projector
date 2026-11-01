@@ -38,7 +38,7 @@ describe('Сохранить как и конфликт имени', () => {
 		projects.add('Aa', 'black', 'white')
 		const completion = store.openForDocument(document.id)
 		const sentVersion = document.sync.localVersion
-		projects.update('Aa', { name: 'BB' })
+		projects.update(projects.getByName('Aa')!.id, { name: 'BB' })
 		documents.openNewDocument('B')
 		const b = documents.activeDocument!
 		api.saveFile.mockResolvedValue(success)

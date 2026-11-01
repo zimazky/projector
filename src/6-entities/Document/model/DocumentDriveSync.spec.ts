@@ -7,7 +7,7 @@ import { deferred } from 'src/test-utils/deferred'
 import type { DocumentData } from './DocumentTabsStore.types'
 
 const data = (name: string): DocumentData => ({
-	projectsList: [{ name, color: 'black', background: 'white' }],
+	projectsList: [{ id: 'fixture-project', name, color: 'black', background: 'white' }],
 	completedList: [],
 	plannedList: []
 })
@@ -92,7 +92,9 @@ describe('Серверная база и безопасные версии Drive
 		const server = drive(),
 			store = await client(server),
 			doc = store.activeDocument!
-		store.getDocumentStores(doc.id)!.projectsStore.update('Base', { name: 'Local' })
+		store
+			.getDocumentStores(doc.id)!
+			.projectsStore.update(store.getDocumentStores(doc.id)!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		server.api.getFileMetadata.mockClear()
 		server.update('Remote')
 		const result = await store.saveDocument(doc.id)
@@ -107,12 +109,18 @@ describe('Серверная база и безопасные версии Drive
 		const server = drive(),
 			a = await client(server),
 			b = await client(server)
-		a.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local A' })
-		b.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local B' })
+		a.getActiveDocumentStores()!.projectsStore.update(
+			a.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id,
+			{ name: 'Local A' }
+		)
+		b.getActiveDocumentStores()!.projectsStore.update(
+			b.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id,
+			{ name: 'Local B' }
+		)
 		expect((await a.saveDocument(a.activeDocumentId!)).status).toBe('saved')
 		expect((await b.saveDocument(b.activeDocumentId!)).status).toBe('conflict')
 		expect(server.files.size).toBe(1)
-		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Local A') })
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 2, ...data('Local A') })
 		expect(a.activeDocument!.ref!.fileId).toBe('source')
 		expect(b.activeDocument!.ref!.fileId).toBe('source')
 		expect(b.activeDocument!.data).toEqual(data('Local B'))
@@ -123,7 +131,9 @@ describe('Серверная база и безопасные версии Drive
 	it('гонка после проверки до условного обновления возвращает конфликт, не теряя ни одну сторону', async () => {
 		const server = drive(),
 			store = await client(server)
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		const update = server.api.updateFileContent.getMockImplementation()!
 		server.api.updateFileContent.mockImplementationOnce(async (...args) => {
 			server.update('Concurrent')
@@ -141,13 +151,17 @@ describe('Серверная база и безопасные версии Drive
 		const server = drive(),
 			store = await client(server)
 		const doc = store.activeDocument!
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'First' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'First' })
 		expect((await store.saveDocument(doc.id)).status).toBe('saved')
 		server.files.get('source')!.metadata.version = '3'
-		store.getActiveDocumentStores()!.projectsStore.update('First', { name: 'Second' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('First')!.id, { name: 'Second' })
 		expect((await store.saveDocument(doc.id)).status).toBe('saved')
 		expect(server.files.get('source')!.metadata.version).toBe('4')
-		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Second') })
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 2, ...data('Second') })
 		expect(doc.data).toEqual(data('Second'))
 		expect(server.files.size).toBe(1)
 	})
@@ -168,9 +182,13 @@ describe('Серверная база и безопасные версии Drive
 		server.files.get('source')!.metadata.name = 'Demo (версия previous).json'
 		const store = await client(server)
 		const ref = { ...store.activeDocument!.ref! }
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'First' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'First' })
 		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('saved')
-		store.getActiveDocumentStores()!.projectsStore.update('First', { name: 'Second' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('First')!.id, { name: 'Second' })
 		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('saved')
 		expect(server.files.size).toBe(1)
 		expect(store.activeDocument!.ref).toEqual({ ...ref, space: 'drive' })
@@ -181,7 +199,9 @@ describe('Серверная база и безопасные версии Drive
 	test.each(['local', 'remote'] as const)('решение %s проверяет конкретную версию повторно', async choice => {
 		const server = drive(),
 			store = await client(server)
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		server.update('Remote 1')
 		const check = await store.checkDocument(store.activeDocumentId!)
 		if (check.status !== 'conflict') throw new Error('Expected conflict')
@@ -196,14 +216,16 @@ describe('Серверная база и безопасные версии Drive
 	it('явный выбор локальной версии обновляет проверенный исходный файл', async () => {
 		const server = drive(),
 			store = await client(server)
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		server.update('Remote')
 		const check = await store.checkDocument(store.activeDocumentId!)
 		if (check.status !== 'conflict') throw new Error('Expected conflict')
 		expect((await store.resolveDocumentConflict(check.context, 'local')).status).toBe('saved')
 		expect(server.files.size).toBe(1)
 		expect(store.activeDocument!.ref!.fileId).toBe('source')
-		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Local') })
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 2, ...data('Local') })
 	})
 
 	it('чтение повторяется при смене версии между metadata и content', async () => {
@@ -248,7 +270,9 @@ describe('Серверная база и безопасные версии Drive
 	it('пакетный check выбирает восстановленные dirty-документы по модели, а не legacy offline', async () => {
 		const server = drive(),
 			original = await client(server)
-		original.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		original
+			.getActiveDocumentStores()!
+			.projectsStore.update(original.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		const restored = new DocumentTabsStore(server.api as any)
 		await restored.restoreFromLocalStorage()
 		expect(getDocumentUiState(restored.activeDocument!).status).toBe('dirty')
@@ -294,7 +318,9 @@ describe('Серверная база и безопасные версии Drive
 	it('unknown-ошибка не скрывает dirty и не запрещает повторную попытку', async () => {
 		const server = drive(),
 			store = await client(server)
-		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		store
+			.getActiveDocumentStores()!
+			.projectsStore.update(store.getActiveDocumentStores()!.projectsStore.getByName('Base')!.id, { name: 'Local' })
 		server.api.getFileMetadata.mockRejectedValueOnce({ result: { error: { message: 'Offline' } } })
 		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('failed')
 		const ui = getDocumentUiState(store.activeDocument!)

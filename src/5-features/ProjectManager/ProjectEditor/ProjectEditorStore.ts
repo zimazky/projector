@@ -257,6 +257,8 @@ class ProjectEditorStore {
 	errors: ProjectFormErrors = {}
 	/** Исходное имя проекта (для режима edit) */
 	private originalName: string = ''
+	private originalId = ''
+	private sourceDocument: DocumentTabsStore['activeDocument'] = null
 
 	/**
 	 * Получить цвет для ColorPicker (конвертирует алиасы в HEX)
@@ -282,6 +284,7 @@ class ProjectEditorStore {
 
 	/** Открыть форму для добавления нового проекта */
 	openAdd() {
+		this.sourceDocument = this.documentTabsStore.activeDocument
 		this.mode = 'add'
 		this.formData = { name: '', color: '#000000', background: '#ffffff' }
 		this.errors = {}
@@ -293,13 +296,15 @@ class ProjectEditorStore {
 	 * Открыть форму для редактирования существующего проекта
 	 * @param projectName - наименование проекта для редактирования
 	 */
-	openEdit(projectName: string) {
+	openEdit(projectId: string) {
 		if (!this.projectsStore) return
-		const project = this.projectsStore.getByName(projectName)
+		const project = this.projectsStore.getById(projectId)
 		if (!project) return
 
 		this.mode = 'edit'
-		this.originalName = projectName
+		this.sourceDocument = this.documentTabsStore.activeDocument
+		this.originalName = project.name
+		this.originalId = project.id
 		// Сохраняем исходные значения (алиасы или HEX)
 		this.formData = {
 			name: project.name,
@@ -368,6 +373,10 @@ class ProjectEditorStore {
 	 * @returns true если успешно сохранено
 	 */
 	save(): boolean {
+		if (this.sourceDocument !== this.documentTabsStore.activeDocument) {
+			this.errors.name = 'Document changed. Reopen the project editor.'
+			return false
+		}
 		if (!this.validate()) return false
 		if (!this.projectsStore) return false
 
@@ -384,7 +393,7 @@ class ProjectEditorStore {
 			this.errors.name = 'Failed to add project'
 			return false
 		} else {
-			const success = this.projectsStore.update(this.originalName, {
+			const success = this.projectsStore.update(this.originalId, {
 				name,
 				color,
 				background

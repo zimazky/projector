@@ -1,4 +1,4 @@
-import { makeAutoObservable } from 'mobx'
+import { comparer, makeAutoObservable, reaction, type IReactionDisposer } from 'mobx'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron, { ParsedSchedule } from 'src/7-shared/libs/ZCron/ZCron'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
@@ -7,6 +7,8 @@ import { SingleEventModel } from 'src/6-entities/Events/SingleEventModel'
 import type { DocumentTabsStore } from 'src/6-entities/Document/model'
 
 export interface SearchResult {
+	documentId: string | null
+	documentVersion: number
 	eventId: number
 	timestamp: timestamp
 	name: string
@@ -31,48 +33,62 @@ export class EventSearchStore {
 	/** Признак активности поиска */
 	isActive: boolean = false
 
-	/** Метка времени самого раннего отображаемого результата */
-	private earliestFound: timestamp = 0 as timestamp
-	/** Метка времени самого позднего отображаемого результата */
-	private latestFound: timestamp = 0 as timestamp
-
 	/** Флаги достижения границ (нет больше событий) */
 	hasMoreBefore: boolean = true
 	hasMoreAfter: boolean = true
 
 	private documentTabsStore: DocumentTabsStore
+	private stopWatchingDocument: IReactionDisposer | null = null
+	private requestSequence = 0
+	/** Ввод изменился, поиск ещё ожидает debounce или Enter. */
+	isSearchPending = false
 	/** Кэш скомпилированных расписаний */
 	private scheduleCache: Map<string, ParsedSchedule> = new Map()
 
 	constructor(documentTabsStore: DocumentTabsStore) {
 		this.documentTabsStore = documentTabsStore
-		makeAutoObservable(this)
+		makeAutoObservable<this, 'stopWatchingDocument' | 'requestSequence'>(this, {
+			stopWatchingDocument: false,
+			requestSequence: false
+		})
 	}
 
 	private get eventsStore(): EventsStore | null {
 		return this.documentTabsStore.activeEventsStore
 	}
 
-	/**
-	 * Установить поисковый запрос (без выполнения поиска).
-	 * Используется для немедленного обновления UI.
-	 */
-	setQuery(query: string) {
-		this.query = query.trim().toLowerCase()
+	/** Смена сессии/сторов или локальной версии отменяет поиск, включая debounce. */
+	private watchDocument() {
+		this.stopWatchingDocument?.()
+		this.stopWatchingDocument = reaction(
+			() => [
+				this.documentTabsStore.activeDocument,
+				this.documentTabsStore.activeDocument?.sync.localVersion,
+				this.eventsStore
+			],
+			() => this.clear(),
+			{ equals: comparer.shallow }
+		)
 	}
 
-	/**
-	 * Выполнить поиск.
-	 */
-	search(query: string) {
+	/** Обновить поле ввода и выдать номер запроса для отложенного поиска. */
+	setQuery(query: string): number {
+		this.performClear(false)
 		this.query = query.trim().toLowerCase()
+		this.isSearchPending = !!this.query
+		if (this.query) this.watchDocument()
+		return this.requestSequence
+	}
 
-		if (!this.query) {
-			this.performClear()
-			return
-		}
-
+	/** Устаревший отложенный запрос не должен запускаться в другой вкладке. */
+	search(query: string, request?: number): boolean {
+		if (request !== undefined && request !== this.requestSequence) return false
+		this.performClear(false)
+		this.query = query.trim().toLowerCase()
+		if (!this.query) return true
+		this.watchDocument()
 		this.performSearch()
+		return true
 	}
 
 	/** Фактическое выполнение поиска (без debounce) */
@@ -110,77 +126,60 @@ export class EventSearchStore {
 			return
 		}
 
-		// Запоминаем границы отображаемых результатов
-		this.earliestFound = this.results[0].timestamp
-		this.latestFound = this.results[this.results.length - 1].timestamp
-
 		// Устанавливаем индекс на первое событие сегодня или позже
 		const todayIndex = this.results.findIndex(r => r.timestamp >= today)
 		this.currentIndex = todayIndex >= 0 ? todayIndex : Math.max(0, this.results.length - 1)
 	}
 
-	/** Найти ближайшие N событий ПОСЛЕ указанной даты (включительно) */
-	private findNearestAfter(fromTimestamp: timestamp, limit: number): SearchResult[] {
-		if (!this.eventsStore) return []
-		const candidates: SearchResult[] = []
-
-		// 1. Одиночные события (планируемые)
-		for (const event of this.eventsStore.planned) {
-			if (event.start >= fromTimestamp && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, false))
-			}
-		}
-
-		// 2. Завершённые события
-		for (const event of this.eventsStore.completed) {
-			if (event.start >= fromTimestamp && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, true))
-			}
-		}
-
-		// 3. Повторяемые события — инкрементальная генерация только limit вхождений
-		for (const event of this.eventsStore.plannedRepeatable) {
-			if (this.matchesEvent(event)) {
-				// Ищем с дня перед fromTimestamp, чтобы включить совпадения на fromTimestamp
-				const searchFrom = DateTime.getBeginDayTimestamp(fromTimestamp) - 86400
-				const occurrences = this.getOccurrencesAfter(event, searchFrom, limit)
-				candidates.push(...occurrences)
-			}
-		}
-
-		// Сортируем и берём limit ближайших
-		return candidates.sort((a, b) => a.timestamp - b.timestamp).slice(0, limit)
+	/** Полный порядок вхождений внутри одной версии документа. */
+	private compareResults(a: SearchResult, b: SearchResult): number {
+		return (
+			a.timestamp - b.timestamp ||
+			a.eventId - b.eventId ||
+			Number(a.repeatable) - Number(b.repeatable) ||
+			Number(a.completed) - Number(b.completed)
+		)
 	}
 
-	/** Найти ближайшие N событий ДО указанной даты (строго до) */
-	private findNearestBefore(beforeTimestamp: timestamp, limit: number): SearchResult[] {
-		if (!this.eventsStore) return []
+	private findNearestAfter(from: timestamp | SearchResult, limit: number): SearchResult[] {
+		return this.findNearest(from, limit, 1)
+	}
+
+	private findNearestBefore(from: timestamp | SearchResult, limit: number): SearchResult[] {
+		return this.findNearest(from, limit, -1)
+	}
+
+	/** Дата задаёт начальное окно; результат задаёт исключающий составной курсор. */
+	private findNearest(from: timestamp | SearchResult, limit: number, direction: 1 | -1): SearchResult[] {
+		const events = this.eventsStore
+		if (!events) return []
+		const ts = typeof from === 'number' ? from : from.timestamp
+		const accepts = (result: SearchResult) => {
+			if (typeof from !== 'number') return this.compareResults(result, from) * direction > 0
+			return direction === 1 ? result.timestamp >= ts : result.timestamp < ts
+		}
 		const candidates: SearchResult[] = []
-
-		// 1. Одиночные события (планируемые)
-		for (const event of this.eventsStore.planned) {
-			if (event.start < beforeTimestamp && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, false))
+		for (const [list, completed] of [
+			[events.planned, false],
+			[events.completed, true]
+		] as const) {
+			for (const event of list) {
+				if (!this.matchesEvent(event)) continue
+				const result = this.singleEventToResult(event, completed)
+				if (accepts(result)) candidates.push(result)
 			}
 		}
-
-		// 2. Завершённые события
-		for (const event of this.eventsStore.completed) {
-			if (event.start < beforeTimestamp && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, true))
-			}
+		for (const event of events.plannedRepeatable) {
+			if (!this.matchesEvent(event)) continue
+			// Включаем день курсора, затем отсекаем показанные вхождения по полному порядку.
+			// Дополнительный кандидат компенсирует отсечение самой серии на границе.
+			const occurrences =
+				direction === 1
+					? this.getOccurrencesAfter(event, DateTime.getBeginDayTimestamp(ts) - 86400, limit + 1)
+					: this.getOccurrencesBefore(event, typeof from === 'number' ? ts : ts + 86400, limit + 1)
+			candidates.push(...occurrences.filter(accepts))
 		}
-
-		// 3. Повторяемые события — инкрементальная генерация назад
-		for (const event of this.eventsStore.plannedRepeatable) {
-			if (this.matchesEvent(event)) {
-				const occurrences = this.getOccurrencesBefore(event, beforeTimestamp, limit)
-				candidates.push(...occurrences)
-			}
-		}
-
-		// Сортируем и берём limit ближайших (с конца, т.к. ищем назад)
-		return candidates.sort((a, b) => b.timestamp - a.timestamp).slice(0, limit)
+		return candidates.sort((a, b) => this.compareResults(a, b) * direction).slice(0, limit)
 	}
 
 	/** Получить N вхождений повторяемого события ПОСЛЕ указанной даты */
@@ -226,7 +225,7 @@ export class EventSearchStore {
 		}
 
 		const results: SearchResult[] = []
-		let current: timestamp | null = beforeTimestamp
+		let current: timestamp | null = event.end ? Math.min(beforeTimestamp, event.end) : beforeTimestamp
 
 		// Находим вхождения, идя назад от beforeTimestamp
 		while (current !== null && results.length < limit) {
@@ -265,6 +264,8 @@ export class EventSearchStore {
 	/** Преобразовать одиночное событие в результат поиска */
 	private singleEventToResult(event: SingleEventModel, completed: boolean): SearchResult {
 		return {
+			documentId: this.documentTabsStore.activeDocumentId ?? null,
+			documentVersion: this.documentTabsStore.activeDocument?.sync.localVersion ?? 0,
 			eventId: event.id,
 			timestamp: event.start,
 			name: event.name,
@@ -276,6 +277,8 @@ export class EventSearchStore {
 	/** Преобразовать повторяемое событие в результат поиска */
 	private repeatableEventToResult(event: RepeatableEventModel, timestamp: timestamp): SearchResult {
 		return {
+			documentId: this.documentTabsStore.activeDocumentId ?? null,
+			documentVersion: this.documentTabsStore.activeDocument?.sync.localVersion ?? 0,
 			eventId: event.id,
 			timestamp,
 			name: event.name,
@@ -312,121 +315,22 @@ export class EventSearchStore {
 		}
 	}
 
-	/** Загрузить ещё результаты в будущем (инкрементально) */
+	/** Строго после полного курсора последнего вхождения. */
 	private loadMoreAfter() {
-		if (!this.hasMoreAfter || !this.query || !this.eventsStore) return
-
-		// Ищем только COUNT_LOAD + 1 событий строго ПОСЛЕ latestFound
-		const candidates: SearchResult[] = []
-
-		// Одиночные события
-		for (const event of this.eventsStore.planned) {
-			if (event.start > this.latestFound && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, false))
-			}
-		}
-		for (const event of this.eventsStore.completed) {
-			if (event.start > this.latestFound && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, true))
-			}
-		}
-
-		// Повторяемые события
-		for (const event of this.eventsStore.plannedRepeatable) {
-			if (this.matchesEvent(event)) {
-				const occurrences = this.getOccurrencesAfter(event, this.latestFound, COUNT_LOAD + 1)
-				candidates.push(...occurrences)
-			}
-		}
-
-		const newResults = candidates.sort((a, b) => a.timestamp - b.timestamp).slice(0, COUNT_LOAD + 1)
-
-		if (newResults.length === 0) {
-			this.hasMoreAfter = false
-			return
-		}
-
-		// Определяем, есть ли ещё
-		this.hasMoreAfter = newResults.length > COUNT_LOAD
-		const toAdd = newResults.slice(0, COUNT_LOAD)
-
-		if (toAdd.length === 0) {
-			return
-		}
-
-		// Обновляем границу
-		this.latestFound = toAdd[toAdd.length - 1].timestamp
-
-		// Добавляем к результатам (оба массива уже отсортированы)
-		this.results = this.mergeSorted(this.results, toAdd)
+		if (!this.hasMoreAfter || !this.results.length) return
+		const found = this.findNearestAfter(this.results[this.results.length - 1], COUNT_LOAD + 1)
+		this.hasMoreAfter = found.length > COUNT_LOAD
+		this.results.push(...found.slice(0, COUNT_LOAD))
 	}
 
-	/** Загрузить ещё результаты в прошлом (инкрементально) */
+	/** Строго до полного курсора первого вхождения; выбранное событие остаётся прежним. */
 	private loadMoreBefore() {
-		if (!this.hasMoreBefore || !this.query || !this.eventsStore) return
-
-		// Ищем только COUNT_LOAD + 1 событий строго ДО earliestFound
-		const candidates: SearchResult[] = []
-
-		// Одиночные события
-		for (const event of this.eventsStore.planned) {
-			if (event.start < this.earliestFound && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, false))
-			}
-		}
-		for (const event of this.eventsStore.completed) {
-			if (event.start < this.earliestFound && this.matchesEvent(event)) {
-				candidates.push(this.singleEventToResult(event, true))
-			}
-		}
-
-		// Повторяемые события
-		for (const event of this.eventsStore.plannedRepeatable) {
-			if (this.matchesEvent(event)) {
-				const occurrences = this.getOccurrencesBefore(event, this.earliestFound, COUNT_LOAD + 1)
-				candidates.push(...occurrences)
-			}
-		}
-
-		const newResults = candidates.sort((a, b) => b.timestamp - a.timestamp).slice(0, COUNT_LOAD + 1)
-
-		if (newResults.length === 0) {
-			this.hasMoreBefore = false
-			return
-		}
-
-		// Определяем, есть ли ещё
-		this.hasMoreBefore = newResults.length > COUNT_LOAD
-		const toAdd = newResults.slice(0, COUNT_LOAD)
-
-		if (toAdd.length === 0) {
-			return
-		}
-
-		// Обновляем границу
-		this.earliestFound = toAdd[toAdd.length - 1].timestamp
-
-		// Добавляем к результатам (оба массива уже отсортированы)
-		const oldIndex = this.currentIndex
-		this.results = this.mergeSorted(toAdd.reverse(), this.results)
-		this.currentIndex = oldIndex + toAdd.length
-	}
-
-	/** Слияние двух отсортированных массивов */
-	private mergeSorted(arr1: SearchResult[], arr2: SearchResult[]): SearchResult[] {
-		const result: SearchResult[] = []
-		let i = 0,
-			j = 0
-
-		while (i < arr1.length && j < arr2.length) {
-			if (arr1[i].timestamp <= arr2[j].timestamp) {
-				result.push(arr1[i++])
-			} else {
-				result.push(arr2[j++])
-			}
-		}
-
-		return result.concat(arr1.slice(i)).concat(arr2.slice(j))
+		if (!this.hasMoreBefore || !this.results.length) return
+		const found = this.findNearestBefore(this.results[0], COUNT_LOAD + 1)
+		this.hasMoreBefore = found.length > COUNT_LOAD
+		const toAdd = found.slice(0, COUNT_LOAD).reverse()
+		this.results.unshift(...toAdd)
+		this.currentIndex += toAdd.length
 	}
 
 	/** Получить текущий выбранный результат */
@@ -447,13 +351,15 @@ export class EventSearchStore {
 	}
 
 	/** Внутренняя очистка состояния */
-	private performClear() {
+	private performClear(deactivate = true) {
+		this.stopWatchingDocument?.()
+		this.stopWatchingDocument = null
+		this.requestSequence++
+		this.isSearchPending = false
 		this.query = ''
 		this.results = []
 		this.currentIndex = -1
-		this.isActive = false
-		this.earliestFound = 0 as timestamp
-		this.latestFound = 0 as timestamp
+		if (deactivate) this.isActive = false
 		this.hasMoreBefore = false
 		this.hasMoreAfter = false
 		this.scheduleCache.clear()

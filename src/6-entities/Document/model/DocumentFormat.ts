@@ -1,8 +1,9 @@
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 import type { DocumentData } from './DocumentTabsStore.types'
 import type { EventDto } from 'src/6-entities/Events/EventDto'
+import { DEFAULT_PROJECT_ID, legacyProjectId } from 'src/6-entities/Projects/ProjectId'
 
-export const DOCUMENT_SCHEMA_VERSION = 1
+export const DOCUMENT_SCHEMA_VERSION = 2
 
 export function record(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -14,7 +15,8 @@ function invalid(message: string): never {
 
 export function checkSchema(value: Record<string, unknown>): boolean {
 	if (value.schemaVersion === undefined) return true
-	if (value.schemaVersion !== DOCUMENT_SCHEMA_VERSION) invalid('неподдерживаемая schemaVersion.')
+	if (value.schemaVersion !== 1 && value.schemaVersion !== DOCUMENT_SCHEMA_VERSION)
+		invalid('неподдерживаемая schemaVersion.')
 	return false
 }
 
@@ -32,7 +34,7 @@ function date(value: unknown): string {
 function event(value: unknown, completed: boolean): EventDto {
 	if (!record(value) || typeof value.name !== 'string') invalid('событию требуется имя.')
 	const result: EventDto = { name: value.name, start: date(value.start) }
-	for (const key of ['comment', 'project', 'time', 'duration', 'end', 'repeat'] as const) {
+	for (const key of ['comment', 'project', 'projectId', 'time', 'duration', 'end', 'repeat'] as const) {
 		if (value[key] === undefined) continue
 		if (typeof value[key] !== 'string') invalid('неверный тип поля ' + key)
 		result[key] = value[key]
@@ -76,6 +78,7 @@ export function parseDocumentData(content: unknown): DocumentData {
 	if (!Array.isArray(raw.projectsList) || !Array.isArray(raw.completedList) || !Array.isArray(raw.plannedList))
 		invalid('projectsList, completedList и plannedList должны быть массивами.')
 	const names = new Set<string>()
+	const ids = new Set<string>([DEFAULT_PROJECT_ID])
 	const projectsList = raw.projectsList.map(project => {
 		if (
 			!record(project) ||
@@ -87,15 +90,35 @@ export function parseDocumentData(content: unknown): DocumentData {
 			invalid('неверный проект.')
 		if (names.has(project.name)) invalid('повторяется имя проекта: ' + project.name)
 		names.add(project.name)
-		return { name: project.name, color: project.color, background: project.background }
+		const id = project.id ?? (raw.schemaVersion === DOCUMENT_SCHEMA_VERSION ? undefined : legacyProjectId(project.name))
+		if (typeof id !== 'string' || !id.trim() || ids.has(id)) invalid('неверный или повторяющийся ID проекта.')
+		ids.add(id)
+		return { id, name: project.name, color: project.color, background: project.background }
 	})
 	const completedList = raw.completedList.map(value => event(value, true))
 	const plannedList = raw.plannedList.map(value => event(value, false))
 	for (const item of [...completedList, ...plannedList]) {
-		if (!item.project || item.project === 'Default' || names.has(item.project)) continue
-		if (!legacy) invalid('неизвестный проект события: ' + item.project)
-		names.add(item.project)
-		projectsList.push({ name: item.project, color: 'black', background: 'gray' })
+		if (item.projectId !== undefined) {
+			if (!ids.has(item.projectId)) invalid('неизвестный ID проекта события: ' + item.projectId)
+			const name =
+				item.projectId === DEFAULT_PROJECT_ID ? 'Default' : projectsList.find(p => p.id === item.projectId)!.name
+			if (item.project && item.project !== name) invalid('противоречивые ссылки проекта события.')
+		} else {
+			if (raw.schemaVersion === DOCUMENT_SCHEMA_VERSION) invalid('событию требуется ID проекта.')
+			if (!item.project || item.project === 'Default') item.projectId = DEFAULT_PROJECT_ID
+			else {
+				let project = projectsList.find(p => p.name === item.project)
+				if (!project) {
+					if (!legacy) invalid('неизвестный проект события: ' + item.project)
+					project = { id: legacyProjectId(item.project), name: item.project, color: 'black', background: 'gray' }
+					if (ids.has(project.id)) invalid('повторяется ID восстановленного проекта.')
+					ids.add(project.id)
+					projectsList.push(project)
+				}
+				item.projectId = project.id
+			}
+		}
+		delete item.project
 	}
 	return { projectsList, completedList, plannedList }
 }

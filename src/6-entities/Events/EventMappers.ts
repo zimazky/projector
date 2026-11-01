@@ -15,6 +15,7 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 			name: e.name,
 			comment: e.comment ?? '',
 			project: e.project ?? '',
+			projectId: e.projectId,
 			repeat: e.repeat,
 			// Находим первое совпадение расписания от даты начала (start - 1 день для nextAfter)
 			start: ZCron.nextAfterString(e.repeat, start, start - 86400) ?? start,
@@ -38,6 +39,7 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 		name: e.name,
 		comment: e.comment ?? '',
 		project: e.project ?? '',
+		projectId: e.projectId,
 		start,
 		time,
 		duration,
@@ -51,7 +53,7 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 export function singleEventModelToEventDto(e: SingleEventModel): EventDto {
 	const raw: EventDto = { name: e.name, start: DateTime.getYYYYMMDD(e.start) }
 	if (e.comment) raw.comment = e.comment
-	if (e.project) raw.project = e.project
+	raw.projectId = e.projectId
 	if (e.time !== null) raw.time = DateTime.secondsToHMM(e.time)
 	if (e.duration) raw.duration = DateTime.secondsToDdHMM(e.duration)
 	else if (e.end && e.end - e.start !== 86400) raw.end = DateTime.getYYYYMMDD(e.end)
@@ -64,7 +66,7 @@ export function singleEventModelToEventDto(e: SingleEventModel): EventDto {
 export function repeatableEventModelToEventDto(e: RepeatableEventModel): EventDto {
 	const raw: EventDto = { name: e.name, start: DateTime.getYYYYMMDD(e.start) }
 	if (e.comment) raw.comment = e.comment
-	if (e.project) raw.project = e.project
+	raw.projectId = e.projectId
 	if (e.time !== null) raw.time = DateTime.secondsToHMM(e.time)
 	raw.repeat = e.repeat
 	if (e.duration) raw.duration = DateTime.secondsToDdHMM(e.duration)

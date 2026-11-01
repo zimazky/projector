@@ -23,7 +23,7 @@ describe('Сессия v2 и односторонняя миграция legacy'
 		const context = store.beginDocumentOperation(store.activeDocumentId!, 'saving')!
 		store.failDocumentOperation(context, new Error('Transient'))
 		const snapshot = JSON.parse(store.exportLocalSession())
-		expect(snapshot.schemaVersion).toBe(2)
+		expect(snapshot.schemaVersion).toBe(3)
 		expect(Object.keys(snapshot.documents[0]).sort()).toEqual(['data', 'id', 'lastAccessedAt', 'ref', 'sync'])
 		expect(store.activeDocument).not.toHaveProperty('state')
 		const restored = new DocumentTabsStore({} as any)
@@ -59,7 +59,7 @@ describe('Сессия v2 и односторонняя миграция legacy'
 		restored.activateDocument(restored.activeDocumentId!)
 		expect(JSON.parse(localStorage.getItem('documentTabs.backup.0')!).documentTabs).toBe(original)
 		const current = JSON.parse(localStorage.getItem('documentTabs')!)
-		expect(current.schemaVersion).toBe(2)
+		expect(current.schemaVersion).toBe(3)
 		expect(current.documents[0]).not.toHaveProperty('state')
 		const again = new DocumentTabsStore({} as any)
 		expect(await again.restoreFromLocalStorage()).toBe(true)
@@ -123,7 +123,7 @@ describe('Сессия v2 и односторонняя миграция legacy'
 			const { store, snapshot } = source()
 			if (mode === 'missing-sync') delete snapshot.documents[0].sync
 			if (mode === 'bad-version') snapshot.documents[0].sync.baseLocalVersion = -1
-			if (mode === 'future-schema') snapshot.schemaVersion = 3
+			if (mode === 'future-schema') snapshot.schemaVersion = 4
 			const before = store.exportLocalSession()
 			const stores = store.getActiveDocumentStores()
 			expect(() => store.importLocalSession(JSON.stringify(snapshot))).toThrow()

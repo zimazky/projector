@@ -180,7 +180,7 @@ describe('DocumentTabsStore', () => {
 			const data = {
 				projectsList: [],
 				completedList: [],
-				plannedList: [{ name: 'Изменение в полёте', start: '2026.10.31' }]
+				plannedList: [{ name: 'Изменение в полёте', start: '2026.10.31', projectId: 'default' }]
 			}
 			store.updateActiveDocumentData(data)
 

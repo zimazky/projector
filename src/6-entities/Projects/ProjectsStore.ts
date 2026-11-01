@@ -1,4 +1,5 @@
 import { makeAutoObservable } from 'mobx'
+import { DEFAULT_PROJECT_ID, legacyProjectId, newProjectId } from './ProjectId'
 
 /** Тип данных, определяющий стиль проекта */
 export type ProjectStyle = {
@@ -10,28 +11,43 @@ export type ProjectStyle = {
 
 /** Тип данных проекта для сохранения во внешних хранилищах (localStorage или GoogleDrive) */
 export type ProjectData = {
+	/** Отсутствует только во входных данных старого формата. */
+	id?: string
 	/** Наименование проекта */
 	name: string
 } & ProjectStyle
 
 /** Структура для хранения данных проекта в классе хранилища Projects */
 export type ProjectStructure = {
+	id: string
 	/** Число ссылок на события */
 	events: number
 } & ProjectData
 
 /** Класс хранилища списка проектов */
 export class ProjectsStore {
+	private byId = new Map<string, ProjectStructure>()
 	/** Список проектов, по умолчанию есть defaultProject для событий без определенного проекта */
 	list: ProjectStructure[]
 	/** Проект по умолчанию */
-	static defaultProject: ProjectStructure = { name: 'Default', background: 'lightgray', color: 'black', events: 0 }
+	static defaultProject: ProjectStructure = {
+		id: DEFAULT_PROJECT_ID,
+		name: 'Default',
+		background: 'lightgray',
+		color: 'black',
+		events: 0
+	}
 	/** Callback при изменении списка проектов */
 	onChangeList?: () => void
 
 	constructor() {
-		this.list = [ProjectsStore.defaultProject]
+		this.list = [{ ...ProjectsStore.defaultProject }]
 		makeAutoObservable(this)
+		this.indexProjects()
+	}
+
+	private indexProjects() {
+		this.byId = new Map(this.list.map(project => [project.id, project]))
 	}
 
 	/**
@@ -48,25 +64,27 @@ export class ProjectsStore {
 		const exists = this.list.find(l => l.name === trimmedName)
 		if (exists) return false
 
-		this.list.push({ name: trimmedName, events: 0, color, background })
+		this.list.push({ id: newProjectId(), name: trimmedName, events: 0, color, background })
+		this.indexProjects()
 		this.onChangeList?.()
 		return true
 	}
 
 	/**
 	 * Обновить существующий проект
-	 * @param oldName - текущее наименование проекта
+	 * @param id - стабильный идентификатор проекта
 	 * @param updates - обновленные данные (name, color, background)
 	 * @returns true если успешно, false если проект не найден или дубликат имени
 	 */
-	update(oldName: string, updates: { name?: string; color?: string; background?: string }): boolean {
-		const project = this.list.find(l => l.name === oldName)
-		if (!project) return false
+	update(id: string, updates: { name?: string; color?: string; background?: string }): boolean {
+		const project = this.getById(id)
+		if (!project || id === DEFAULT_PROJECT_ID) return false
 
 		// Проверка дубликата при переименовании
-		if (updates.name && updates.name.trim() !== oldName) {
+		if (updates.name !== undefined && updates.name.trim() !== project.name) {
 			const trimmedNewName = updates.name.trim()
-			const duplicate = this.list.find(l => l.name === trimmedNewName)
+			if (!trimmedNewName) return false
+			const duplicate = this.list.find(l => l.id !== id && l.name === trimmedNewName)
 			if (duplicate) return false
 			project.name = trimmedNewName
 		}
@@ -91,12 +109,13 @@ export class ProjectsStore {
 	 * Удалить проект из списка
 	 * Проект удаляется если отсутствуют ссылки на события
 	 */
-	delete(name: string) {
-		const l = this.list.find(l => l.name === name)
-		if (l === undefined) return
-		if (l.events > 0) alert(`Project "${name}" has ${l.events} links to events`)
+	delete(id: string) {
+		const l = this.getById(id)
+		if (l === undefined || id === DEFAULT_PROJECT_ID) return
+		if (l.events > 0) alert(`Project "${l.name}" has ${l.events} links to events`)
 		else {
-			this.list = this.list.filter(l => l.name !== name)
+			this.list = this.list.filter(l => l.id !== id)
+			this.byId.delete(id)
 			this.onChangeList?.()
 		}
 	}
@@ -107,7 +126,7 @@ export class ProjectsStore {
 	 * @returns элемент списка проектов или undefined если проект не найден
 	 */
 	getByName(name: string) {
-		return this.list.find(l => l.name === name) ?? this.list[0]
+		return this.list.find(l => l.name === name)
 	}
 
 	/**
@@ -115,8 +134,8 @@ export class ProjectsStore {
 	 * @param id - идентификатор проекта
 	 * @returns элемент списка проектов или undefined если проект не найден
 	 */
-	getById(id: number) {
-		return id < this.list.length ? this.list[id] : undefined
+	getById(id: string) {
+		return this.byId.get(id)
 	}
 
 	/**
@@ -126,14 +145,27 @@ export class ProjectsStore {
 	 * @param name - наименование проекта
 	 * @returns идентификатор проекта
 	 */
-	getIdWithIncEventsCount(name: string): number {
-		if (name === '') name = 'Default'
-		let id = this.list.findIndex(p => p.name === name)
-		if (id < 0) {
-			this.list.push({ name, events: 1, color: 'black', background: 'gray' })
-			id = this.list.length - 1
-		} else this.list[id].events++
-		return id
+	getIdWithIncEventsCount(name = '', projectId?: string): string {
+		let project =
+			projectId !== undefined
+				? this.getById(projectId)
+				: !name || name === 'Default'
+					? this.getById(DEFAULT_PROJECT_ID)
+					: this.getByName(name)
+		if (!project && projectId !== undefined) throw new Error('Неизвестный ID проекта: ' + projectId)
+		if (!project) {
+			project = { id: newProjectId(), name, events: 0, color: 'black', background: 'gray' }
+			this.list.push(project)
+			this.indexProjects()
+			project = this.getById(project.id)!
+		}
+		project.events++
+		return project.id
+	}
+
+	changeEventsCount(id: string, delta: number) {
+		const project = this.getById(id)
+		if (project) project.events = Math.max(0, project.events + delta)
 	}
 
 	/**
@@ -141,14 +173,15 @@ export class ProjectsStore {
 	 * @param list - список проектов из внешнего хранилища
 	 */
 	init(list: ProjectData[]) {
-		if (list === undefined) this.list = [ProjectsStore.defaultProject]
+		if (list === undefined) this.list = [{ ...ProjectsStore.defaultProject }]
 		else
 			this.list = [
-				ProjectsStore.defaultProject,
+				{ ...ProjectsStore.defaultProject },
 				...list.map(p => {
-					return { ...p, events: 0 }
+					return { ...p, id: p.id ?? legacyProjectId(p.name), events: 0 }
 				})
 			]
+		this.indexProjects()
 		this.onChangeList?.()
 	}
 
@@ -156,7 +189,7 @@ export class ProjectsStore {
 	getList(): ProjectData[] {
 		return this.list
 			.map(p => {
-				return { name: p.name, color: p.color, background: p.background }
+				return { id: p.id, name: p.name, color: p.color, background: p.background }
 			})
 			.slice(1)
 	}

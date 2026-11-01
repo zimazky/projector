@@ -1,4 +1,5 @@
 import { EventSearchStore, SearchResult } from './EventSearchStore'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
@@ -550,5 +551,163 @@ describe('EventSearchStore', () => {
 
 			expect(searchStore.resultText).toBe('2 / 3')
 		})
+	})
+})
+
+describe('F10: complete search cursor', () => {
+	beforeEach(() => {
+		jest.useFakeTimers().setSystemTime(new Date('2026-11-01T09:00:00Z'))
+		localStorage.clear()
+	})
+	afterEach(() => jest.useRealTimers())
+
+	it.each([-1, 0, 1])('visits all 13 same-day matches (%i) forwards and backwards', day => {
+		const events = Array.from({ length: 13 }, (_, i) => ({ name: `Match ${i}`, start: daysFromToday(day) }))
+		const store = new EventSearchStore(createMockDocumentTabsStore(createMockEventsStore(events)))
+		store.search('match')
+		for (let i = 0; i < 20; i++) store.prevResult()
+		const forward: number[] = []
+		for (let i = 0; i < 13; i++) {
+			forward.push(store.currentResult!.eventId)
+			store.nextResult()
+		}
+		expect(forward).toEqual(Array.from({ length: 13 }, (_, i) => i + 1))
+		const backward: number[] = []
+		for (let i = 0; i < 13; i++) {
+			backward.push(store.currentResult!.eventId)
+			store.prevResult()
+		}
+		expect(backward).toEqual([...forward].reverse())
+		expect(store.hasMoreBefore).toBe(false)
+		expect(store.hasMoreAfter).toBe(false)
+		expect(store.results).toHaveLength(13)
+	})
+
+	it('includes planned, completed and recurring matches with equal dates', () => {
+		const rows = Array.from({ length: 3 }, (_, i) => ({ name: `Match ${i}`, start: daysFromToday(-1) }))
+		const events = createMockEventsStore(
+			rows,
+			rows,
+			rows.map(e => ({ ...e, repeat: '* * *' }))
+		)
+		// Exclusive series end: yesterday and today only.
+		events.plannedRepeatable.forEach(event => (event.end = daysFromToday(1)))
+		const store = new EventSearchStore(createMockDocumentTabsStore(events))
+		store.search('match')
+		for (let i = 0; i < 20; i++) store.prevResult()
+		const visited: SearchResult[] = []
+		for (let i = 0; i < 12; i++) {
+			visited.push(store.currentResult!)
+			store.nextResult()
+		}
+		expect(store.results).toHaveLength(12)
+		expect(new Set(visited.map(r => `${r.eventId}:${r.timestamp}`)).size).toBe(12)
+		expect(visited.filter(r => r.completed)).toHaveLength(3)
+		expect(visited.filter(r => r.repeatable)).toHaveLength(6)
+		expect(visited.map(r => r.timestamp)).not.toContain(daysFromToday(1))
+		const reverse: SearchResult[] = []
+		for (let i = 0; i < 12; i++) {
+			reverse.push(store.currentResult!)
+			store.prevResult()
+		}
+		expect(reverse).toEqual([...visited].reverse())
+	})
+
+	it('paginates a day containing only recurring events in both directions', () => {
+		const events = createMockEventsStore(
+			[],
+			[],
+			Array.from({ length: 11 }, (_, i) => ({
+				name: `Match ${i}`,
+				start: daysFromToday(-2),
+				repeat: '* * *'
+			}))
+		)
+		events.plannedRepeatable.forEach(event => (event.end = daysFromToday(-1)))
+		const store = new EventSearchStore(createMockDocumentTabsStore(events))
+		store.search('match')
+		for (let i = 0; i < 15; i++) store.prevResult()
+		const ids: number[] = []
+		for (let i = 0; i < 11; i++) {
+			ids.push(store.currentResult!.eventId)
+			store.nextResult()
+		}
+		expect(ids).toEqual(Array.from({ length: 11 }, (_, i) => i + 1))
+		expect(store.results).toHaveLength(11)
+		expect(store.hasMoreAfter).toBe(false)
+		expect(store.hasMoreBefore).toBe(false)
+	})
+
+	function setup() {
+		const tabs = new DocumentTabsStore({} as any)
+		tabs.openNewDocument('A')
+		const a = tabs.activeDocument!
+		const events = tabs.activeEventsStore!
+		events.addPlannedEventDto({ name: 'Match A', start: '2026.11.01', project: '' })
+		const store = new EventSearchStore(tabs)
+		return { tabs, a, events, store }
+	}
+
+	it('clears results and highlights on switching to a tab with reused event IDs', () => {
+		const { tabs, a, store } = setup()
+		store.search('match')
+		const previous = store.currentResult!
+		tabs.openNewDocument('B')
+		tabs.activeEventsStore!.addPlannedEventDto({ name: 'Match B', start: '2026.11.01', project: '' })
+		expect(store.results).toEqual([])
+		expect(store.currentResult).toBeNull()
+		expect(store.isHighlighted(previous.eventId, previous.timestamp)).toBe(false)
+		store.nextResult()
+		expect(store.results).toEqual([])
+		store.search('match')
+		expect(store.currentResult!.name).toBe('Match B')
+		tabs.activateDocument(a.id)
+		expect(store.results).toEqual([])
+	})
+
+	it('clears on event deletion and searches the new document version', () => {
+		const { tabs, a, events, store } = setup()
+		store.search('match')
+		expect(store.currentResult).toMatchObject({ documentId: a.id, documentVersion: a.sync.localVersion })
+		events.deleteEvent(store.currentResult!.eventId)
+		expect(store.results).toEqual([])
+		expect(store.resultText).toBe('')
+		tabs.activeEventsStore!.addPlannedEventDto({ name: 'Match new', start: '2026.11.01', project: '' })
+		store.search('match')
+		expect(store.currentResult).toMatchObject({ name: 'Match new', documentVersion: a.sync.localVersion })
+	})
+
+	it('rejects deferred searches after switching tabs or clearing', () => {
+		const { tabs, store } = setup()
+		const first = store.setQuery('match')
+		tabs.openNewDocument('B')
+		expect(store.search('match', first)).toBe(false)
+		expect(store.query).toBe('')
+		const second = store.setQuery('match')
+		store.clear()
+		expect(store.search('match', second)).toBe(false)
+		expect(store.results).toEqual([])
+	})
+
+	it('clears results on input and rejects an older request', () => {
+		const { store } = setup()
+		store.search('match')
+		const first = store.setQuery('other')
+		expect(store.results).toEqual([])
+		const second = store.setQuery('match')
+		expect(store.search('other', first)).toBe(false)
+		expect(store.search('match', second)).toBe(true)
+		expect(store.currentResult!.name).toBe('Match A')
+	})
+
+	it('keeps results after Drive checks and inactive document edits', () => {
+		const { tabs, a, events, store } = setup()
+		tabs.openNewDocument('B')
+		store.search('match')
+		tabs.activeEventsStore!.addPlannedEventDto({ name: 'Match B', start: '2026.11.01', project: '' })
+		store.search('match')
+		events.addPlannedEventDto({ name: 'Match A2', start: '2026.11.01', project: '' })
+		a.sync.needsRemoteCheck = true
+		expect(store.currentResult!.name).toBe('Match B')
 	})
 })

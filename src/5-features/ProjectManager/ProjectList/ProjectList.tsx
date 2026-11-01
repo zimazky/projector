@@ -2,6 +2,8 @@ import React, { useContext } from 'react'
 import { observer } from 'mobx-react-lite'
 import { Icon } from '@iconify/react'
 
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
+import { DEFAULT_PROJECT_ID } from 'src/6-entities/Projects/ProjectId'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import IconButton from 'src/7-shared/ui/IconButton/IconButton'
 import YesCancelConfirmation from 'src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation'
@@ -16,17 +18,24 @@ import styles from './ProjectList.module.css'
 const ProjectList: React.FC = observer(() => {
 	const { documentTabsStore, projectEditorStore } = useContext(StoreContext)
 	const projectsStore = documentTabsStore.activeProjectsStore
-	const [deletingProject, setDeletingProject] = React.useState<string | null>(null)
+	const [deletingProject, setDeletingProject] = React.useState<{
+		id: string
+		name: string
+		store: ProjectsStore
+	} | null>(null)
 
-	const handleEdit = (projectName: string) => {
-		projectEditorStore.openEdit(projectName)
+	const handleEdit = (projectId: string) => {
+		projectEditorStore.openEdit(projectId)
 	}
 
-	const handleDelete = (projectName: string) => {
-		if (!projectsStore) return
-		const project = projectsStore.getByName(projectName)
+	const handleDelete = () => {
+		if (!projectsStore || deletingProject?.store !== projectsStore) {
+			setDeletingProject(null)
+			return
+		}
+		const project = projectsStore.getById(deletingProject.id)
 		if (project?.events === 0) {
-			projectsStore.delete(projectName)
+			projectsStore.delete(deletingProject.id)
 		}
 		setDeletingProject(null)
 	}
@@ -45,7 +54,7 @@ const ProjectList: React.FC = observer(() => {
 			<div className={styles.list}>
 				{projectsStore?.list.map(project => (
 					<div
-						key={project.name}
+						key={project.id}
 						className={styles.projectCard}
 						style={{
 							color: project.color,
@@ -57,12 +66,17 @@ const ProjectList: React.FC = observer(() => {
 							{project.events} event{project.events !== 1 ? 's' : ''}
 						</span>
 						<div className={styles.actions}>
-							<IconButton onClick={() => handleEdit(project.name)} disabled={project.name === 'Default'}>
+							<IconButton
+								title={`Edit ${project.name}`}
+								onClick={() => handleEdit(project.id)}
+								disabled={project.id === DEFAULT_PROJECT_ID}
+							>
 								<Icon icon="mdi:pencil" width={20} height={20} />
 							</IconButton>
 							<IconButton
-								onClick={() => setDeletingProject(project.name)}
-								disabled={project.events > 0 || project.name === 'Default'}
+								title={`Delete ${project.name}`}
+								onClick={() => setDeletingProject({ id: project.id, name: project.name, store: projectsStore })}
+								disabled={project.events > 0 || project.id === DEFAULT_PROJECT_ID}
 							>
 								<Icon icon="mdi:delete" width={20} height={20} />
 							</IconButton>
@@ -73,10 +87,10 @@ const ProjectList: React.FC = observer(() => {
 
 			<YesCancelConfirmation
 				open={deletingProject !== null}
-				onConfirm={() => deletingProject && handleDelete(deletingProject)}
+				onConfirm={handleDelete}
 				onClose={() => setDeletingProject(null)}
 			>
-				Are you sure you want to delete project "{deletingProject}"?
+				Are you sure you want to delete project "{deletingProject?.name}"?
 			</YesCancelConfirmation>
 		</div>
 	)
