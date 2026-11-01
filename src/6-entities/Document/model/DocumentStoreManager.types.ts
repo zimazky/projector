@@ -1,4 +1,4 @@
-import type { DocumentId, DocumentData } from './DocumentTabsStore.types'
+import type { DocumentId, DocumentData, DocumentSession } from './DocumentTabsStore.types'
 import type { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import type { EventsStore } from 'src/6-entities/Events/EventsStore'
 
@@ -18,6 +18,7 @@ export interface IDocumentDataProvider {
 
 /** Интерфейс провайдера сторов для EventsCache (для развязки) */
 export interface IEventsStoreProvider {
+	readonly activeDocument?: DocumentSession | null
 	readonly activeEventsStore: EventsStore | null
 	readonly activeProjectsStore: ProjectsStore | null
 	getAllDocumentStores(): DocumentStores[]

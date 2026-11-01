@@ -23,8 +23,15 @@ export class EventsStore {
 	projects: ProjectsStore
 	/** Нумератор идентификаторов */
 	private lastId = 1
+	/** Версия для производных индексов; не записывается в документ. */
+	version = 0
 	/** Колбэк функция, вызывается при каждом изменении списка */
 	onChangeList = () => {}
+
+	private notifyChanged() {
+		this.version++
+		this.onChangeList()
+	}
 
 	private singleEventManager: SingleEventManager
 	private repeatableEventManager: RepeatableEventManager
@@ -47,13 +54,13 @@ export class EventsStore {
 		this.singleEventManager = new SingleEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.onChangeList()
+			() => this.notifyChanged()
 		)
 
 		this.repeatableEventManager = new RepeatableEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.onChangeList(),
+			() => this.notifyChanged(),
 			(e, isFinal) => this.singleEventManager.addPlanned(e, isFinal),
 			(e, isFinal) => this.singleEventManager.addCompleted(e, isFinal)
 		)
@@ -70,7 +77,7 @@ export class EventsStore {
 		d.plannedList?.forEach(e => {
 			this.addPlannedEventDto(e, false)
 		})
-		this.onChangeList()
+		this.notifyChanged()
 	}
 
 	/** Подготовка для сохранения в хранилище */
@@ -141,7 +148,7 @@ export class EventsStore {
 	deleteEvent(id: number | null, isFinal: boolean = true) {
 		const deletedInSingle = this.singleEventManager.delete(id)
 		this.repeatableEventManager.delete(id)
-		if (isFinal) this.onChangeList()
+		if (isFinal) this.notifyChanged()
 	}
 
 	/**
@@ -163,7 +170,7 @@ export class EventsStore {
 	 */
 	completeEvent(id: number | null, currentdate: timestamp, e: EventDto) {
 		if (this.singleEventManager.complete(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 
@@ -180,7 +187,7 @@ export class EventsStore {
 	 */
 	uncompleteEvent(id: number | null, raw: EventDto) {
 		if (this.singleEventManager.uncomplete(id, raw)) {
-			this.onChangeList()
+			this.notifyChanged()
 		}
 	}
 
@@ -191,12 +198,12 @@ export class EventsStore {
 	 */
 	updateEvent(id: number, e: EventDto) {
 		if (this.singleEventManager.update(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 
 		if (this.repeatableEventManager.update(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 	}

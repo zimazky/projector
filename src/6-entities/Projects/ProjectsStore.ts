@@ -27,6 +27,8 @@ export type ProjectStructure = {
 /** Класс хранилища списка проектов */
 export class ProjectsStore {
 	private byId = new Map<string, ProjectStructure>()
+	/** Версия оформления/списка, без изменений счётчика использований. */
+	version = 0
 	/** Список проектов, по умолчанию есть defaultProject для событий без определенного проекта */
 	list: ProjectStructure[]
 	/** Проект по умолчанию */
@@ -44,6 +46,11 @@ export class ProjectsStore {
 		this.list = [{ ...ProjectsStore.defaultProject }]
 		makeAutoObservable(this)
 		this.indexProjects()
+	}
+
+	private notifyChanged() {
+		this.version++
+		this.onChangeList?.()
 	}
 
 	private indexProjects() {
@@ -66,7 +73,7 @@ export class ProjectsStore {
 
 		this.list.push({ id: newProjectId(), name: trimmedName, events: 0, color, background })
 		this.indexProjects()
-		this.onChangeList?.()
+		this.notifyChanged()
 		return true
 	}
 
@@ -92,7 +99,7 @@ export class ProjectsStore {
 		if (updates.color) project.color = updates.color
 		if (updates.background) project.background = updates.background
 
-		this.onChangeList?.()
+		this.notifyChanged()
 		return true
 	}
 
@@ -116,7 +123,7 @@ export class ProjectsStore {
 		else {
 			this.list = this.list.filter(l => l.id !== id)
 			this.byId.delete(id)
-			this.onChangeList?.()
+			this.notifyChanged()
 		}
 	}
 
@@ -182,7 +189,7 @@ export class ProjectsStore {
 				})
 			]
 		this.indexProjects()
-		this.onChangeList?.()
+		this.notifyChanged()
 	}
 
 	/** Получить список проектов ProjectData[] для сохранения во внешних хранилищах */

@@ -61,6 +61,8 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 
 	return (
 		<div
+			data-testid="calendar-day"
+			data-date={DateTime.getYYYYMMDD(timestamp)}
 			className={
 				style === 'normal'
 					? styles.day

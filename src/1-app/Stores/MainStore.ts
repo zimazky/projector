@@ -51,11 +51,11 @@ export class MainStore {
 			// onEventsChanged
 			onEventsChanged: (stores: DocumentStores) => {
 				stores.eventsStore.sort()
-				this.eventsCache.init()
+				if (stores.eventsStore === this.documentTabsStore.activeEventsStore) this.eventsCache.init()
 			},
 			// onProjectsChanged
-			onProjectsChanged: () => {
-				this.eventsCache.init()
+			onProjectsChanged: stores => {
+				if (stores.projectsStore === this.documentTabsStore.activeProjectsStore) this.eventsCache.init()
 			}
 		})
 
