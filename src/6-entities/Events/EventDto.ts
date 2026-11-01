@@ -1,5 +1,7 @@
+import type { EventMetadata } from './EventIdentity'
+
 /** Тип события, сохраняемого во внешнем хранилище (Data Transfer Object) */
-export type EventDto = {
+export type EventDto = EventMetadata & {
 	/** Наименование события (обязательное поле) */
 	name: string
 	/** Комментарий */

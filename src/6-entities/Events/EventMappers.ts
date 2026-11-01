@@ -3,6 +3,7 @@ import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 
 import { EventDto } from './EventDto'
 import { IEventModel, RepeatableEventModel, SingleEventModel } from './EventModel'
+import { cloneEventMetadata } from './EventIdentity'
 
 /** Функция преобразования данных EventDto из внешнего хранилища, в структуру IEventModel */
 export function eventDtoToIEventModel(e: EventDto): IEventModel {
@@ -12,6 +13,7 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 
 	if (e.repeat) {
 		return {
+			...cloneEventMetadata(e),
 			name: e.name,
 			comment: e.comment ?? '',
 			project: e.project ?? '',
@@ -36,6 +38,7 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 			: start + 86400
 
 	return {
+		...cloneEventMetadata(e),
 		name: e.name,
 		comment: e.comment ?? '',
 		project: e.project ?? '',
@@ -50,8 +53,12 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 }
 
 /** Функция преобразования одиночного события в формат EventDto для сохранения во внешнем хранилище */
-export function singleEventModelToEventDto(e: SingleEventModel): EventDto {
-	const raw: EventDto = { name: e.name, start: DateTime.getYYYYMMDD(e.start) }
+export function singleEventModelToEventDto(e: SingleEventModel, includeMetadata = false): EventDto {
+	const raw: EventDto = {
+		...(includeMetadata ? cloneEventMetadata(e) : {}),
+		name: e.name,
+		start: DateTime.getYYYYMMDD(e.start)
+	}
 	if (e.comment) raw.comment = e.comment
 	raw.projectId = e.projectId
 	if (e.time !== null) raw.time = DateTime.secondsToHMM(e.time)
@@ -63,8 +70,12 @@ export function singleEventModelToEventDto(e: SingleEventModel): EventDto {
 }
 
 /** Функция преобразования повторяемого события в формат EventDto для сохранения во внешнем хранилище */
-export function repeatableEventModelToEventDto(e: RepeatableEventModel): EventDto {
-	const raw: EventDto = { name: e.name, start: DateTime.getYYYYMMDD(e.start) }
+export function repeatableEventModelToEventDto(e: RepeatableEventModel, includeMetadata = false): EventDto {
+	const raw: EventDto = {
+		...(includeMetadata ? cloneEventMetadata(e) : {}),
+		name: e.name,
+		start: DateTime.getYYYYMMDD(e.start)
+	}
 	if (e.comment) raw.comment = e.comment
 	raw.projectId = e.projectId
 	if (e.time !== null) raw.time = DateTime.secondsToHMM(e.time)

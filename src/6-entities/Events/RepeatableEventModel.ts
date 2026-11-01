@@ -1,7 +1,8 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import type { EventMetadata } from './EventIdentity'
 
 /** Модель повторяемого события для хранения в классе хранилища */
-export type RepeatableEventModel = {
+export type RepeatableEventModel = EventMetadata & {
 	/** Идентификатор события */
 	id: number
 	/** Наименование */

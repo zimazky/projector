@@ -1,5 +1,5 @@
 import { action, makeObservable, observable } from 'mobx'
-import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 
@@ -8,6 +8,7 @@ import { eventDtoToIEventModel, repeatableEventModelToEventDto, singleEventModel
 import { EventDto } from './EventDto'
 import { SingleEventManager } from './SingleEventManager'
 import { RepeatableEventManager } from './RepeatableEventManager'
+import { createEventMetadata, editedEventMetadata, occurrenceEventUid, validateEventIdentities } from './EventIdentity'
 
 export type EventsStoreData = {
 	completedList: EventDto[]
@@ -50,21 +51,30 @@ export class EventsStore {
 		return this.repeatableEventManager.plannedRepeatable
 	}
 
-	constructor(projectsStore: ProjectsStore) {
+	/** Новый путь пока включается только целиком в интеграционных проверках. */
+	constructor(
+		projectsStore: ProjectsStore,
+		private readonly resourceAccounting = false
+	) {
 		this.projects = projectsStore
 
 		this.singleEventManager = new SingleEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.notifyChanged()
+			() => this.notifyChanged(),
+			this.resourceAccounting
 		)
 
 		this.repeatableEventManager = new RepeatableEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.notifyChanged(),
+			() => {
+				if (this.resourceAccounting) this.excludeDetachedOccurrences()
+				this.notifyChanged()
+			},
 			(e, isFinal) => this.singleEventManager.addPlanned(e, isFinal),
-			(e, isFinal) => this.singleEventManager.addCompleted(e, isFinal)
+			(e, isFinal) => this.singleEventManager.addCompleted(e, isFinal),
+			this.resourceAccounting
 		)
 		// Модели и менеджеры изменяются пакетными командами. Публикуем одну
 		// наблюдаемую версию после завершения команды, не превращая чтение в action.
@@ -90,14 +100,16 @@ export class EventsStore {
 
 	/** Загрузка данных со сбросом предшествующих данных */
 	init(d: EventsStoreData) {
+		if (this.resourceAccounting) validateEventIdentities([...d.completedList, ...d.plannedList])
 		this.lastId = 1
 		this.singleEventManager.reset()
 		this.repeatableEventManager.reset()
 		d.completedList?.forEach(e => {
-			this.addCompletedEventDto(e, false)
+			this.singleEventManager.addCompletedFromDto(e, false)
 		})
 		d.plannedList?.forEach(e => {
-			this.addPlannedEventDto(e, false)
+			if (e.repeat) this.repeatableEventManager.addFromDto(e, false)
+			else this.singleEventManager.addPlannedFromDto(e, false)
 		})
 		// Восстановление сохраняет порядок исходного снимка; само чтение не создаёт dirty.
 		this.notifyChanged(false)
@@ -105,12 +117,14 @@ export class EventsStore {
 
 	/** Подготовка для сохранения в хранилище */
 	prepareToSave() {
-		const completedList = this.singleEventManager.completed.map(e => singleEventModelToEventDto(e))
+		const completedList = this.singleEventManager.completed.map(e =>
+			singleEventModelToEventDto(e, this.resourceAccounting)
+		)
 		const plannedList: EventDto[] = this.repeatableEventManager.plannedRepeatable.reduce((a, e) => {
-			return (a.push(repeatableEventModelToEventDto(e)), a)
+			return (a.push(repeatableEventModelToEventDto(e, this.resourceAccounting)), a)
 		}, [] as EventDto[])
 		this.singleEventManager.planned.reduce((a, e) => {
-			return (a.push(singleEventModelToEventDto(e)), a)
+			return (a.push(singleEventModelToEventDto(e, this.resourceAccounting)), a)
 		}, plannedList)
 		return { completedList, plannedList }
 	}
@@ -126,11 +140,11 @@ export class EventsStore {
 
 	getEventDto(id: number): EventDto | undefined {
 		let event = this.singleEventManager.findCompleted(id)
-		if (event !== undefined) return singleEventModelToEventDto(event)
+		if (event !== undefined) return singleEventModelToEventDto(event, this.resourceAccounting)
 		event = this.singleEventManager.findPlanned(id)
-		if (event !== undefined) return singleEventModelToEventDto(event)
+		if (event !== undefined) return singleEventModelToEventDto(event, this.resourceAccounting)
 		const revent = this.repeatableEventManager.find(id)
-		if (revent !== undefined) return repeatableEventModelToEventDto(revent)
+		if (revent !== undefined) return repeatableEventModelToEventDto(revent, this.resourceAccounting)
 	}
 
 	/**
@@ -139,11 +153,11 @@ export class EventsStore {
 	 * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
 	 */
 	addCompletedEventModel(e: IEventModel, isFinal: boolean = true) {
-		this.singleEventManager.addCompleted(e, isFinal)
+		this.singleEventManager.addCompleted(this.createdModel(e), isFinal)
 	}
 
 	addCompletedEventDto(e: EventDto, isFinal: boolean = true) {
-		this.singleEventManager.addCompletedFromDto(e, isFinal)
+		this.addCompletedEventModel(eventDtoToIEventModel(e), isFinal)
 	}
 
 	/**
@@ -152,6 +166,7 @@ export class EventsStore {
 	 * @param isFinal Признак окончательной операции в цепочке. Если true, то при завершении вызывается onChangeList
 	 */
 	addPlannedEventModel(e: IEventModel, isFinal: boolean = true) {
+		e = this.createdModel(e)
 		if (e.repeat) {
 			this.repeatableEventManager.add(e, isFinal)
 		} else {
@@ -192,6 +207,24 @@ export class EventsStore {
 	 * @param e Модифицированное событие
 	 */
 	completeEvent(id: number | null, currentdate: timestamp, e: EventDto) {
+		if (this.resourceAccounting) {
+			const series = this.plannedRepeatable.find(event => event.id === id)
+			if (series && this.hasDetachedOccurrence(series.seriesUid!, currentdate)) return
+			const single = this.planned.find(event => event.id === id)
+			if (single || (series && this.repeatableEventManager.containsOccurrence(series, currentdate))) {
+				const source = single ?? series!
+				const occurrence = series && { seriesUid: series.seriesUid!, occurrenceDate: DateTime.getYYYYMMDD(currentdate) }
+				const completed = {
+					...source,
+					...editedEventMetadata(source, e),
+					eventUid: occurrence ? occurrenceEventUid(occurrence) : source.eventUid,
+					repeat: undefined,
+					plannedOperation: undefined,
+					occurrence: occurrence ?? source.occurrence
+				}
+				this.validateReplacement(single?.id ?? null, completed)
+			}
+		}
 		if (this.singleEventManager.complete(id, e)) {
 			this.notifyChanged()
 			return
@@ -209,6 +242,13 @@ export class EventsStore {
 	 * @param raw Модифицированное событие
 	 */
 	uncompleteEvent(id: number | null, raw: EventDto) {
+		if (this.resourceAccounting) {
+			const event = this.completed.find(item => item.id === id)
+			if (event?.occurrence) {
+				// Не возвращаем старую серию целиком: восстанавливается только связанный план.
+				this.excludeDetachedOccurrences(event.occurrence.seriesUid)
+			}
+		}
 		if (this.singleEventManager.uncomplete(id, raw)) {
 			this.notifyChanged()
 		}
@@ -220,12 +260,17 @@ export class EventsStore {
 	 * @param e Модифицированное событие в текстовом представлении rawEvent
 	 */
 	updateEvent(id: number, e: EventDto) {
+		if (this.resourceAccounting) {
+			const source = this.getEventModel(id)
+			if (source) this.validateReplacement(id, { ...source, ...editedEventMetadata(source, e) })
+		}
 		if (this.singleEventManager.update(id, e)) {
 			this.notifyChanged()
 			return
 		}
 
 		if (this.repeatableEventManager.update(id, e)) {
+			if (this.resourceAccounting) this.excludeDetachedOccurrences()
 			this.notifyChanged()
 			return
 		}
@@ -270,7 +315,45 @@ export class EventsStore {
 	 * @param e Модифицированное событие
 	 */
 	saveAsSingleEvent(id: number, currentdate: timestamp, e: EventDto) {
+		if (this.resourceAccounting) {
+			const series = this.plannedRepeatable.find(event => event.id === id)
+			if (series && this.hasDetachedOccurrence(series.seriesUid!, currentdate)) return
+		}
 		this.repeatableEventManager.saveAsSingle(id, currentdate, e)
+	}
+
+	private createdModel(event: IEventModel): IEventModel {
+		if (!this.resourceAccounting) return event
+		const created = { ...event, ...createEventMetadata(event, !!event.repeat) }
+		validateEventIdentities([...this.completed, ...this.planned, ...this.plannedRepeatable, created])
+		return created
+	}
+
+	private validateReplacement(id: number | null, replacement: IEventModel): void {
+		validateEventIdentities([
+			...[...this.completed, ...this.planned, ...this.plannedRepeatable].filter(event => event.id !== id),
+			replacement
+		])
+	}
+
+	private hasDetachedOccurrence(seriesUid: string, date: timestamp): boolean {
+		const uid = occurrenceEventUid({ seriesUid, occurrenceDate: DateTime.getYYYYMMDD(date) })
+		return [...this.completed, ...this.planned].some(
+			event =>
+				event.eventUid === uid ||
+				(event.occurrence?.seriesUid === seriesUid && event.occurrence.occurrenceDate === DateTime.getYYYYMMDD(date))
+		)
+	}
+
+	/** Правка серии не возвращает уже выделенные/выполненные соседние вхождения. */
+	private excludeDetachedOccurrences(seriesUid?: string): void {
+		for (const single of [...this.completed, ...this.planned]) {
+			const occurrence = single.occurrence
+			if (!occurrence || (seriesUid && occurrence.seriesUid !== seriesUid)) continue
+			const date = DateTime.YYYYMMDDToTimestamp(occurrence.occurrenceDate)
+			for (const series of [...this.plannedRepeatable])
+				if (series.seriesUid === occurrence.seriesUid) this.repeatableEventManager.excludeOccurrence(series.id, date)
+		}
 	}
 
 	/**

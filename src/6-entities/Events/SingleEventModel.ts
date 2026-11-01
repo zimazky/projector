@@ -1,7 +1,8 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import type { EventMetadata } from './EventIdentity'
 
 /** Модель одиночного события для хранения в классе хранилища */
-export type SingleEventModel = {
+export type SingleEventModel = EventMetadata & {
 	/** Идентификатор события */
 	id: number
 	/** Наименование */

@@ -1,8 +1,16 @@
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { RepeatableEventModel, IEventModel } from './EventModel'
-import { eventDtoToIEventModel } from './EventMappers'
+import { eventDtoToIEventModel, singleEventModelToEventDto } from './EventMappers'
+import {
+	cloneEventMetadata,
+	copyAsPlannedMetadata,
+	copyPlannedOperation,
+	editedEventMetadata,
+	occurrenceEventUid,
+	originalPlanSnapshot
+} from './EventIdentity'
 import { EventDto } from './EventDto'
-import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 
 /**
@@ -24,7 +32,8 @@ export class RepeatableEventManager {
 		private incLastId: () => number,
 		private onChange: () => void,
 		private addSinglePlanned: (e: IEventModel, isFinal: boolean) => void,
-		private addSingleCompleted: (e: IEventModel, isFinal: boolean) => void
+		private addSingleCompleted: (e: IEventModel, isFinal: boolean) => void,
+		private stableIdentity = false
 	) {}
 
 	/**
@@ -36,6 +45,7 @@ export class RepeatableEventManager {
 		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.plannedRepeatable.push({
+			...cloneEventMetadata(e),
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
@@ -80,6 +90,10 @@ export class RepeatableEventManager {
 	 * @param currentdate - Текущая дата вхождения
 	 */
 	deleteCurrent(id: number | null, currentdate: timestamp) {
+		if (this.stableIdentity) {
+			if (this.excludeOccurrence(id, currentdate)) this.onChange()
+			return
+		}
 		let revent = this.plannedRepeatable.find(e => e.id === id)
 		if (revent === undefined) return
 
@@ -111,6 +125,7 @@ export class RepeatableEventManager {
 	 * @returns true, если событие было найдено и завершено
 	 */
 	complete(id: number | null, currentdate: timestamp, e: EventDto) {
+		if (this.stableIdentity) return this.detachOccurrence(id, currentdate, e, true)
 		let revent = this.plannedRepeatable.find(e => e.id === id)
 		if (revent !== undefined) {
 			this.addSingleCompleted({ ...eventDtoToIEventModel(e), start: currentdate, end: currentdate + 86400 }, false)
@@ -147,7 +162,7 @@ export class RepeatableEventManager {
 	update(id: number, e: EventDto): boolean {
 		const revent = this.plannedRepeatable.find(e => e.id === id)
 		if (revent !== undefined) {
-			this.addFromDto(e, false)
+			this.add({ ...eventDtoToIEventModel(e), ...(this.stableIdentity ? editedEventMetadata(revent, e) : {}) }, false)
 			this.delete(id)
 			return true
 		}
@@ -184,6 +199,10 @@ export class RepeatableEventManager {
 		const revent = this.plannedRepeatable.find(e => e.id === id)
 		if (revent !== undefined) {
 			const newevent = { ...revent, repeat: '', start: todate, end: todate + 86400 }
+			if (this.stableIdentity) {
+				delete newevent.seriesUid
+				Object.assign(newevent, copyAsPlannedMetadata(revent))
+			}
 			this.addSinglePlanned(newevent, true)
 			return true
 		}
@@ -198,6 +217,7 @@ export class RepeatableEventManager {
 	 * @returns true, если событие было найдено и сохранено как одиночное
 	 */
 	saveAsSingle(id: number, currentdate: timestamp, e: EventDto) {
+		if (this.stableIdentity) return this.detachOccurrence(id, currentdate, e, false)
 		let revent = this.plannedRepeatable.find(e => e.id === id)
 		if (revent !== undefined) {
 			this.addSinglePlanned(
@@ -222,6 +242,81 @@ export class RepeatableEventManager {
 			return true
 		}
 		return false
+	}
+
+	/** Проверка членства обязательна до любого изменения или выделения вхождения. */
+	containsOccurrence(event: RepeatableEventModel, date: timestamp): boolean {
+		return (
+			date === DateTime.getBeginDayTimestamp(date) &&
+			date >= event.start &&
+			(!event.end || date + (event.time ?? 0) < event.end) &&
+			ZCron.isMatch(event.repeat, event.start, date)
+		)
+	}
+
+	/** Исключает ровно одну дату, сохраняя происхождение обеих частей серии. Не публикует. */
+	excludeOccurrence(id: number | null, date: timestamp): boolean {
+		const event = this.plannedRepeatable.find(item => item.id === id)
+		if (!event || !this.containsOccurrence(event, date)) return false
+		if (ZCron.ariseInInterval(event.repeat, event.start, event.start, date)) {
+			const first = {
+				...event,
+				...copyAsPlannedMetadata(event),
+				seriesUid: event.seriesUid,
+				end: date,
+				id: this.incLastId()
+			}
+			this.plannedRepeatable.push(first)
+			this.projects.changeEventsCount(first.projectId, 1)
+		}
+		const next = ZCron.nextAfterString(event.repeat, event.start, date)
+		if (next === null || (event.end && next + (event.time ?? 0) >= event.end)) this.delete(event.id)
+		else event.start = next
+		return true
+	}
+
+	private detachOccurrence(id: number | null, date: timestamp, raw: EventDto, completed: boolean): boolean {
+		const event = this.plannedRepeatable.find(item => item.id === id)
+		if (!event || !this.containsOccurrence(event, date)) return false
+		const occurrence = { seriesUid: event.seriesUid!, occurrenceDate: DateTime.getYYYYMMDD(date) }
+		const plan = {
+			...event,
+			...copyAsPlannedMetadata(event),
+			eventUid: occurrenceEventUid(occurrence),
+			seriesUid: undefined,
+			occurrence,
+			repeat: undefined,
+			start: date,
+			end: date + 86400,
+			days: 1
+		}
+		const single = {
+			...plan,
+			...eventDtoToIEventModel(raw),
+			...cloneEventMetadata(plan),
+			eventUid: plan.eventUid,
+			seriesUid: undefined,
+			occurrence,
+			start: date,
+			end: date + 86400,
+			repeat: undefined
+		}
+		single.originalPlan = originalPlanSnapshot(singleEventModelToEventDto(plan, true))
+		if (completed) {
+			single.actualOperation = cloneEventMetadata(raw).actualOperation
+			if (single.actualOperation && plan.plannedOperation)
+				single.actualOperation.originalPlan = cloneEventMetadata(plan).plannedOperation
+			delete single.plannedOperation
+		} else {
+			delete single.actualOperation
+			if (raw.plannedOperation) single.plannedOperation = copyPlannedOperation(raw.plannedOperation)
+		}
+		// Проверить проект до разбиения расписания: ошибка не должна поглотить вхождение.
+		if (completed) this.addSingleCompleted(single, false)
+		else this.addSinglePlanned(single, false)
+		this.excludeOccurrence(id, date)
+		this.onChange()
+		return true
 	}
 
 	/**

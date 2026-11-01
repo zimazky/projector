@@ -1,6 +1,7 @@
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { SingleEventModel, IEventModel } from './EventModel'
-import { eventDtoToIEventModel } from './EventMappers'
+import { eventDtoToIEventModel, singleEventModelToEventDto } from './EventMappers'
+import { cloneEventMetadata, copyAsPlannedMetadata, editedEventMetadata, originalPlanSnapshot } from './EventIdentity'
 import { EventDto } from './EventDto'
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
@@ -21,7 +22,8 @@ export class SingleEventManager {
 	constructor(
 		private projects: ProjectsStore,
 		private incLastId: () => number,
-		private onChange: () => void
+		private onChange: () => void,
+		private stableIdentity = false
 	) {}
 
 	/**
@@ -33,6 +35,7 @@ export class SingleEventManager {
 		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.completed.push({
+			...cloneEventMetadata(e),
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
@@ -66,6 +69,7 @@ export class SingleEventManager {
 		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.planned.push({
+			...cloneEventMetadata(e),
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
@@ -117,7 +121,15 @@ export class SingleEventManager {
 	complete(id: number | null, e: EventDto): boolean {
 		const event = this.planned.find(e => e.id === id)
 		if (event !== undefined) {
-			this.addCompleted({ ...event, ...eventDtoToIEventModel(e) }, false)
+			const completed = { ...event, ...eventDtoToIEventModel(e) }
+			if (this.stableIdentity) {
+				Object.assign(completed, editedEventMetadata(event, e))
+				completed.originalPlan = originalPlanSnapshot(singleEventModelToEventDto(event, true))
+				delete completed.plannedOperation
+				if (completed.actualOperation && event.plannedOperation)
+					completed.actualOperation.originalPlan = cloneEventMetadata(event).plannedOperation
+			}
+			this.addCompleted(completed, false)
 			this.delete(event.id)
 			return true
 		}
@@ -133,7 +145,19 @@ export class SingleEventManager {
 	uncomplete(id: number | null, raw: EventDto): boolean {
 		const event = this.completed.find(e => e.id === id)
 		if (event !== undefined) {
-			this.addPlanned({ ...event, ...eventDtoToIEventModel(raw) }, false)
+			const planned =
+				this.stableIdentity && event.originalPlan
+					? eventDtoToIEventModel(event.originalPlan)
+					: { ...event, ...eventDtoToIEventModel(raw) }
+			if (this.stableIdentity) {
+				planned.eventUid = event.eventUid
+				planned.occurrence = cloneEventMetadata(event).occurrence
+				if (!event.originalPlan && event.actualOperation)
+					planned.plannedOperation = copyAsPlannedMetadata(event).plannedOperation
+				delete planned.actualOperation
+				delete planned.originalPlan
+			}
+			this.addPlanned(planned, false)
 			this.delete(event.id)
 			return true
 		}
@@ -149,14 +173,20 @@ export class SingleEventManager {
 	update(id: number, e: EventDto): boolean {
 		let event = this.completed.find(e => e.id === id)
 		if (event !== undefined) {
-			this.addCompletedFromDto(e, false)
+			this.addCompleted(
+				{ ...eventDtoToIEventModel(e), ...(this.stableIdentity ? editedEventMetadata(event, e) : {}) },
+				false
+			)
 			this.delete(id)
 			return true
 		}
 
 		event = this.planned.find(e => e.id === id)
 		if (event !== undefined) {
-			this.addPlannedFromDto(e, false)
+			this.addPlanned(
+				{ ...eventDtoToIEventModel(e), ...(this.stableIdentity ? editedEventMetadata(event, e) : {}) },
+				false
+			)
 			this.delete(id)
 			return true
 		}
@@ -201,7 +231,14 @@ export class SingleEventManager {
 		if (event !== undefined) {
 			const delta = todate - event.start
 			const newevent = { ...event, start: todate, end: event.end ? event.end + delta : event.end }
-			this.addCompleted(newevent)
+			if (this.stableIdentity) {
+				delete newevent.actualOperation
+				delete newevent.originalPlan
+				delete newevent.occurrence
+				delete newevent.seriesUid
+				Object.assign(newevent, copyAsPlannedMetadata(event))
+				this.addPlanned(newevent)
+			} else this.addCompleted(newevent)
 			return true
 		}
 
@@ -209,6 +246,12 @@ export class SingleEventManager {
 		if (event !== undefined) {
 			const delta = todate - event.start
 			const newevent = { ...event, start: todate, end: event.end ? event.end + delta : event.end }
+			if (this.stableIdentity) {
+				delete newevent.originalPlan
+				delete newevent.occurrence
+				delete newevent.seriesUid
+				Object.assign(newevent, copyAsPlannedMetadata(event))
+			}
 			this.addPlanned(newevent)
 			return true
 		}

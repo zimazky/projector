@@ -1,4 +1,5 @@
-import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
+import { OccurrenceIdentity, occurrenceEventUid } from '../Events/EventIdentity'
 
 import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/Events/EventModel'
 import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
@@ -7,6 +8,10 @@ import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore
 export type EventCacheStructure = {
 	/** идентификатор */
 	id: number
+	eventUid?: string
+	seriesUid?: string
+	occurrence?: OccurrenceIdentity
+	occurrenceKey?: string
 	/** наименование */
 	name: string
 	/** цвет фона */
@@ -48,6 +53,8 @@ export function singleEventToEventCache(
 	background: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
+		...(e.eventUid ? { eventUid: e.eventUid } : {}),
+		...(e.occurrence ? { occurrence: { ...e.occurrence }, occurrenceKey: occurrenceEventUid(e.occurrence) } : {}),
 		id: e.id,
 		name: e.name,
 		background: background,
@@ -76,6 +83,17 @@ export function repeatableEventToEventCache(
 	background: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
+		...(e.seriesUid
+			? {
+					eventUid: e.eventUid,
+					seriesUid: e.seriesUid,
+					occurrence: { seriesUid: e.seriesUid, occurrenceDate: DateTime.getYYYYMMDD(currentDate) },
+					occurrenceKey: occurrenceEventUid({
+						seriesUid: e.seriesUid,
+						occurrenceDate: DateTime.getYYYYMMDD(currentDate)
+					})
+				}
+			: {}),
 		id: e.id,
 		name: e.name,
 		background: background,
