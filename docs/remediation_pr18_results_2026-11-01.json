@@ -1,0 +1,273 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 18 / stage 8: PR and push CI, full and production audit, exact temporary exceptions, deploy gates",
+  "baseCommit": "0a00db98d69ffbebb1f05c2dfd3e8cf2c4bebca3",
+  "initialWorkingTreeClean": true,
+  "node": "v24.12.0",
+  "npm": "11.12.1",
+  "implementedLocally": true,
+  "stage8CompletedLocally": false,
+  "committedByAgent": false,
+  "remotePrCreated": false,
+  "deployed": false,
+  "githubActionsExecuted": false,
+  "branchProtectionChanged": false,
+  "cleanInstallPerformed": false,
+  "checks": {
+    "ci-tests": {
+      "name": "ci-tests",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "--test-reporter=tap",
+        "scripts/audit-policy.test.mjs",
+        "scripts/audit-dependencies.test.mjs",
+        "scripts/package-pages.test.mjs"
+      ],
+      "startedAt": "2026-11-01T08:28:32.648Z",
+      "durationMs": 1236,
+      "exitCode": 0,
+      "passed": 67,
+      "failed": 0,
+      "artifact": "artifacts/remediation-pr18/ci-tests.log"
+    },
+    "actionlint": {
+      "name": "actionlint",
+      "command": [
+        "E:\\@projects\\projector\\artifacts\\remediation-pr18\\actionlint\\actionlint.exe",
+        "-color",
+        ".github/workflows/build.yml"
+      ],
+      "startedAt": "2026-11-01T08:28:32.662Z",
+      "durationMs": 305,
+      "exitCode": 0,
+      "version": "1.7.12",
+      "archiveSha256": "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9",
+      "verifiedReleaseArchiveSha256": "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9",
+      "release": "https://github.com/rhysd/actionlint/releases/tag/v1.7.12"
+    },
+    "formatting": {
+      "name": "formatting",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/prettier/bin/prettier.cjs",
+        "--check",
+        "scripts/audit-policy.mjs",
+        "scripts/audit-dependencies.mjs",
+        "scripts/audit-policy.test.mjs",
+        "scripts/audit-dependencies.test.mjs",
+        "scripts/package-pages.test.mjs",
+        "scripts/test-utils/audit-fixtures.mjs",
+        "security/audit-policy.json",
+        ".github/workflows/build.yml"
+      ],
+      "startedAt": "2026-11-01T08:28:32.702Z",
+      "durationMs": 433,
+      "exitCode": 0
+    },
+    "typecheck": {
+      "name": "typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "startedAt": "2026-11-01T08:23:49.439Z",
+      "durationMs": 8533,
+      "exitCode": 0
+    },
+    "e2e-typecheck": {
+      "name": "e2e-typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.e2e.json"
+      ],
+      "startedAt": "2026-11-01T08:23:49.444Z",
+      "durationMs": 4239,
+      "exitCode": 0
+    },
+    "lint": {
+      "name": "lint",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "src/**/*.{js,jsx,ts,tsx}",
+        "e2e/**/*.ts",
+        "playwright.config.ts",
+        "--format",
+        "json",
+        "--output-file",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr18\\lint.json"
+      ],
+      "startedAt": "2026-11-01T08:23:49.449Z",
+      "durationMs": 29365,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6,
+      "artifact": "artifacts/remediation-pr18/lint.json"
+    },
+    "jest": {
+      "name": "jest",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr18\\jest.json"
+      ],
+      "startedAt": "2026-11-01T08:23:49.455Z",
+      "durationMs": 40127,
+      "exitCode": 0,
+      "passed": 3842,
+      "failed": 0,
+      "suites": 33,
+      "artifact": "artifacts/remediation-pr18/jest.json"
+    },
+    "build": {
+      "name": "build",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/webpack/bin/webpack.js",
+        "--mode",
+        "production",
+        "--output-path",
+        "artifacts/pages-build",
+        "--json",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr18\\webpack.json"
+      ],
+      "startedAt": "2026-11-01T08:24:29.582Z",
+      "durationMs": 22952,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr18/webpack.json"
+    },
+    "pages": {
+      "name": "pages",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "scripts/package-pages.mjs"
+      ],
+      "startedAt": "2026-11-01T08:24:52.535Z",
+      "durationMs": 178,
+      "exitCode": 0,
+      "fileCount": 14,
+      "filesSha256": {
+        "dist/favicons/stencil/android/icons8-72.png": "60e1318d109857bb5a96b875b1e37f1242a308709bdcfff06d61e85054c1a5a0",
+        "dist/favicons/stencil/android/icons8-96.png": "7e76905dbcd67efa8a832d7bd0a1cc726d7512b3a4e40e94b9aca1c5e88f68b7",
+        "dist/favicons/stencil/ios/icons8-57.png": "b5a432f027d439dece96b88ce777cf2f7e10867ca14e72ade8989774e715280a",
+        "dist/favicons/stencil/ios/icons8-60.png": "15cdd71d07946d1190dd141368217b63842dcaab2c3008df23bc379e2ba51c31",
+        "dist/favicons/stencil/ios/icons8-72.png": "60e1318d109857bb5a96b875b1e37f1242a308709bdcfff06d61e85054c1a5a0",
+        "dist/favicons/stencil/ios/icons8-76.png": "e9110206ac988b0eaf85e408de1ceb226bf57cee0577d1fe8b29c9b49ac0fda7",
+        "dist/favicons/stencil/web/icons8-16.png": "abdcb6f1f4a4b56abe7ae4951cee85e3ddfbd418f087c0df7471e7f462f49224",
+        "dist/favicons/stencil/web/icons8-32.png": "56a09d00956c9296537f7a95d456f05208c4150205bcd3f7c5f2bccb7d10bfb8",
+        "dist/favicons/stencil/web/icons8-96.png": "7e76905dbcd67efa8a832d7bd0a1cc726d7512b3a4e40e94b9aca1c5e88f68b7",
+        "dist/favicons/stencil/windows/icons8-70.png": "2aaf72b2b9dd9af0fdda7c998a8fc03611dfe3505bbe24ec8e140fe22bbb9c01",
+        "dist/main.css": "f266be6246cbbcf5c308a9d1303c06e125acb51363c3026acfe45c2de550e7cc",
+        "dist/main.js": "5df6b34a7bc23cd8dfd3a3d90987d0cd4a6fb1ff0082759445f9e916c7b30908",
+        "dist/main.js.LICENSE.txt": "bc83aaff43d3ef9301331bbfeaacc4d2d8549dfc9029f786bd6abdd32363b020",
+        "index.html": "561ec73081afab6f64b01ed7a51049e35907e893cf3ca842ac380f54a441c28e"
+      }
+    },
+    "e2e": {
+      "name": "e2e",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/@playwright/test/cli.js",
+        "test"
+      ],
+      "startedAt": "2026-11-01T08:24:52.713Z",
+      "durationMs": 81787,
+      "exitCode": 0,
+      "stats": {
+        "startTime": "2026-11-01T08:24:53.596Z",
+        "duration": 80762.057,
+        "expected": 45,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "artifact": "artifacts/remediation-pr18/playwright.json"
+    },
+    "audit": {
+      "name": "audit",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npm-cli.js",
+        "run",
+        "audit:ci"
+      ],
+      "startedAt": "2026-11-01T08:28:32.657Z",
+      "durationMs": 8804,
+      "exitCode": 0,
+      "policyStatus": "passed",
+      "modes": {
+        "full": {
+          "status": "passed",
+          "auditStatus": "advisories",
+          "npmExitCode": 1,
+          "counts": {
+            "info": 0,
+            "low": 4,
+            "moderate": 27,
+            "high": 0,
+            "critical": 0,
+            "total": 31
+          },
+          "blocked": 0,
+          "uniqueAdvisories": [
+            "GHSA-g3hv-75wg-m249",
+            "GHSA-3g3m-2fjr-6pw4",
+            "GHSA-gcqx-w48m-w2h4"
+          ],
+          "rawSha256": "64294253e2f80287b7bcced6f6acd113f4706f82f55bd5864fe80c4d75dec3c5"
+        },
+        "production": {
+          "status": "passed",
+          "auditStatus": "clean",
+          "npmExitCode": 0,
+          "counts": {
+            "info": 0,
+            "low": 0,
+            "moderate": 0,
+            "high": 0,
+            "critical": 0,
+            "total": 0
+          },
+          "blocked": 0,
+          "uniqueAdvisories": [],
+          "rawSha256": "4561760f50c8ad4fb961bfb3fb6e5903fb9d64161b761968b7c2e9ddde63e4f8"
+        }
+      },
+      "artifact": "artifacts/remediation-pr18/audit/summary.json"
+    }
+  },
+  "sourceSha256": {
+    ".env.example": "d880ea02b516281709fbf13a2c772da7974f177c8cac7a72172030ed896a6560",
+    ".github/workflows/build.yml": "5f4bedb385c1806d2ac3692a7c8b071919047593ad0ce28eaa540d50bbf4bea5",
+    "package.json": "ab530782c9192c1fa2a3c4779aaf5e4d986b218b1004a0364cf2c77ac8c77335",
+    "scripts/audit-dependencies.mjs": "e4c7cee961feab402f4c2eb4d33776a1e64e8ff2fbbf6975eafdffb7afce8805",
+    "scripts/audit-dependencies.test.mjs": "467b640e7c0e49c23c71e85fcfa85b857078e755ad172367df98cd1e27db3177",
+    "scripts/audit-policy.mjs": "52888cc73dfbd77efc174702cd4dcd3ead017e539eb9a52aa7afebbf855033af",
+    "scripts/audit-policy.test.mjs": "a89a5e7b893740ab421bb20b3c16d110db2f1447f259ce47dfdf604107ee8c19",
+    "scripts/package-pages.test.mjs": "a47d716c8e90c24b1f6646a291fa8dfccba2b6902c19a9837c95b3827f1f4d2b",
+    "scripts/test-utils/audit-fixtures.mjs": "1b5a67adb8385d24ee5a9d183206ae4fa400710c2fef67d91f5f25c2c0c58f40",
+    "security/audit-policy.json": "dd8d858399b1277b6c8c2fed4530c6f4fa4ef5a336eaeceb6a0c106cfaa64887"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4",
+  "lockfileGitUnchanged": true,
+  "dependenciesUnchanged": true,
+  "exceptionCount": 0,
+  "limits": [
+    "Validation performed locally on Windows; GitHub runner not executed",
+    "Required PR checks in branch protection must be configured separately; repository settings untouched",
+    "Existing moderate/low dev-tool advisories remain visible; follow-up review scheduled for 2026-11-14",
+    "No dependency or application code changes and no new isolated npm ci in this block",
+    "Google/weather mocked at the Chromium network boundary; no live Drive operations",
+    "Node CLI exit/import/case-path tests were added after the application regression run; final CI tooling and real audits were then rerun"
+  ]
+}

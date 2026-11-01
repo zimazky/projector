@@ -1,3 +1,6 @@
+import { getIsDirty, getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
+import { storedDocument } from 'src/test-utils/storedDocument'
+import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import { DocumentSession } from './DocumentTabsStore.types'
 
@@ -5,17 +8,10 @@ const DOCUMENT_TABS_KEY = 'documentTabs'
 
 type GoogleApiServiceMock = {
 	isGoogleLoggedIn: boolean
-	getFileMetadata: jasmine.Spy
-	downloadFileContent: jasmine.Spy
-	saveFile: jasmine.Spy
-	logIn: jasmine.Spy
-}
-
-type StorageServiceMock = {
-	applyContent: jasmine.Spy
-	getContentToSave: jasmine.Spy
-	desyncWithStorages: jasmine.Spy
-	resetToEmptyContent: jasmine.Spy
+	getFileMetadata: jest.Mock
+	downloadFileContent: jest.Mock
+	updateFileContent: jest.Mock
+	logIn: jest.Mock
 }
 
 function createGoogleApiServiceMock(): GoogleApiServiceMock {
@@ -28,31 +24,19 @@ function createGoogleApiServiceMock(): GoogleApiServiceMock {
 		set isGoogleLoggedIn(value: boolean) {
 			loggedIn = value
 		},
-		getFileMetadata: jasmine.createSpy('getFileMetadata'),
-		downloadFileContent: jasmine.createSpy('downloadFileContent'),
-		saveFile: jasmine.createSpy('saveFile'),
-		logIn: jasmine.createSpy('logIn')
-	}
-}
-
-function createStorageServiceMock(): StorageServiceMock {
-	return {
-		applyContent: jasmine.createSpy('applyContent'),
-		getContentToSave: jasmine.createSpy('getContentToSave').and.returnValue({
-			projectsList: [],
-			completedList: [],
-			plannedList: []
-		}),
-		desyncWithStorages: jasmine.createSpy('desyncWithStorages'),
-		resetToEmptyContent: jasmine.createSpy('resetToEmptyContent')
+		getFileMetadata: jest
+			.fn()
+			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' })),
+		downloadFileContent: jest.fn(),
+		updateFileContent: jest.fn(),
+		logIn: jest.fn()
 	}
 }
 
 function createStore() {
 	const googleApiService = createGoogleApiServiceMock()
-	const storageService = createStorageServiceMock()
-	const store = new DocumentTabsStore(googleApiService as any, storageService as any)
-	return { store, googleApiService, storageService }
+	const store = new DocumentTabsStore(googleApiService as any)
+	return { store, googleApiService }
 }
 
 function clearLocalStorage() {
@@ -86,16 +70,17 @@ describe('DocumentTabsStore', () => {
 			expect(store.documents.length).toBe(1)
 			expect(store.activeDocument?.ref?.name).toBe('Тестовый документ')
 			expect(store.activeDocument?.ref?.fileId).toBeNull()
-			expect(store.activeDocument?.state.isDirty).toBeFalse()
-			expect(store.activeDocument?.state.syncStatus).toBe('offline')
+			expect(getIsDirty(store.activeDocument!)).toBe(false)
+			expect(getDocumentUiState(store.activeDocument!).status).toBe('new')
 		})
 
-		it('применяет пустые данные к storageService', () => {
-			const { store, storageService } = createStore()
+		it('создаёт пер-документные сторы через DocumentStoreManager', () => {
+			const { store } = createStore()
 
 			store.openNewDocument('Тест')
 
-			expect(storageService.applyContent).toHaveBeenCalled()
+			expect(store.activeEventsStore).toBeDefined()
+			expect(store.activeProjectsStore).toBeDefined()
 		})
 
 		it('сохраняет метаданные в localStorage', () => {
@@ -137,15 +122,6 @@ describe('DocumentTabsStore', () => {
 			expect(store.documents.length).toBe(0)
 			expect(store.activeDocumentId).toBeNull()
 		})
-
-		it('вызывает resetToEmptyContent при закрытии последнего документа', () => {
-			const { store, storageService } = createStore()
-
-			store.openNewDocument('Doc 1')
-			store.closeDocument(store.activeDocument!.id)
-
-			expect(storageService.resetToEmptyContent).toHaveBeenCalled()
-		})
 	})
 
 	describe('activateDocument', () => {
@@ -159,18 +135,6 @@ describe('DocumentTabsStore', () => {
 			store.activateDocument(doc1Id)
 
 			expect(store.activeDocument?.id).toBe(doc1Id)
-		})
-
-		it('применяет данные активного документа к storageService', () => {
-			const { store, storageService } = createStore()
-
-			store.openNewDocument('Doc 1')
-			store.openNewDocument('Doc 2')
-			const doc1Id = store.documents[0].id
-
-			store.activateDocument(doc1Id)
-
-			expect(storageService.applyContent).toHaveBeenCalled()
 		})
 
 		it('обновляет lastAccessedAt', () => {
@@ -195,7 +159,7 @@ describe('DocumentTabsStore', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
-			expect(store.activeDocument?.state.isDirty).toBeFalse()
+			expect(getIsDirty(store.activeDocument!)).toBe(false)
 
 			store.updateActiveDocumentData({
 				projectsList: [],
@@ -203,30 +167,33 @@ describe('DocumentTabsStore', () => {
 				plannedList: []
 			})
 
-			expect(store.activeDocument?.state.isDirty).toBeTrue()
+			expect(getIsDirty(store.activeDocument!)).toBe(true)
 		})
 
-		it('не обновляет isDirty, если документ сохраняется', () => {
+		it('сохраняет новые правки и isDirty, пока предыдущий снимок записывается', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.state.isSaving = true
+			session.operation = 'saving'
 
-			store.updateActiveDocumentData({
+			const data = {
 				projectsList: [],
 				completedList: [],
-				plannedList: []
-			})
+				plannedList: [{ name: 'Изменение в полёте', start: '2026.10.31', projectId: 'default' }]
+			}
+			store.updateActiveDocumentData(data)
 
-			expect(session.state.isDirty).toBeFalse()
+			expect(getIsDirty(session)).toBe(true)
+			expect(session.data).toEqual(data)
+			expect(storedDocument(session.id)!.data).toEqual(data)
 		})
 
 		it('устанавливает syncStatus = needs-sync при изменении синхронизированного документа', () => {
 			const { store } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.state.syncStatus = 'synced' as const
+			confirmedDocument(store.activeDocument!, 'file-1')
 
 			store.updateActiveDocumentData({
 				projectsList: [],
@@ -234,7 +201,7 @@ describe('DocumentTabsStore', () => {
 				plannedList: []
 			})
 
-			expect(store.activeDocument?.state.syncStatus as string).toBe('needs-sync')
+			expect(getDocumentUiState(store.activeDocument!).status).toBe('dirty')
 		})
 	})
 
@@ -264,7 +231,7 @@ describe('DocumentTabsStore', () => {
 			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.ref!.fileId = 'file-1'
+			confirmedDocument(store.activeDocument!, 'file-1')
 			googleApiService.isGoogleLoggedIn = false
 
 			await store.syncActiveDocumentWithDrive()
@@ -276,17 +243,18 @@ describe('DocumentTabsStore', () => {
 			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
-			store.activeDocument!.ref!.fileId = 'file-1'
+			confirmedDocument(store.activeDocument!, 'file-1')
 			store.updateActiveDocumentData({
 				projectsList: [],
 				completedList: [],
 				plannedList: []
 			})
 
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
+				version: '1',
 				modifiedTime: new Date().toISOString()
 			})
 
@@ -294,7 +262,7 @@ describe('DocumentTabsStore', () => {
 
 			expect(result.status).toBe('conflict')
 			if (result.status === 'conflict') {
-				expect(result.hasLocalChanges).toBeTrue()
+				expect(result.hasLocalChanges).toBe(true)
 			}
 		})
 
@@ -303,14 +271,15 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
-			session.state.lastSavedAt = Date.now() - 10000 // 10 секунд назад
+			confirmedDocument(session, 'file-1')
+			session.sync.lastSyncAt = Date.now() - 10000 // 10 секунд назад
 
 			const futureDate = new Date(Date.now() + 10000).toISOString()
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
+				version: '2',
 				modifiedTime: futureDate
 			})
 
@@ -318,26 +287,28 @@ describe('DocumentTabsStore', () => {
 
 			expect(result.status).toBe('conflict')
 			if (result.status === 'conflict') {
-				expect(result.hasRemoteChanges).toBeTrue()
+				expect(result.hasRemoteChanges).toBe(true)
 			}
 		})
 
 		it('возвращает success при отсутствии изменений', async () => {
-			const { store, googleApiService, storageService } = createStore()
+			const { store, googleApiService } = createStore()
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
-			session.state.lastSavedAt = Date.now()
+			confirmedDocument(session, 'file-1')
+			const syncedAt = Date.parse('2026-10-31T10:00:00Z')
+			session.sync.lastSyncAt = syncedAt
 
-			googleApiService.getFileMetadata.and.resolveTo({
+			googleApiService.getFileMetadata.mockResolvedValue({
 				id: 'file-1',
 				name: 'Тест',
 				mimeType: 'application/json',
-				modifiedTime: new Date().toISOString()
+				version: '1',
+				modifiedTime: new Date(syncedAt).toISOString()
 			})
 
-			googleApiService.downloadFileContent.and.resolveTo({
+			googleApiService.downloadFileContent.mockResolvedValue({
 				projectsList: [],
 				completedList: [],
 				plannedList: []
@@ -346,8 +317,7 @@ describe('DocumentTabsStore', () => {
 			const result = await store.syncActiveDocumentWithDrive()
 
 			expect(result.status).toBe('success')
-			expect(storageService.applyContent).toHaveBeenCalled()
-			expect(session.state.syncStatus).toBe('synced')
+			expect(getDocumentUiState(session).status).toBe('synced')
 		})
 	})
 
@@ -357,7 +327,7 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
+			expect(result).toBe(false)
 		})
 
 		it('возвращает false, если у документа нет fileId', async () => {
@@ -367,7 +337,7 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
+			expect(result).toBe(false)
 		})
 
 		it('сохраняет документ в Drive и сбрасывает isDirty', async () => {
@@ -375,15 +345,16 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
-			session.state.isDirty = true
+			confirmedDocument(session, 'file-1')
+			store.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 
-			googleApiService.saveFile.and.resolveTo({
+			googleApiService.updateFileContent.mockResolvedValue({
 				status: 'success',
 				file: {
 					id: 'file-1',
 					name: 'Тест',
 					mimeType: 'application/json',
+					version: '1',
 					parents: ['root'],
 					webViewLink: 'https://drive.google.com/file/d/file-1/view'
 				}
@@ -391,10 +362,10 @@ describe('DocumentTabsStore', () => {
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeTrue()
-			expect(googleApiService.saveFile).toHaveBeenCalled()
-			expect(session.state.isDirty).toBeFalse()
-			expect(session.state.syncStatus).toBe('synced')
+			expect(result).toBe(true)
+			expect(googleApiService.updateFileContent).toHaveBeenCalled()
+			expect(getIsDirty(session)).toBe(false)
+			expect(getDocumentUiState(session).status).toBe('synced')
 		})
 
 		it('возвращает false при ошибке сохранения', async () => {
@@ -402,17 +373,18 @@ describe('DocumentTabsStore', () => {
 
 			store.openNewDocument('Тест')
 			const session = store.activeDocument!
-			session.ref!.fileId = 'file-1'
+			confirmedDocument(session, 'file-1')
+			store.updateActiveDocumentData({ projectsList: [], completedList: [], plannedList: [] })
 
-			googleApiService.saveFile.and.resolveTo({
+			googleApiService.updateFileContent.mockResolvedValue({
 				status: 'error',
 				message: 'Network error'
 			})
 
 			const result = await store.saveActiveDocument()
 
-			expect(result).toBeFalse()
-			expect(session.state.error).toBe('Network error')
+			expect(result).toBe(false)
+			expect(session.error?.message).toBe('Network error')
 		})
 	})
 
@@ -438,7 +410,7 @@ describe('DocumentTabsStore', () => {
 
 			const restored = await store.restoreFromLocalStorage()
 
-			expect(restored).toBeTrue()
+			expect(restored).toBe(true)
 			expect(store.documents.length).toBe(1)
 			expect(store.activeDocument?.ref?.name).toBe(docName)
 		})
@@ -448,7 +420,7 @@ describe('DocumentTabsStore', () => {
 
 			const restored = await store.restoreFromLocalStorage()
 
-			expect(restored).toBeFalse()
+			expect(restored).toBe(false)
 		})
 
 		it('загружает данные каждого документа из localStorage', async () => {
@@ -464,7 +436,7 @@ describe('DocumentTabsStore', () => {
 
 			// Сохраняем snapshot и данные перед закрытием
 			const tabsSnapshot = localStorage.getItem(DOCUMENT_TABS_KEY)
-			const dataSnapshot = localStorage.getItem(`document_${docId}`)
+			const dataSnapshot = storedDocument(docId)
 
 			// Закрываем и восстанавливаем
 			store.closeDocument(docId)
@@ -473,7 +445,7 @@ describe('DocumentTabsStore', () => {
 				localStorage.setItem(DOCUMENT_TABS_KEY, tabsSnapshot)
 			}
 			if (dataSnapshot) {
-				localStorage.setItem(`document_${docId}`, dataSnapshot)
+				localStorage.setItem(`document_${docId}`, JSON.stringify(dataSnapshot))
 			}
 
 			await store.restoreFromLocalStorage()
@@ -482,46 +454,71 @@ describe('DocumentTabsStore', () => {
 		})
 	})
 
-	describe('dirtyDocumentsCount', () => {
-		it('возвращает количество изменённых документов', () => {
+	describe('applyContentToActiveDocument', () => {
+		it('применяет контент без объявления неподтверждённой синхронизации', () => {
 			const { store } = createStore()
 
-			store.openNewDocument('Doc 1')
-			store.openNewDocument('Doc 2')
-			store.openNewDocument('Doc 3')
+			store.openNewDocument('Тест')
+			confirmedDocument(store.activeDocument!, 'file-1')
 
-			store.activateDocument(store.documents[0].id)
-			store.updateActiveDocumentData({
-				projectsList: [],
+			store.applyContentToActiveDocument({
+				projectsList: [{ name: 'Новый проект', color: '#00ff00', background: '#ffffff' }],
 				completedList: [],
 				plannedList: []
 			})
 
-			store.activateDocument(store.documents[1].id)
-			store.updateActiveDocumentData({
-				projectsList: [],
-				completedList: [],
-				plannedList: []
-			})
+			expect(store.activeDocument?.data.projectsList.length).toBe(1) // Новый проект (default добавляется только в ProjectsStore)
+			expect(getDocumentUiState(store.activeDocument!).status).toBe('dirty')
+		})
 
-			expect(store.dirtyDocumentsCount).toBe(2)
+		it('не делает ничего, если нет активного документа', () => {
+			const { store } = createStore()
+
+			expect(() => {
+				store.applyContentToActiveDocument({
+					projectsList: [],
+					completedList: [],
+					plannedList: []
+				})
+			}).not.toThrow()
 		})
 	})
 
-	describe('offlineDocumentsCount', () => {
-		it('возвращает количество офлайн-документов с fileId', () => {
+	describe('getDocumentDataForSave', () => {
+		it('возвращает данные документа для сохранения', () => {
 			const { store } = createStore()
 
-			store.openNewDocument('Doc 1')
-			store.openNewDocument('Doc 2')
+			store.openNewDocument('Тест')
+			const docId = store.activeDocument!.id
 
-			// Устанавливаем fileId и offline статус
-			store.documents[0].ref!.fileId = 'file-1'
-			store.documents[0].state.syncStatus = 'offline'
-			store.documents[1].ref!.fileId = 'file-2'
-			store.documents[1].state.syncStatus = 'synced'
+			const data = store.getDocumentDataForSave(docId)
 
-			expect(store.offlineDocumentsCount).toBe(1)
+			expect(data).toBeDefined()
+			expect(data!.projectsList).toBeDefined()
+			expect(data!.completedList).toBeDefined()
+			expect(data!.plannedList).toBeDefined()
+		})
+
+		it('возвращает данные активного документа, если documentId не указан', () => {
+			const { store } = createStore()
+
+			store.openNewDocument('Тест')
+
+			const data = store.getDocumentDataForSave()
+
+			expect(data).toBeDefined()
+		})
+
+		it('возвращает null, если документ не найден', () => {
+			const { store } = createStore()
+
+			expect(store.getDocumentDataForSave('missing')).toBeNull()
+		})
+
+		it('возвращает null, если нет активного документа', () => {
+			const { store } = createStore()
+
+			expect(store.getDocumentDataForSave()).toBeNull()
 		})
 	})
 })

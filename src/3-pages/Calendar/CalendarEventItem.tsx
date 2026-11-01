@@ -1,6 +1,7 @@
-import React, { useContext } from 'react'
+import React from 'react'
+import { observer } from 'mobx-react-lite'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import styles from './CalendarEventItem.module.css'
 
@@ -13,16 +14,18 @@ type CalendarEventItemProps = {
 	daysInCurrentWeek: number
 }
 
-const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
-	const { eventFormStore, eventsStore, eventSearchStore } = useContext(StoreContext)
+const CalendarEventItem: React.FC<CalendarEventItemProps> = observer(props => {
+	const { eventFormStore, documentTabsStore, eventSearchStore } = useStores()
+	const eventsStore = documentTabsStore.activeEventsStore
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
 	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days } = props.event
 
 	// Проверяем, подсвечено ли это событие поиском
 	const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
 
-	const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
+	const openEventForm = (e: React.SyntheticEvent<HTMLElement>) => {
 		e.stopPropagation()
+		if (!eventsStore) return
 		const s = eventsStore.getEventDto(id)
 		if (s === undefined) return
 		eventFormStore.setEventDto({ ...s, id, completed, timestamp: start })
@@ -37,6 +40,8 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 		<div className={styles.placeholder}></div>
 	) : (
 		<div
+			role="button"
+			tabIndex={0}
 			className={`${completed ? styles.completed : repeatable ? styles.repeatable : styles.item} ${isHighlighted ? styles.highlighted : ''}`}
 			draggable={true}
 			onDragStart={onDragStart}
@@ -49,6 +54,12 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 				color: color
 			}}
 			onClick={openEventForm}
+			onKeyDown={event => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault()
+					openEventForm(event)
+				}
+			}}
 			title={
 				name +
 				(time !== null ? '\ntime: ' + DateTime.secondsToHMM(time) : '') +
@@ -68,6 +79,6 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 			</div>
 		</div>
 	)
-}
+})
 
 export default CalendarEventItem

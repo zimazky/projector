@@ -1,0 +1,188 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "stage": "5 completion / PR 10",
+  "baselineCommit": "448006865d3bf13d2609fbf01b63808e5d4ceb28",
+  "initialWorkingTree": "Only docs/remediation_plan_2026-10-31_ru.md was modified; the existing S01 and PR 10 requirements were preserved.",
+  "branch": "per_document_stores_glm5_v1",
+  "node": "v24.12.0",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "realDrive": false,
+  "committedByAgent": false,
+  "verification": {
+    "checks": [
+      {
+        "name": "typecheck",
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit"
+        ],
+        "exitCode": 0,
+        "durationMs": 3076,
+        "status": "passed"
+      },
+      {
+        "name": "typecheck-e2e",
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.e2e.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 907,
+        "status": "passed"
+      },
+      {
+        "name": "lint",
+        "args": [
+          "node_modules/eslint/bin/eslint.js",
+          "src/**/*.{js,jsx,ts,tsx}",
+          "e2e/**/*.ts",
+          "playwright.config.ts",
+          "--format",
+          "json",
+          "--output-file",
+          "artifacts/remediation-pr10/lint.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 16722,
+        "status": "passed"
+      },
+      {
+        "name": "jest",
+        "args": [
+          "node_modules/jest/bin/jest.js",
+          "--runInBand",
+          "--json",
+          "--outputFile",
+          "artifacts/remediation-pr10/jest.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 13116,
+        "status": "passed"
+      },
+      {
+        "name": "build",
+        "args": [
+          "node_modules/webpack/bin/webpack.js",
+          "--mode",
+          "production",
+          "--output-path",
+          "artifacts/remediation-pr10/build",
+          "--json",
+          "artifacts/remediation-pr10/webpack.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 12411,
+        "status": "passed"
+      },
+      {
+        "name": "chromium",
+        "args": [
+          "node_modules/@playwright/test/cli.js",
+          "test"
+        ],
+        "exitCode": 0,
+        "durationMs": 57606,
+        "status": "passed"
+      }
+    ],
+    "jest": {
+      "numPassedTestSuites": 23,
+      "numFailedTestSuites": 0,
+      "numPassedTests": 3657,
+      "numFailedTests": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 8
+    },
+    "browser": {
+      "engine": "Chromium",
+      "startTime": "2026-10-31T22:17:00.453Z",
+      "duration": 56978.183,
+      "expected": 22,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "newScenarios": 3,
+      "realNetworkReplaced": true
+    },
+    "build": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "legacyAudit": {
+      "scope": "Production src/**/*.ts and src/**/*.tsx, excluding tests and test-utils",
+      "violations": [],
+      "legacyReadsInMigration": [
+        {
+          "file": "src/6-entities/Document/model/DocumentSessionFormat.ts",
+          "line": 49,
+          "text": "if (legacy && state && state.hasUnsyncedChanges === undefined) state.hasUnsyncedChanges = state.isDirty"
+        },
+        {
+          "file": "src/6-entities/Document/model/DocumentSessionFormat.ts",
+          "line": 53,
+          "text": "['isDirty', 'isLoading', 'isSaving', 'hasUnsyncedChanges'].some(key => typeof state[key] !== 'boolean') ||"
+        },
+        {
+          "file": "src/6-entities/Document/model/DocumentSessionFormat.ts",
+          "line": 109,
+          "text": "sync.localVersion = state?.isDirty || state?.hasUnsyncedChanges ? 1 : 0"
+        }
+      ],
+      "passed": true
+    }
+  },
+  "format": {
+    "sessionSchemaVersion": 2,
+    "driveDocumentSchemaVersion": 1,
+    "indexedDatabaseStructureVersion": 1,
+    "legacyReadFormats": [
+      "unversioned split localStorage",
+      "v1 full localStorage",
+      "v1 IndexedDB current",
+      "v1 session export"
+    ],
+    "legacyRuntimeStateRemoved": true,
+    "legacyAdapterRemoved": true,
+    "unknownBaseRemainsDirty": true,
+    "localSourceBackupBeforeOverwrite": true,
+    "indexedSourceArchiveAndMigrationAtomic": true
+  },
+  "limitations": [
+    "S01 remains pending: ordinary Drive saves still create separate versions.",
+    "No real Drive, OAuth, deployment or GitHub Actions run.",
+    "Older application code cannot read v2 sessions; use original archives on a copy and preserve subsequent edits for rollback."
+  ],
+  "artifacts": "artifacts/remediation-pr10",
+  "startedAt": "2026-10-31T22:16:13.635Z",
+  "finishedAt": "2026-10-31T22:17:57.478Z",
+  "checkedFilesSha256": {
+    "README.md": "911f453e4a2eb3d538486f9553a432e5ea85b2458b1f42bbda64027672f99a9a",
+    "docs/remediation_plan_2026-10-31_ru.md": "9226d69daf2333272c7f78b77169613c9c83a2dac9e6e319dc9934404da99a3b",
+    "docs/remediation_pr10_2026-11-01_ru.md": "9bf1eb4029c313d98a5f30c2314e55a69e94dc18fcefea81b5c63df3fd1e1edf",
+    "docs/remediation_stage5_2026-11-01_ru.md": "ad771d7e8e0a64fbe62cd39806b295f2ecf7d5411a940046f80d5d8ee07d7c2a",
+    "e2e/session-v2.spec.ts": "a9257458fdb18bf753c8c74cbff88c2b98ef82a7fc8c1c0eb5060f67d24cfc98",
+    "src/1-app/App/App.spec.tsx": "559f750e3872580ddcb3dccc45aecfe1a7834acfd2745c19b125ed80ee6d1534",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "80c83565be9e50758c1bd332dfdd0d2e6a4ca781e7bb267f0e50115f7de1b40f",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "37aa0343deddb10cabae66841a0bbc969567dae94814d7b3e3aec38bd85ecd16",
+    "src/6-entities/Document/model/DocumentDriveSync.spec.ts": "d8b8c6d795f8a0053cccdaaf9a9cc4fe391f5e2e5cfdd875f525a7b7614680c4",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "270f897fc1fb5fa863bb7dc851558a385d26ee9299b0cae03fe5bb3e3195a55d",
+    "src/6-entities/Document/model/DocumentPersistence.ts": "4627dbd1eb7196ff72f350af5dbfb3d909323cdfe0b49fbe599a1fc066e34606",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "6d25d814939d4fd7ec22c8b271b94e8f6213725ac279eaa7f5084efa905a7194",
+    "src/6-entities/Document/model/DocumentSessionFormat.spec.ts": "64eb6c9b86214e79606e62185665b766cbca9768c3f3256ef7e581a6cb980be0",
+    "src/6-entities/Document/model/DocumentSessionFormat.ts": "4d9220dd128c72836052481ad9955aee25d7babe639bf82b4e77d7bcb99f99b3",
+    "src/6-entities/Document/model/DocumentSyncSelectors.ts": "015de5afad246caab1d5385673d725378ee1ecb55779dec3ac821d7c74ab18f2",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "0d4aa2c5df21c88f99905ea6a3b90e7e839acd9c26383d5801858f5e165a8e0b",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "eacda57e96eba8960a4bffc25f3bf8a2d333169dfad9b1ff427a45251519d969",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "641f274a69f22bd5ef6a6e95030fffbfe6abe621465998893ba7d0dd608c14ea",
+    "src/6-entities/Document/model/index.ts": "672581671cb95851912f37b025542bdb2b2e416dcb288e25dcb198409e152a7d",
+    "src/6-entities/Document/model/types.ts": "7c5a7210d9f551d4f03252a8950a5671b31ac420085491ae48d398b0104a0df1",
+    "src/test-utils/DocumentFixtures.spec.ts": "3a93bb590f7e9257cbad2a37cba0af2c675fe0ea293232cf53d69e08e79333cd",
+    "src/test-utils/legacySession.ts": "7e7a07dafa37066e04d075512c4c103aab7f00cb9f548537127c36fe4d01e7de"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4"
+}

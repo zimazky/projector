@@ -1,0 +1,151 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 14 / stage 7 / F14 weather",
+  "baseCommit": "023a86609ea2c4b45ba156b98561df3f909dff88",
+  "node": "v24.12.0",
+  "initialWorkingTreeClean": true,
+  "implementedLocally": true,
+  "stage7CompletedLocally": false,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "name": "typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "startedAt": "2026-11-01T03:43:10.617Z",
+      "durationMs": 5928,
+      "exitCode": 0
+    },
+    "e2eTypecheck": {
+      "name": "e2e-typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.e2e.json"
+      ],
+      "startedAt": "2026-11-01T03:43:16.602Z",
+      "durationMs": 1416,
+      "exitCode": 0
+    },
+    "lint": {
+      "name": "lint",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "src/**/*.{js,jsx,ts,tsx}",
+        "e2e/**/*.ts",
+        "playwright.config.ts",
+        "--format",
+        "json",
+        "--output-file",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr14\\lint.json"
+      ],
+      "startedAt": "2026-11-01T03:43:18.087Z",
+      "durationMs": 29158,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 8,
+      "artifact": "artifacts/remediation-pr14/lint.json"
+    },
+    "jest": {
+      "name": "jest",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr14\\jest.json"
+      ],
+      "startedAt": "2026-11-01T03:43:10.626Z",
+      "durationMs": 39218,
+      "exitCode": 0,
+      "passed": 3785,
+      "failed": 0,
+      "suites": 27,
+      "artifact": "artifacts/remediation-pr14/jest.json"
+    },
+    "productionBuild": {
+      "name": "build",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/webpack/bin/webpack.js",
+        "--mode",
+        "production",
+        "--output-path",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr14\\build",
+        "--json",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr14\\webpack.json"
+      ],
+      "startedAt": "2026-11-01T03:43:10.617Z",
+      "durationMs": 18270,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr14/webpack.json"
+    },
+    "chromium": {
+      "name": "chromium",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/@playwright/test/cli.js",
+        "test"
+      ],
+      "startedAt": "2026-11-01T03:43:10.621Z",
+      "durationMs": 85629,
+      "exitCode": 0,
+      "startTime": "2026-11-01T03:43:11.179Z",
+      "duration": 84936.89099999999,
+      "expected": 36,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "artifact": "artifacts/remediation-pr14/playwright.json"
+    }
+  },
+  "regressionsAdded": {
+    "unit": 46,
+    "chromium": 4
+  },
+  "weatherContract": {
+    "timeoutMs": 15000,
+    "timezone": "DateTime.timezone",
+    "rejectsPartialMalformedForecasts": true,
+    "ignoresStaleSuccessAndFailure": true,
+    "testedTimezones": [
+      0,
+      3,
+      5.5,
+      -7
+    ]
+  },
+  "formats": {
+    "document": 2,
+    "session": 3,
+    "indexedDatabase": 1,
+    "changed": false
+  },
+  "dependenciesChanged": false,
+  "npmAuditRerun": false,
+  "realDriveVerificationRerun": false,
+  "realOpenWeatherVerification": false,
+  "nextStep": "Stage 7 / F15: disabled, keyboard, accessible dialogs, focus and timer cleanup",
+  "hashes": {
+    "src/5-features/Weather/WeatherStore.ts": "bbdd921330a3684f49d0409fd0888050377b308a0c78763006d38a4a56a47f94",
+    "src/5-features/Weather/WeatherStore.spec.ts": "7bfe4f718752a5e52693344d32025b3419672b04280d2d9046fedd00e587e3d9",
+    "src/7-shared/services/openweathermap.ts": "317515ee39660c71341c613877c7d0d7ba59cae1f8e5162e713453cebef2b6de",
+    "src/7-shared/services/openweathermap.spec.ts": "3e2c133846f816007f82bda611d74b1eda976d5120bc3969da82e4d0e7d61c0c",
+    "src/test-utils/weatherForecast.ts": "0bfcd1c2d5b9d84833cab47836cd1e8d630deafbd96d53c5bf058016a8d6eb25",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "f1a1a3ec1c4b2816e334114f93291dcc675b829a2d8f4830e0899ea5388c4e42",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.module.css": "7846b5e3ec6761d15bd86a814e21234af55ea9f66fcb5fd77d1977879c5031fe",
+    "e2e/weather.spec.ts": "fe611b3440afa6e9280d72c2d5a46bd9fe31005c7efd884a6904b366c27392c9",
+    "docs/remediation_plan_2026-10-31_ru.md": "e90c9573e5bb521b136583e3797643e33df5f49f88dd53971a73013cbdaf05e6",
+    "docs/remediation_pr14_2026-11-01_ru.md": "d17677ddc74ab54a36e1def3340742df08bda6a12ae7da5d228ec1c2b11512cc"
+  }
+}

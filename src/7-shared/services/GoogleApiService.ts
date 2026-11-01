@@ -1,4 +1,5 @@
-import GAPI, { DriveFileMetadata } from './gapi'
+import GAPI, { DriveFileMetadata, DRIVE_DOCUMENT_FIELDS, driveQueryLiteral } from './gapi'
+import { driveErrorCode, driveErrorMessage } from './DriveApiError'
 import { makeAutoObservable, runInAction } from 'mobx'
 
 export type SaveFileResult =
@@ -19,6 +20,7 @@ export class GoogleApiService {
 	private gapiReadyPromise: Promise<void> | null = null
 	private resolveGapiReady: (() => void) | null = null
 	private rejectGapiReady: ((reason?: unknown) => void) | null = null
+	private lifetime = new AbortController()
 
 	constructor() {
 		makeAutoObservable(this)
@@ -29,6 +31,7 @@ export class GoogleApiService {
 			this.resolveGapiReady = resolve
 			this.rejectGapiReady = reject
 		})
+		void this.gapiReadyPromise.catch(() => {})
 	}
 
 	/**
@@ -36,12 +39,14 @@ export class GoogleApiService {
 	 * Устанавливает обработчики для успешной инициализации, входа и истечения токена.
 	 */
 	initGapi = () => {
-		if (this.isGapiInitStarted) return
+		if (this.isGapiInitStarted || this.lifetime.signal.aborted) return
 		this.isGapiInitStarted = true
 		this.resetGapiReadyPromise()
 
 		GAPI.init({
+			signal: this.lifetime.signal,
 			onSuccess: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = GAPI.isLoggedIn()
 				})
@@ -51,10 +56,12 @@ export class GoogleApiService {
 				this.resolveGapiReady?.()
 			},
 			onFailure: () => {
+				if (this.lifetime.signal.aborted) return
 				this.isGapiInitStarted = false
 				this.rejectGapiReady?.(new Error('Failed to initialize Google API'))
 			},
 			onSignIn: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = GAPI.isLoggedIn()
 					console.log('onSignIn in GoogleApiService', this.isGoogleLoggedIn)
@@ -64,6 +71,7 @@ export class GoogleApiService {
 				})
 			},
 			onExpiredToken: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = false
 					this.userName = null
@@ -72,6 +80,15 @@ export class GoogleApiService {
 				})
 			}
 		})
+	}
+
+	/** Освободить загрузчики и OAuth-ожидания без отзыва выданного разрешения. */
+	dispose = () => {
+		if (this.lifetime.signal.aborted) return
+		this.lifetime.abort()
+		this.rejectGapiReady?.(new Error('Google API service disposed'))
+		this.resolveGapiReady = null
+		this.rejectGapiReady = null
 	}
 
 	/** Дождаться завершения инициализации GAPI */
@@ -87,8 +104,11 @@ export class GoogleApiService {
 	 * @returns Promise<void>
 	 */
 	logIn = async () => {
+		if (this.lifetime.signal.aborted) throw new Error('Google API service disposed')
+		if (!this.isGapiInitStarted) this.initGapi()
 		await this.waitForGapiReady()
 		await GAPI.logIn()
+		if (this.lifetime.signal.aborted) return
 		runInAction(() => {
 			this.isGoogleLoggedIn = GAPI.isLoggedIn()
 		})
@@ -113,13 +133,14 @@ export class GoogleApiService {
 		if (!this.isGoogleLoggedIn) return
 		try {
 			const info = await GAPI.getUserInfo()
+			if (this.lifetime.signal.aborted) return
 			runInAction(() => {
 				this.userName = info.name ?? null
 				this.userAvatarUrl = info.picture ?? null
 				this.userEmail = info.email ?? null
 			})
-		} catch (e) {
-			console.error('Failed to load Google user profile', e)
+		} catch {
+			console.error('Failed to load Google user profile')
 		}
 	}
 
@@ -201,64 +222,117 @@ export class GoogleApiService {
 		return GAPI.deleteFile(itemId)
 	}
 
+	/** Обычное сохранение обновляет текущий fileId только по проверенной версии и ETag. */
+	async updateFileContent(
+		fileId: string,
+		content: string,
+		mimeType: string,
+		expectedVersion: string,
+		isCurrent: () => boolean = () => true
+	): Promise<SaveFileResult> {
+		if (!this.isGoogleLoggedIn) await this.logIn()
+		if (!this.isGoogleLoggedIn) return { status: 'error', message: 'Войдите в Google для сохранения.' }
+		let writing = false
+		try {
+			if (!isCurrent()) return { status: 'error', message: 'Операция сохранения отменена.' }
+			if (!fileId || !/^\d+$/.test(expectedVersion)) throw new Error('Нет проверенной версии для сохранения.')
+			const condition = await GAPI.getFileWriteCondition(fileId)
+			if (!isCurrent()) return { status: 'error', message: 'Операция сохранения отменена.' }
+			if (condition.file.version !== expectedVersion) return { status: 'conflict', existingFiles: [condition.file] }
+			writing = true
+			const updated = await GAPI.updateDocument(fileId, content, mimeType, condition)
+			if (
+				updated.id !== fileId ||
+				!updated.version ||
+				!/^\d+$/.test(updated.version) ||
+				BigInt(updated.version) <= BigInt(expectedVersion) ||
+				updated.trashed
+			)
+				throw new Error('Drive не подтвердил новую версию исходного файла.')
+			return { status: 'success', file: updated }
+		} catch (error: unknown) {
+			if (driveErrorCode(error) === 412) {
+				try {
+					return { status: 'conflict', existingFiles: [await this.getFileMetadata(fileId)] }
+				} catch {
+					return {
+						status: 'error',
+						message: 'Файл Drive изменился во время сохранения. Обновление отклонено; повторите проверку.'
+					}
+				}
+			}
+			return {
+				status: 'error',
+				message: writing
+					? 'Результат сохранения не подтверждён. Локальные данные сохранены; проверьте Drive перед повтором. ' +
+						driveErrorMessage(error)
+					: driveErrorMessage(error)
+			}
+		}
+	}
+
+	/** «Сохранить как» создаёт отдельный файл, включая явный выбор версии при конфликте имени. */
 	async saveFile(
 		name: string,
 		content: string | Blob,
 		mimeType: string,
 		parentFolderId: string,
-		spaces: string = 'drive', // New parameter
-		existingFileIdToUpdate: string | null = null
+		spaces = 'drive',
+		sourceId: string | null = null,
+		expectedVersion?: string
 	): Promise<SaveFileResult> {
-		if (!this.isGoogleLoggedIn) {
-			await this.logIn()
-			if (!this.isGoogleLoggedIn) {
-				return { status: 'error', message: 'User not logged in to Google.' }
-			}
-		}
-
+		if (!this.isGoogleLoggedIn) await this.logIn()
+		if (!this.isGoogleLoggedIn) return { status: 'error', message: 'Войдите в Google для сохранения.' }
 		try {
-			if (existingFileIdToUpdate) {
-				const updatedFile = await this.updateFileContent(existingFileIdToUpdate, content, mimeType)
-				return { status: 'success', file: updatedFile }
+			let source: DriveFileMetadata | undefined
+			if (sourceId) {
+				source = await this.getFileMetadata(sourceId)
+				if (
+					source.id !== sourceId ||
+					typeof source.version !== 'string' ||
+					!/^\d+$/.test(source.version) ||
+					source.trashed
+				)
+					throw new Error('Не удалось подтвердить версию исходного файла.')
+				if (source.version !== expectedVersion) return { status: 'conflict', existingFiles: [source] }
+				const dot = name.lastIndexOf('.')
+				const stem = (dot > 0 ? name.slice(0, dot) : name).replace(
+					/\s+\(версия \d{4}-\d{2}-\d{2}T[\d-]+Z-[a-z0-9]*\)$/,
+					''
+				)
+				const extension = dot > 0 ? name.slice(dot) : '.json'
+				name =
+					stem +
+					' (версия ' +
+					new Date().toISOString().replace(/[:.]/g, '-') +
+					'-' +
+					Math.random().toString(36).slice(2, 8) +
+					')' +
+					extension
+			} else {
+				const existing = await GAPI.find(
+					'name = ' + driveQueryLiteral(name),
+					parentFolderId,
+					DRIVE_DOCUMENT_FIELDS,
+					spaces
+				)
+				if (existing.length) return { status: 'conflict', existingFiles: existing }
 			}
-
-			const queryForFind = `name = '${name}'`
-			const existingFiles = await GAPI.find(queryForFind, parentFolderId, undefined, spaces) // Pass spaces here
-
-			if (existingFiles.length > 0) {
-				return { status: 'conflict', existingFiles }
+			const folder = spaces === 'appDataFolder' && parentFolderId === 'root' ? 'appDataFolder' : parentFolderId
+			const created = await GAPI.createDocument(name, content, mimeType, [folder], source)
+			if (
+				!created.id ||
+				typeof created.version !== 'string' ||
+				!/^\d+$/.test(created.version) ||
+				created.id === sourceId
+			) {
+				throw new Error(
+					'Файл отправлен, но Drive не подтвердил новую версию. Локальные данные сохранены; проверьте папку Drive перед повтором.'
+				)
 			}
-
-			const createdFileMetadata = await GAPI.createFileOrFolder(name, mimeType, [parentFolderId])
-			await GAPI.upload(createdFileMetadata.id, content)
-			return { status: 'success', file: createdFileMetadata }
-		} catch (e: any) {
-			console.error('Failed to save file to Drive:', e)
-			return { status: 'error', message: e.message || 'Failed to save file to Drive.' }
+			return { status: 'success', file: created }
+		} catch (error: unknown) {
+			return { status: 'error', message: driveErrorMessage(error) }
 		}
-	}
-
-	async updateFileContent(fileId: string, content: string | Blob, mimeType: string): Promise<DriveFileMetadata> {
-		if (!this.isGoogleLoggedIn) {
-			await this.logIn()
-			if (!this.isGoogleLoggedIn) {
-				throw new Error('User not logged in to Google.') // Or handle more gracefully
-			}
-		}
-
-		// GAPI.upload can be used to update content of an existing file
-		await GAPI.upload(fileId, content)
-
-		// After updating, fetch and return the updated metadata
-		// Potentially update mimeType if it has changed, though GAPI.upload doesn't directly support that.
-		// A separate call to drive.files.update might be needed for mimeType.
-		// For now, we assume mimeType is not changing or will be handled by GAPI.upload.
-		// If we need to update mimeType, it would look like this:
-		// await prom(gapi.client.drive.files.update, {
-		//   fileId: fileId,
-		//   resource: { mimeType: mimeType }
-		// });
-
-		return GAPI.getFileMetadata(fileId)
 	}
 }

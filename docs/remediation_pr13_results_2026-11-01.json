@@ -1,0 +1,101 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 13 / stage 6 / F12 and calendar cache",
+  "baseCommit": "4050a5f555cd3b0cd718f180fb8db748e996311c",
+  "implementedLocally": true,
+  "stage6CompletedLocally": true,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "command": "npm run typecheck",
+      "exitCode": 0
+    },
+    "e2eTypecheck": {
+      "command": "npm run typecheck:e2e",
+      "exitCode": 0
+    },
+    "lint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 8,
+      "artifact": "artifacts/remediation-pr13/lint.json"
+    },
+    "jest": {
+      "exitCode": 0,
+      "passed": 3739,
+      "failed": 0,
+      "suites": 25,
+      "artifact": "artifacts/remediation-pr13/jest.json"
+    },
+    "productionBuild": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr13/webpack.json"
+    },
+    "chromium": {
+      "exitCode": 0,
+      "startTime": "2026-11-01T03:27:29.769Z",
+      "duration": 84063.16799999999,
+      "expected": 32,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "artifact": "artifacts/remediation-pr13/playwright.json"
+    }
+  },
+  "regressionsAdded": {
+    "unit": 28,
+    "chromium": 2
+  },
+  "verifiedOperationBounds": {
+    "emptyCalendarWeeks": 21,
+    "visibleDays": 147,
+    "historyIntervalCallsForEmptyCalendar": 0,
+    "completedListReadsFor1000ActualBalanceQueries": 1,
+    "monthlyScheduleQueries": 147,
+    "monthlyRangeYears": [
+      1,
+      9999
+    ],
+    "monthLengthLookupsUpperExclusive": 7000,
+    "enumeratesOccurrencesForDailyOrRelativeSeries": false
+  },
+  "cacheLimits": {
+    "eventDays": 512,
+    "plannedBalanceDays": 512,
+    "occurrenceSchedules": 128,
+    "yearPrefixEntriesPerComplexSchedule": 401,
+    "actualDailyCacheRemoved": true
+  },
+  "formats": {
+    "document": 2,
+    "session": 3,
+    "indexedDatabase": 1,
+    "changed": false
+  },
+  "dependenciesChanged": false,
+  "npmAuditRerun": false,
+  "realDriveVerificationRerun": false,
+  "nextStep": "Stage 7 / F14: weather loading and request consistency",
+  "hashes": {
+    "README.md": "b5cce5d1e947470d6234f3bfeab5c3782fd6f10f8df74b2fe25bedd331b99447",
+    "docs/remediation_plan_2026-10-31_ru.md": "c2766e728654dec41c10af937a6cda435ee1607b5f56c18794b008298d4b261e",
+    "src/1-app/Stores/MainStore.ts": "49d5b9a45bd7d976155ae60cc796d99adcaaec3095fc263d1bb8467ee0bda2ce",
+    "src/3-pages/Calendar/CalendarDay.tsx": "3fe2921cf6ab89954bfb0be0ee40116d644a35ad383f829493dd912d054de7b4",
+    "src/3-pages/DayList/DayListStore.ts": "b67342012e6b5cebde712366ae3ff6bd21f92cb92ff98d0460eba039bcb46ee1",
+    "src/6-entities/Document/model/DocumentStoreManager.types.ts": "a9dcc2e2482bae2bff1ad25801bf06d02e4311209e410f2e22f9f6d25f9d5b35",
+    "src/6-entities/Events/EventsStore.ts": "7ab23726f9f162ec79fe28ca35d4f1050f23901a36f746127ec7ada6efe43033",
+    "src/6-entities/EventsCache/EventsCache.ts": "cef53c205a9abda5366d500c5649b0360677d351e3de3525e3183f9d370ee6cd",
+    "src/6-entities/Projects/ProjectsStore.ts": "83ad023023093ef1ea7902311cc5a95fca40b4a6f8b4863369af8e9554b6f5e6",
+    "src/7-shared/libs/DateTime/DateTime.ts": "4f66ea925c07c251d43660aa4ccb63dfd0c98e7805db9c022231a8d039a55c6d",
+    "docs/remediation_pr13_2026-11-01_ru.md": "7672b3ef84c39699d0393f880ce8e3b1aa218070a2e1b28493ae36f0414cc6bb",
+    "e2e/balance.spec.ts": "1b3b18802323c8366eb86d8d36bc266ee02a686a63953862bcf7ccf1593dab7f",
+    "src/6-entities/EventsCache/BalanceIndex.ts": "f2397dae7133b1687f2f8fef76cd75c94d2497fa654e88510c56b4450ab28912",
+    "src/6-entities/EventsCache/BoundedCache.ts": "a614ddb285b3cacdbd7ba532d5f8d113c249e1f68c1bf8e263bef701a6d7f2b4",
+    "src/6-entities/EventsCache/EventsCache.spec.ts": "84c46c6630f3d964cd798538773b75c69358a71b41ec72b510c5ddd7672ec9bd",
+    "src/6-entities/EventsCache/OccurrenceCounter.ts": "3ea2a4f7d5390c2b565fe439696e6a06780c212a5ee871237220c6566658b348"
+  }
+}

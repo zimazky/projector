@@ -8,6 +8,9 @@
 }
 
 .tab {
+	border: 0;
+	background: transparent;
+	color: inherit;
 	position: relative;
 	font-family: Roboto, Helvetica, Arial, sans-serif;
 	font-weight: 500;
@@ -19,6 +22,11 @@
 	touch-action: none;
 	-webkit-tap-highlight-color: transparent;
 	overflow: hidden;
+}
+
+.tab:focus-visible {
+	outline: 2px solid var(--color-border-focus);
+	outline-offset: -2px;
 }
 
 .tab.selected {

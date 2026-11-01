@@ -1,22 +1,22 @@
 name: Build and Deploy
 
 on:
+  pull_request:
   push:
     branches:
-      - master
+      - '**'
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: build-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
 
     steps:
       - name: Checkout repo
@@ -28,29 +28,113 @@ jobs:
           node-version: '24.12.0'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Use npm 11.12.1
+        run: npm install --global npm@11.12.1
 
-      - name: Build
-        run: npm run build
+      - name: Install dependencies
+        run: npm ci --no-audit
+
+      - name: Test CI tooling
+        run: npm run test:ci
+
+      - name: Check types
+        run: npm run typecheck
+
+      - name: Check lint
+        run: npm run lint-check
+
+      - name: Test
+        run: npm test -- --runInBand
+
+      - name: Check browser test types
+        run: npm run typecheck:e2e
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test in Chromium
+        run: npm run test:e2e
+
+      - name: Upload browser test report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            artifacts/playwright/report
+            artifacts/playwright/results
+            artifacts/playwright/results.json
+          retention-days: 7
+
+      - name: Build verification artifact
+        if: ${{ github.event_name != 'push' || github.ref != 'refs/heads/master' }}
+        run: npm run build:pages
+        env:
+          CLIENT_ID: ci-placeholder
+          OPEN_WEATHER_KEY: ci-placeholder
+
+      - name: Build Pages artifact
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        run: npm run build:pages
         env:
           CLIENT_ID: ${{ secrets.CLIENT_ID }}
           OPEN_WEATHER_KEY: ${{ secrets.OPEN_WEATHER_KEY }}
 
       - name: Upload Pages artifact
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: actions/upload-pages-artifact@v3
         with:
-          # Deploy the repository root so that index.html is at site root
-          path: .
+          path: artifacts/pages
+
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: audit-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24.12.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.12.0'
+          cache: 'npm'
+
+      - name: Use npm 11.12.1
+        run: npm install --global npm@11.12.1
+
+      - name: Install dependencies for audit
+        run: npm ci --ignore-scripts --no-audit
+
+      - name: Audit full and production dependencies
+        run: npm run audit:ci
+
+      - name: Upload dependency audit reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-audit
+          path: artifacts/audit
+          if-no-files-found: error
+          retention-days: 14
 
   deploy:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, audit]
+    timeout-minutes: 10
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

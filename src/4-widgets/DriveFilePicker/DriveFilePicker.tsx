@@ -27,7 +27,7 @@ const DriveFilePicker: React.FC<DriveFilePickerProps> = observer(({ isOpen, onCl
 	}
 
 	return (
-		<Modal open={isOpen} onClose={onClose}>
+		<Modal open={isOpen} onClose={onClose} aria-label="Открыть файл Google Drive">
 			<div className={styles.container}>
 				<div className={styles.driveContentExplorerWrapper}>
 					<DriveContentExplorer

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { IDriveItem } from 'src/7-shared/types/IDriveItem'
 import FileList from 'src/7-shared/ui/FileList/FileList'
 import Breadcrumbs from 'src/7-shared/ui/Breadcrumbs/Breadcrumbs'
@@ -20,7 +20,7 @@ interface DriveFileListFeatureProps {
 
 const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
 	({ space, onItemSelected, onCurrentFolderChange }) => {
-		const { googleApiService, mainStore } = React.useContext(StoreContext)
+		const { googleApiService, mainStore } = useStores()
 		const [driveFileListStore] = React.useState(() => new DriveFileListStore(googleApiService, mainStore))
 
 		useEffect(() => {
@@ -98,7 +98,11 @@ const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
 					renderContent()
 				)}
 
-				<Modal open={driveFileListStore.isConfirmingDelete} onClose={driveFileListStore.cancelDeletingItem}>
+				<Modal
+					open={driveFileListStore.isConfirmingDelete}
+					onClose={driveFileListStore.cancelDeletingItem}
+					aria-label="Удаление файла"
+				>
 					<div className={styles.deleteConfirmationContainer}>
 						<p>Вы действительно хотите удалить {driveFileListStore.itemToDelete?.name}?</p>
 						<DialogActions>

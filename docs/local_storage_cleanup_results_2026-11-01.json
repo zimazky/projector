@@ -1,0 +1,73 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "baselineCommit": "8da43541c4a34051bf5f063b8bb40e53132cbea3",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "verification": {
+    "typecheck": "passed",
+    "e2eTypecheck": "passed",
+    "jest": {
+      "passed": true,
+      "suites": 22,
+      "tests": 3644,
+      "newCases": 12
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 8
+    },
+    "browser": {
+      "expected": 19,
+      "unexpected": 0,
+      "flaky": 0,
+      "errors": 0,
+      "newScenarios": 5,
+      "screenshotInspected": true
+    },
+    "pages": {
+      "passed": true,
+      "files": 14
+    }
+  },
+  "cleanup": {
+    "keys": [
+      "data",
+      "data.json",
+      "lastOpenedDocument",
+      "documentTabs",
+      "document_*",
+      "documentTabs.backup.<integer>"
+    ],
+    "requiresValidIndexedDbCurrent": true,
+    "archiveAcknowledgedBeforeAnyDeletion": true,
+    "checksValuesAgainBeforeRemoval": true,
+    "retainsChangedKeys": true,
+    "retainsUnknownKeys": true,
+    "retainsRecoveryArchives": true,
+    "archiveExportAvailable": true,
+    "noCrossStorageAtomicCompareAndSwap": true
+  },
+  "userBrowserControlled": false,
+  "userLocalStorageCleanedByAgent": false,
+  "browserAccessBlocker": "No browser is available through cua_repl; cleanup is exposed through the application menu.",
+  "published": false,
+  "committedByAgent": false,
+  "checkedFilesSha256": {
+    "README.md": "713cd75c3e66e687c212815ec521d1bdc037af6837c28e7954a8e241c5cf8647",
+    "docs/browser_testing_ru.md": "c4a64cddd537e761831d87ca62718838b8e79aa090bbb761978a02edebc850d6",
+    "docs/indexed_storage_migration_2026-11-01_ru.md": "6e42c9c2386f3cdc0b3ef9506279510b2e7d09747654bab0c963bc3a5f8c4828",
+    "docs/local_storage_cleanup_2026-11-01_ru.md": "945148f3bb66e3251ca6d584109f0aea607222b4c8e79e0137fae54052d142af",
+    "docs/remediation_plan_2026-10-31_ru.md": "56d4c3fb6c8cc6c7e3c3321c397c9b172093c24ed88070d99051c8d28706f264",
+    "e2e/storage-cleanup.spec.ts": "1ef58985023389e70e9b96657121d989e68d9ed576c783806f1a2c056635ed4e",
+    "e2e/storage.ts": "f797ff2c8ff3431c0f862c3fd2dae64c14c4f32da4da13446be690a7c40d3e9d",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "7e67f56720b0410fcb0e1e285b3813a9a61fe81d1fba3cd67b8034e447dae9ab",
+    "src/6-entities/Document/model/DocumentAsyncPersistence.spec.ts": "6e088b9498e355b75271a6fe9f2eebe44b308bb21fcd9cb0368a836f339628c5",
+    "src/6-entities/Document/model/DocumentPersistence.ts": "f04de1702b0a9bbd6e4612d1361ec9a51c349bfad3e438154f86b2e40a1a2886",
+    "src/6-entities/Document/model/DocumentStorageCleanup.spec.ts": "0911937ec21f8855f8ac3638cef47482bec2099e2cbd200c62e1199f1c0b3b38",
+    "src/6-entities/Document/model/DocumentStorageCleanup.ts": "140aea4bccf81e9e762ebbe955f7427c2e5157685ba65269c2fef16dbc6e3bc5",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "ffd35f9c8b7700b5553e452214148bf3aad30c75baafbd663d196cce556a3ca6",
+    "src/6-entities/Document/model/IndexedDocumentStorage.ts": "d14bbc2cfec6dd0b023388d98f4bdd006e7e6acae08f2c4d266baac16cc72542"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4"
+}

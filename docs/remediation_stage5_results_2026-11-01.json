@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "stage": 5,
+  "baselineCommit": "d5681420d9c359fdc407aa15ca7d354c7a064a2c",
+  "baseline": "Stage 4 was staged at task start and was committed externally during this run as d568142. The agent did not commit. Stage 5 remains unstaged.",
+  "branch": "per_document_stores_glm5_v1",
+  "node": "v24.12.0",
+  "dependenciesChanged": false,
+  "auditRerun": false,
+  "realDrive": false,
+  "verification": {
+    "typecheck": {
+      "status": "passed"
+    },
+    "e2eTypecheck": {
+      "status": "passed"
+    },
+    "lint": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 8
+    },
+    "jest": {
+      "status": "passed",
+      "suites": 19,
+      "tests": 3615,
+      "newRegressionCases": 39
+    },
+    "browser": {
+      "status": "passed",
+      "engine": "Chromium",
+      "expected": 11,
+      "unexpected": 0,
+      "flaky": 0,
+      "errors": 0,
+      "newScenarios": 3,
+      "screenshotsInspected": true
+    },
+    "build": {
+      "status": "passed"
+    },
+    "pages": {
+      "status": "passed",
+      "files": 14
+    }
+  },
+  "format": {
+    "schemaVersion": 1,
+    "legacyRead": true,
+    "legacySourcePreserved": true,
+    "allDocumentsValidatedBeforeApply": true,
+    "contentAndMetadataInOneAtomicStorageValue": true,
+    "legacyBackupRequiredBeforeFirstWrite": true,
+    "invalidSourceQuarantinesWrites": true
+  },
+  "oauth": {
+    "loginTimeoutMilliseconds": 120000,
+    "initializationTimeoutMilliseconds": 15000,
+    "lateCallbacksIgnored": true,
+    "realOAuthTested": false
+  },
+  "limitations": [
+    "No service worker or guaranteed offline resource startup",
+    "Synchronous full-session localStorage writes; IndexedDB evaluated but not implemented",
+    "Session and raw-source archives require manual recovery; Drive opens individual document JSON",
+    "Legacy state fields and compatibility adapter remain for the next separate step",
+    "GitHub Actions not run"
+  ],
+  "storageSizing": [
+    {
+      "events": 1000,
+      "utf8Bytes": 366939,
+      "utf16Bytes": 691878
+    },
+    {
+      "events": 10000,
+      "utf8Bytes": 3696939,
+      "utf16Bytes": 6973878
+    },
+    {
+      "events": 50000,
+      "utf8Bytes": 18616939,
+      "utf16Bytes": 35133878
+    }
+  ],
+  "artifacts": "artifacts/remediation-stage5",
+  "checkedFilesSha256": {
+    "README.md": "be6b0ed8c0ce3c7a1f90baf0e89c3e1e677cd8cb905d0e259ae6d7d5c5b372eb",
+    "docs/browser_testing_ru.md": "e9845649dc73e7c183f09b3446d04e9c2704af084259f0c5b7b78293117d2a05",
+    "docs/remediation_plan_2026-10-31_ru.md": "c47c9c120f5832e54d2683013148038993540c94a703ffa8677ab4d42513fc55",
+    "docs/remediation_stage5_2026-11-01_ru.md": "89ead7a223ebf7d7cad08a7b1c65e2648817739f73666929d3e28a89d6873bd9",
+    "e2e/documents.spec.ts": "f3e29a9daa1f60d118477f1aeaba85cd1f2c5a29e94759d359b010e7576614a4",
+    "jest.setup.js": "f28770c3f4eb906473ebca8f556172234ae87c03850288cb5152cf990b0cd68b",
+    "src/1-app/App/App.css": "974f314c2e271002939dc2b91a3895229471dbc4a78fff4a84c3a7ffdeec0d97",
+    "src/1-app/App/App.spec.tsx": "415ad5f2dea5dddb27d7bf7578001f7c6e7c8fa289d7ef9b6a368ab53e261838",
+    "src/1-app/App/App.tsx": "da01f14a8162316b49fe06f2a910a59328c23a8755b9024e238c0a41820659e9",
+    "src/1-app/Stores/MainStore.ts": "5e8542d6a9b933d3fa7749fc94ebc951476af6bf83de357e2969626af94b2dc7",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "34ce0d3d47055b9ceb63917e55b5dea94af5e5e23a48485f38acd624fc8dda4d",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "1f5200426854da58a738a2519d7ebd1b5e15599bb2856d75dc593ac360eecf9e",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.ts": "50247a1f5888e1d545b57f946ce9f37a0c4d1450d39e9e80c47ea3652356d22d",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "b905d693cbfe52569c6c18e4ad8b213d2226e72949a7728c33701f2e69d37809",
+    "src/6-entities/Document/model/DocumentDriveSync.spec.ts": "23f9c7b4d18b40034775c77ee7359ac4558aa968cbacebe5d514d0d8df01b6d7",
+    "src/6-entities/Document/model/DocumentFormat.ts": "223870a6e4e5b6521843528558e2eb5f756fec5b04ad1de80d141711a180bc09",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "7dcb3a7f62791fff4326e6208effa4a9bd629c97262f7cd731dd2cfc3fe46bd1",
+    "src/6-entities/Document/model/DocumentPersistence.ts": "46e7cd060428aef39e213452c0c6a17e17608820118cccc09b9ef12838c8b557",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "30f974a3f67fd498f006371a7481b5a10dd61515288cb38953e067b3417f9b7c",
+    "src/6-entities/Document/model/DocumentSessionFormat.ts": "f2f26f4a6ea6e489018ed3e466468b537408292f16d5e8800625c4f0e1552ab5",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "70d79c30d6bdb0188f8565034f2d2bdeeb17ee492d19e080619c65cc2c036049",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "f7c5f47b242d9d3c9d1f9080db1ca6f0c52183b233881dde467b0b42a0df8d0e",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "bc1142b9e07f43668a2bac611e584eaed47a8a62a7e5797e1c5eb7600248b1aa",
+    "src/6-entities/Document/model/DocumentTabsStore.utils.ts": "b1b2a079208b104d3651180d12a4c051c46453fec45fbd0c8c63c01a8e6fc746",
+    "src/7-shared/libs/downloadJson.ts": "ce45eb26025202fee99bfd49461eb0fbaead6611c0593d526fc91ed927cb59ab",
+    "src/7-shared/services/GoogleApiService.spec.ts": "403e95df95424e8e150b4420e1a43b1ec204fa0894eb844ae9d1ffe80a22b697",
+    "src/7-shared/services/GoogleApiService.ts": "d697550c62e3df242c7ef369344291c5813e9862f07d7b9ced2b6fb0e8a3eed4",
+    "src/7-shared/services/gapi.spec.ts": "fbb5f3aa660d94bd3a4d6698f660db46bc462007d1dd0dfa3f69d676ce885afb",
+    "src/7-shared/services/gapi.ts": "2beb7dc95a82ba86e3d9c29980dfa01d00ca45edef590c62ef9f2c38e64c50ab",
+    "src/test-utils/DocumentFixtures.spec.ts": "b2d092f5c79a1dd191f4204468d853e21933c05d9958488dcf884bd5258c0846",
+    "src/test-utils/storedDocument.ts": "249aaeb8c32719678260e951939172d69d6982a8d6682f1a9ddda67b713b5754"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4",
+  "startingHead": "2002bc1199e22f08d41b22fc163de236de084909"
+}

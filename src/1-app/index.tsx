@@ -5,24 +5,7 @@ import App from './App/App'
 
 import './index.css'
 
-import {
-	mainStore,
-	projectsStore,
-	projectEditorStore,
-	eventsStore,
-	eventsCache,
-	weatherStore,
-	calendarStore,
-	dayListStore,
-	eventFormStore,
-	uiStore,
-	googleApiService,
-	storageService,
-	saveToDriveStore,
-	documentSessionStore,
-	documentTabsStore,
-	eventSearchStore
-} from './root'
+import { createApplication } from './root'
 import StoreProvider from './Providers/StoreProvider'
 
 const rootElement = document.getElementById('root')
@@ -30,27 +13,18 @@ if (rootElement === null) throw new Error('Не найден DOM элемент 
 
 const root = createRoot(rootElement)
 
-// Регистрируем все сторы в едином провайдере контекста приложения.
+const application = createApplication()
+application.start()
 root.render(
-	<StoreProvider
-		mainStore={mainStore}
-		projectsStore={projectsStore}
-		projectEditorStore={projectEditorStore}
-		eventsStore={eventsStore}
-		eventsCache={eventsCache}
-		weatherStore={weatherStore}
-		calendarStore={calendarStore}
-		dayListStore={dayListStore}
-		eventFormStore={eventFormStore}
-		uiStore={uiStore}
-		googleApiService={googleApiService}
-		storageService={storageService}
-		saveToDriveStore={saveToDriveStore}
-		documentSessionStore={documentSessionStore}
-		documentTabsStore={documentTabsStore}
-		fileSavedNotifier={mainStore.fileSavedNotifier}
-		eventSearchStore={eventSearchStore}
-	>
+	<StoreProvider {...application.stores}>
 		<App />
 	</StoreProvider>
 )
+
+const hot = (module as NodeModule & { hot?: { dispose(callback: () => void): void } }).hot
+if (hot) {
+	hot.dispose(() => {
+		root.unmount()
+		application.dispose()
+	})
+}

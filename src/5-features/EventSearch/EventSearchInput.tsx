@@ -1,6 +1,6 @@
-import React, { useContext, useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { debounce } from 'src/7-shared/helpers/utils'
 import styles from './EventSearch.module.css'
 
@@ -8,44 +8,46 @@ import styles from './EventSearch.module.css'
 const DEBOUNCE_MS = 300
 
 export const EventSearchInput: React.FC = observer(() => {
-	const { eventSearchStore, calendarStore, uiStore } = useContext(StoreContext)
+	const { eventSearchStore, calendarStore } = useStores()
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	// Создаём debounced функцию поиска один раз при монтировании
 	const debouncedSearch = useMemo(
 		() =>
-			debounce((query: string) => {
-				eventSearchStore.search(query)
+			debounce((query: string, request: number) => {
+				if (!eventSearchStore.search(query, request)) return
 				// Навигация к текущему результату после поиска
 				const current = eventSearchStore.currentResult
 				if (current) {
 					calendarStore.setWeek(current.timestamp)
-					uiStore.forceUpdate()
 				}
 			}, DEBOUNCE_MS),
-		[]
+		[eventSearchStore, calendarStore]
 	)
 
 	// Очистка при unmount
 	useEffect(() => {
-		return () => debouncedSearch.cancel()
-	}, [debouncedSearch])
+		return () => {
+			debouncedSearch.cancel()
+			eventSearchStore.clear()
+		}
+	}, [debouncedSearch, eventSearchStore])
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const value = e.target.value
 		// Обновляем query немедленно для отображения в UI
-		eventSearchStore.setQuery(value)
+		const request = eventSearchStore.setQuery(value)
 		// Выполняем поиск с debounce
-		debouncedSearch(value)
+		debouncedSearch(value, request)
 	}
 
 	const handleKeyDown = (e: React.KeyboardEvent) => {
 		if (e.key === 'Enter') {
 			// При Enter выполняем поиск немедленно
 			debouncedSearch.cancel()
-			eventSearchStore.search(eventSearchStore.query)
-
-			if (e.shiftKey) {
+			if (eventSearchStore.isSearchPending) {
+				eventSearchStore.search(eventSearchStore.query)
+			} else if (e.shiftKey) {
 				eventSearchStore.prevResult()
 			} else {
 				eventSearchStore.nextResult()
@@ -61,7 +63,6 @@ export const EventSearchInput: React.FC = observer(() => {
 		const current = eventSearchStore.currentResult
 		if (current) {
 			calendarStore.setWeek(current.timestamp)
-			uiStore.forceUpdate()
 		}
 	}
 

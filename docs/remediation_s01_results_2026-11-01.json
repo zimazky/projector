@@ -1,0 +1,297 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "stage": "S01",
+  "baselineCommit": "448006865d3bf13d2609fbf01b63808e5d4ceb28",
+  "branch": "per_document_stores_glm5_v1",
+  "initialWorkingTree": "PR 10 changes from the previous turn were present and preserved. No agent commit or deployment.",
+  "node": "v24.12.0",
+  "dependenciesChanged": false,
+  "packageScriptAdded": "verify:drive",
+  "lockfileChanged": false,
+  "auditRerun": false,
+  "realDrive": true,
+  "verification": {
+    "checks": [
+      {
+        "name": "typecheck",
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "--noEmit"
+        ],
+        "exitCode": 0,
+        "durationMs": 3129,
+        "status": "passed"
+      },
+      {
+        "name": "typecheck-e2e",
+        "args": [
+          "node_modules/typescript/bin/tsc",
+          "-p",
+          "tsconfig.e2e.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 958,
+        "status": "passed"
+      },
+      {
+        "name": "lint",
+        "args": [
+          "node_modules/eslint/bin/eslint.js",
+          "src/**/*.{js,jsx,ts,tsx}",
+          "e2e/**/*.ts",
+          "playwright.config.ts",
+          "--format",
+          "json",
+          "--output-file",
+          "artifacts/remediation-s01/lint.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 7192,
+        "status": "passed"
+      },
+      {
+        "name": "jest",
+        "args": [
+          "node_modules/jest/bin/jest.js",
+          "--runInBand",
+          "--json",
+          "--outputFile",
+          "artifacts/remediation-s01/jest.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 13904,
+        "status": "passed"
+      },
+      {
+        "name": "build",
+        "args": [
+          "node_modules/webpack/bin/webpack.js",
+          "--mode",
+          "production",
+          "--output-path",
+          "artifacts/remediation-s01/build",
+          "--json",
+          "artifacts/remediation-s01/webpack.json"
+        ],
+        "exitCode": 0,
+        "durationMs": 11569,
+        "status": "passed"
+      },
+      {
+        "name": "chromium",
+        "args": [
+          "node_modules/@playwright/test/cli.js",
+          "test"
+        ],
+        "exitCode": 0,
+        "durationMs": 66234,
+        "status": "passed"
+      }
+    ],
+    "jest": {
+      "numPassedTestSuites": 23,
+      "numFailedTestSuites": 0,
+      "numPassedTests": 3682,
+      "numFailedTests": 0
+    },
+    "lint": {
+      "errors": 0,
+      "warnings": 8
+    },
+    "browser": {
+      "engine": "Chromium",
+      "startTime": "2026-11-01T02:38:16.030Z",
+      "duration": 65600.125,
+      "expected": 25,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "saveScreenshotsInspected": true
+    },
+    "productionBuild": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "liveDrive": {
+      "passed": true,
+      "startedAt": "2026-11-01T02:38:16.035Z",
+      "steps": [
+        {
+          "name": "create-test-file",
+          "passed": true
+        },
+        {
+          "name": "v2-v3-versions-agree",
+          "passed": true
+        },
+        {
+          "name": "update-same-file",
+          "passed": true
+        },
+        {
+          "name": "stale-etag-rejected",
+          "passed": true
+        },
+        {
+          "name": "concurrent-data-preserved",
+          "passed": true
+        },
+        {
+          "name": "service-rejects-stale-version",
+          "passed": true
+        },
+        {
+          "name": "service-updates-same-file",
+          "passed": true
+        },
+        {
+          "name": "saved-data-readable-v3",
+          "passed": true
+        },
+        {
+          "name": "write-response-version-visible-v3",
+          "passed": true
+        },
+        {
+          "name": "repeat-save-same-file",
+          "passed": true
+        },
+        {
+          "name": "repeat-data-readable-v3",
+          "passed": true
+        },
+        {
+          "name": "client-a-opened",
+          "passed": true
+        },
+        {
+          "name": "client-b-opened",
+          "passed": true
+        },
+        {
+          "name": "document-command-save",
+          "passed": true
+        },
+        {
+          "name": "second-client-detects-change",
+          "passed": true
+        },
+        {
+          "name": "document-command-repeat",
+          "passed": true
+        },
+        {
+          "name": "document-ref-unchanged",
+          "passed": true
+        },
+        {
+          "name": "save-as-separate-file",
+          "passed": true
+        }
+      ],
+      "testFiles": [
+        "projector-s01-check-1793500696035-35x04c.json",
+        "projector-s01-check-1793500696035-35x04c-save-as.json"
+      ],
+      "cleanupFailed": [],
+      "versions": [
+        {
+          "v2": "2",
+          "v3Before": "2",
+          "v3After": "2"
+        }
+      ],
+      "operations": [
+        {
+          "name": "Local",
+          "status": "success",
+          "version": "5"
+        },
+        {
+          "name": "Repeat",
+          "status": "success",
+          "version": "7"
+        },
+        {
+          "name": "document-command-save",
+          "status": "saved",
+          "version": "drive-v3:1eHT5X5XsDnXu4zGNlM8YQE83mrG_K6L_:9"
+        },
+        {
+          "name": "document-command-repeat",
+          "status": "saved",
+          "version": "drive-v3:1eHT5X5XsDnXu4zGNlM8YQE83mrG_K6L_:11"
+        }
+      ],
+      "finishedAt": "2026-11-01T02:38:40.069Z"
+    }
+  },
+  "protocol": {
+    "readApi": "v3",
+    "conditionalWriteApi": "v2",
+    "atomicWriteHeader": "If-Match",
+    "requiresStrongEtag": true,
+    "writeCreatesNewFile": false,
+    "saveAsCreatesNewFile": true,
+    "writeResponseConfirmsSentSnapshot": true,
+    "unconditionalUploadHelperRemoved": true,
+    "automaticRetryAfter412": false,
+    "metadataOnlyVersionReconciliation": "Consistent remote content read and exact canonical comparison against a known base; disabled for explicit conflict decisions and unknown local bases.",
+    "previousVersionFiles": "Update currently linked file; do not delete versions or find a previous original automatically."
+  },
+  "sources": [
+    "https://developers.google.com/workspace/drive/api/reference/rest/v2/files",
+    "https://developers.google.com/workspace/drive/api/reference/rest/v2/files/update",
+    "https://developers.google.com/workspace/drive/api/guides/v2-to-v3-reference"
+  ],
+  "limitations": [
+    "Real shared drives and appDataFolder not tested separately.",
+    "No production deployment or GitHub Actions run.",
+    "No guaranteed full offline startup; unchanged from previous stages."
+  ],
+  "artifacts": "artifacts/remediation-s01",
+  "liveArtifacts": "artifacts/drive-write-live",
+  "startedAt": "2026-11-01T02:37:38.721Z",
+  "finishedAt": "2026-11-01T02:39:21.712Z",
+  "checkedFilesSha256": {
+    "README.md": "362bb7e88d2cf06ddcaf7806df241db811f3329b843f7d78dd75f7b86444ca09",
+    "docs/remediation_plan_2026-10-31_ru.md": "9b9396fb30437b85fdf2254b363112acd7959dcb28a993678a0b345a9a01f54f",
+    "docs/remediation_pr10_2026-11-01_ru.md": "a80e423c571582540f8dfb74c8ab19b8fa1977fe60c80f7608642e91c2503b87",
+    "docs/remediation_pr10_results_2026-11-01.json": "d071ddeb2a0c9fc0bc8d021732ded264414399133fca146493d4ffc9f54ccd01",
+    "docs/remediation_s01_2026-11-01_ru.md": "cc8582b6ffac8f64646985576fdde48485107bcbca39e241be7146afd7744646",
+    "docs/remediation_stage4_2026-10-31_ru.md": "a502bd316c36b9012dc0a354d32dc21bdecd38a2b2ae30c2772dd36994e52064",
+    "docs/remediation_stage5_2026-11-01_ru.md": "ad771d7e8e0a64fbe62cd39806b295f2ecf7d5411a940046f80d5d8ee07d7c2a",
+    "e2e/drive-sync.spec.ts": "b09ffac271b00a21a79b3f1c5570f8f5fe8e3241d38befc1a1a4e90d960f6d5b",
+    "e2e/fixtures.ts": "e1e268480d4eb7d3b5a7a6bc76fff6e13405dc11b391449a95c3697b17f67433",
+    "e2e/session-v2.spec.ts": "a9257458fdb18bf753c8c74cbff88c2b98ef82a7fc8c1c0eb5060f67d24cfc98",
+    "package.json": "4157007cd7e4a16bd94f43c9b4c516621644a62304ffc23e56537e82956fde22",
+    "scripts/verify-drive-write.mjs": "736d9a6a2f62283d9ac618d352d37cff8ffa0e2fd52032c58bc37881e173ef3a",
+    "src/1-app/App/App.spec.tsx": "d1b17eeafc338c2ebacb358e37dc715a8ab51d55618cf3f380708f9b38a6de80",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "9ad4596fd7fe0e0a06ad474f9eb7f75f4f177fd843ad38498eb4819990ac2747",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "80c83565be9e50758c1bd332dfdd0d2e6a4ca781e7bb267f0e50115f7de1b40f",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "0375bcffb993c8819bc68b820ec010fd4f4c4706322a46b497adcf95a6bb2d7c",
+    "src/6-entities/Document/model/DocumentDriveSync.spec.ts": "41e121b12f97a5a003b6e25338736056fccc4df78a725ccb8e1af9b50f589f38",
+    "src/6-entities/Document/model/DocumentOperations.spec.ts": "384d28731b339e6d1ebe1af7519fa6e788de812659dbc92c1bf066137a655f9d",
+    "src/6-entities/Document/model/DocumentPersistence.ts": "4627dbd1eb7196ff72f350af5dbfb3d909323cdfe0b49fbe599a1fc066e34606",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "6d25d814939d4fd7ec22c8b271b94e8f6213725ac279eaa7f5084efa905a7194",
+    "src/6-entities/Document/model/DocumentSessionFormat.spec.ts": "64eb6c9b86214e79606e62185665b766cbca9768c3f3256ef7e581a6cb980be0",
+    "src/6-entities/Document/model/DocumentSessionFormat.ts": "4d9220dd128c72836052481ad9955aee25d7babe639bf82b4e77d7bcb99f99b3",
+    "src/6-entities/Document/model/DocumentSyncSelectors.ts": "015de5afad246caab1d5385673d725378ee1ecb55779dec3ac821d7c74ab18f2",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "9aac429896ea56d94739df15121536931104c66d065c8c1030159a62088f5c69",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "aa174a0f136ef7175fb3f121dd66b6ae296c329da3703f4a9191156da74c60c4",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "641f274a69f22bd5ef6a6e95030fffbfe6abe621465998893ba7d0dd608c14ea",
+    "src/6-entities/Document/model/index.ts": "672581671cb95851912f37b025542bdb2b2e416dcb288e25dcb198409e152a7d",
+    "src/6-entities/Document/model/types.ts": "7c5a7210d9f551d4f03252a8950a5671b31ac420085491ae48d398b0104a0df1",
+    "src/7-shared/services/GoogleApiService.spec.ts": "8673ecb5ba995eccd9b005e5b71dc8575336c11d97a8e906dd130e896469c3a4",
+    "src/7-shared/services/GoogleApiService.ts": "4d0d3aea8c7803d016a31c6dc12b6340f3bdc5d8af34338ceedaf8c30477b41e",
+    "src/7-shared/services/gapi.spec.ts": "d36634bbe899ae6a71c55d0172838144d82be229a7395c21043680787004b169",
+    "src/7-shared/services/gapi.ts": "b85c3aee217ee0f92a6a431b4bab62cd967be479e3067324422bbfd21dc650ba",
+    "src/7-shared/ui/ConflictDialog/ConflictDialog.tsx": "4ee6ad6557cc496ec42830bbe9e805242ed6f0901645a708eb3ed1d9a8ef574e",
+    "src/test-utils/DocumentFixtures.spec.ts": "748a53de0f04b4d8bd22b22e8546b5ea56748ed4fdd00ff800203abe271276d6",
+    "src/test-utils/DriveWriteLiveProbe.ts": "84e62663bc8222a91c08babb6d8ad40b3c26e62e64e816a5fc335f32a8c32221",
+    "src/test-utils/driveWriteProbePage.ts": "d9418c60f717a4e681a9fdc5becb3b36263004e8db4dfc80b786f3a069fe0a82",
+    "src/test-utils/legacySession.ts": "7e7a07dafa37066e04d075512c4c103aab7f00cb9f548537127c36fe4d01e7de"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4"
+}

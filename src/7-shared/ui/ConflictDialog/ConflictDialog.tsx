@@ -7,15 +7,15 @@ import styles from './ConflictDialog.module.css'
 
 const ConflictDialog: React.FC<ConflictDialogProps> = ({
 	open,
+	ui,
 	localModifiedAt,
-	remoteModifiedAt,
-	hasLocalChanges,
-	hasRemoteChanges,
 	remoteMetadata,
 	onChooseLocal,
 	onChooseRemote,
 	onCancel
 }) => {
+	const hasLocalChanges = ui.isDirty || ui.remoteUnknown
+	const hasRemoteChanges = ui.hasRemoteAhead || ui.remoteUnknown
 	const formatDate = (ts: number) =>
 		new Date(ts).toLocaleString('ru-RU', {
 			day: '2-digit',
@@ -26,11 +26,12 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 		})
 
 	const getTitle = () => {
+		if (ui.remoteUnknown) return 'Актуальность Drive или базовая версия неизвестны'
 		if (hasLocalChanges && hasRemoteChanges) {
 			return '⚠️ Обнаружены изменения с обеих сторон'
 		}
 		if (hasRemoteChanges) {
-			return '⚠️ Версия на Google Drive новее'
+			return '⚠️ Версия на Google Drive отличается'
 		}
 		if (hasLocalChanges) {
 			return '💾 Есть несохранённые изменения'
@@ -44,7 +45,8 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 				<>
 					<p>Обнаружены изменения и локально, и на Google Drive.</p>
 					<p className={styles.warning}>
-						<strong>Важно:</strong> Выбор версии приведёт к потере изменений в другой версии.
+						<strong>Важно:</strong> Сохранение локальной версии заменит содержимое этого файла Drive. Загрузка Drive
+						заменит локальное содержимое.
 					</p>
 				</>
 			)
@@ -106,7 +108,7 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 				<div className={styles.actions}>
 					{hasLocalChanges && (
 						<Button onClick={onChooseLocal} className={styles.primaryButton}>
-							💾 Сохранить локальную версию в Drive
+							💾 Сохранить локальную версию в этот файл
 						</Button>
 					)}
 
@@ -116,7 +118,9 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 						</Button>
 					)}
 
-					<Button onClick={onCancel}>Отменить</Button>
+					<Button onClick={onCancel} data-dialog-initial-focus>
+						Отменить
+					</Button>
 				</div>
 			</div>
 		</Dialog>

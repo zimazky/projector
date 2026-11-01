@@ -22,6 +22,12 @@ const FileList: React.FC<FileListProps> = observer(({ items, selectedItem, onIte
 					key={item.id}
 					onClick={() => onItemClick(item)}
 					onDoubleClick={item.isFolder() ? () => onItemDoubleClick(item) : undefined}
+					onKeyDown={event => {
+						if (event.key === 'Enter' && item.isFolder()) {
+							event.preventDefault()
+							onItemDoubleClick(item)
+						}
+					}}
 					selected={selectedItem?.id === item.id}
 				>
 					<span className={styles.itemIcon}>{item.isFolder() ? '📁' : '📄'}</span>

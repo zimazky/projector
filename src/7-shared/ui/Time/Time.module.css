@@ -1,4 +1,6 @@
 .time {
+	border: 0;
+	font-family: inherit;
 	text-align: right;
 	position: relative;
 	overflow: hidden;
@@ -9,6 +11,11 @@
 	cursor: pointer;
 	-webkit-tap-highlight-color: transparent;
 	touch-action: none;
+}
+
+.time:focus-visible {
+	outline: 2px solid var(--color-border-focus);
+	outline-offset: -2px;
 }
 
 .time:hover {

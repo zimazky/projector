@@ -1,6 +1,7 @@
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
 import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/Events/EventModel'
+import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type EventCacheStructure = {
@@ -28,6 +29,8 @@ export type EventCacheStructure = {
 	completed: boolean
 	/** Признак повторяемого события */
 	repeatable: boolean
+	/** ID документа-источника (для общего календаря) */
+	sourceDocumentId?: DocumentId
 }
 
 ///////////////////////////////////////////////////////////////////////////////

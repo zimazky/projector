@@ -1,5 +1,3 @@
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
-import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
 import { WeatherStore } from 'src/5-features/Weather/WeatherStore'
 import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
@@ -7,66 +5,77 @@ import { DayListStore } from 'src/3-pages/DayList/DayListStore'
 import { EventFormStore } from 'src/4-widgets/EventForm/EventFormStore'
 import { UIStore } from 'src/1-app/Stores/UIStore'
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
-import { StorageService } from 'src/7-shared/services/StorageService'
 import { MainStore } from 'src/1-app/Stores/MainStore'
 import { SaveToDriveStore } from 'src/4-widgets/SaveToDrive/model/SaveToDriveStore'
-import { DocumentSessionStore, DocumentTabsStore } from 'src/6-entities/Document/model'
+import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import { EventSearchStore } from 'src/5-features/EventSearch/EventSearchStore'
 import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/ProjectEditorStore'
 
-// 1. Основные доменные сторы
-export const projectsStore = new ProjectsStore()
-export const projectEditorStore = new ProjectEditorStore(projectsStore)
-export const eventsStore = new EventsStore(projectsStore)
-export const eventsCache = new EventsCache(projectsStore, eventsStore)
+import { DriveSyncCoordinator } from 'src/6-entities/Document/model/DriveSyncCoordinator'
+import type { DocumentPersistence } from 'src/6-entities/Document/model/DocumentPersistence'
+import type { IRootStore } from './Providers/StoreContext'
 
-// 2. Сторы представления и функций приложения
-export const weatherStore = new WeatherStore()
-export const calendarStore = new CalendarStore(eventsCache, weatherStore)
-export const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
-export const eventFormStore = new EventFormStore()
-export const eventSearchStore = new EventSearchStore(eventsStore)
+export interface Application {
+	stores: IRootStore
+	start(): void
+	dispose(): void
+}
 
-// 3. Инфраструктурные сервисы
-export const uiStore = new UIStore()
-export const googleApiService = new GoogleApiService()
-export const storageService = new StorageService(projectsStore, eventsStore, () => uiStore.forceUpdate())
-
-// 4. Сессия активного документа (Google Drive/local state)
-export const documentSessionStore = new DocumentSessionStore(googleApiService, storageService)
-
-// 5. Менеджер вкладок документов (multi-document support)
-export const documentTabsStore = new DocumentTabsStore(googleApiService, storageService)
-
-// 6. Оркестратор приложения
-export const mainStore = new MainStore(
-	projectsStore,
-	eventsStore,
-	eventsCache,
-	googleApiService,
-	storageService,
-	documentSessionStore,
-	documentTabsStore
-)
-
-// 7. Store диалога "Сохранить как"
-export const saveToDriveStore = new SaveToDriveStore(googleApiService, mainStore, documentTabsStore)
-
-// 8. Инициализация приложения
-mainStore.init()
-
-// Реэкспорт классов для внешнего использования
-export {
-	UIStore,
-	GoogleApiService,
-	StorageService,
-	MainStore,
-	ProjectsStore,
-	EventsStore,
-	EventsCache,
-	WeatherStore,
-	CalendarStore,
-	DayListStore,
-	EventFormStore,
-	DocumentTabsStore
+/** Создаёт независимые сторы; переданный сервис принадлежит экземпляру приложения.
+ * start/dispose идемпотентны. После dispose требуется новый экземпляр.
+ */
+export function createApplication(
+	options: { googleApiService?: GoogleApiService; persistence?: DocumentPersistence } = {}
+): Application {
+	const uiStore = new UIStore()
+	const googleApiService = options.googleApiService ?? new GoogleApiService()
+	const documentTabsStore = new DocumentTabsStore(googleApiService, options.persistence)
+	const eventsCache = new EventsCache(documentTabsStore)
+	const weatherStore = new WeatherStore()
+	const calendarStore = new CalendarStore(eventsCache, weatherStore)
+	const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
+	const eventFormStore = new EventFormStore()
+	const eventSearchStore = new EventSearchStore(documentTabsStore)
+	const projectEditorStore = new ProjectEditorStore(documentTabsStore)
+	const mainStore = new MainStore(googleApiService, documentTabsStore)
+	const fileSavedNotifier = mainStore.fileSavedNotifier
+	const saveToDriveStore = new SaveToDriveStore(googleApiService, () => fileSavedNotifier.fire(), documentTabsStore)
+	const coordinator = new DriveSyncCoordinator(documentTabsStore, googleApiService)
+	let started = false
+	let disposed = false
+	return {
+		stores: {
+			uiStore,
+			googleApiService,
+			documentTabsStore,
+			eventsCache,
+			weatherStore,
+			calendarStore,
+			dayListStore,
+			eventFormStore,
+			eventSearchStore,
+			projectEditorStore,
+			mainStore,
+			fileSavedNotifier,
+			saveToDriveStore
+		},
+		start() {
+			if (started || disposed) return
+			started = true
+			mainStore.start()
+			coordinator.start()
+		},
+		dispose() {
+			if (disposed) return
+			disposed = true
+			coordinator.dispose()
+			saveToDriveStore.dispose()
+			eventSearchStore.clear()
+			weatherStore.dispose()
+			mainStore.dispose()
+			documentTabsStore.dispose()
+			googleApiService.dispose()
+			eventsCache.init()
+		}
+	}
 }

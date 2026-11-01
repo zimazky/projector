@@ -1,0 +1,201 @@
+{
+  "sourceCommit": "d0dbc12b8981e9f71ea687db9b9cd53b006b088d",
+  "installation": {
+    "command": "npm ci --no-audit --no-fund",
+    "isolatedCheckout": ".remediation-tmp/clean",
+    "exitCode": 0,
+    "packagesAdded": 869
+  },
+  "runs": {
+    "before": {
+      "commit": "d0dbc12b8981e9f71ea687db9b9cd53b006b088d",
+      "node": "v24.12.0",
+      "npm": "11.12.1",
+      "platform": "win32",
+      "timezone": "UTC",
+      "lockfileSha256": "8d69f4a65ccc28a3d8b304c10eeb9ae89edd1f90116707fe83b6dfd01cdb2346",
+      "startedAt": "2026-10-31T15:44:28.993Z",
+      "finishedAt": "2026-10-31T15:46:48.774Z",
+      "checks": [
+        {
+          "name": "typecheck",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 8601
+        },
+        {
+          "name": "lint",
+          "exitCode": 1,
+          "status": "failed",
+          "durationMs": 19238
+        },
+        {
+          "name": "jest",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 42374
+        },
+        {
+          "name": "jest-repeat",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 9828
+        },
+        {
+          "name": "build",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 25933
+        },
+        {
+          "name": "audit",
+          "exitCode": 1,
+          "status": "advisories",
+          "durationMs": 28506
+        },
+        {
+          "name": "audit-production",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 2198
+        }
+      ],
+      "jest": {
+        "jest": {
+          "numTotalTestSuites": 10,
+          "numPassedTestSuites": 10,
+          "numTotalTests": 3474,
+          "numPassedTests": 3474,
+          "numFailedTests": 0
+        },
+        "jest-repeat": {
+          "numTotalTestSuites": 10,
+          "numPassedTestSuites": 10,
+          "numTotalTests": 3474,
+          "numPassedTests": 3474,
+          "numFailedTests": 0
+        }
+      },
+      "lint": {
+        "errors": 4,
+        "warnings": 14
+      },
+      "audit": {
+        "audit": {
+          "info": 0,
+          "low": 7,
+          "moderate": 46,
+          "high": 26,
+          "critical": 4,
+          "total": 83
+        },
+        "audit-production": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        }
+      }
+    },
+    "after": {
+      "commit": "d0dbc12b8981e9f71ea687db9b9cd53b006b088d",
+      "node": "v24.12.0",
+      "npm": "11.12.1",
+      "platform": "win32",
+      "timezone": "UTC",
+      "lockfileSha256": "8d69f4a65ccc28a3d8b304c10eeb9ae89edd1f90116707fe83b6dfd01cdb2346",
+      "startedAt": "2026-10-31T15:47:06.364Z",
+      "finishedAt": "2026-10-31T15:48:13.040Z",
+      "checks": [
+        {
+          "name": "typecheck",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 3000
+        },
+        {
+          "name": "lint",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 6821
+        },
+        {
+          "name": "jest",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 12376
+        },
+        {
+          "name": "jest-repeat",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 9974
+        },
+        {
+          "name": "build",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 11014
+        },
+        {
+          "name": "audit",
+          "exitCode": 1,
+          "status": "advisories",
+          "durationMs": 15312
+        },
+        {
+          "name": "audit-production",
+          "exitCode": 0,
+          "status": "passed",
+          "durationMs": 7890
+        }
+      ],
+      "jest": {
+        "jest": {
+          "numTotalTestSuites": 11,
+          "numPassedTestSuites": 11,
+          "numTotalTests": 3478,
+          "numPassedTests": 3478,
+          "numFailedTests": 0
+        },
+        "jest-repeat": {
+          "numTotalTestSuites": 11,
+          "numPassedTestSuites": 11,
+          "numTotalTests": 3478,
+          "numPassedTests": 3478,
+          "numFailedTests": 0
+        }
+      },
+      "lint": {
+        "errors": 0,
+        "warnings": 14
+      },
+      "audit": {
+        "audit": {
+          "info": 0,
+          "low": 7,
+          "moderate": 46,
+          "high": 26,
+          "critical": 4,
+          "total": 83
+        },
+        "audit-production": {
+          "info": 0,
+          "low": 0,
+          "moderate": 0,
+          "high": 0,
+          "critical": 0,
+          "total": 0
+        }
+      }
+    }
+  },
+  "dateTimeSeeds": {
+    "default": 20261031,
+    "additional": 42,
+    "additionalPassedTests": 3155,
+    "repeatedInputNamesMatch": true
+  }
+}

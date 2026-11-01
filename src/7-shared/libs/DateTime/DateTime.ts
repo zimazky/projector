@@ -185,7 +185,7 @@ export default class DateTime {
 	 */
 	static getWeekday(t: timestamp): number {
 		const a = (4 + Math.floor((t + DateTime.timezone * 3600) / 86400)) % 7
-		return t < 0 ? (a == 0 ? 0 : a + 7) : a
+		return (a + 7) % 7
 	}
 
 	/** Получить строковое представление даты в виде "WWW, MMM DD" */

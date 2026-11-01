@@ -10,8 +10,6 @@ export type RepeatableEventModel = {
 	repeat: string
 	/** Комментарий */
 	comment: string
-	/** Наименование проекта */
-	project: string
 	/** Дата начала расписания, указывает на начало дня по местному времени */
 	start: timestamp
 	/** Время начала события, количество секунд с начала дня, null-неопределен */
@@ -25,6 +23,6 @@ export type RepeatableEventModel = {
 	/** Списание средств со счета */
 	debit: number
 
-	/** Индекс записи проекта */
-	projectId: number
+	/** Стабильный идентификатор проекта */
+	projectId: string
 }

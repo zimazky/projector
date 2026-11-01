@@ -67,3 +67,9 @@
 		box-shadow: 0 0 12px 4px rgba(255, 152, 0, 0.8);
 	}
 }
+.item:focus-visible,
+.repeatable:focus-visible,
+.completed:focus-visible {
+	outline: 2px solid var(--color-border-focus);
+	outline-offset: -2px;
+}

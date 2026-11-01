@@ -27,13 +27,23 @@ const YesNoCancelConfirmation: React.FC<YesNoCancelConfirmationProps> = ({
 	noLabel = 'Нет',
 	cancelLabel = 'Отмена'
 }) => {
+	const descriptionId = React.useId()
 	return (
-		<Dialog open={open} onClose={() => onDecision('cancel')}>
-			<DialogContent>{children}</DialogContent>
+		<Dialog
+			open={open}
+			onClose={() => onDecision('cancel')}
+			aria-label="Сохранение изменений перед закрытием"
+			aria-describedby={descriptionId}
+		>
+			<DialogContent>
+				<div id={descriptionId}>{children}</div>
+			</DialogContent>
 			<DialogActions>
 				<TextButton onClick={() => onDecision('yes')}>{yesLabel}</TextButton>
 				<TextButton onClick={() => onDecision('no')}>{noLabel}</TextButton>
-				<TextButton onClick={() => onDecision('cancel')}>{cancelLabel}</TextButton>
+				<TextButton onClick={() => onDecision('cancel')} data-dialog-initial-focus>
+					{cancelLabel}
+				</TextButton>
 			</DialogActions>
 		</Dialog>
 	)

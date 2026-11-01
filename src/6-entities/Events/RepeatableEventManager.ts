@@ -1,4 +1,4 @@
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import { RepeatableEventModel, IEventModel } from './EventModel'
 import { eventDtoToIEventModel } from './EventMappers'
 import { EventDto } from './EventDto'
@@ -33,14 +33,12 @@ export class RepeatableEventManager {
 	 * @param isFinal - Если true, вызывает onChange после добавления
 	 */
 	add(e: IEventModel, isFinal: boolean = true) {
-		let projectId = this.projects.getIdWithIncEventsCount(e.project)
-		if (projectId < 0) projectId = 0
+		const projectId = this.projects.getIdWithIncEventsCount(e.project, e.projectId)
 
 		this.plannedRepeatable.push({
 			id: this.incLastId(),
 			name: e.name,
 			comment: e.comment,
-			project: e.project,
 			projectId: projectId,
 			repeat: e.repeat!,
 			start: e.start,
@@ -68,6 +66,9 @@ export class RepeatableEventManager {
 	 * @returns true, если событие было удалено
 	 */
 	delete(id: number | null): boolean {
+		for (const event of this.plannedRepeatable) {
+			if (event.id === id) this.projects.changeEventsCount(event.projectId, -1)
+		}
 		const initialLength = this.plannedRepeatable.length
 		this.plannedRepeatable = this.plannedRepeatable.filter(e => e.id !== id)
 		return this.plannedRepeatable.length !== initialLength
@@ -85,6 +86,7 @@ export class RepeatableEventManager {
 		if (ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, currentdate)) {
 			const first = { ...revent, end: currentdate, id: this.incLastId() }
 			this.plannedRepeatable.push(first)
+			this.projects.changeEventsCount(first.projectId, 1)
 		}
 		if (revent.repeat[0] === '/') {
 			const d = +revent.repeat.substring(1)
@@ -116,6 +118,7 @@ export class RepeatableEventManager {
 			if (ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, currentdate)) {
 				const first = { ...revent, end: currentdate, id: this.incLastId() }
 				this.plannedRepeatable.push(first)
+				this.projects.changeEventsCount(first.projectId, 1)
 			}
 			if (revent.repeat[0] === '/') {
 				const d = +revent.repeat.substring(1)
@@ -205,6 +208,7 @@ export class RepeatableEventManager {
 			if (ZCron.ariseInInterval(revent.repeat, revent.start, revent.start, currentdate)) {
 				const first = { ...revent, end: currentdate, id: this.incLastId() }
 				this.plannedRepeatable.push(first)
+				this.projects.changeEventsCount(first.projectId, 1)
 			}
 			if (revent.repeat[0] === '/') {
 				const d = +revent.repeat.substring(1)
@@ -239,6 +243,7 @@ export class RepeatableEventManager {
 	 * Сбрасывает список повторяемых событий.
 	 */
 	reset() {
+		for (const event of this.plannedRepeatable) this.projects.changeEventsCount(event.projectId, -1)
 		this.plannedRepeatable = []
 	}
 }

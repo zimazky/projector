@@ -1,9 +1,9 @@
-import React, { useContext } from 'react'
+import React from 'react'
 
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { kilo, plus } from 'src/7-shared/helpers/utils'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { CalendarDayStructure } from 'src/3-pages/Calendar/CalendarStore'
 
 import styles from './CalendarDay.module.css'
@@ -18,7 +18,7 @@ type CalendarDayProps = {
 }
 
 const CalendarDay: React.FC<CalendarDayProps> = props => {
-	const { dayListStore, eventFormStore, uiStore } = useContext(StoreContext)
+	const { dayListStore, eventFormStore, uiStore } = useStores()
 	const { data, isToday, onDragDrop, children = null } = props
 	const { timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style } = data
 	const inputElementRef = React.useRef<HTMLDivElement>(null)
@@ -61,6 +61,8 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 
 	return (
 		<div
+			data-testid="calendar-day"
+			data-date={DateTime.getYYYYMMDD(timestamp)}
 			className={
 				style === 'normal'
 					? styles.day
@@ -126,6 +128,8 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 				ref={inputElementRef}
 				className={styles.input}
 				contentEditable="true"
+				role="textbox"
+				aria-label={`Новое событие: ${DateTime.getYYYYMMDD(timestamp)}`}
 				suppressContentEditableWarning={true}
 				onBlur={onBlurHandle}
 				onKeyDown={onKeyDownHandle}

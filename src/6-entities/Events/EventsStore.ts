@@ -1,6 +1,7 @@
+import { action, makeObservable, observable } from 'mobx'
 import { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import { ProjectsStore } from 'src/3-pages/Projects/ProjectsStore'
+import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 
 import { IEventModel, SingleEventModel, RepeatableEventModel } from './EventModel'
 import { eventDtoToIEventModel, repeatableEventModelToEventDto, singleEventModelToEventDto } from './EventMappers'
@@ -23,8 +24,16 @@ export class EventsStore {
 	projects: ProjectsStore
 	/** Нумератор идентификаторов */
 	private lastId = 1
+	/** Версия для производных индексов; не записывается в документ. */
+	version = 0
 	/** Колбэк функция, вызывается при каждом изменении списка */
 	onChangeList = () => {}
+
+	private notifyChanged(shouldSort = true) {
+		if (shouldSort) this.sort()
+		this.version++
+		this.onChangeList()
+	}
 
 	private singleEventManager: SingleEventManager
 	private repeatableEventManager: RepeatableEventManager
@@ -47,16 +56,36 @@ export class EventsStore {
 		this.singleEventManager = new SingleEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.onChangeList()
+			() => this.notifyChanged()
 		)
 
 		this.repeatableEventManager = new RepeatableEventManager(
 			this.projects,
 			() => this.lastId++,
-			() => this.onChangeList(),
+			() => this.notifyChanged(),
 			(e, isFinal) => this.singleEventManager.addPlanned(e, isFinal),
 			(e, isFinal) => this.singleEventManager.addCompleted(e, isFinal)
 		)
+		// Модели и менеджеры изменяются пакетными командами. Публикуем одну
+		// наблюдаемую версию после завершения команды, не превращая чтение в action.
+		makeObservable<this, 'notifyChanged'>(this, {
+			version: observable,
+			notifyChanged: action,
+			init: action,
+			addCompletedEventModel: action,
+			addCompletedEventDto: action,
+			addPlannedEventModel: action,
+			addPlannedEventDto: action,
+			deleteEvent: action,
+			deleteCurrentRepeatableEvent: action,
+			completeEvent: action,
+			uncompleteEvent: action,
+			updateEvent: action,
+			shiftToDate: action,
+			copyToDate: action,
+			saveAsSingleEvent: action,
+			sort: action
+		})
 	}
 
 	/** Загрузка данных со сбросом предшествующих данных */
@@ -70,7 +99,8 @@ export class EventsStore {
 		d.plannedList?.forEach(e => {
 			this.addPlannedEventDto(e, false)
 		})
-		this.onChangeList()
+		// Восстановление сохраняет порядок исходного снимка; само чтение не создаёт dirty.
+		this.notifyChanged(false)
 	}
 
 	/** Подготовка для сохранения в хранилище */
@@ -141,7 +171,7 @@ export class EventsStore {
 	deleteEvent(id: number | null, isFinal: boolean = true) {
 		const deletedInSingle = this.singleEventManager.delete(id)
 		this.repeatableEventManager.delete(id)
-		if (isFinal) this.onChangeList()
+		if (isFinal) this.notifyChanged()
 	}
 
 	/**
@@ -163,7 +193,7 @@ export class EventsStore {
 	 */
 	completeEvent(id: number | null, currentdate: timestamp, e: EventDto) {
 		if (this.singleEventManager.complete(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 
@@ -180,7 +210,7 @@ export class EventsStore {
 	 */
 	uncompleteEvent(id: number | null, raw: EventDto) {
 		if (this.singleEventManager.uncomplete(id, raw)) {
-			this.onChangeList()
+			this.notifyChanged()
 		}
 	}
 
@@ -191,12 +221,12 @@ export class EventsStore {
 	 */
 	updateEvent(id: number, e: EventDto) {
 		if (this.singleEventManager.update(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 
 		if (this.repeatableEventManager.update(id, e)) {
-			this.onChangeList()
+			this.notifyChanged()
 			return
 		}
 	}

@@ -1,0 +1,8 @@
+{
+	"projectsList": [{ "name": "Demo", "color": "#112233", "background": "#ddeeff" }],
+	"completedList": [
+		{ "name": "Opening balance", "project": "Demo", "start": "2026.10.01", "credit": 1000 },
+		{ "name": "Supplies", "project": "Demo", "start": "2026.10.02", "debit": 125 }
+	],
+	"plannedList": [{ "name": "Review", "project": "Demo", "start": "2026.11.01", "time": "9:30", "duration": "1:00" }]
+}

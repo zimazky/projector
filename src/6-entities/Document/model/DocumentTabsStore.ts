@@ -1,51 +1,260 @@
 import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
-import { StorageService } from 'src/7-shared/services/StorageService'
+import { driveErrorMessage } from 'src/7-shared/services/DriveApiError'
+import { driveVersion, isDriveVersion, readDriveDocument, DriveReadChangedError } from './DocumentDriveProtocol'
+import { GoogleLoginCancelledError } from 'src/7-shared/services/GoogleAuthError'
 import {
 	DocumentId,
 	DocumentSession,
 	DocumentTabsState,
 	DocumentData,
 	SyncResult,
-	RestoredDocumentSnapshot,
 	DocumentTabsSnapshot,
-	DocumentDataSnapshot,
 	createEmptyDocumentData,
 	generateDocumentId,
-	createInitialDocumentState,
-	parseDocumentContent,
-	parseDocumentTabsSnapshot,
-	DocumentRef
+	createInitialSyncSnapshot,
+	DocumentOrigin
 } from './DocumentTabsStore.types'
+import type {
+	DocumentSaveResult,
+	DocumentCloseDecision,
+	DocumentCloseResult,
+	DocumentSnapshot,
+	DocumentOperationContext,
+	DocumentPullResult,
+	DocumentResolveResult,
+	DocumentOpenResult,
+	SyncOperation,
+	DriveFileMetadata
+} from './DocumentTabsStore.types'
+import { DocumentStoreManager } from './DocumentStoreManager'
+import type { DocumentStores, IEventsStoreProvider } from './DocumentStoreManager.types'
+import type { DocumentStoreCallbacks } from './DocumentStoreManager'
+import { normalizeMainStoreData } from './DocumentTabsStore.utils'
+import { computeFingerprint, cloneDocumentData, freezeSnapshot } from './DocumentSyncFingerprint'
+import type { DocumentUiState } from './DocumentSyncSelectors'
+import { getIsDirty, getShouldWarnOnClose, getDocumentUiState } from './DocumentSyncSelectors'
 
-const DOCUMENT_TABS_KEY = 'documentTabs'
-const DOCUMENT_DATA_PREFIX = 'document_'
+import { LocalDocumentPersistence, type DocumentPersistence } from './DocumentPersistence'
+import { serializeDocumentData } from './DocumentFormat'
+import { parseSessionSnapshot, SESSION_SCHEMA_VERSION } from './DocumentSessionFormat'
+import { storageDiagnostic, storageFailureMessage, type StorageDiagnostic } from './DocumentStorageDiagnostic'
+import type { LegacyStorageCleanupResult } from './DocumentStorageCleanup'
 
 /**
  * Store для управления несколькими открытыми документами.
  * Поддерживает вкладки, персистентность в localStorage и синхронизацию с Google Drive.
  */
-export class DocumentTabsStore {
+export class DocumentTabsStore implements IEventsStoreProvider {
 	private state: DocumentTabsState
+	private documentStoreManager: DocumentStoreManager
+	private operationSequence = 0
+	/** Только синхронное применение данных, не состояние сетевой операции. */
+	private applyingContent = new Set<DocumentId>()
+	private pendingSaves = new Map<DocumentSession, Promise<DocumentSaveResult>>()
+	private storeCallbacks: DocumentStoreCallbacks = {}
+	private recoveryBlocked = false
+	persistenceError: string | null = null
+	persistenceDiagnostic: StorageDiagnostic | null = null
+	isPersistingLocalSession = false
+	isRestoringLocalSession = false
+	private localSaveSequence = 0
+	private localRestoreSequence = 0
+	private pendingLocalSave: Promise<void> | null = null
+	isCleaningLegacyStorage = false
+	private pendingLegacyCleanup: Promise<LegacyStorageCleanupResult> | null = null
+	private disposed = false
 
 	constructor(
 		private readonly googleApiService: GoogleApiService,
-		private readonly storageService: StorageService
+		private readonly persistence: DocumentPersistence = new LocalDocumentPersistence()
 	) {
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
 			documentOrder: []
 		}
-		makeAutoObservable(this)
+
+		// Создаём менеджер внутри конструктора, передаём себя как провайдер данных
+		const self = this
+		this.documentStoreManager = new DocumentStoreManager({
+			getDocumentData: id => self.state.documents.get(id)?.data ?? null,
+			get activeDocumentId(): DocumentId | null {
+				return self.state.activeDocumentId
+			}
+		})
+
+		this.setOnStoresChanged({})
+		makeAutoObservable<
+			this,
+			| 'applyingContent'
+			| 'pendingSaves'
+			| 'operationSequence'
+			| 'persistence'
+			| 'pendingLocalSave'
+			| 'localSaveSequence'
+			| 'localRestoreSequence'
+			| 'pendingLegacyCleanup'
+		>(this, {
+			applyingContent: false,
+			pendingSaves: false,
+			persistence: false,
+			pendingLocalSave: false,
+			pendingLegacyCleanup: false,
+			localSaveSequence: false,
+			localRestoreSequence: false,
+			operationSequence: false
+		})
+	}
+
+	/** Установить колбэки при изменении данных в пер-документных сторах (вызывается из MainStore) */
+	setOnStoresChanged(callbacks: DocumentStoreCallbacks): void {
+		this.storeCallbacks = callbacks
+		// Персистентность принадлежит документу, а не наличию MainStore или активной вкладке.
+		this.documentStoreManager.setCallbacks({
+			onEventsChanged: stores => {
+				callbacks.onEventsChanged?.(stores)
+				this.recordStoresChanged(stores)
+			},
+			onProjectsChanged: stores => {
+				callbacks.onProjectsChanged?.(stores)
+				this.recordStoresChanged(stores)
+			}
+		})
+	}
+
+	private recordStoresChanged(stores: DocumentStores): void {
+		if (this.documentStoreManager.getStores(stores.documentId)?.eventsStore !== stores.eventsStore) return
+		const data = this.documentStoreManager.getDocumentDataForSave(stores.documentId)
+		if (data) this.updateDocumentData(stores.documentId, data)
+	}
+
+	/** Согласованный неизменяемый снимок исходной сессии, включая локальную версию. */
+	captureDocumentSnapshot(documentId: DocumentId): DocumentSnapshot | null {
+		const session = this.state.documents.get(documentId)
+		if (!session) return null
+		const data = this.getDocumentDataForSave(documentId) ?? session.data
+		if (computeFingerprint(data) !== computeFingerprint(session.data)) this.updateDocumentData(documentId, data)
+		return Object.freeze({
+			documentId,
+			session,
+			ref: session.ref ? Object.freeze({ ...session.ref }) : null,
+			data: freezeSnapshot(cloneDocumentData(session.data)),
+			localVersion: session.sync.localVersion
+		})
+	}
+
+	/** Сохранение блокирует конкурирующие записи; check/pull могут вытеснить старую проверку. */
+	beginDocumentOperation(
+		documentId: DocumentId,
+		operation: Exclude<SyncOperation, 'idle'>,
+		snapshot = this.captureDocumentSnapshot(documentId)
+	): DocumentOperationContext | null {
+		if (this.disposed) return null
+		const session = this.state.documents.get(documentId)
+		if (!snapshot || session !== snapshot.session || session.operation === 'saving' || session.operation === 'opening')
+			return null
+		const context = Object.freeze({ ...snapshot, token: ++this.operationSequence })
+		session.operation = operation
+		session.operationToken = context.token
+		session.error = null
+		this.persistToLocalStorage()
+		return context
+	}
+
+	/** Проверяется после каждого await, в том числе в catch/finally. */
+	isDocumentOperationCurrent(context: DocumentOperationContext): boolean {
+		return (
+			!this.disposed &&
+			this.state.documents.get(context.documentId) === context.session &&
+			context.session.operationToken === context.token
+		)
+	}
+
+	finishDocumentOperation(context: DocumentOperationContext): void {
+		if (!this.isDocumentOperationCurrent(context)) return
+		context.session.operation = 'idle'
+		this.persistToLocalStorage()
+	}
+
+	/** Смена доступности не меняет содержимое и не снимает dirty. */
+	requireRemoteCheck(documentId: DocumentId): void {
+		const session = this.state.documents.get(documentId)
+		if (!session?.ref?.fileId || session.sync.needsRemoteCheck) return
+		session.sync.needsRemoteCheck = true
+		this.persistToLocalStorage()
+	}
+
+	/** Dispose координатора отменяет только принадлежащую ему проверку. */
+	cancelBackgroundCheck(documentId: DocumentId, token: number | null): void {
+		const session = this.state.documents.get(documentId)
+		if (!session || session.operation !== 'checking' || session.operationToken !== token) return
+		session.operationToken = ++this.operationSequence
+		session.operation = 'idle'
+		session.sync.needsRemoteCheck = true
+		this.persistToLocalStorage()
+	}
+
+	/** Ошибка устаревшего запроса не меняет ни новую операцию, ни другую вкладку. */
+	failDocumentOperation(
+		context: DocumentOperationContext,
+		error: unknown
+	): Exclude<DocumentSaveResult, { status: 'saved' }> {
+		if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+		if (error instanceof GoogleLoginCancelledError) return { status: 'cancelled' }
+		context.session.sync.needsRemoteCheck = true
+		if (error instanceof DriveReadChangedError) return { status: 'conflict', message: error.message }
+		const message = driveErrorMessage(error)
+		context.session.error = { code: 'operation-failed', message, at: Date.now() }
+		this.persistToLocalStorage()
+		return { status: 'failed', message }
+	}
+
+	/** Колбэк при смене активного документа (для инвалидации кэша и т.п.) */
+	private onActiveDocumentChanged?: (documentId: DocumentId) => void
+
+	/** Установить колбэк при смене активного документа (вызывается из MainStore) */
+	setOnActiveDocumentChanged(callback?: (documentId: DocumentId) => void): void {
+		this.onActiveDocumentChanged = callback
+	}
+
+	// === Методы доступа к сторам (делегирование к DocumentStoreManager) ===
+
+	/** Получить сторы активного документа */
+	getActiveDocumentStores(): DocumentStores | null {
+		return this.documentStoreManager.activeStores
+	}
+
+	/** Получить все сторы (для общего календаря) */
+	getAllDocumentStores(): DocumentStores[] {
+		return this.documentStoreManager.getAllDocumentStores()
+	}
+
+	/** Получить сторы конкретного документа */
+	getDocumentStores(documentId: DocumentId): DocumentStores | null {
+		return this.documentStoreManager.getStores(documentId)
+	}
+
+	// === IEventsStoreProvider ===
+
+	get activeEventsStore() {
+		return this.documentStoreManager.activeEventsStore
+	}
+	get activeProjectsStore() {
+		return this.documentStoreManager.activeProjectsStore
 	}
 
 	// === Управление вкладками ===
 
 	/** Создать новый документ */
 	openNewDocument(name: string = 'Новый документ') {
+		if (this.isRestoringLocalSession) return
 		const id = generateDocumentId()
+		const data = createEmptyDocumentData()
+		const sync = createInitialSyncSnapshot('new-local')
+		sync.localFingerprint = computeFingerprint(data)
+
 		const session: DocumentSession = {
 			id,
 			ref: {
@@ -55,11 +264,11 @@ export class DocumentTabsStore {
 				space: null,
 				parentFolderId: null
 			},
-			data: createEmptyDocumentData(),
-			state: {
-				...createInitialDocumentState(),
-				syncStatus: 'offline'
-			},
+			data,
+			sync,
+			operation: 'idle',
+			error: null,
+			operationToken: null,
 			createdAt: Date.now(),
 			lastAccessedAt: Date.now()
 		}
@@ -67,20 +276,22 @@ export class DocumentTabsStore {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		// Применить пустые данные к сторам
-		this.storageService.applyContent(session.data)
+		// Новые сторы подключают callbacks только после инициализации.
+		this.documentStoreManager.createStores(id)
 
 		this.persistToLocalStorage()
-		this.persistDocumentDataToLocalStorage(id)
+
+		this.onActiveDocumentChanged?.(id)
 	}
 
 	/** Открыть документ из Google Drive */
-	async openFromDrive(fileId: string, space?: 'drive' | 'appDataFolder') {
+	async openFromDrive(fileId: string, space?: 'drive' | 'appDataFolder'): Promise<DocumentOpenResult> {
+		if (this.isRestoringLocalSession) return { status: 'cancelled' }
 		// Проверка: уже открыт такой документ?
 		const existing = this.findDocumentByFileId(fileId)
 		if (existing) {
 			this.activateDocument(existing.id)
-			return
+			return { status: 'opened', documentId: existing.id }
 		}
 
 		const id = generateDocumentId()
@@ -94,11 +305,10 @@ export class DocumentTabsStore {
 				parentFolderId: null
 			},
 			data: createEmptyDocumentData(),
-			state: {
-				...createInitialDocumentState(),
-				isLoading: true,
-				syncStatus: 'syncing'
-			},
+			sync: createInitialSyncSnapshot('drive'),
+			operation: 'idle',
+			error: null,
+			operationToken: null,
 			createdAt: Date.now(),
 			lastAccessedAt: Date.now()
 		}
@@ -106,81 +316,101 @@ export class DocumentTabsStore {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		// Загрузка данных
+		this.onActiveDocumentChanged?.(id)
+		const context = this.beginDocumentOperation(id, 'opening')!
 		try {
-			const metadata = await this.googleApiService.getFileMetadata(fileId)
-			const content = await this.googleApiService.downloadFileContent(fileId)
-
-			const loadedSession = this.state.documents.get(id)!
-			loadedSession.ref = {
-				fileId: metadata.id,
-				name: metadata.name,
-				mimeType: metadata.mimeType || 'application/json',
-				space: space ?? null,
-				parentFolderId: metadata.parents?.[0] ?? null,
-				webViewLink: metadata.webViewLink
+			const remote = await readDriveDocument(this.googleApiService, fileId, () =>
+				this.isDocumentOperationCurrent(context)
+			)
+			if (!remote) return { status: 'cancelled' }
+			const { metadata, data: content } = remote
+			runInAction(() => {
+				context.session.ref = {
+					fileId: metadata.id,
+					name: metadata.name,
+					mimeType: metadata.mimeType || 'application/json',
+					space: space ?? null,
+					parentFolderId: metadata.parents?.[0] ?? null,
+					webViewLink: metadata.webViewLink
+				}
+			})
+			if (context.session.sync.localVersion !== context.localVersion) {
+				this.observeRemote(context, metadata)
+				return {
+					status: 'conflict',
+					message: 'Во время открытия появились локальные изменения. Данные с Drive не применены.'
+				}
 			}
-			loadedSession.data = parseDocumentContent(content)
-			loadedSession.state.syncStatus = 'synced'
-			loadedSession.state.lastLoadedAt = Date.now()
-			loadedSession.state.lastSyncedAt = Date.now()
-
-			// Применить данные к сторам (isLoading ещё true, чтобы заблокировать onChangeList)
-			this.storageService.applyContent(loadedSession.data)
-
-			// Сбрасываем isLoading и явно очищаем isDirty после применения данных
-			loadedSession.state.isLoading = false
-			loadedSession.state.isDirty = false
-
-			this.persistDocumentDataToLocalStorage(id)
-			this.persistToLocalStorage()
-		} catch (error: any) {
-			const failedSession = this.state.documents.get(id)!
-			failedSession.state.error = error.message
-			failedSession.state.isLoading = false
-			failedSession.state.syncStatus = 'error'
-			console.error('Failed to open document from Drive:', error)
+			this.applyContentToDocument(id, content, metadata)
+			return { status: 'opened', documentId: id }
+		} catch (error: unknown) {
+			return this.failDocumentOperation(context, error)
+		} finally {
+			this.finishDocumentOperation(context)
 		}
 	}
 
-	/**
-	 * Открыть документ из localStorage без синхронизации с Google Drive.
-	 * Документ помечается как 'offline' и требует явной синхронизации пользователем.
-	 */
-	openFromLocalStorageSnapshot(docSnapshot: RestoredDocumentSnapshot) {
-		const id = docSnapshot.id
-		const session: DocumentSession = {
-			id,
-			ref: docSnapshot.ref,
-			data: createEmptyDocumentData(), // Данные загрузятся отдельно
-			state: {
-				isDirty: false, // Сбрасываем — новая сессия
-				isLoading: false,
-				isSaving: docSnapshot.state.isSaving,
-				lastLoadedAt: docSnapshot.lastAccessedAt,
-				lastSavedAt: docSnapshot.state.lastSavedAt,
-				error: docSnapshot.state.error,
-				syncStatus: docSnapshot.ref?.fileId ? 'offline' : 'offline',
-				lastSyncedAt: null,
-				hasUnsyncedChanges: docSnapshot.state.hasUnsyncedChanges
-			},
+	/** Миграция формата уже завершена до создания рабочей сессии. */
+	private createRestoredSession(docSnapshot: DocumentTabsSnapshot['documents'][number]): DocumentSession {
+		const origin: DocumentOrigin = docSnapshot.ref.fileId ? 'restored-local' : 'new-local'
+		const sync = { ...docSnapshot.sync, origin }
+		if (docSnapshot.ref.fileId) {
+			sync.needsRemoteCheck = true
+			sync.lastRemoteCheckAt = null
+		}
+		if (!isDriveVersion(sync.baseRevisionId)) sync.baseRevisionId = null
+		if (!isDriveVersion(sync.remoteRevisionId)) sync.remoteRevisionId = null
+		return {
+			id: docSnapshot.id,
+			ref: { ...docSnapshot.ref },
+			data: cloneDocumentData(docSnapshot.data),
+			sync,
+			operation: 'idle',
+			error: null,
+			operationToken: null,
 			createdAt: docSnapshot.lastAccessedAt,
 			lastAccessedAt: docSnapshot.lastAccessedAt
 		}
-		this.state.documents.set(id, session)
-		this.state.documentOrder.push(id)
 	}
 
-	/** Закрыть документ */
+	/** Общий сценарий закрытия для вкладки и меню. */
+	async requestCloseDocument(
+		documentId: DocumentId,
+		requestDecision: (ui: DocumentUiState) => Promise<DocumentCloseDecision>,
+		save: (id: DocumentId) => Promise<DocumentSaveResult>
+	): Promise<DocumentCloseResult> {
+		const session = this.state.documents.get(documentId)
+		if (!session) return { status: 'cancelled' }
+		if (session.operation === 'saving') return { status: 'failed', message: 'Дождитесь завершения сохранения.' }
+		if (getShouldWarnOnClose(session)) {
+			const decision = await requestDecision(getDocumentUiState(session))
+			if (this.state.documents.get(documentId) !== session || decision === 'cancel') return { status: 'cancelled' }
+			if (decision === 'save') {
+				const beforeSave = JSON.stringify(this.getDocumentDataForSave(documentId) ?? session.data)
+				let result: DocumentSaveResult
+				try {
+					result = await save(documentId)
+				} catch {
+					return { status: 'failed', message: 'Не удалось сохранить документ.' }
+				}
+				if (result.status !== 'saved') return result
+				if (this.state.documents.get(documentId) !== session) return { status: 'cancelled' }
+				if (beforeSave !== JSON.stringify(this.getDocumentDataForSave(documentId) ?? session.data)) {
+					return {
+						status: 'failed',
+						message: 'Во время сохранения появились новые изменения. Вкладка оставлена открытой.'
+					}
+				}
+			}
+		}
+		this.closeDocument(documentId)
+		return { status: 'closed' }
+	}
+
+	/** Удалить документ после подтверждения закрытия. */
 	closeDocument(documentId: DocumentId) {
 		const session = this.state.documents.get(documentId)
 		if (!session) return
-
-		// Проверка несохранённых изменений (в сессии или с предыдущей сессии)
-		if (session.state.isDirty || session.state.hasUnsyncedChanges) {
-			// TODO: Показать диалог подтверждения
-			console.warn('Closing document with unsaved changes')
-		}
 
 		this.state.documents.delete(documentId)
 		this.state.documentOrder = this.state.documentOrder.filter(id => id !== documentId)
@@ -189,15 +419,13 @@ export class DocumentTabsStore {
 			this.state.activeDocumentId = this.state.documentOrder[0] ?? null
 		}
 
-		// Если закрыли последний документ, сбросить данные в сторам
-		if (this.state.documentOrder.length === 0) {
-			this.storageService.resetToEmptyContent()
-		} else if (this.state.activeDocumentId) {
-			// Активировать новый документ (с блокировкой onChangeList)
+		// Удаляем сторы
+		this.documentStoreManager.removeStores(documentId)
+
+		if (this.state.activeDocumentId) {
 			this.activateDocument(this.state.activeDocumentId)
 		}
 
-		this.removeDocumentDataFromLocalStorage(documentId)
 		this.persistToLocalStorage()
 	}
 
@@ -209,208 +437,296 @@ export class DocumentTabsStore {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
-		// Временно устанавливаем isLoading для блокировки onChangeList
-		const previousLoadingState = session.state.isLoading
-		session.state.isLoading = true
+		if (!this.documentStoreManager.hasStores(documentId)) {
+			this.documentStoreManager.createStores(documentId)
+		}
 
-		// Применить данные активного документа к основным сторам
-		this.storageService.applyContent(session.data)
-
-		// Восстанавливаем состояние isLoading
-		session.state.isLoading = previousLoadingState
+		// Уведомляем об изменении активного документа (инвалидация кэша и т.п.)
+		this.onActiveDocumentChanged?.(documentId)
 
 		this.persistToLocalStorage()
 	}
 
 	// === Операции с данными ===
 
-	/** Обновить данные активного документа */
-	updateActiveDocumentData(data: DocumentData) {
-		if (!this.state.activeDocumentId) return
+	/** Совместимый фасад; запись всегда адресуется исходному ID. */
+	updateActiveDocumentData(data: DocumentData): void {
+		if (this.activeDocumentId) this.updateDocumentData(this.activeDocumentId, data)
+	}
 
-		const session = this.state.documents.get(this.state.activeDocumentId)
-		if (!session) return
-
-		// Не обновляем isDirty, если документ сейчас сохраняется или загружается
-		if (session.state.isSaving || session.state.isLoading) return
-
-		session.data = data
-		session.state.isDirty = true
+	/** Фиксирует правки любого документа, включая неактивный и сохраняемый. */
+	updateDocumentData(documentId: DocumentId, data: DocumentData): void {
+		const session = this.state.documents.get(documentId)
+		if (!session || this.applyingContent.has(documentId)) return
+		const copy = cloneDocumentData(normalizeMainStoreData(data))
+		session.data = copy
+		session.sync.localVersion++
+		session.sync.localFingerprint = computeFingerprint(copy)
+		// Возврат к базе распознаётся только точным сравнением, не равенством хэшей.
+		if (session.sync.localFingerprint === session.sync.baseFingerprint) {
+			session.sync.baseLocalVersion = session.sync.localVersion
+		}
 		session.lastAccessedAt = Date.now()
-
-		// Если документ был синхронизирован, теперь он требует сохранения
-		if (session.state.syncStatus === 'synced') {
-			session.state.syncStatus = 'needs-sync'
-		}
-		// Если была доступна новая версия с Drive, а пользователь начал редактировать — сбрасываем
-		else if (session.state.syncStatus === 'update-available') {
-			session.state.syncStatus = 'needs-sync'
-		}
-
-		this.persistDocumentDataToLocalStorage(this.state.activeDocumentId)
 		this.persistToLocalStorage()
+	}
+
+	/** Подтверждает только реально отправленный снимок актуальной операции. */
+	markDocumentSavedToDrive(
+		context: DocumentOperationContext,
+		metadata: DriveFileMetadata,
+		space: 'drive' | 'appDataFolder' = 'drive'
+	): boolean {
+		if (!this.isDocumentOperationCurrent(context) || context.session.operation !== 'saving') return false
+		const version = driveVersion(metadata)
+		const session = context.session
+		this.captureDocumentSnapshot(context.documentId)
+		session.sync.baseFingerprint = computeFingerprint(context.data)
+		session.sync.baseLocalVersion = context.localVersion
+		if (session.sync.localFingerprint === session.sync.baseFingerprint) {
+			session.sync.baseLocalVersion = session.sync.localVersion
+		}
+		session.sync.lastSyncAt = Date.now()
+		// fileId не является ревизией; неизвестный серверный маркер не выдумываем.
+		session.sync.baseRevisionId = version
+		session.sync.remoteRevisionId = version
+		session.sync.serverModifiedAt = metadata.modifiedTime ?? null
+		session.sync.lastRemoteCheckAt = Date.now()
+		session.sync.needsRemoteCheck = false
+		session.sync.origin = 'drive'
+		session.error = null
+		session.ref = {
+			fileId: metadata.id,
+			name: metadata.name,
+			mimeType: metadata.mimeType || session.ref?.mimeType || 'application/json',
+			space,
+			parentFolderId: metadata.parents?.[0] ?? context.ref?.parentFolderId ?? null,
+			webViewLink: metadata.webViewLink ?? (metadata.id === context.ref?.fileId ? context.ref.webViewLink : undefined)
+		}
+		this.persistToLocalStorage()
+		return true
 	}
 
 	/** Сохранить активный документ в Google Drive */
 	async saveActiveDocument(): Promise<boolean> {
 		if (!this.state.activeDocumentId) return false
+		return (await this.saveDocument(this.state.activeDocumentId)).status === 'saved'
+	}
 
-		const session = this.state.documents.get(this.state.activeDocumentId)
-		if (!session || !session.ref?.fileId) return false
+	saveDocument(documentId: DocumentId, decision?: DocumentOperationContext): Promise<DocumentSaveResult> {
+		if (decision && (!this.isDocumentOperationCurrent(decision) || decision.documentId !== documentId))
+			return Promise.resolve({ status: 'cancelled' })
+		const session = this.state.documents.get(documentId)
+		if (!session?.ref?.fileId)
+			return Promise.resolve({ status: 'failed', message: 'Нет связанного файла для сохранения.' })
+		const pending = this.pendingSaves.get(session)
+		if (pending) return pending
+		const context = this.beginDocumentOperation(documentId, 'saving')
+		if (!context) return Promise.resolve({ status: 'failed', message: 'Дождитесь завершения операции.' })
+		const saving = this.performDocumentSave(context, decision).finally(() => {
+			if (this.pendingSaves.get(session) === saving) this.pendingSaves.delete(session)
+		})
+		this.pendingSaves.set(session, saving)
+		return saving
+	}
 
-		session.state.isSaving = true
-		this.persistToLocalStorage()
+	private observeRemote(context: DocumentOperationContext, metadata: DriveFileMetadata): void {
+		const version = driveVersion(metadata, context.ref!.fileId!)
+		context.session.sync.remoteRevisionId = version
+		context.session.sync.serverModifiedAt = metadata.modifiedTime ?? null
+		context.session.sync.lastRemoteCheckAt = Date.now()
+		context.session.sync.needsRemoteCheck = false
+	}
 
-		try {
-			const content = JSON.stringify(session.data, null, 2)
-			const result = await this.googleApiService.saveFile(
-				session.ref.name,
-				content,
-				session.ref.mimeType,
-				session.ref.parentFolderId || 'root',
-				session.ref.space || 'drive',
-				session.ref.fileId
-			)
-
-			if (result.status === 'success') {
-				runInAction(() => {
-					session.state.isDirty = false
-					session.state.hasUnsyncedChanges = false
-					session.state.isSaving = false
-					session.state.lastSavedAt = Date.now()
-					session.state.syncStatus = 'synced'
-					session.state.lastSyncedAt = Date.now()
-					session.ref = {
-						...session.ref,
-						fileId: result.file.id,
-						name: result.file.name,
-						mimeType: result.file.mimeType || session.ref!.mimeType,
-						space: session.ref!.space,
-						parentFolderId: result.file.parents?.[0] ?? session.ref!.parentFolderId,
-						webViewLink: result.file.webViewLink
-					}
-				})
-				this.persistToLocalStorage()
-				return true
-			} else {
-				runInAction(() => {
-					session.state.error = result.status === 'error' ? result.message : 'Conflict while saving'
-					session.state.isSaving = false
-					session.state.syncStatus = 'error'
-				})
-				this.persistToLocalStorage()
-				return false
-			}
-		} catch (error: any) {
-			runInAction(() => {
-				const session = this.state.documents.get(this.state.activeDocumentId!)
-				if (session) {
-					session.state.error = error.message
-					session.state.isSaving = false
-					session.state.syncStatus = 'error'
-				}
-			})
-			this.persistToLocalStorage()
-			return false
+	private conflictFor(
+		context: DocumentOperationContext,
+		metadata: DriveFileMetadata
+	): Extract<SyncResult, { status: 'conflict' }> {
+		const version = driveVersion(metadata, context.ref!.fileId!)
+		const unknownBase = !isDriveVersion(context.session.sync.baseRevisionId)
+		return {
+			status: 'conflict',
+			context: Object.freeze({ ...context, checkedVersion: version }),
+			remoteMetadata: metadata,
+			localModifiedAt: context.session.lastAccessedAt,
+			remoteModifiedAt: Date.parse(metadata.modifiedTime || '') || 0,
+			hasLocalChanges: getIsDirty(context.session) || unknownBase,
+			hasRemoteChanges: unknownBase || version !== context.session.sync.baseRevisionId,
+			message: unknownBase
+				? 'Базовая версия неизвестна. Выберите локальные данные для записи в этот файл или загрузите Drive.'
+				: 'Локальная версия или версия Drive изменились. Выберите действие.'
 		}
 	}
 
-	/**
-	 * Явная синхронизация активного документа с Google Drive.
-	 * Загружает актуальную версию из Drive и сравнивает с локальной.
-	 */
-	async syncActiveDocumentWithDrive(): Promise<SyncResult> {
-		const session = this.state.documents.get(this.state.activeDocumentId!)
-		if (!session || !session.ref?.fileId) {
-			return { status: 'error', message: 'Нет документа для синхронизации' }
-		}
-
-		session.state.syncStatus = 'syncing'
-		this.persistToLocalStorage()
-
+	private async performDocumentSave(
+		context: DocumentOperationContext,
+		decision?: DocumentOperationContext
+	): Promise<DocumentSaveResult> {
+		const ref = context.ref!
 		try {
-			// Проверка авторизации
-			const isLoggedIn = this.googleApiService.isGoogleLoggedIn
-			if (!isLoggedIn) {
-				await this.googleApiService.logIn()
-			}
-
-			// Загрузка метаданных для проверки версии
-			const remoteMetadata = await this.googleApiService.getFileMetadata(session.ref.fileId)
-			const remoteModifiedAt = remoteMetadata.modifiedTime ? new Date(remoteMetadata.modifiedTime).getTime() : 0
-			const localModifiedAt = session.state.lastSavedAt ?? 0
-
-			// Определение наличия изменений
-			const hasLocalChanges = session.state.isDirty
-			const hasRemoteChanges = remoteModifiedAt > localModifiedAt
-
-			// Если есть изменения с любой стороны — показываем диалог
-			if (hasLocalChanges || hasRemoteChanges) {
-				// Устанавливаем соответствующий статус синхронизации
-				if (hasLocalChanges && !hasRemoteChanges) {
-					session.state.syncStatus = 'needs-sync'
-				} else if (hasRemoteChanges && !hasLocalChanges) {
-					session.state.syncStatus = 'update-available'
-				} else {
-					// Обе стороны изменены
-					session.state.syncStatus = 'needs-sync'
+			let remote = await this.googleApiService.getFileMetadata(ref.fileId!)
+			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+			this.observeRemote(context, remote)
+			const expected = decision?.checkedVersion ?? context.session.sync.baseRevisionId
+			if (
+				!decision &&
+				isDriveVersion(expected ?? null) &&
+				driveVersion(remote, ref.fileId!) !== expected &&
+				context.session.sync.baseLocalVersion !== null &&
+				context.session.sync.baseFingerprint !== null
+			) {
+				// Drive может менять служебную version после чтения/записи без изменения данных.
+				// Принимаем новую базу только после согласованного чтения и точного сравнения.
+				const checked = await readDriveDocument(this.googleApiService, ref.fileId!, () =>
+					this.isDocumentOperationCurrent(context)
+				)
+				if (!checked) return { status: 'cancelled' }
+				remote = checked.metadata
+				this.observeRemote(context, remote)
+				const manager = new DocumentStoreManager({
+					getDocumentData: () => checked.data,
+					activeDocumentId: context.documentId
+				})
+				let fingerprint: string
+				try {
+					manager.createStores(context.documentId)
+					fingerprint = computeFingerprint(manager.getDocumentDataForSave(context.documentId)!)
+				} finally {
+					manager.dispose()
 				}
-				this.persistToLocalStorage()
+				if (fingerprint === context.session.sync.baseFingerprint) context.session.sync.baseRevisionId = checked.version
+			}
+			const verifiedBase = decision?.checkedVersion ?? context.session.sync.baseRevisionId
+			if (!isDriveVersion(verifiedBase ?? null) || driveVersion(remote, ref.fileId!) !== verifiedBase) {
+				const conflict = this.conflictFor(context, remote)
+				return { status: 'conflict', message: conflict.message, conflict }
+			}
+			if (!decision && !getIsDirty(context.session)) return { status: 'saved' }
+			const result = await this.googleApiService.updateFileContent(
+				ref.fileId!,
+				serializeDocumentData(context.data),
+				ref.mimeType,
+				remote.version!,
+				() => this.isDocumentOperationCurrent(context)
+			)
+			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+			if (result.status === 'success') {
+				this.markDocumentSavedToDrive(context, result.file, ref.space || 'drive')
+				return { status: 'saved' }
+			}
+			if (result.status === 'conflict') {
+				const latest = result.existingFiles.find(file => file.id === ref.fileId)
+				if (!latest) throw new Error('Не удалось подтвердить исходный файл Drive.')
+				this.observeRemote(context, latest)
+				const conflict = this.conflictFor(context, latest)
+				return { status: 'conflict', message: conflict.message, conflict }
+			}
+			return this.failDocumentOperation(context, new Error(result.message))
+		} catch (error: unknown) {
+			return this.failDocumentOperation(context, error)
+		} finally {
+			this.finishDocumentOperation(context)
+		}
+	}
 
+	/** Совместимый фасад над единственной реализацией check по ID. */
+	async syncActiveDocumentWithDrive(): Promise<SyncResult> {
+		return this.activeDocumentId
+			? this.checkDocument(this.activeDocumentId)
+			: { status: 'error', message: 'Нет документа для синхронизации' }
+	}
+
+	/** Проверяет метаданные, не заменяя локальное содержимое. */
+	async checkDocument(documentId: DocumentId, options: { background?: boolean } = {}): Promise<SyncResult> {
+		const session = this.state.documents.get(documentId)
+		if (!session?.ref?.fileId) return { status: 'error', message: 'Нет документа для синхронизации' }
+		if (options.background && (!this.googleApiService.isGoogleLoggedIn || session.operation !== 'idle'))
+			return { status: 'cancelled' }
+		const context = this.beginDocumentOperation(documentId, 'checking')
+		if (!context) return { status: 'error', message: 'Дождитесь завершения операции.' }
+		try {
+			if (!this.googleApiService.isGoogleLoggedIn) await this.googleApiService.logIn()
+			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+			const metadata = await this.googleApiService.getFileMetadata(context.ref!.fileId!)
+			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+			this.observeRemote(context, metadata)
+			if (
+				getIsDirty(session) ||
+				!isDriveVersion(session.sync.baseRevisionId) ||
+				session.sync.remoteRevisionId !== session.sync.baseRevisionId
+			)
+				return this.conflictFor(context, metadata)
+			return { status: 'success' }
+		} catch (error: unknown) {
+			const result = this.failDocumentOperation(context, error)
+			return result.status === 'cancelled' ? result : { status: 'error', message: result.message }
+		} finally {
+			this.finishDocumentOperation(context)
+		}
+	}
+
+	/** Привязывает выбор пользователя к исходной проверке и локальной версии. */
+	async resolveDocumentConflict(
+		context: DocumentOperationContext,
+		choice: 'local' | 'remote'
+	): Promise<DocumentResolveResult> {
+		if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+		if (context.session.sync.localVersion !== context.localVersion) {
+			return { status: 'conflict', message: 'Документ изменился после проверки. Повторите синхронизацию.' }
+		}
+		return choice === 'local'
+			? this.saveDocument(context.documentId, context)
+			: this.pullDocument(context.documentId, context)
+	}
+
+	/** Ответ pull применяется только к исходной сессии без новых локальных правок. */
+	async pullDocument(documentId: DocumentId, expected?: DocumentOperationContext): Promise<DocumentPullResult> {
+		if (expected && (!this.isDocumentOperationCurrent(expected) || expected.documentId !== documentId))
+			return { status: 'cancelled' }
+		if (expected && expected.session.sync.localVersion !== expected.localVersion) {
+			return { status: 'conflict', message: 'Документ изменился после проверки. Повторите синхронизацию.' }
+		}
+		const context = this.beginDocumentOperation(documentId, 'pulling')
+		if (!context?.ref?.fileId) {
+			if (context) this.finishDocumentOperation(context)
+			return { status: 'failed', message: 'Нет доступного документа для загрузки.' }
+		}
+		try {
+			const remote = await readDriveDocument(this.googleApiService, context.ref.fileId, () =>
+				this.isDocumentOperationCurrent(context)
+			)
+			if (!remote || !this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
+			if (context.session.sync.localVersion !== context.localVersion) {
 				return {
 					status: 'conflict',
-					message: hasRemoteChanges
-						? 'Версия на Google Drive новее локальной'
-						: 'Есть локальные изменения, не сохранённые в Drive',
-					remoteMetadata,
-					localModifiedAt,
-					remoteModifiedAt,
-					hasLocalChanges,
-					hasRemoteChanges
+					message: 'Во время загрузки появились локальные изменения. Данные с Drive не применены.'
 				}
 			}
-
-			// Нет изменений — загружаем для проверки и синхронизируем
-			const content = await this.googleApiService.downloadFileContent(session.ref.fileId)
-
-			// Устанавливаем isLoading для блокировки onChangeList во время применения данных
-			session.state.isLoading = true
-			session.data = parseDocumentContent(content)
-			this.storageService.applyContent(session.data)
-			session.state.isLoading = false
-
-			session.state.syncStatus = 'synced'
-			session.state.lastSyncedAt = Date.now()
-			session.state.lastLoadedAt = Date.now()
-
-			this.persistDocumentDataToLocalStorage(session.id)
-			this.persistToLocalStorage()
-
-			return { status: 'success' }
-		} catch (error: any) {
-			runInAction(() => {
-				session.state.error = error.message
-				session.state.syncStatus = 'error'
-			})
-			this.persistToLocalStorage()
-
-			return { status: 'error', message: error.message }
+			if (expected?.checkedVersion && remote.version !== expected.checkedVersion) {
+				this.observeRemote(context, remote.metadata)
+				const conflict = this.conflictFor(context, remote.metadata)
+				return { status: 'conflict', message: conflict.message, conflict }
+			}
+			this.applyContentToDocument(documentId, remote.data, remote.metadata)
+			return { status: 'pulled' }
+		} catch (error: unknown) {
+			return this.failDocumentOperation(context, error)
+		} finally {
+			this.finishDocumentOperation(context)
 		}
 	}
 
 	/**
 	 * Синхронизация всех документов с fileId.
+	 * НЕ меняет activeDocumentId — работает напрямую с каждым документом.
 	 */
 	async syncAllDocumentsWithDrive(): Promise<Map<DocumentId, SyncResult>> {
 		const results: Map<DocumentId, SyncResult> = new Map()
 
-		for (const [id, session] of this.state.documents.entries()) {
-			if (session.ref?.fileId && session.state.syncStatus === 'offline') {
-				const previousActiveId = this.state.activeDocumentId
-				this.state.activeDocumentId = id
-				const result = await this.syncActiveDocumentWithDrive()
+		for (const [id, session] of Array.from(this.state.documents.entries())) {
+			if (this.state.documents.get(id) !== session) continue
+			if (session.ref?.fileId && session.sync.needsRemoteCheck) {
+				const result = await this.checkDocument(id)
 				results.set(id, result)
-				this.state.activeDocumentId = previousActiveId
 			}
 		}
 
@@ -421,110 +737,282 @@ export class DocumentTabsStore {
 	async saveAllDirtyDocuments(): Promise<Map<DocumentId, boolean>> {
 		const results: Map<DocumentId, boolean> = new Map()
 
-		for (const [id, session] of this.state.documents.entries()) {
-			if (session.state.isDirty && session.ref?.fileId) {
-				const previousActiveId = this.state.activeDocumentId
-				this.state.activeDocumentId = id
-				const saved = await this.saveActiveDocument()
-				results.set(id, saved)
-				this.state.activeDocumentId = previousActiveId
+		for (const [id, session] of Array.from(this.state.documents.entries())) {
+			if (this.state.documents.get(id) !== session) continue
+			if (getIsDirty(session) && session.ref?.fileId) {
+				const result = await this.saveDocument(id)
+				results.set(id, result.status === 'saved')
 			}
 		}
 
 		return results
 	}
 
+	// === Методы для замены StorageService ===
+
+	/**
+	 * Применить контент к активному документу.
+	 * Нормализует данные, обновляет сторы и сессию.
+	 * Используется при выборе удалённой версии при конфликте.
+	 */
+	applyContentToActiveDocument(content: unknown): void {
+		if (this.activeDocumentId) this.applyContentToDocument(this.activeDocumentId, content)
+	}
+
+	/** Синхронное применение проверенного снимка по ID; сетевые команды проверяют токен до вызова. */
+	applyContentToDocument(documentId: DocumentId, content: unknown, metadata?: DriveFileMetadata): void {
+		const session = this.state.documents.get(documentId)
+		if (!session) return
+
+		const version = metadata ? driveVersion(metadata, session.ref?.fileId || metadata.id) : null
+		const normalized = cloneDocumentData(normalizeMainStoreData(content))
+
+		// Обновляем данные сессии
+		session.data = normalized
+
+		// Пересчитываем fingerprint
+		const fingerprint = computeFingerprint(normalized)
+		session.sync.localFingerprint = fingerprint
+		session.sync.baseFingerprint = fingerprint
+		session.sync.localVersion++
+		session.sync.baseLocalVersion = metadata ? session.sync.localVersion : null
+		session.sync.baseRevisionId = version
+		session.sync.remoteRevisionId = version
+		session.sync.serverModifiedAt = metadata?.modifiedTime ?? null
+		session.sync.lastRemoteCheckAt = metadata ? Date.now() : null
+		session.sync.needsRemoteCheck = !metadata
+
+		// Подавляем callbacks только при синхронном применении снимка.
+		const wasApplying = this.applyingContent.has(documentId)
+		this.applyingContent.add(documentId)
+		try {
+			if (this.documentStoreManager.hasStores(documentId))
+				this.documentStoreManager.updateStoresData(documentId, normalized)
+			else this.documentStoreManager.createStores(documentId)
+		} finally {
+			if (!wasApplying) this.applyingContent.delete(documentId)
+		}
+		// База использует ту же сериализацию, что и доменные сторы. Check не превращает
+		// нормализацию нулевых/необязательных полей DTO в новую локальную правку.
+		session.data = cloneDocumentData(this.getDocumentDataForSave(documentId) ?? normalized)
+		session.sync.localFingerprint = computeFingerprint(session.data)
+		session.sync.baseFingerprint = metadata ? session.sync.localFingerprint : null
+
+		session.sync.lastSyncAt = Date.now()
+
+		this.persistToLocalStorage()
+		if (this.activeDocumentId === documentId) this.onActiveDocumentChanged?.(documentId)
+	}
+
+	/** Получить данные документа для сохранения */
+	getDocumentDataForSave(documentId?: DocumentId): DocumentData | null {
+		const docId = documentId ?? this.state.activeDocumentId
+		if (!docId) return null
+		return this.documentStoreManager.getDocumentDataForSave(docId)
+	}
+
 	// === Персистентность ===
 
-	/** Сохранить метаданные вкладок в localStorage */
-	private persistToLocalStorage() {
-		const snapshot: DocumentTabsSnapshot = {
+	/** Полный атомарный снимок метаданных и содержимого всех вкладок. */
+	private createLocalSnapshot(): DocumentTabsSnapshot {
+		return {
+			schemaVersion: SESSION_SCHEMA_VERSION,
 			activeDocumentId: this.state.activeDocumentId,
 			documentOrder: this.state.documentOrder,
 			documents: this.state.documentOrder.map(id => {
 				const session = this.state.documents.get(id)!
 				return {
 					id: session.id,
+					data: session.data,
 					ref: session.ref!,
-					state: {
-						isDirty: session.state.isDirty,
-						isLoading: session.state.isLoading,
-						isSaving: session.state.isSaving,
-						lastLoadedAt: session.state.lastLoadedAt,
-						lastSavedAt: session.state.lastSavedAt,
-						error: session.state.error,
-						syncStatus: session.state.syncStatus,
-						lastSyncedAt: session.state.lastSyncedAt,
-						hasUnsyncedChanges: session.state.isDirty
-					},
+					sync: session.sync,
+					// Операция не сохраняется — всегда сбрасывается в idle при перезапуске
 					lastAccessedAt: session.lastAccessedAt
 				}
 			}),
 			savedAt: Date.now()
 		}
-		localStorage.setItem(DOCUMENT_TABS_KEY, JSON.stringify(snapshot))
 	}
 
-	/** Сохранить данные документа в localStorage */
-	private persistDocumentDataToLocalStorage(documentId: DocumentId) {
-		const session = this.state.documents.get(documentId)
-		if (!session) return
-
-		const dataSnapshot: DocumentDataSnapshot = {
-			data: session.data,
-			savedAt: Date.now()
+	private persistToLocalStorage(): void {
+		if (this.disposed || this.recoveryBlocked) return
+		const sequence = ++this.localSaveSequence
+		const success = () => {
+			if (sequence !== this.localSaveSequence) return
+			this.persistenceError = null
+			this.persistenceDiagnostic = null
+			this.isPersistingLocalSession = false
 		}
-		localStorage.setItem(`${DOCUMENT_DATA_PREFIX}${documentId}`, JSON.stringify(dataSnapshot))
+		const failure = (error: unknown) => {
+			if (sequence !== this.localSaveSequence) return
+			this.persistenceDiagnostic = storageDiagnostic(error)
+			this.persistenceError = storageFailureMessage(this.persistenceDiagnostic)
+			this.isPersistingLocalSession = false
+		}
+		try {
+			const saving = this.persistence.save(this.createLocalSnapshot())
+			if (saving) {
+				this.isPersistingLocalSession = true
+				this.pendingLocalSave = saving.then(
+					() => runInAction(success),
+					error => runInAction(() => failure(error))
+				)
+			} else success()
+		} catch (error: unknown) {
+			failure(error)
+		}
 	}
 
-	/** Удалить данные документа из localStorage */
-	private removeDocumentDataFromLocalStorage(documentId: DocumentId) {
-		localStorage.removeItem(`${DOCUMENT_DATA_PREFIX}${documentId}`)
+	async waitForLocalPersistence(): Promise<boolean> {
+		let pending: Promise<void> | null
+		do {
+			pending = this.pendingLocalSave
+			await pending
+		} while (pending !== this.pendingLocalSave)
+		return !this.persistenceError && !this.recoveryBlocked
 	}
 
-	/**
-	 * Восстановление сессии из localStorage.
-	 * Все документы восстанавливаются из локального кэша без синхронизации.
-	 */
+	/** Повтор после освобождения квоты; не маскирует повреждённый исходный снимок. */
+	retryLocalPersistence(): void {
+		if (!this.recoveryBlocked) this.persistToLocalStorage()
+	}
+
+	get canPersistLocalSession(): boolean {
+		return !this.recoveryBlocked
+	}
+
+	exportLocalSession(): string {
+		return JSON.stringify(this.createLocalSnapshot(), null, 2)
+	}
+
+	exportRecoverySource(): string | Promise<string> {
+		return this.persistence.exportSource()
+	}
+
+	cleanupLegacyLocalStorage(): Promise<LegacyStorageCleanupResult> {
+		if (this.pendingLegacyCleanup) return this.pendingLegacyCleanup
+		this.isCleaningLegacyStorage = true
+		const cleanup = async () => {
+			if (this.isRestoringLocalSession || this.recoveryBlocked)
+				throw new Error('Сначала восстановите и сохраните текущую сессию. Старые записи не удалены.')
+			if (!(await this.waitForLocalPersistence()))
+				throw new Error('Локальная сессия не сохранена. Устраните ошибку записи перед очисткой.')
+			if (!this.persistence.cleanupLegacy) throw new Error('Это хранилище не поддерживает очистку старых записей.')
+			return this.persistence.cleanupLegacy()
+		}
+		const pending = cleanup().finally(() =>
+			runInAction(() => {
+				this.isCleaningLegacyStorage = false
+				this.pendingLegacyCleanup = null
+			})
+		)
+		this.pendingLegacyCleanup = pending
+		return pending
+	}
+
+	/** Архив сессии добавляет копии вкладок; уже открытые документы остаются в сессии. */
+	importLocalSession(json: string): number {
+		if (this.isRestoringLocalSession || this.documents.some(document => document.operation !== 'idle'))
+			throw new Error('Дождитесь завершения текущих операций перед импортом сессии.')
+		const imported = parseSessionSnapshot(json, () => null)
+		if (!imported.documents.length) throw new Error('В архиве сессии нет документов.')
+		const merged = this.createLocalSnapshot()
+		const ids = new Map<string, string>()
+		for (const document of imported.documents) ids.set(document.id, generateDocumentId())
+		const order = imported.documentOrder.map(id => ids.get(id)!)
+		merged.documents.push(
+			...imported.documents.map(document => ({
+				...document,
+				id: ids.get(document.id)!,
+				ref: { ...document.ref, name: document.ref.name + ' (восстановлено)' }
+			}))
+		)
+		merged.documentOrder = [...merged.documentOrder, ...order]
+		merged.activeDocumentId = ids.get(imported.activeDocumentId!)!
+		// Проверяем весь объединённый снимок до замены доменных сторов.
+		this.installRestoredSnapshot(parseSessionSnapshot(JSON.stringify(merged), () => null))
+		this.persistToLocalStorage()
+		return imported.documents.length
+	}
+
+	/** Полная проверка и подготовка сторов предшествуют атомарной замене сессии в памяти. */
 	async restoreFromLocalStorage(): Promise<boolean> {
-		const tabsJson = localStorage.getItem(DOCUMENT_TABS_KEY)
-		if (!tabsJson) return false
-
-		const snapshot = parseDocumentTabsSnapshot(tabsJson)
-		if (!snapshot) return false
-
-		// Восстановление метаданных
-		for (const docSnapshot of snapshot.documents) {
-			this.openFromLocalStorageSnapshot(docSnapshot)
-		}
-		this.state.documentOrder = snapshot.documentOrder
-		this.state.activeDocumentId = snapshot.activeDocumentId
-
-		// Загрузка данных каждого документа из localStorage
-		for (const docSnapshot of snapshot.documents) {
-			const dataJson = localStorage.getItem(`${DOCUMENT_DATA_PREFIX}${docSnapshot.id}`)
-			if (dataJson) {
-				try {
-					const dataSnapshot = JSON.parse(dataJson) as DocumentDataSnapshot
-					const session = this.state.documents.get(docSnapshot.id)!
-					session.data = dataSnapshot.data
-				} catch (e) {
-					console.error(`Failed to load data for document ${docSnapshot.id}:`, e)
+		if (this.disposed || this.documents.length) return false
+		const restoreSequence = ++this.localRestoreSequence
+		this.isRestoringLocalSession = true
+		this.recoveryBlocked = true
+		try {
+			const loading = this.persistence.load()
+			const snapshot = loading instanceof Promise ? await loading : loading
+			return runInAction(() => {
+				if (restoreSequence !== this.localRestoreSequence) return false
+				if (this.documents.length) {
+					this.persistenceError =
+						'Во время восстановления открыты новые документы. Экспортируйте их перед повторным запуском; исходная сессия не перезаписана.'
+					return false
 				}
-			}
+				if (!snapshot) {
+					this.recoveryBlocked = false
+					this.persistenceError = null
+					this.persistenceDiagnostic = null
+					return false
+				}
+				const restored = this.installRestoredSnapshot(snapshot)
+				if (restored && loading instanceof Promise) this.persistToLocalStorage()
+				return restored
+			})
+		} catch (error: unknown) {
+			return runInAction(() => {
+				if (restoreSequence !== this.localRestoreSequence) return false
+				this.persistenceDiagnostic = null
+				this.recoveryBlocked = true
+				this.persistenceError =
+					'Не удалось восстановить локальную сессию. ' +
+					(error instanceof Error ? error.message : 'Хранилище недоступно.')
+				return false
+			})
+		} finally {
+			runInAction(() => {
+				if (restoreSequence === this.localRestoreSequence) this.isRestoringLocalSession = false
+			})
 		}
+	}
 
-		// Применить данные активного документа
-		if (this.state.activeDocumentId) {
-			const activeSession = this.state.documents.get(this.state.activeDocumentId)
-			if (activeSession) {
-				// Временно устанавливаем isLoading для блокировки onChangeList
-				activeSession.state.isLoading = true
-				this.storageService.applyContent(activeSession.data)
-				activeSession.state.isLoading = false
-			}
+	private installRestoredSnapshot(snapshot: DocumentTabsSnapshot): boolean {
+		const nextState: DocumentTabsState = {
+			documents: new Map(),
+			documentOrder: [...snapshot.documentOrder],
+			activeDocumentId: snapshot.activeDocumentId
 		}
-
+		for (const item of snapshot.documents) {
+			const session = this.createRestoredSession(item)
+			const fingerprint = computeFingerprint(session.data)
+			if (session.sync.localFingerprint !== fingerprint && session.sync.baseLocalVersion !== null) {
+				session.sync.localVersion = Math.max(session.sync.localVersion, session.sync.baseLocalVersion) + 1
+			}
+			session.sync.localFingerprint = fingerprint
+			if (session.sync.baseLocalVersion !== null && session.sync.baseFingerprint === fingerprint)
+				session.sync.baseLocalVersion = session.sync.localVersion
+			nextState.documents.set(item.id, session)
+		}
+		let installed = false
+		const self = this
+		const manager = new DocumentStoreManager({
+			getDocumentData: id => (installed ? self.state : nextState).documents.get(id)?.data ?? null,
+			get activeDocumentId() {
+				return (installed ? self.state : nextState).activeDocumentId
+			}
+		})
+		for (const id of nextState.documentOrder) manager.createStores(id)
+		this.documentStoreManager.dispose()
+		this.state = nextState
+		installed = true
+		this.documentStoreManager = manager
+		this.setOnStoresChanged(this.storeCallbacks)
+		this.recoveryBlocked = false
+		this.persistenceError = null
+		this.persistenceDiagnostic = null
+		if (this.activeDocumentId) this.onActiveDocumentChanged?.(this.activeDocumentId)
 		return true
 	}
 
@@ -551,37 +1039,58 @@ export class DocumentTabsStore {
 		return this.state.documentOrder.map(id => this.state.documents.get(id)!).filter(Boolean)
 	}
 
-	/** Количество изменённых документов */
-	get dirtyDocumentsCount(): number {
-		return this.documents.filter(d => d.state.isDirty).length
-	}
-
-	/** Количество офлайн-документов с fileId */
-	get offlineDocumentsCount(): number {
-		return this.documents.filter(d => d.ref?.fileId && d.state.syncStatus === 'offline').length
-	}
-
 	/** ID активного документа */
 	get activeDocumentId(): DocumentId | null {
 		return this.state.activeDocumentId
 	}
 
+	/** Остановить продолжения и подписки; сохранённая сессия и очередь записи остаются. */
+	dispose(): void {
+		if (this.disposed) return
+		this.disposed = true
+		++this.localRestoreSequence
+		this.isRestoringLocalSession = false
+		this.onActiveDocumentChanged = undefined
+		this.storeCallbacks = {}
+		this.documentStoreManager.setCallbacks({})
+		this.documentStoreManager.dispose()
+	}
+
 	/** Очистить состояние стора (для тестов) */
 	clear() {
+		++this.localRestoreSequence
+		this.isRestoringLocalSession = false
+		const saveSequence = ++this.localSaveSequence
+		this.pendingLocalSave = null
+		this.isPersistingLocalSession = false
 		this.state = {
 			documents: new Map(),
 			activeDocumentId: null,
 			documentOrder: []
 		}
-		// Очистка localStorage
-		localStorage.removeItem('documentTabs')
-		const keysToRemove: string[] = []
-		for (let i = 0; i < localStorage.length; i++) {
-			const key = localStorage.key(i)
-			if (key && key.startsWith('document_')) {
-				keysToRemove.push(key)
+		this.documentStoreManager.clear()
+		this.recoveryBlocked = false
+		this.persistenceError = null
+		this.persistenceDiagnostic = null
+		try {
+			const clearing = this.persistence.clear()
+			if (clearing) {
+				this.isPersistingLocalSession = true
+				this.pendingLocalSave = clearing.then(
+					() =>
+						runInAction(() => {
+							if (saveSequence === this.localSaveSequence) this.isPersistingLocalSession = false
+						}),
+					() =>
+						runInAction(() => {
+							if (saveSequence !== this.localSaveSequence) return
+							this.isPersistingLocalSession = false
+							this.persistenceError = 'Не удалось очистить локальную сессию.'
+						})
+				)
 			}
+		} catch {
+			this.persistenceError = 'Не удалось очистить локальную сессию.'
 		}
-		keysToRemove.forEach(key => localStorage.removeItem(key))
 	}
 }

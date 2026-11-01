@@ -9,7 +9,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import Spinner from 'src/7-shared/ui/Spinner/Spinner'
 import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer'
 
-import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import FileConflictResolver from 'src/5-features/FileConflictResolver/FileConflictResolver'
 
 interface SaveToDriveProps {
@@ -18,7 +18,7 @@ interface SaveToDriveProps {
 }
 
 const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
-	const { saveToDriveStore } = React.useContext(StoreContext) as IRootStore
+	const { saveToDriveStore } = useStores()
 	const [activeTab, setActiveTab] = useState(0) // 0 for My Drive, 1 for App Data Folder
 	const [currentOpenedFolderId, setCurrentOpenedFolderId] = useState<string | null>(null)
 	const handleCurrentFolderChange = (folderId: string) => {
@@ -43,12 +43,7 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 		!currentOpenedFolderId
 
 	const handleResolveConflict = (resolution: 'overwrite' | 'rename' | 'cancel') => {
-		// Ensure currentOpenedFolderId is available when resolving conflict
-		if (currentOpenedFolderId) {
-			saveToDriveStore.resolveConflict(resolution, currentOpenedFolderId, currentSpace)
-		} else {
-			saveToDriveStore.error = 'Не выбрана папка для сохранения.'
-		}
+		void saveToDriveStore.resolveConflict(resolution)
 	}
 
 	const conflictingFileName =
@@ -56,9 +51,15 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 
 	return (
 		<>
-			<Modal open={saveToDriveStore.isOpen} onClose={saveToDriveStore.close}>
+			<Modal
+				open={saveToDriveStore.isOpen}
+				onClose={saveToDriveStore.close}
+				aria-label="Сохранить как"
+				dismissible={!saveToDriveStore.isSaving}
+			>
 				{/*<h3 className={styles.dialogTitle}>Сохранить на Google Диск</h3> */}
 				<div className={styles.container}>
+					<p>Сохранение создаёт отдельный файл; исходные файлы Drive сохраняются.</p>
 					<TextField
 						label="Имя файла"
 						value={saveToDriveStore.fileName}
@@ -80,13 +81,17 @@ const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
 							{saveToDriveStore.isSaving ? <Spinner /> : 'Сохранить'}
 						</TextButton>
 					</div>
+					{saveToDriveStore.error && <p role="alert">{saveToDriveStore.error}</p>}
 				</div>
 			</Modal>
 
 			<FileConflictResolver
 				isOpen={saveToDriveStore.showConflictDialog}
-				onClose={saveToDriveStore.closeConflictDialog}
 				conflictingFileName={conflictingFileName}
+				conflictingFiles={saveToDriveStore.conflictingFiles}
+				selectedFileId={saveToDriveStore.selectedConflictFileId}
+				onSelectedFileIdChange={saveToDriveStore.setSelectedConflictFileId}
+				error={saveToDriveStore.error}
 				isSaving={saveToDriveStore.isSaving}
 				newFileNameForConflict={saveToDriveStore.newFileNameForConflict}
 				onNewFileNameChange={saveToDriveStore.setNewFileNameForConflict}

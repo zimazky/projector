@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react'
+import React, { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import Time from 'src/7-shared/ui/Time/Time'
@@ -6,19 +6,21 @@ import UserAvatar from 'src/7-shared/ui/UserAvatar/UserAvatar'
 import List from 'src/7-shared/ui/List/List'
 import ListItem from 'src/7-shared/ui/List/ListItem'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 
 import CalendarIconBar from 'src/4-widgets/CalendarIconBar/CalendarIconBar'
 import { EventSearchInput } from 'src/5-features/EventSearch/EventSearchInput'
 
 import styles from './Header.module.css'
+import { getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 
-const Header: React.FC = observer(function () {
-	const { calendarStore, uiStore, documentTabsStore, googleApiService } = useContext(StoreContext)
+const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({ onCloseDocument }) {
+	const { calendarStore, documentTabsStore, googleApiService } = useStores()
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const activeDoc = documentTabsStore.activeDocument
+	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
 	const documentTitle = activeDoc
-		? `${activeDoc.ref?.name || 'Без названия'}${activeDoc.state.isDirty ? ' *' : ''}`
+		? `${activeDoc.ref?.name || 'Без названия'}${documentUi!.titleSuffix}`
 		: 'Документ не открыт'
 
 	const handleAvatarClick = () => {
@@ -32,15 +34,21 @@ const Header: React.FC = observer(function () {
 
 	return (
 		<header className={styles.header}>
-			<CalendarIconBar />
+			<CalendarIconBar onCloseDocument={onCloseDocument} />
 			<EventSearchInput />
-			<span className={styles.documentName}>{documentTitle}</span>
+			<span
+				className={styles.documentName}
+				title={documentUi?.tooltip}
+				data-testid="document-title"
+				data-sync-status={documentUi?.status}
+			>
+				{documentTitle}
+			</span>
 			<span className={styles.caption}>{calendarStore.caption}</span>
 			<span className={styles.rightSection}>
 				<Time
 					onClick={() => {
 						calendarStore.setWeek(Date.now() / 1000)
-						uiStore.forceUpdate()
 					}}
 				/>
 				<span className={styles.userMenu}>

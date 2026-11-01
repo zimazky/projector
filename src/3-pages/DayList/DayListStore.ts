@@ -20,7 +20,7 @@ export class DayListStore {
 		this.eventsCache = eventsCache
 		this.weatherStore = weatherStore
 		this.calendarStore = calendarStore
-		this.date = Date.now() / 1000
+		this.date = DateTime.getBeginDayTimestamp(Date.now() / 1000)
 		makeAutoObservable(this)
 	}
 
@@ -29,7 +29,7 @@ export class DayListStore {
 	}
 
 	setDate(timestamp: timestamp) {
-		this.date = timestamp
+		this.date = DateTime.getBeginDayTimestamp(timestamp)
 		this.calendarStore.setWeek(timestamp)
 	}
 

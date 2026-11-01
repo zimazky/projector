@@ -1,0 +1,18 @@
+{
+	"projectsList": [{ "name": "Routine", "color": "#223344", "background": "#eeeeff" }],
+	"completedList": [
+		{ "name": "Earlier income", "start": "2026.09.01", "credit": 2000 },
+		{ "name": "Earlier expense", "start": "2026.09.05", "debit": 400 }
+	],
+	"plannedList": [
+		{
+			"name": "Daily expense",
+			"project": "Routine",
+			"start": "2026.10.01",
+			"end": "2026.11.01",
+			"repeat": "/1",
+			"debit": 10
+		},
+		{ "name": "Next income", "start": "2026.11.01", "credit": 500 }
+	]
+}

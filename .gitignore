@@ -2,3 +2,5 @@
 /coverage
 *.env
 dist
+/.remediation-tmp/
+/artifacts/

@@ -1,0 +1,175 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 17 / stage 8: observable domain changes, remove forceUpdate, explicit calendar scroll commands",
+  "baseCommit": "add76afc1dcb3a3f2c1efa6dabc25683b9f33d02",
+  "initialWorkingTreeClean": true,
+  "node": "v24.12.0",
+  "implementedLocally": true,
+  "stage8CompletedLocally": false,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "name": "typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "startedAt": "2026-11-01T07:56:31.724Z",
+      "durationMs": 5203,
+      "exitCode": 0
+    },
+    "e2e-typecheck": {
+      "name": "e2e-typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.e2e.json"
+      ],
+      "startedAt": "2026-11-01T07:56:31.734Z",
+      "durationMs": 1740,
+      "exitCode": 0
+    },
+    "lint": {
+      "name": "lint",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "src/**/*.{js,jsx,ts,tsx}",
+        "e2e/**/*.ts",
+        "playwright.config.ts",
+        "--format",
+        "json",
+        "--output-file",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr17\\lint.json"
+      ],
+      "startedAt": "2026-11-01T07:56:31.738Z",
+      "durationMs": 10098,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6,
+      "artifact": "artifacts/remediation-pr17/lint.json"
+    },
+    "jest": {
+      "name": "jest",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr17\\jest.json"
+      ],
+      "startedAt": "2026-11-01T07:56:31.745Z",
+      "durationMs": 15988,
+      "exitCode": 0,
+      "passed": 3842,
+      "failed": 0,
+      "suites": 33,
+      "artifact": "artifacts/remediation-pr17/jest.json"
+    },
+    "build": {
+      "name": "build",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/webpack/bin/webpack.js",
+        "--mode",
+        "production",
+        "--output-path",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr17\\build",
+        "--json",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr17\\webpack.json"
+      ],
+      "startedAt": "2026-11-01T07:56:47.733Z",
+      "durationMs": 11388,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr17/webpack.json"
+    },
+    "e2e": {
+      "name": "e2e",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/@playwright/test/cli.js",
+        "test"
+      ],
+      "startedAt": "2026-11-01T07:56:59.122Z",
+      "durationMs": 74272,
+      "exitCode": 0,
+      "stats": {
+        "startTime": "2026-11-01T07:56:59.710Z",
+        "duration": 73618.81000000001,
+        "expected": 45,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "artifact": "artifacts/remediation-pr17/playwright.json"
+    }
+  },
+  "regressionBaseline": {
+    "baseline": "E:\\@projects\\projector\\.remediation-tmp\\reactivity-baseline-jz2np5",
+    "commit": "add76afc1dcb3a3f2c1efa6dabc25683b9f33d02",
+    "command": [
+      "C:\\Program Files\\nodejs\\node.exe",
+      "E:\\@projects\\projector\\node_modules\\jest\\bin\\jest.js",
+      "--config",
+      "E:\\@projects\\projector\\.remediation-tmp\\reactivity-baseline-jz2np5\\jest.config.cjs",
+      "--rootDir",
+      "E:\\@projects\\projector\\.remediation-tmp\\reactivity-baseline-jz2np5",
+      "--runInBand",
+      "--json",
+      "--outputFile",
+      "E:\\@projects\\projector\\artifacts\\remediation-pr17\\baseline-jest.json",
+      "--testPathPatterns",
+      "Reactivity.spec.tsx"
+    ],
+    "exitCode": 1,
+    "passed": 6,
+    "failed": 3,
+    "artifact": "artifacts/remediation-pr17/baseline-jest.json",
+    "failures": [
+      "прогретый кэш наблюдает доменные изменения без MainStore и версии сессии",
+      "подсветка смонтированного события реагирует на поиск и очистку без перерисовки родителя",
+      "повторная навигация к той же неделе снова прокручивает календарь"
+    ],
+    "note": "Nine regression checks run against the original commit; one extra initialization-order check added afterwards."
+  },
+  "sourceSha256": {
+    "e2e/reactivity.spec.ts": "bb473fc352474467652f6da100a1fe96b1248060f1db2b7e85097debb5a8a2af",
+    "src/1-app/App/App.tsx": "df4c5594064a4384c3ede301e74fa5719a9c6df4b225caee7c6e1228a988c80d",
+    "src/1-app/App/Reactivity.spec.tsx": "fb5cf39ce97026e156d9fe13da7532afec564f67153975c12f3bfbb95e3db98f",
+    "src/1-app/Stores/MainStore.ts": "a3041f74c2c8fc3e427bf95eee26008ebbf4309626e9ca57127a4121b78cf0e0",
+    "src/1-app/Stores/UIStore.ts": "3769c18f029cfe1843ead1d30a3fb7a81c2dec96a55e4f3e9f8b5db58731b6d7",
+    "src/1-app/root.ts": "1c9bbeb166de7b3db883e7adf29ee917e8a2e8da456d6101a6782dd1665449ac",
+    "src/3-pages/Calendar/Calendar.tsx": "8204847db24ebd48aa4312f3bbbe8ef3cdf4e796c22c29054fec496dfbade819",
+    "src/3-pages/Calendar/CalendarEventItem.tsx": "e5cec21760306b3a8dc1443b220f0600d795f00f92bac228a1a621cbd3e9f8d4",
+    "src/3-pages/Calendar/CalendarStore.ts": "8a296f362c0381f2c9f85c09e0ce25bf772f9fdf5799f045b3c334a8279b3413",
+    "src/4-widgets/EventForm/EventForm.tsx": "7a5f829cbd9564991062c969cf358af69f2a3be571008bc81bde0009fb791d09",
+    "src/4-widgets/Header/Header.tsx": "e282bb1bbed1ecc120310d8f09769e03bfdc0afbe8093bfd3563f86e05f38918",
+    "src/5-features/EventSearch/EventSearchInput.tsx": "75759669bf6f1e37bb742233f4cf8f21f2212eb272563d9ae8160a41a50e4a91",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "147fe48c31944c0ac4ce850791410f342becb11919f14f7e3617c4e9a6ae7c3e",
+    "src/6-entities/Events/EventsStore.ts": "c7eb31c001a2fda6c928f2f55723ffc7110f32bac67889b8a296d4871292b589",
+    "src/6-entities/EventsCache/EventsCache.ts": "0035bff1e63c535d29a01074a5e7d4078ae9bc2c3ae531ca944aace0f5e42aab"
+  },
+  "removedSourceFiles": [
+    "src/7-shared/hooks/useUpdate.ts"
+  ],
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4",
+  "limits": [
+    "Google and weather mocked at the network boundary in Chromium",
+    "No live Drive operations or npm audit; dependencies and formats unchanged",
+    "Domain cache cleared on application disposal; normal changes invalidate through document/store identities and domain versions",
+    "New drag/drop scenarios dispatch DOM DragEvents with DataTransfer; they do not simulate physical pointer dragging",
+    "Initial focused browser run had an incorrect clock-button selector; corrected before final verification"
+  ],
+  "cleanup": {
+    "baselineDirectory": "E:\\@projects\\projector\\.remediation-tmp\\reactivity-baseline-jz2np5",
+    "removed": false,
+    "reason": "Automatic approval review rejected the recursive removal command: blocked by policy"
+  }
+}

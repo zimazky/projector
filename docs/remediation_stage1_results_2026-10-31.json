@@ -1,0 +1,142 @@
+{
+  "commit": "d0dbc12b8981e9f71ea687db9b9cd53b006b088d",
+  "node": "v24.12.0",
+  "npm": "11.12.1",
+  "platform": "win32",
+  "timezone": "UTC",
+  "dateTimeSeed": "20261031",
+  "lockfileSha256": "8d69f4a65ccc28a3d8b304c10eeb9ae89edd1f90116707fe83b6dfd01cdb2346",
+  "startedAt": "2026-10-31T16:08:19.094Z",
+  "finishedAt": "2026-10-31T16:10:40.439Z",
+  "checks": [
+    {
+      "name": "typecheck",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 3374
+    },
+    {
+      "name": "lint",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 7237
+    },
+    {
+      "name": "jest",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 13374
+    },
+    {
+      "name": "jest-repeat",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 11451
+    },
+    {
+      "name": "build",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 11386
+    },
+    {
+      "name": "audit",
+      "status": "advisories",
+      "exitCode": 1,
+      "durationMs": 86500
+    },
+    {
+      "name": "audit-production",
+      "status": "passed",
+      "exitCode": 0,
+      "durationMs": 7726
+    }
+  ],
+  "jest": {
+    "numTotalTestSuites": 15,
+    "numPassedTestSuites": 15,
+    "numTotalTests": 3516,
+    "numPassedTests": 3516,
+    "numFailedTests": 0
+  },
+  "jest-repeat": {
+    "numTotalTestSuites": 15,
+    "numPassedTestSuites": 15,
+    "numTotalTests": 3516,
+    "numPassedTests": 3516,
+    "numFailedTests": 0
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 12
+  },
+  "audit": {
+    "info": 0,
+    "low": 7,
+    "moderate": 46,
+    "high": 26,
+    "critical": 4,
+    "total": 83
+  },
+  "audit-production": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "publication": {
+    "isolatedBuildExitCode": 0,
+    "unexpectedFileRejected": true,
+    "files": [
+      "dist/favicons/stencil/android/icons8-72.png",
+      "dist/favicons/stencil/android/icons8-96.png",
+      "dist/favicons/stencil/ios/icons8-57.png",
+      "dist/favicons/stencil/ios/icons8-60.png",
+      "dist/favicons/stencil/ios/icons8-72.png",
+      "dist/favicons/stencil/ios/icons8-76.png",
+      "dist/favicons/stencil/web/icons8-16.png",
+      "dist/favicons/stencil/web/icons8-32.png",
+      "dist/favicons/stencil/web/icons8-96.png",
+      "dist/favicons/stencil/windows/icons8-70.png",
+      "dist/main.css",
+      "dist/main.js",
+      "dist/main.js.LICENSE.txt",
+      "index.html"
+    ]
+  },
+  "sourceSha256": {
+    ".github/workflows/build.yml": "1d22ca909a57a828b3bcc5ebf609ad400508bebebcb6bc70e9ec348354682fb9",
+    "package.json": "f68b61f545e3808c66907c39e9cde4ed843d2af94973e205abb84c5ac0a81d4f",
+    "src/1-app/App/App.spec.tsx": "9081aca026bce51a586bbc0ebf89abad63a5c4800c5c6a6355822dbf3983bd98",
+    "src/1-app/App/App.tsx": "42b5c7eaf7647ada616f1a8289d5ab67adfff930288d76d775e7fbc2e223f0a6",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "ffbfa5db0cdf582d0f9882a383d44b4cdda12944bad8b121e16ec788a1e5785b",
+    "src/4-widgets/Header/Header.tsx": "8c2e1ea7c9c162fe0d5fc857140c67d1ebbf1510d481a1f11cc67ce33b8de175",
+    "src/4-widgets/SaveToDrive/SaveToDrive.tsx": "e6e69b247b523bd43257173c1a534f745d1a7d0346945855e6ea3cfe7f200eb5",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.ts": "6afb3ee0defc36f4ba23e3d9afb3b41b8b12a700f41e2f449cd3d38290f91473",
+    "src/5-features/FileConflictResolver/FileConflictResolver.tsx": "a4330ae34ca10461970337cccdfeed50e827458d6d2f5cd73d1c630370dfe53c",
+    "src/6-entities/Document/model/DocumentSyncFingerprint.ts": "6fc01f1d5f5ef68f73569980b60ee9898343c69d5895c8929611418511eedaaa",
+    "src/6-entities/Document/model/DocumentSyncSelectors.ts": "39d2734ac7ce89b04de031342353c573b52b33e5e25b1ab253cb04665fe2bd5e",
+    "src/6-entities/Document/model/DocumentTabsStore.spec.ts": "caab31179fff1aba74a7f168784ca2100402b2936fdc0e5ee31de4b9adc671de",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "f4b684e3cd9a3c5a56a53e3f07047fef47651bcd1f029f4d47a67df2c825e3e7",
+    "src/6-entities/Document/model/DocumentTabsStore.types.ts": "36909e414087a92b4fdb6cd8bf13867b659aff3c562e3450ee048a397f9c26c5",
+    "src/7-shared/libs/DateTime/DateTime.spec.ts": "74a63e00e3474e4296806d2e3225c61b49157e9dce4902f551da44069c349279",
+    "src/7-shared/services/GoogleApiService.ts": "00f734768b84f6f92a6a59183be20ed3bf4d06b2db6554670006f43827382ded",
+    "src/7-shared/services/gapi.ts": "af7aee3febe842f50249cabe6e05a278fd06960cd943c66bc0d64bc6dd3c4879",
+    "src/7-shared/ui/Dialog/Dialog.tsx": "a7d8f99fc6d5febe04b50ed563b3f503d2a94c9b169a034e4b432a19270dd267",
+    "src/7-shared/ui/Modal/Modal.tsx": "4ef68d491ce5c58d84bb7d3104ebf7765d7caa7a705a10269c228096b439d07c",
+    "scripts/package-pages.mjs": "1979daafb4de2bda82c091c8b92ef38ac3256526bbb076c0c97a3ffdc25a55fc",
+    "scripts/verify-baseline.mjs": "cf0479c5f68b6787fc95a7e3c5abecc77c05bd2fa1809587420f2f9afcbdeb03",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "249eb69cf408e3348147aa165bf22f2ffda23459fb225dd90c8eeac0487fc169",
+    "src/6-entities/Document/model/DocumentClose.spec.ts": "14416d6cda4d0def8e9c065187a9defa0f633cfc72b9433d5d011c8b56661e78",
+    "src/7-shared/services/GoogleAuthError.ts": "e2fa5720af5a23898306151938bcf99692a952de1138d3f34fcf9fa6a97ae1ad",
+    "src/7-shared/services/gapi.spec.ts": "64cb7c441b82b6f73e505c4fe015f1725b486304544f00615c182de7322644f2",
+    "src/7-shared/ui/Dialog/DialogTiming.spec.tsx": "609232ca6fa231e9956df0d630f99197b67b615c321f517990fe6f3686df6e9b",
+    "src/test-utils/DocumentFixtures.spec.ts": "4d9b1cd5e1fa5bacfb4f502bd08d9b3ce4f5dfec51bff5079cd6fe4f790c12e2",
+    "src/test-utils/deferred.ts": "9d9edb2c6ae242cb7356616e206f1be8b0137a76fecf4d30faca9f6070a92f2e",
+    "src/test-utils/fixtures/legacy-document.json": "1efb1aa20c06479482161186270c369c9c0900b2065c924b01a97b6565513d6d",
+    "src/test-utils/fixtures/legacy-tabs.json": "bbc8aa32136b5e3a7b1af4b5b7bfc623ad4a211279c4db1c6db92f1c69d29281",
+    "src/test-utils/fixtures/repeating-document.json": "b62121a13dcf07424c8f22f94808fca4b996c89262ba4b92ceab4fc9f5aca604"
+  }
+}

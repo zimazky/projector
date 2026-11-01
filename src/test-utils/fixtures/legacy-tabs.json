@@ -1,0 +1,51 @@
+{
+	"activeDocumentId": "fixture-b",
+	"documentOrder": ["fixture-a", "fixture-b"],
+	"documents": [
+		{
+			"id": "fixture-a",
+			"ref": {
+				"fileId": "fake-drive-id",
+				"name": "Demo A",
+				"mimeType": "application/json",
+				"space": "drive",
+				"parentFolderId": null
+			},
+			"state": {
+				"isDirty": true,
+				"isLoading": false,
+				"isSaving": false,
+				"lastLoadedAt": 1793404800000,
+				"lastSavedAt": 1793404800000,
+				"error": null,
+				"syncStatus": "needs-sync",
+				"lastSyncedAt": 1793404800000,
+				"hasUnsyncedChanges": true
+			},
+			"lastAccessedAt": 1793404800000
+		},
+		{
+			"id": "fixture-b",
+			"ref": {
+				"fileId": null,
+				"name": "Demo B",
+				"mimeType": "application/json",
+				"space": null,
+				"parentFolderId": null
+			},
+			"state": {
+				"isDirty": true,
+				"isLoading": false,
+				"isSaving": false,
+				"lastLoadedAt": null,
+				"lastSavedAt": null,
+				"error": null,
+				"syncStatus": "offline",
+				"lastSyncedAt": null,
+				"hasUnsyncedChanges": false
+			},
+			"lastAccessedAt": 1793404800000
+		}
+	],
+	"savedAt": 1793404800000
+}

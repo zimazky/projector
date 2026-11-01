@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import TextField from 'src/7-shared/ui/TextField/TextField'
@@ -8,7 +8,7 @@ import DialogContent from 'src/7-shared/ui/Dialog/DialogContent'
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import ColorPicker from 'src/7-shared/ui/ColorPicker/ColorPicker'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 
 import styles from './ProjectForm.module.css'
 
@@ -17,7 +17,7 @@ import styles from './ProjectForm.module.css'
  * Отображается в модальном диалоге
  */
 const ProjectForm: React.FC = observer(() => {
-	const { projectEditorStore } = useContext(StoreContext)
+	const { projectEditorStore } = useStores()
 
 	// Локальное состояние для управления полями
 	const [localName, setLocalName] = React.useState('')
@@ -58,7 +58,11 @@ const ProjectForm: React.FC = observer(() => {
 	}
 
 	return (
-		<Dialog open={projectEditorStore.isOpen} onClose={handleClose}>
+		<Dialog
+			open={projectEditorStore.isOpen}
+			onClose={handleClose}
+			aria-label={projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}
+		>
 			<DialogContent>
 				<h2 className={styles.title}>{projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}</h2>
 

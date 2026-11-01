@@ -5,7 +5,8 @@ export interface IEventModel {
 	name: string
 	repeat?: string
 	comment: string
-	project: string
+	project?: string
+	projectId?: string
 	start: timestamp
 	time: number | null
 	duration: number

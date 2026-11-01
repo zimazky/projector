@@ -6,11 +6,15 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DialogActions from 'src/7-shared/ui/Dialog/DialogActions'
 import DialogContent from 'src/7-shared/ui/Dialog/DialogContent'
 import styles from './FileConflictResolver.module.css' // Will create this later
+import type { DriveFileMetadata } from 'src/7-shared/services/gapi'
 
 interface FileConflictResolverProps {
 	isOpen: boolean
-	onClose: () => void
 	conflictingFileName: string
+	conflictingFiles: DriveFileMetadata[]
+	selectedFileId: string
+	onSelectedFileIdChange: (id: string) => void
+	error: string | null
 	isSaving: boolean
 	newFileNameForConflict: string
 	onNewFileNameChange: (newName: string) => void
@@ -18,9 +22,23 @@ interface FileConflictResolverProps {
 }
 
 const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
-	({ isOpen, onClose, conflictingFileName, isSaving, newFileNameForConflict, onNewFileNameChange, onResolve }) => {
+	({
+		isOpen,
+		conflictingFileName,
+		conflictingFiles,
+		selectedFileId,
+		onSelectedFileIdChange,
+		error,
+		isSaving,
+		newFileNameForConflict,
+		onNewFileNameChange,
+		onResolve
+	}) => {
 		// Define state for showing the rename input field, moved from SaveToDrive
 		const [showRenameInput, setShowRenameInput] = useState(false)
+		React.useEffect(() => {
+			if (!isOpen) setShowRenameInput(false)
+		}, [isOpen])
 
 		const handleConfirmRename = () => {
 			onResolve('rename')
@@ -38,10 +56,30 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 		}
 
 		return (
-			<Dialog open={isOpen} onClose={handleCancel}>
+			<Dialog open={isOpen} onClose={handleCancel} aria-label="Конфликт имени файла" dismissible={!isSaving}>
 				<h3 className={styles.dialogTitle}>Конфликт имени файла</h3>
 				<DialogContent>
 					<p>Файл "{conflictingFileName}" уже существует в этой папке. Что вы хотите сделать?</p>
+					<p>Отдельная версия создаст новый файл. Существующие файлы сохранятся.</p>
+					{conflictingFiles.length > 1 && (
+						<label>
+							Исходный файл версии
+							<select
+								aria-label="Исходный файл версии"
+								value={selectedFileId}
+								disabled={isSaving}
+								onChange={event => onSelectedFileIdChange(event.target.value)}
+							>
+								<option value="">Выберите файл</option>
+								{conflictingFiles.map(file => (
+									<option key={file.id} value={file.id}>
+										{file.name} — {file.id}
+									</option>
+								))}
+							</select>
+						</label>
+					)}
+					{error && <p role="alert">{error}</p>}
 					{showRenameInput && (
 						<TextField
 							label="Новое имя файла"
@@ -52,8 +90,8 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 					)}
 				</DialogContent>
 				<DialogActions>
-					<TextButton onClick={handleOverwrite} disabled={isSaving}>
-						Перезаписать
+					<TextButton onClick={handleOverwrite} disabled={isSaving || !selectedFileId}>
+						Создать отдельную версию
 					</TextButton>
 					<TextButton onClick={() => setShowRenameInput(true)} disabled={isSaving}>
 						Переименовать
@@ -64,7 +102,7 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 					>
 						Подтвердить переименование
 					</TextButton>
-					<TextButton onClick={handleCancel} disabled={isSaving}>
+					<TextButton onClick={handleCancel} disabled={isSaving} data-dialog-initial-focus>
 						Отмена
 					</TextButton>
 				</DialogActions>

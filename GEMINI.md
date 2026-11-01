@@ -35,12 +35,13 @@ The project includes several npm scripts to facilitate development, building, an
     ```
     This command executes `webpack --mode production`.
 
-*   **Testing:**
-    The project uses Karma and Jasmine for testing. To run the tests, you would typically use the Karma CLI:
+*   **Тесты:**
+    Юнит-тесты выполняются в Jest с jsdom:
     ```bash
-    karma start
+    npm test -- --runInBand
     ```
-    *(Note: This command is inferred from `devDependencies` and common Karma usage. If an npm script for testing exists, it would be preferred.)*
+    Браузерные проверки выполняются через Playwright: `npm run browser:install`, затем `npm run test:e2e`. Инструкция: [docs/browser_testing_ru.md](docs/browser_testing_ru.md).
+    Karma и Jasmine удалены. Требуемое окружение: Node.js 24.12.0 и npm 11.12.1.
 
 ## Development Conventions
 
@@ -50,7 +51,7 @@ The project includes several npm scripts to facilitate development, building, an
 *   **Bundler:** Webpack
 *   **Styling:** CSS Modules (`.module.css` files)
 *   **Code Structure:** Feature-Sliced Design (FSD) - the project MUST adhere to this architecture, organizing components and logic by domain and layer (`1-app`, `3-pages`, `4-widgets`, `5-features`, `6-entities`, `7-shared`).
-*   **Testing Frameworks:** Karma (test runner), Jasmine (behavior-driven development framework).
+*   **Тестовый стек:** Jest, ts-jest, jest-environment-jsdom; Playwright для браузерных сценариев.
 *   **Environment Variables:** Uses `dotenv-webpack` for managing environment variables.
 *   **Code Documentation:** When generating code, types and functions must be thoroughly documented with comments in Russian.
 
