@@ -55,6 +55,7 @@ export class DocumentStoreManager {
 
 		const data = this.dataProvider.getDocumentData(documentId)
 		if (!data) throw new Error(`Document data not found: ${documentId}`)
+		this.requireLegacyData(data)
 
 		const projectsStore = new ProjectsStore()
 		const eventsStore = new EventsStore(projectsStore)
@@ -120,11 +121,18 @@ export class DocumentStoreManager {
 	updateStoresData(documentId: DocumentId, data: DocumentData): void {
 		const stores = this.getStores(documentId)
 		if (!stores) throw new Error(`Stores not found for document: ${documentId}`)
+		this.requireLegacyData(data)
 		stores.projectsStore.init(data.projectsList)
 		stores.eventsStore.init({
 			completedList: data.completedList,
 			plannedList: data.plannedList
 		})
+	}
+
+	/** До R04 старые сторы не принимают граф, который не умеют сохранить целиком. */
+	private requireLegacyData(data: DocumentData): void {
+		if ('schemaVersion' in data || 'baseResourceId' in data)
+			throw new Error('Ресурсному документу требуются справочники нового режима')
 	}
 
 	/** Удалить сторы документа (при закрытии) */

@@ -1,5 +1,5 @@
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
-import type { DocumentData } from './DocumentTabsStore.types'
+import type { DocumentData, LegacyDocumentData } from './DocumentTabsStore.types'
 import type { EventDto } from 'src/6-entities/Events/EventDto'
 import { DEFAULT_PROJECT_ID, legacyProjectId } from 'src/6-entities/Projects/ProjectId'
 
@@ -20,7 +20,7 @@ export function checkSchema(value: Record<string, unknown>): boolean {
 	return false
 }
 
-function date(value: unknown): string {
+export function documentDate(value: unknown): string {
 	if (typeof value !== 'string' || !/^(\d{4}\.\d{2}\.\d{2}|\d{4}-\d{2}-\d{2})$/.test(value))
 		invalid('требуется действительная дата YYYY.MM.DD.')
 	const [year, month, day] = value.split(/[.-]/).map(Number)
@@ -31,9 +31,9 @@ function date(value: unknown): string {
 	return value.replace(/-/g, '.')
 }
 
-function event(value: unknown, completed: boolean): EventDto {
+export function parseEventFields(value: unknown, completed: boolean): EventDto {
 	if (!record(value) || typeof value.name !== 'string') invalid('событию требуется имя.')
-	const result: EventDto = { name: value.name, start: date(value.start) }
+	const result: EventDto = { name: value.name, start: documentDate(value.start) }
 	for (const key of ['comment', 'project', 'projectId', 'time', 'duration', 'end', 'repeat'] as const) {
 		if (value[key] === undefined) continue
 		if (typeof value[key] !== 'string') invalid('неверный тип поля ' + key)
@@ -45,7 +45,7 @@ function event(value: unknown, completed: boolean): EventDto {
 		result[key] = value[key]
 	}
 	if (result.end) {
-		result.end = date(result.end)
+		result.end = documentDate(result.end)
 		if (result.end <= result.start) invalid('конец события должен быть позже начала.')
 	}
 	if (result.time && !/^(?:[01]?\d|2[0-3]):[0-5]\d$/.test(result.time)) invalid('неверное время события.')
@@ -66,7 +66,7 @@ function event(value: unknown, completed: boolean): EventDto {
 }
 
 /** Миграция выполняется на новой структуре; исходный объект не изменяется. */
-export function parseDocumentData(content: unknown): DocumentData {
+export function parseDocumentData(content: unknown): LegacyDocumentData {
 	let raw: unknown
 	try {
 		raw = typeof content === 'string' ? JSON.parse(content) : content
@@ -75,6 +75,22 @@ export function parseDocumentData(content: unknown): DocumentData {
 	}
 	if (!record(raw)) invalid('корень должен быть объектом.')
 	const legacy = checkSchema(raw)
+	// Нельзя нормализовать ресурсные данные в старые сторы с потерей новых блоков.
+	if (
+		[
+			'baseResourceId',
+			'timezone',
+			'units',
+			'resources',
+			'accounts',
+			'balanceCategories',
+			'priceHistory',
+			'cashbackCategories',
+			'cashbackMonthSettings',
+			'migration'
+		].some(key => key in raw)
+	)
+		invalid('ресурсному документу требуется новый codec.')
 	if (!Array.isArray(raw.projectsList) || !Array.isArray(raw.completedList) || !Array.isArray(raw.plannedList))
 		invalid('projectsList, completedList и plannedList должны быть массивами.')
 	const names = new Set<string>()
@@ -95,8 +111,16 @@ export function parseDocumentData(content: unknown): DocumentData {
 		ids.add(id)
 		return { id, name: project.name, color: project.color, background: project.background }
 	})
-	const completedList = raw.completedList.map(value => event(value, true))
-	const plannedList = raw.plannedList.map(value => event(value, false))
+	const completedList = raw.completedList.map(value => parseEventFields(value, true))
+	const plannedList = raw.plannedList.map(value => parseEventFields(value, false))
+	for (const item of [...raw.completedList, ...raw.plannedList])
+		if (
+			record(item) &&
+			['eventUid', 'seriesUid', 'occurrence', 'originalPlan', 'plannedOperation', 'actualOperation'].some(
+				key => key in item
+			)
+		)
+			invalid('метаданным ресурсного события требуется новый codec.')
 	for (const item of [...completedList, ...plannedList]) {
 		if (item.projectId !== undefined) {
 			if (!ids.has(item.projectId)) invalid('неизвестный ID проекта события: ' + item.projectId)

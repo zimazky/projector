@@ -37,6 +37,9 @@ writeFileSync(join(sandbox, 'tsconfig.json'), JSON.stringify(tsconfig.config, nu
 const { devServer, ...buildConfig } = require(join(sandbox, 'webpack.config.cjs'))
 const compiler = webpack({
 	...buildConfig,
+	// Отдельный стенд codec/IndexedDB; в production entry остаётся только приложение.
+	entry: { main: buildConfig.entry, 'resource-codec': './src/test-utils/resourceStorageProbe.ts' },
+	output: { ...buildConfig.output, filename: '[name].js' },
 	context: sandbox,
 	stats: { preset: 'errors-warnings', errorsSpace: 12 },
 	infrastructureLogging: { level: 'warn' }

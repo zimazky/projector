@@ -4,25 +4,30 @@ import { DocumentPersistenceError, type StorageOperation } from './DocumentStora
 import { IndexedDocumentStorage } from './IndexedDocumentStorage'
 import { cleanupLegacyStorage, isLegacyDocumentKey, type LegacyStorageCleanupResult } from './DocumentStorageCleanup'
 
-export interface DocumentPersistence {
-	load(): DocumentTabsSnapshot | null | Promise<DocumentTabsSnapshot | null>
-	save(snapshot: DocumentTabsSnapshot): void | Promise<void>
+export interface DocumentPersistence<Snapshot = DocumentTabsSnapshot> {
+	load(): Snapshot | null | Promise<Snapshot | null>
+	save(snapshot: Snapshot): void | Promise<void>
 	exportSource(): string | Promise<string>
 	clear(): void | Promise<void>
 	cleanupLegacy?(): Promise<LegacyStorageCleanupResult>
 }
 
 /** Одна запись содержит весь граф вкладок и контент. Ошибка setItem сохраняет предыдущую запись. */
-export class LocalDocumentPersistence implements DocumentPersistence {
+export class SessionDocumentPersistence<Snapshot> implements DocumentPersistence<Snapshot> {
 	private legacySource: string | null = null
 	private migrationSource: string | undefined
 	private queue: Promise<void> = Promise.resolve()
 	constructor(
 		private readonly storage: () => Storage = () => window.localStorage,
-		private readonly indexedFactory: () => IDBFactory | undefined = () => globalThis.indexedDB
+		private readonly indexedFactory: () => IDBFactory | undefined = () => globalThis.indexedDB,
+		private readonly format: {
+			schemaVersion: number
+			parse(json: string, readLegacy: (id: string) => string | null): Snapshot
+			serialize(snapshot: Snapshot): string
+		}
 	) {}
 
-	load(): DocumentTabsSnapshot | null | Promise<DocumentTabsSnapshot | null> {
+	load(): Snapshot | null | Promise<Snapshot | null> {
 		const factory = this.indexedFactory()
 		if (!factory) return this.loadLocal()
 		return this.enqueue(async () => {
@@ -30,8 +35,8 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 				const current = await new IndexedDocumentStorage(factory).read()
 				if (current !== undefined) {
 					try {
-						const snapshot = parseSessionSnapshot(current, () => null)
-						if (JSON.parse(current).schemaVersion !== SESSION_SCHEMA_VERSION)
+						const snapshot = this.format.parse(current, () => null)
+						if (JSON.parse(current).schemaVersion !== this.format.schemaVersion)
 							this.migrationSource = JSON.stringify({ indexedDB: { current } })
 						return snapshot
 					} catch (error: unknown) {
@@ -57,27 +62,27 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 		return pending
 	}
 
-	private loadLocal(): DocumentTabsSnapshot | null {
+	private loadLocal(): Snapshot | null {
 		const storage = this.storage()
 		const json = storage.getItem('documentTabs')
 		if (!json) return null
 		const sources: Record<string, string | null> = {}
-		const snapshot = parseSessionSnapshot(json, id => {
+		const snapshot = this.format.parse(json, id => {
 			const value = storage.getItem('document_' + id)
 			sources['document_' + id] = value
 			return value
 		})
-		if (JSON.parse(json).schemaVersion !== SESSION_SCHEMA_VERSION)
+		if (JSON.parse(json).schemaVersion !== this.format.schemaVersion)
 			this.legacySource = JSON.stringify({ documentTabs: json, documents: sources })
 		return snapshot
 	}
 
-	save(snapshot: DocumentTabsSnapshot): void | Promise<void> {
+	save(snapshot: Snapshot): void | Promise<void> {
 		const factory = this.indexedFactory()
 		if (!factory) return this.saveLocal(snapshot)
 		let serialized: string
 		try {
-			serialized = JSON.stringify(snapshot)
+			serialized = this.format.serialize(snapshot)
 		} catch (error: unknown) {
 			throw new DocumentPersistenceError(error, 'serialize', undefined, undefined, 'IndexedDB')
 		}
@@ -92,12 +97,12 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 		})
 	}
 
-	private saveLocal(snapshot: DocumentTabsSnapshot): void {
+	private saveLocal(snapshot: Snapshot): void {
 		let operation: StorageOperation = 'serialize'
 		let storage: Storage | undefined
 		let attempted: string | undefined
 		try {
-			const serialized = JSON.stringify(snapshot)
+			const serialized = this.format.serialize(snapshot)
 			attempted = serialized
 			operation = 'access'
 			storage = this.storage()
@@ -155,7 +160,9 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 		return this.enqueue(async () => {
 			const factory = this.indexedFactory()
 			if (!factory) throw new Error('Очистка доступна после переноса сессии в IndexedDB. Старые записи не удалены.')
-			const result = await cleanupLegacyStorage(this.storage(), new IndexedDocumentStorage(factory))
+			const result = await cleanupLegacyStorage(this.storage(), new IndexedDocumentStorage(factory), json =>
+				this.format.parse(json, () => null)
+			)
 			this.legacySource = null
 			this.migrationSource = undefined
 			return result
@@ -168,7 +175,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 			return this.enqueue(() =>
 				new IndexedDocumentStorage(factory).write(
 					JSON.stringify({
-						schemaVersion: SESSION_SCHEMA_VERSION,
+						schemaVersion: this.format.schemaVersion,
 						documents: [],
 						documentOrder: [],
 						activeDocumentId: null,
@@ -179,5 +186,19 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 		}
 		// Резервные копии и исходные данные миграции не удаляются при закрытии вкладок.
 		this.storage().removeItem('documentTabs')
+	}
+}
+
+/** Приложение до R09 продолжает использовать прежний формат сессии. */
+export class LocalDocumentPersistence extends SessionDocumentPersistence<DocumentTabsSnapshot> {
+	constructor(
+		storage: () => Storage = () => window.localStorage,
+		indexedFactory: () => IDBFactory | undefined = () => globalThis.indexedDB
+	) {
+		super(storage, indexedFactory, {
+			schemaVersion: SESSION_SCHEMA_VERSION,
+			parse: parseSessionSnapshot,
+			serialize: JSON.stringify
+		})
 	}
 }

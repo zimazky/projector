@@ -62,6 +62,12 @@ export function parsePrice(input: unknown): Decimal {
 	return price
 }
 
+/** Только для миграции старого JSON number; не используется новым денежным вводом. */
+export function legacyNumberToDecimal(input: number): Decimal {
+	if (!Number.isFinite(input)) throw new DecimalError('Старая сумма должна быть конечным числом')
+	return parseDecimal(new Engine(String(input)).toFixed(), DECIMAL_LIMITS.inputScale)
+}
+
 function value(input: Decimal): DecimalJs {
 	return new Engine(parseDecimal(input))
 }

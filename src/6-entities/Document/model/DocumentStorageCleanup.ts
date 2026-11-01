@@ -22,18 +22,20 @@ type CleanupArchive = {
 	archiveLegacy(archive: string, validate: (current: string | undefined) => void): Promise<void>
 }
 
-function validateCurrent(current: string | undefined): void {
+function validateCurrent(current: string | undefined, parse: (json: string) => unknown): void {
 	if (typeof current !== 'string')
 		throw new Error('Сначала дождитесь сохранения сессии в IndexedDB. Старые записи не удалены.')
-	parseSessionSnapshot(current, () => null)
+	parse(current)
 }
 
 /** localStorage не поддерживает общую транзакцию с IndexedDB: сначала архив, затем сверка каждого значения. */
 export async function cleanupLegacyStorage(
 	storage: Storage,
-	database: CleanupArchive
+	database: CleanupArchive,
+	parse: (json: string) => unknown = json => parseSessionSnapshot(json, () => null)
 ): Promise<LegacyStorageCleanupResult> {
-	validateCurrent(await database.read())
+	const validate = (current: string | undefined) => validateCurrent(current, parse)
+	validate(await database.read())
 	const entries: Record<string, string> = {}
 	// Отдельный список ключей: во время удаления индексы Storage изменятся.
 	const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index))
@@ -52,7 +54,7 @@ export async function cleanupLegacyStorage(
 	if (!Object.keys(entries).length) return result
 	const archive = JSON.stringify({ schemaVersion: 1, kind: 'localStorage-cleanup', savedAt: Date.now(), entries })
 	// Внутри транзакции ещё раз проверяется актуальная запись current. До complete ничего не удаляем.
-	await database.archiveLegacy(archive, validateCurrent)
+	await database.archiveLegacy(archive, validate)
 	result.archivedEntries = Object.keys(entries).length
 	for (const [key, original] of Object.entries(entries)) {
 		try {

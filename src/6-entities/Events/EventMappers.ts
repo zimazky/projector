@@ -12,6 +12,8 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 	const duration = e.duration ? DateTime.DdHMMToSeconds(e.duration) : 0
 
 	if (e.repeat) {
+		const end = e.end ? DateTime.YYYYMMDDToTimestamp(e.end) : 0
+		const first = ZCron.nextAfterString(e.repeat, start, start - 86400) ?? start
 		return {
 			...cloneEventMetadata(e),
 			name: e.name,
@@ -20,10 +22,10 @@ export function eventDtoToIEventModel(e: EventDto): IEventModel {
 			projectId: e.projectId,
 			repeat: e.repeat,
 			// Находим первое совпадение расписания от даты начала (start - 1 день для nextAfter)
-			start: ZCron.nextAfterString(e.repeat, start, start - 86400) ?? start,
+			start: e.eventUid && end && first >= end ? start : first,
 			time,
 			duration,
-			end: e.end ? DateTime.YYYYMMDDToTimestamp(e.end) : 0,
+			end,
 			credit: e.credit ? +e.credit : 0,
 			debit: e.debit ? +e.debit : 0
 		}

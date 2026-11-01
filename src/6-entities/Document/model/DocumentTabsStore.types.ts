@@ -91,11 +91,13 @@ export type DocumentOpenResult =
 	{ status: 'opened'; documentId: DocumentId } | Exclude<DocumentSaveResult, { status: 'saved' }>
 
 /** Данные одного документа (проекты и события) */
-export type DocumentData = {
+export type LegacyDocumentData = {
 	projectsList: ProjectDocumentData[]
 	completedList: EventDto[]
 	plannedList: EventDto[]
 }
+
+export type DocumentData = LegacyDocumentData | import('./ResourceDocument.types').ResourceDocumentData
 
 /** Метаданные документа */
 export type DocumentRef = {
@@ -125,12 +127,12 @@ export type DocumentSession = {
 }
 
 /** Формат сессии независим от формата документов Drive. Старые версии читает миграция. */
-export type DocumentTabsSnapshot = {
-	schemaVersion: 3
+export type DocumentSessionSnapshot<Data extends DocumentData, Version extends number> = {
+	schemaVersion: Version
 	activeDocumentId: DocumentId | null
 	documentOrder: DocumentId[]
 	documents: Array<{
-		data: DocumentData
+		data: Data
 		id: DocumentId
 		ref: DocumentRef
 		sync: DocumentSyncSnapshot
@@ -138,6 +140,8 @@ export type DocumentTabsSnapshot = {
 	}>
 	savedAt: number
 }
+
+export type DocumentTabsSnapshot = DocumentSessionSnapshot<DocumentData, 3>
 
 /** Состояние хранилища вкладок документов */
 export type DocumentTabsState = {

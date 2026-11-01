@@ -3,6 +3,8 @@ import { computeFingerprint } from './DocumentSyncFingerprint'
 import {
 	createInitialSyncSnapshot,
 	type DocumentTabsSnapshot,
+	type DocumentData,
+	type DocumentSessionSnapshot,
 	type DocumentSyncSnapshot
 } from './DocumentTabsStore.types'
 
@@ -15,13 +17,34 @@ const time = (value: unknown) => typeof value === 'number' && Number.isFinite(va
 const nullableTime = (value: unknown) => value === null || time(value)
 const nullableString = (value: unknown) => value === null || typeof value === 'string'
 
+export type SessionDocumentContext = { sessionSchemaVersion: number | undefined; documentId: string }
+export type SessionCodec<Data extends DocumentData, Version extends 3 | 4> = {
+	schemaVersion: Version
+	readDocument(data: unknown, context: SessionDocumentContext): Data
+	normalizeSync?(sync: DocumentSyncSnapshot, data: Data, context: SessionDocumentContext): DocumentSyncSnapshot
+	strict?: boolean
+}
+
+function knownFields(value: Record<string, unknown>, keys: string[]): void {
+	if (Object.keys(value).some(key => !keys.includes(key))) invalid()
+}
+
 /** Проверяет весь граф вкладок и всё содержимое до создания первого доменного стора. */
-export function parseSessionSnapshot(json: string, readLegacy: (id: string) => string | null): DocumentTabsSnapshot {
+export function parseSessionWithCodec<Data extends DocumentData, Version extends 3 | 4>(
+	json: string,
+	readLegacy: (id: string) => string | null,
+	codec: SessionCodec<Data, Version>
+): DocumentSessionSnapshot<Data, Version> {
 	try {
 		const raw: unknown = JSON.parse(json)
 		if (!record(raw)) return invalid()
-		if (raw.schemaVersion !== undefined && ![1, 2, SESSION_SCHEMA_VERSION].includes(raw.schemaVersion as number))
+		if (
+			raw.schemaVersion !== undefined &&
+			![1, 2, SESSION_SCHEMA_VERSION, codec.schemaVersion].includes(raw.schemaVersion as number)
+		)
 			return invalid()
+		if (codec.strict && raw.schemaVersion === codec.schemaVersion)
+			knownFields(raw, ['schemaVersion', 'documents', 'documentOrder', 'activeDocumentId', 'savedAt'])
 		const legacy = raw.schemaVersion === undefined
 		const oldState = raw.schemaVersion === undefined || raw.schemaVersion === 1
 		if (!Array.isArray(raw.documents) || !Array.isArray(raw.documentOrder) || !time(raw.savedAt)) return invalid()
@@ -36,6 +59,8 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 			)
 				return invalid()
 			ids.add(value.id)
+			if (codec.strict && raw.schemaVersion === codec.schemaVersion)
+				knownFields(value, ['id', 'ref', 'data', 'sync', 'lastAccessedAt'])
 			const ref = value.ref
 			if (
 				!record(ref) ||
@@ -47,6 +72,8 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				(ref.webViewLink !== undefined && typeof ref.webViewLink !== 'string')
 			)
 				return invalid()
+			if (codec.strict && raw.schemaVersion === codec.schemaVersion)
+				knownFields(ref, ['fileId', 'name', 'mimeType', 'parentFolderId', 'space', 'webViewLink'])
 			// Старые флаги существуют только на входе односторонней миграции.
 			const state = oldState && record(value.state) ? { ...value.state } : null
 			if (legacy && state && state.hasUnsyncedChanges === undefined) state.hasUnsyncedChanges = state.isDirty
@@ -65,6 +92,21 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 			if (value.sync !== undefined) {
 				if (!record(value.sync)) return invalid()
 				const sync = value.sync
+				if (codec.strict && raw.schemaVersion === codec.schemaVersion)
+					knownFields(sync, [
+						'serverModifiedAt',
+						'localVersion',
+						'baseLocalVersion',
+						'localFingerprint',
+						'baseFingerprint',
+						'remoteFingerprint',
+						'baseRevisionId',
+						'remoteRevisionId',
+						'lastSyncAt',
+						'lastRemoteCheckAt',
+						'needsRemoteCheck',
+						'origin'
+					])
 				for (const key of [
 					'localFingerprint',
 					'baseFingerprint',
@@ -100,18 +142,8 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				if (!record(old) || !time(old.savedAt)) return invalid()
 				data = old.data
 			}
-			if (
-				raw.schemaVersion === SESSION_SCHEMA_VERSION &&
-				record(data) &&
-				data.schemaVersion !== undefined &&
-				data.schemaVersion !== 2
-			)
-				return invalid()
-			const parsed = parseDocumentData(
-				!legacy && record(data)
-					? { schemaVersion: raw.schemaVersion === SESSION_SCHEMA_VERSION ? 2 : 1, ...data }
-					: data
-			)
+			const context = { sessionSchemaVersion: raw.schemaVersion as number | undefined, documentId: value.id }
+			const parsed = codec.readDocument(data, context)
 			const source = value.sync as Partial<DocumentSyncSnapshot> | undefined
 			const sync = createInitialSyncSnapshot(ref.fileId ? 'restored-local' : 'new-local')
 			// Только известные поля: state/operation/error не переносятся в новый снимок.
@@ -119,7 +151,7 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				if (source?.[key] !== undefined) Object.assign(sync, { [key]: source[key] })
 			}
 			if (source?.serverModifiedAt !== undefined) sync.serverModifiedAt = source.serverModifiedAt
-			if (raw.schemaVersion !== SESSION_SCHEMA_VERSION) {
+			if (codec.schemaVersion === SESSION_SCHEMA_VERSION && raw.schemaVersion !== SESSION_SCHEMA_VERSION) {
 				// Переносим только точные JSON-базы; старые короткие хэши не доказывают равенство.
 				for (const key of ['localFingerprint', 'baseFingerprint', 'remoteFingerprint'] as const) {
 					if (!sync[key]) continue
@@ -151,7 +183,7 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 					space: ref.space,
 					...(ref.webViewLink === undefined ? {} : { webViewLink: ref.webViewLink as string })
 				},
-				sync,
+				sync: codec.normalizeSync ? codec.normalizeSync(sync, parsed, context) : sync,
 				data: parsed,
 				lastAccessedAt: value.lastAccessedAt
 			}
@@ -166,14 +198,37 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 		)
 			return invalid()
 		return {
-			schemaVersion: SESSION_SCHEMA_VERSION,
+			schemaVersion: codec.schemaVersion,
 			documents,
 			documentOrder: [...order],
 			activeDocumentId: raw.activeDocumentId,
 			savedAt: raw.savedAt
-		} as DocumentTabsSnapshot
+		} as DocumentSessionSnapshot<Data, Version>
 	} catch (error) {
 		if (error instanceof SessionFormatError) throw error
 		throw new SessionFormatError(error instanceof Error ? error.message : 'Не удалось прочитать снимок сессии.')
 	}
+}
+
+/** Прежний формат вложенного документа определяется только в прежнем маршруте. */
+export function readLegacySessionDocument(data: unknown, context: SessionDocumentContext): DocumentData {
+	if (
+		context.sessionSchemaVersion === SESSION_SCHEMA_VERSION &&
+		record(data) &&
+		data.schemaVersion !== undefined &&
+		data.schemaVersion !== 2
+	)
+		return invalid()
+	return parseDocumentData(
+		context.sessionSchemaVersion !== undefined && record(data)
+			? { schemaVersion: context.sessionSchemaVersion === SESSION_SCHEMA_VERSION ? 2 : 1, ...data }
+			: data
+	)
+}
+
+export function parseSessionSnapshot(json: string, readLegacy: (id: string) => string | null): DocumentTabsSnapshot {
+	return parseSessionWithCodec(json, readLegacy, {
+		schemaVersion: SESSION_SCHEMA_VERSION,
+		readDocument: readLegacySessionDocument
+	})
 }
