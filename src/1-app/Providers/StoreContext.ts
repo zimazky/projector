@@ -41,3 +41,9 @@ export function useStores(): IRootStore {
 	if (!stores) throw new Error('useStores должен вызываться внутри StoreProvider')
 	return stores
 }
+
+/** Формы передают ID исходного документа, чтобы переключение вкладки не перенаправляло правку. */
+export function useDocumentStores(documentId?: string) {
+	const { documentTabsStore } = useStores()
+	return documentId ? documentTabsStore.getDocumentStores(documentId) : documentTabsStore.getActiveDocumentStores()
+}

@@ -1,11 +1,13 @@
 import type { DocumentId, DocumentData, DocumentSession } from './DocumentTabsStore.types'
 import type { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 import type { EventsStore } from 'src/6-entities/Events/EventsStore'
+import type { ResourceCatalogStores } from './ResourceCatalogStores'
 
 /** Пара сторов для конкретного документа */
 export interface DocumentStores {
 	projectsStore: ProjectsStore
 	eventsStore: EventsStore
+	resourceStores?: ResourceCatalogStores
 	documentId: DocumentId
 	isInitialized: boolean
 }

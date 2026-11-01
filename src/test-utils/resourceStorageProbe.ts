@@ -10,9 +10,24 @@ import { serializeResourceSessionSnapshot } from 'src/6-entities/Document/model/
 import { computeFingerprint } from 'src/6-entities/Document/model/DocumentSyncFingerprint'
 import { createInitialSyncSnapshot } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import type { ResourceSessionSnapshot } from 'src/6-entities/Document/model/ResourceDocument.types'
+import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsStore'
+import { createResourceDocumentRuntime } from 'src/6-entities/Document/model/ResourceDocumentRuntime'
+import type { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 
 /** Подключается только отдельным entry из start-e2e-server, без запуска приложения. */
 const probe = {
+	tabs: () =>
+		new DocumentTabsStore(
+			{} as GoogleApiService,
+			undefined,
+			createResourceDocumentRuntime({
+				id: 'browser-runtime',
+				currency: { code: 'RUB', scale: 2 },
+				currencyConfirmed: true,
+				asOf: '2026.11.01',
+				timezone: 'Europe/Moscow'
+			})
+		),
 	snapshot(): ResourceSessionSnapshot {
 		const data = parseResourceDocumentData(resourceDocument())
 		const fp = computeFingerprint(data)

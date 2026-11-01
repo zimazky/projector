@@ -13,6 +13,7 @@ import ProjectEditorStore from 'src/5-features/ProjectManager/ProjectEditor/Proj
 
 import { DriveSyncCoordinator } from 'src/6-entities/Document/model/DriveSyncCoordinator'
 import type { DocumentPersistence } from 'src/6-entities/Document/model/DocumentPersistence'
+import type { DocumentRuntime, DocumentRuntimeSnapshot } from 'src/6-entities/Document/model/DocumentRuntime'
 import type { IRootStore } from './Providers/StoreContext'
 
 export interface Application {
@@ -25,11 +26,16 @@ export interface Application {
  * start/dispose идемпотентны. После dispose требуется новый экземпляр.
  */
 export function createApplication(
-	options: { googleApiService?: GoogleApiService; persistence?: DocumentPersistence } = {}
+	options: {
+		googleApiService?: GoogleApiService
+		persistence?: DocumentPersistence<DocumentRuntimeSnapshot>
+		/** Внутренний маршрут разработки R04–R08; публичный запуск использует прежний формат. */
+		documentRuntime?: DocumentRuntime
+	} = {}
 ): Application {
 	const uiStore = new UIStore()
 	const googleApiService = options.googleApiService ?? new GoogleApiService()
-	const documentTabsStore = new DocumentTabsStore(googleApiService, options.persistence)
+	const documentTabsStore = new DocumentTabsStore(googleApiService, options.persistence, options.documentRuntime)
 	const eventsCache = new EventsCache(documentTabsStore)
 	const weatherStore = new WeatherStore()
 	const calendarStore = new CalendarStore(eventsCache, weatherStore)

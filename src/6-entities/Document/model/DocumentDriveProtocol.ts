@@ -35,7 +35,8 @@ type Reader = {
 export async function readDriveDocument(
 	api: Reader,
 	id: string,
-	current: () => boolean
+	current: () => boolean,
+	parseData: (content: unknown) => DocumentData = normalizeMainStoreData
 ): Promise<{
 	data: DocumentData
 	metadata: DriveFileMetadata
@@ -50,8 +51,7 @@ export async function readDriveDocument(
 		if (!current()) return null
 		latest = await api.getFileMetadata(id)
 		if (!current()) return null
-		if (driveVersion(latest, id) === version)
-			return { data: normalizeMainStoreData(content), metadata: latest, version }
+		if (driveVersion(latest, id) === version) return { data: parseData(content), metadata: latest, version }
 	}
 	throw new DriveReadChangedError(latest!)
 }
