@@ -260,14 +260,15 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		})
 
 	icons.push({
-		name: 'Загрузить погоду',
+		name: weatherStore.state === 'error' ? 'Повторить загрузку погоды' : 'Загрузить погоду',
 		jsx: (
 			<SwgIcon>
 				<Weather />
 				<DownloadSign />
 			</SwgIcon>
 		),
-		fn: weatherStore.loadForecast
+		fn: weatherStore.loadForecast,
+		disabled: weatherStore.state === 'pending'
 	})
 	icons.push({
 		name: 'Полный экран',
@@ -316,14 +317,29 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 				data-testid="session-import-input"
 			/>
 			<IconBar icons={icons} />
-			{saveNotice && (
-				<div role="status" className={styles.saveNotice}>
-					{saveNotice}
-					<button type="button" title="Закрыть уведомление" onClick={() => setSaveNotice('')}>
-						×
-					</button>
-				</div>
-			)}
+			<div className={styles.notices}>
+				{weatherStore.state === 'pending' && (
+					<div role="status" className={styles.saveNotice}>
+						Загрузка погоды: {weatherStore.locationName}…
+					</div>
+				)}
+				{weatherStore.state === 'error' && (
+					<div role="alert" className={`${styles.saveNotice} ${styles.weatherError}`}>
+						{weatherStore.errorMessage}
+						<button type="button" className={styles.weatherRetry} onClick={weatherStore.loadForecast}>
+							Повторить загрузку погоды
+						</button>
+					</div>
+				)}
+				{saveNotice && (
+					<div role="status" className={styles.saveNotice}>
+						{saveNotice}
+						<button type="button" title="Закрыть уведомление" onClick={() => setSaveNotice('')}>
+							×
+						</button>
+					</div>
+				)}
+			</div>
 			<Drawer open={uiStore.isMenuOpen} onClose={() => uiStore.toggleMenu(false)}>
 				<List>
 					{menu.map((m, i) => (

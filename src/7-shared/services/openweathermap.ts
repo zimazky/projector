@@ -1,130 +1,95 @@
 const API_KEY: string = process.env.OPEN_WEATHER_KEY ?? ''
+const REQUEST_TIMEOUT_MS = 15000
 
-type Forecast = {
-	/** Time of data forecasted, unix, UTC */
+/** Проверяемая часть ответа, используемая календарём. */
+export type Forecast = {
 	dt: number
-	/** Time of data forecasted, ISO, UTC */
-	dt_txt: string
-	main: {
-		/** Temperature. Unit Default: Kelvin, Metric: Celsius, Imperial: Fahrenheit */
-		temp: number
-		/**
-		 * This temperature parameter accounts for the human perception of weather.
-		 * Unit Default: Kelvin, Metric: Celsius, Imperial: Fahrenheit
-		 * */
-		feels_like: number
-		/**
-		 * Minimum temperature at the moment of calculation.
-		 * This is minimal forecasted temperature (within large megalopolises and urban areas), use this parameter optionally.
-		 * Unit Default: Kelvin, Metric: Celsius, Imperial: Fahrenheit
-		 */
-		temp_min: number
-		/**
-		 * Maximum temperature at the moment of calculation.
-		 * This is maximal forecasted temperature (within large megalopolises and urban areas), use this parameter optionally.
-		 * Unit Default: Kelvin, Metric: Celsius, Imperial: Fahrenheit
-		 */
-		temp_max: number
-		/** Atmospheric pressure on the sea level by default, hPa */
-		pressure: number
-		/** Atmospheric pressure on the sea level, hPa */
-		sea_level: number
-		/** Atmospheric pressure on the ground level, hPa */
-		grnd_level: number
-		/** Humidity, % */
-		humidity: number
-		/** Internal parameter */
-		temp_kf: number
-	}
-	weather: {
-		/** Weather condition id */
-		id: number
-		/** Group of weather parameters (Rain, Snow, Extreme etc.) */
-		main: string
-		/** Weather condition within the group. You can get the output in your language */
-		description: string
-		/** Weather icon id */
-		icon: number
-	}[]
-	clouds: {
-		/** Cloudiness, % */
-		all: number
-	}
-	wind: {
-		/** Wind speed. Unit Default: meter/sec, Metric: meter/sec, Imperial: miles/hour */
-		speed: number
-		/** Wind direction, degrees (meteorological) */
-		deg: number
-		/**  Wind gust. Unit Default: meter/sec, Metric: meter/sec, Imperial: miles/hour */
-		gust: number
-	}
-	/** Average visibility, metres. The maximum value of the visibility is 10km */
-	visibility: number
-	/**
-	 * Probability of precipitation.
-	 * The values of the parameter vary between 0 and 1, where 0 is equal to 0%, 1 is equal to 100%
-	 * */
+	main: { temp_min: number; temp_max: number; humidity: number }
+	weather: { id: number }[]
+	clouds: { all: number }
 	pop: number
-	/**  */
-	rain: {
-		/** Rain volume for last 3 hours, mm */
-		'3h': number
-	}
-	snow: {
-		/** Snow volume for last 3 hours, mm */
-		'3h': number
-	}
-	sys: {
-		/** Part of the day (n - night, d - day) */
-		pod: 'n' | 'd'
-	}
+	rain?: { '3h': number }
+	snow?: { '3h': number }
 }
 
-export type OpenWeatherMapResponse = {
-	//cod: string
-	//message: number
-	city: {
-		/** @deprecated City ID */
-		id: number
-		/** @deprecated City name */
-		name: string
-		/** @deprecated Country code (GB, JP etc.) */
-		country: string
-		/** City population */
-		population: number
-		/** Sunrise time, Unix, UTC */
-		sunrise: number
-		/** Sunset time, Unix, UTC */
-		sunset: number
-		/** Shift in seconds from UTC */
-		timezone: number
-		/** City geo location */
-		coord: {
-			/** Latitude */
-			lat: number
-			/** Longitude */
-			lon: number
+export type OpenWeatherMapResponse = { list: Forecast[] }
+
+const invalidResponse = () => new Error('Некорректный ответ сервиса погоды.')
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null && !Array.isArray(value)
+const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+const inRange = (value: unknown, min: number, max: number): value is number =>
+	isFiniteNumber(value) && value >= min && value <= max
+
+function precipitation(value: unknown): { '3h': number } | undefined {
+	if (value === undefined) return undefined
+	if (!isRecord(value) || !isFiniteNumber(value['3h']) || value['3h'] < 0) throw invalidResponse()
+	return { '3h': value['3h'] }
+}
+
+/** Не публикуем частичный прогноз, если хотя бы один интервал повреждён. */
+function parseForecast(value: unknown): OpenWeatherMapResponse {
+	if (
+		!isRecord(value) ||
+		(value.cod !== undefined && value.cod !== '200' && value.cod !== 200) ||
+		!Array.isArray(value.list) ||
+		value.list.length === 0
+	)
+		throw invalidResponse()
+	const timestamps = new Set<number>()
+	const list = value.list.map((entry: unknown): Forecast => {
+		if (
+			!isRecord(entry) ||
+			!isFiniteNumber(entry.dt) ||
+			!Number.isSafeInteger(entry.dt) ||
+			!Number.isFinite(new Date(entry.dt * 1000).getTime()) ||
+			timestamps.has(entry.dt) ||
+			!isRecord(entry.main) ||
+			!isFiniteNumber(entry.main.temp_min) ||
+			!isFiniteNumber(entry.main.temp_max) ||
+			entry.main.temp_min > entry.main.temp_max ||
+			!inRange(entry.main.humidity, 0, 100) ||
+			!isRecord(entry.clouds) ||
+			!inRange(entry.clouds.all, 0, 100) ||
+			!inRange(entry.pop, 0, 1) ||
+			!Array.isArray(entry.weather) ||
+			entry.weather.length === 0
+		)
+			throw invalidResponse()
+		timestamps.add(entry.dt)
+		const weather = entry.weather.map((condition: unknown) => {
+			if (!isRecord(condition) || !inRange(condition.id, 0, 999) || !Number.isInteger(condition.id))
+				throw invalidResponse()
+			return { id: condition.id }
+		})
+		return {
+			dt: entry.dt,
+			main: { temp_min: entry.main.temp_min, temp_max: entry.main.temp_max, humidity: entry.main.humidity },
+			clouds: { all: entry.clouds.all },
+			pop: entry.pop,
+			weather,
+			rain: precipitation(entry.rain),
+			snow: precipitation(entry.snow)
 		}
-	}
-	/** A number of timestamps returned in the API response */
-	cnt: number
-	/** List of forecasts */
-	list: Forecast[]
+	})
+	return { list }
 }
 
 export default class OpenWeatherMap {
-	/**
-	 * 5 day forecast is available at any location on the globe. It includes weather forecast data with 3-hour step
-	 * @param lat
-	 * @param lon
-	 * @returns
-	 */
+	/** Прогноз на пять дней с шагом три часа; таймаут покрывает и чтение тела. */
 	static async getForecast(lat: number, lon: number, units: Units = 'metric'): Promise<OpenWeatherMapResponse> {
-		const response = await fetch(
-			`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${units}&appid=${API_KEY}`
-		)
-		const json: OpenWeatherMapResponse = await response.json()
-		return json
+		const controller = new AbortController()
+		const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+		try {
+			const response = await fetch(
+				`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=${units}&appid=${API_KEY}`,
+				{ signal: controller.signal }
+			)
+			if (!response.ok) throw new Error('Сервис погоды недоступен (HTTP ' + response.status + ').')
+			return parseForecast(await response.json())
+		} finally {
+			clearTimeout(timeout)
+		}
 	}
 }
 

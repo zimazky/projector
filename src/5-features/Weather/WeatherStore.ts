@@ -2,7 +2,7 @@ import { makeAutoObservable, runInAction } from 'mobx'
 
 import DateTime from 'src/7-shared/libs/DateTime/DateTime'
 import { max, min } from 'src/7-shared/helpers/utils'
-import OpenWeatherMap from 'src/7-shared/services/openweathermap'
+import OpenWeatherMap, { type OpenWeatherMapResponse } from 'src/7-shared/services/openweathermap'
 
 /** Погодные условия, аггрегированные за день */
 export type ForecastData1d = {
@@ -75,13 +75,18 @@ export class WeatherStore {
 	data1d: ForecastData1d[] = []
 	/** Данные прогноза погоды на 5-6 дней по интервалам 3h */
 	data3h: ForecastData3h[] = []
+	/** Сообщение без URL запроса и ключа API. */
+	errorMessage: string | null = null
+	private requestId = 0
 
 	constructor() {
-		makeAutoObservable(this)
+		makeAutoObservable<this, 'requestId'>(this, { requestId: false })
 	}
 
 	/** Установка локации */
 	setLocation(lat: number, lon: number, name: string) {
+		this.requestId++
+		this.errorMessage = null
 		this.lat = lat
 		this.lon = lon
 		this.locationName = name
@@ -91,67 +96,78 @@ export class WeatherStore {
 	}
 
 	/** Загрузка данных прогноза погоды */
-	loadForecast = async () => {
+	loadForecast = async (): Promise<void> => {
+		const requestId = ++this.requestId
+		const { lat, lon } = this
 		this.state = 'pending'
-		const f = await OpenWeatherMap.getForecast(this.lat, this.lon)
-		runInAction(() => {
-			let t = DateTime.getBeginDayTimestamp(Date.now() / 1000)
-			this.state = 'ready'
-			this.data1d = []
-			console.log(f)
-			f.list.forEach(d => {
-				let clouds = d.clouds.all
-				const rain = d.rain ? d.rain['3h'] : 0
-				const snow = d.snow ? d.snow['3h'] : 0
-				const isThunderstorm = d.weather.reduce((a, w) => a || (200 <= w.id && w.id < 300), false)
-				// прогноз с периодом 3 часа
-				this.data3h.push({
-					timestamp: d.dt,
-					temperatureMin: d.main.temp_min,
-					temperatureMax: d.main.temp_max,
-					humidity: d.main.humidity,
-					clouds,
-					pop: d.pop,
-					rain,
-					snow,
-					isThunderstorm,
-					emoji: defineEmoji(clouds, rain, snow, isThunderstorm)
-				})
-				// аггрегируемый прогноз с периодом 1 день
-				if (d.dt > t + 86400) t += 86400
-				const cd = this.data1d.find(d => d.timestamp == t)
-				if (cd === undefined)
-					this.data1d.push({
-						timestamp: t,
-						temperatureMin: d.main.temp_min,
-						temperatureMax: d.main.temp_max,
-						humidityMin: d.main.humidity,
-						humidityMax: d.main.humidity,
-						clouds,
-						pop: d.pop,
-						rain,
-						snow,
-						isThunderstorm,
-						emoji: defineEmoji(clouds, rain, snow, isThunderstorm),
-						count: 1
-					})
-				else {
-					clouds = (cd.clouds * cd.count + clouds) / (cd.count + 1)
-					cd.temperatureMin = min(cd.temperatureMin, d.main.temp_min)
-					cd.temperatureMax = max(cd.temperatureMax, d.main.temp_max)
-					cd.humidityMin = min(cd.humidityMin, d.main.humidity)
-					cd.humidityMax = max(cd.humidityMax, d.main.humidity)
-					cd.clouds = clouds
-					cd.pop = Math.max(cd.pop, d.pop)
-					cd.rain += d.rain ? d.rain['3h'] : 0
-					cd.snow += d.snow ? d.snow['3h'] : 0
-					cd.isThunderstorm ||= isThunderstorm
-					cd.emoji = defineEmoji(cd.clouds, cd.rain, cd.snow, cd.isThunderstorm)
-					cd.count++
-				}
+		this.errorMessage = null
+		const isCurrent = () => requestId === this.requestId && lat === this.lat && lon === this.lon
+		try {
+			const forecast = await OpenWeatherMap.getForecast(lat, lon)
+			if (!isCurrent()) return
+			const { data1d, data3h } = buildSnapshot(forecast)
+			runInAction(() => {
+				this.data1d = data1d
+				this.data3h = data3h
+				this.state = 'ready'
 			})
-		})
+		} catch {
+			if (!isCurrent()) return
+			runInAction(() => {
+				this.state = 'error'
+				this.errorMessage = 'Не удалось загрузить погоду. Повторите запрос.'
+			})
+		}
 	}
+}
+
+/** Снимок строится целиком до публикации; дни совпадают с часовым поясом календаря. */
+function buildSnapshot(forecast: OpenWeatherMapResponse) {
+	const data3h: ForecastData3h[] = forecast.list.map(d => {
+		const rain = d.rain?.['3h'] ?? 0
+		const snow = d.snow?.['3h'] ?? 0
+		const isThunderstorm = d.weather.some(w => 200 <= w.id && w.id < 300)
+		return {
+			timestamp: d.dt,
+			temperatureMin: d.main.temp_min,
+			temperatureMax: d.main.temp_max,
+			humidity: d.main.humidity,
+			clouds: d.clouds.all,
+			pop: d.pop,
+			rain,
+			snow,
+			isThunderstorm,
+			emoji: defineEmoji(d.clouds.all, rain, snow, isThunderstorm)
+		}
+	})
+	data3h.sort((a, b) => a.timestamp - b.timestamp)
+	const days = new Map<number, ForecastData1d>()
+	for (const d of data3h) {
+		const timestamp = DateTime.getBeginDayTimestamp(d.timestamp)
+		const day = days.get(timestamp)
+		if (!day) {
+			days.set(timestamp, {
+				...d,
+				timestamp,
+				humidityMin: d.humidity,
+				humidityMax: d.humidity,
+				count: 1
+			})
+		} else {
+			day.temperatureMin = min(day.temperatureMin, d.temperatureMin)
+			day.temperatureMax = max(day.temperatureMax, d.temperatureMax)
+			day.humidityMin = min(day.humidityMin, d.humidity)
+			day.humidityMax = max(day.humidityMax, d.humidity)
+			day.clouds = (day.clouds * day.count + d.clouds) / (day.count + 1)
+			day.pop = max(day.pop, d.pop)
+			day.rain += d.rain
+			day.snow += d.snow
+			day.isThunderstorm ||= d.isThunderstorm
+			day.emoji = defineEmoji(day.clouds, day.rain, day.snow, day.isThunderstorm)
+			day.count++
+		}
+	}
+	return { data1d: Array.from(days.values()), data3h }
 }
 
 // Иконки '☀️', '🌤️', '⛅', '☁️', '🌦️', '🌧️', '🌩️', '⛈️', '🌨️'
