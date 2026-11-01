@@ -1,0 +1,154 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 16 / stage 8: application factory, explicit lifecycle, narrow save notification, checked useStores",
+  "baseCommit": "26bf71025baac9d3da71d7b71b3883678ba3bde0",
+  "initialWorkingTreeClean": true,
+  "node": "v24.12.0",
+  "implementedLocally": true,
+  "stage8CompletedLocally": false,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "name": "typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "startedAt": "2026-11-01T07:39:52.617Z",
+      "durationMs": 4543,
+      "exitCode": 0
+    },
+    "e2e-typecheck": {
+      "name": "e2e-typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.e2e.json"
+      ],
+      "startedAt": "2026-11-01T07:39:52.627Z",
+      "durationMs": 1724,
+      "exitCode": 0
+    },
+    "lint": {
+      "name": "lint",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "src/**/*.{js,jsx,ts,tsx}",
+        "e2e/**/*.ts",
+        "playwright.config.ts",
+        "--format",
+        "json",
+        "--output-file",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr16\\lint.json"
+      ],
+      "startedAt": "2026-11-01T07:39:52.631Z",
+      "durationMs": 18192,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6,
+      "artifact": "artifacts/remediation-pr16/lint.json"
+    },
+    "jest": {
+      "name": "jest",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr16\\jest.json"
+      ],
+      "startedAt": "2026-11-01T07:39:52.638Z",
+      "durationMs": 15651,
+      "exitCode": 0,
+      "passed": 3832,
+      "failed": 0,
+      "suites": 32,
+      "artifact": "artifacts/remediation-pr16/jest.json"
+    },
+    "build": {
+      "name": "build",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/webpack/bin/webpack.js",
+        "--mode",
+        "production",
+        "--output-path",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr16\\build",
+        "--json",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr16\\webpack.json"
+      ],
+      "startedAt": "2026-11-01T07:40:10.823Z",
+      "durationMs": 23153,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr16/webpack.json"
+    },
+    "e2e": {
+      "name": "e2e",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/@playwright/test/cli.js",
+        "test"
+      ],
+      "startedAt": "2026-11-01T07:40:33.977Z",
+      "durationMs": 79366,
+      "exitCode": 0,
+      "stats": {
+        "startTime": "2026-11-01T07:40:34.911Z",
+        "duration": 78334.18000000001,
+        "expected": 42,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "artifact": "artifacts/remediation-pr16/playwright.json"
+    }
+  },
+  "sourceSha256": {
+    "src/1-app/App/App.spec.tsx": "157c71fcc454c48b42bfbe6af09d337405b71d43ad55a772c8e0e2b8e0e55ba0",
+    "src/1-app/App/App.tsx": "e38b02ec3342b42c7e2d7828e5792ccf534d85db1e22761aa00ee4dfc375729d",
+    "src/1-app/Providers/StoreContext.spec.tsx": "43c82722acf99911bfcf8e608b50130df639b08efe421088cc330c4655c022a0",
+    "src/1-app/Providers/StoreContext.ts": "32a2c3097cd41d86d5aac35666e7343620b1751b8782cf9b2f5717e8f3c70109",
+    "src/1-app/Stores/MainStore.ts": "9b9f53ec8c6189233903c0acca1d83e2bcd10576e7e11ddace6ec7984434b34b",
+    "src/1-app/index.tsx": "acd96e2fac8adf84cac552d2a07a1b78783ff7a157c9bf352f8cd4253aba6e13",
+    "src/1-app/root.spec.ts": "ff786294ffd7c3ad3f44685b2e6f26045ed9c414bc991b61caad86532b6f0f65",
+    "src/1-app/root.ts": "a42b359830e15e751d7473ddef7e647e07c5fbdde32606bf8cffaae5ca9ae5c9",
+    "src/3-pages/Calendar/Calendar.tsx": "76d7765592c3890c4112595b178bb3bb1558fcb2d0adb214f1a224ce515eef4c",
+    "src/3-pages/Calendar/CalendarDay.tsx": "d80fc0131dcff0fbd1af65dcd455b1fc300fc850dfc845953bdf22e5af580721",
+    "src/3-pages/Calendar/CalendarEventItem.tsx": "3f7f2285e605dd5095c9f4c68ce8db711d1d9e65b840797a38d5cb7c40e79b29",
+    "src/3-pages/DayList/DayList.tsx": "4e96b25a2e4934535c6dc07ddb4c5de2b13241c0c847ccd4fd3e36cf53ec934a",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "4336a8b7212e94479472f9360027d46029823f04906067c18a948122e31c2709",
+    "src/4-widgets/EventForm/EventForm.tsx": "c74ba3f920fad610c08e0bf4acfcf398c6b43b98f19f4d1cd724912da11db782",
+    "src/4-widgets/Header/Header.tsx": "614bbab1b6caabd4132b10de60a5737e8034e9af4c123a627c6fb89abc5f3b3e",
+    "src/4-widgets/SaveToDrive/SaveToDrive.tsx": "b4525f054a39c7afcbba62a9ddb02faebb7c1b371ea4e15a74e014c4cf7b7542",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.spec.ts": "f7b370e4d2e4b2fd782b3aef5b55656a6d32b45335983e612c7a9a18503aa0af",
+    "src/4-widgets/SaveToDrive/model/SaveToDriveStore.ts": "d4edf93d012b0d32ab07186478fdd93a9a1d652df91ba4e3c216b529a2dac060",
+    "src/5-features/DriveFileList/DriveFileList.tsx": "314ca1d5043e6931b619b50c8397f2878835db44c18f1eac8828f6c35f7da5bc",
+    "src/5-features/EventSearch/EventSearchInput.tsx": "93292ecc50651c13a854928a32a5f9dbb34b529dd4f8cdb957e3a9c742f3095a",
+    "src/5-features/ProjectManager/ProjectEditor/ProjectForm.tsx": "311829ef830b56a434f8044435fb3b22bf439ebd497e2190a6244cc977767a18",
+    "src/5-features/ProjectManager/ProjectList/ProjectList.tsx": "cf2c33af0c4c9c30e0640ce5997e48ee90ca74a3e52161cb90aeb44c8f5c1a46",
+    "src/5-features/Weather/WeatherStore.ts": "0d74492a48147f9e76f64e1ae6e5b08a396dd76abf2375de0102df81ac3da7d4",
+    "src/6-entities/Document/model/DocumentRecovery.spec.ts": "bce907774ad90af37cb7d8fb8a93ec742938f6a8f6f7ddee1bf621b534bbf200",
+    "src/6-entities/Document/model/DocumentTabsStore.ts": "32ca463fe6fc7b6d1a6f6d996cd4e3cbcaa07cd3c390883e0757745d4ec38f79",
+    "src/7-shared/services/GoogleApiService.spec.ts": "2fab74a93f5009a03d301e0137e48c3caaf181613665840d0f82e7a8011d38d3",
+    "src/7-shared/services/GoogleApiService.ts": "d20dac36886282ca6054c7272bf7d34470c2535966524a86efaef4715e5367dd",
+    "src/7-shared/services/gapi.spec.ts": "aef1b5605bbf616cc766eb42a0f7fb9a6e33ced9ce9b6ee1f1f9e4bfd61e818e",
+    "src/7-shared/services/gapi.ts": "afbb64d2260ddc14d0814ca51c8b9788f53bf3ab12f3b674eedfd824dc082e63",
+    "src/7-shared/services/openweathermap.ts": "9c018b2bb2ce077ab0bd056708515b70222026237218e7bddd4d116c043ad62a"
+  },
+  "lockfileSha256": "4fac66227b7baa338a089011d03684443bd810bdb0f09f5f589a498b536659e4",
+  "limits": [
+    "Google and weather mocked at the network boundary in Chromium",
+    "No live Drive operations or npm audit performed; dependencies unchanged",
+    "Google transport remains browser-global; one active application per window",
+    "Network writes already sent may finish remotely after dispose; their late results do not confirm local state",
+    "forceUpdate, module boundary rules, stricter static checks and remaining CI work continue in later blocks"
+  ]
+}

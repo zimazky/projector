@@ -1,6 +1,6 @@
-import React, { useContext, useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useEffect, useMemo } from 'react'
 import { observer } from 'mobx-react-lite'
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { debounce } from 'src/7-shared/helpers/utils'
 import styles from './EventSearch.module.css'
 
@@ -8,7 +8,7 @@ import styles from './EventSearch.module.css'
 const DEBOUNCE_MS = 300
 
 export const EventSearchInput: React.FC = observer(() => {
-	const { eventSearchStore, calendarStore, uiStore } = useContext(StoreContext)
+	const { eventSearchStore, calendarStore, uiStore } = useStores()
 	const inputRef = useRef<HTMLInputElement>(null)
 
 	// Создаём debounced функцию поиска один раз при монтировании

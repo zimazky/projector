@@ -20,6 +20,7 @@ export class GoogleApiService {
 	private gapiReadyPromise: Promise<void> | null = null
 	private resolveGapiReady: (() => void) | null = null
 	private rejectGapiReady: ((reason?: unknown) => void) | null = null
+	private lifetime = new AbortController()
 
 	constructor() {
 		makeAutoObservable(this)
@@ -38,12 +39,14 @@ export class GoogleApiService {
 	 * Устанавливает обработчики для успешной инициализации, входа и истечения токена.
 	 */
 	initGapi = () => {
-		if (this.isGapiInitStarted) return
+		if (this.isGapiInitStarted || this.lifetime.signal.aborted) return
 		this.isGapiInitStarted = true
 		this.resetGapiReadyPromise()
 
 		GAPI.init({
+			signal: this.lifetime.signal,
 			onSuccess: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = GAPI.isLoggedIn()
 				})
@@ -53,10 +56,12 @@ export class GoogleApiService {
 				this.resolveGapiReady?.()
 			},
 			onFailure: () => {
+				if (this.lifetime.signal.aborted) return
 				this.isGapiInitStarted = false
 				this.rejectGapiReady?.(new Error('Failed to initialize Google API'))
 			},
 			onSignIn: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = GAPI.isLoggedIn()
 					console.log('onSignIn in GoogleApiService', this.isGoogleLoggedIn)
@@ -66,6 +71,7 @@ export class GoogleApiService {
 				})
 			},
 			onExpiredToken: () => {
+				if (this.lifetime.signal.aborted) return
 				runInAction(() => {
 					this.isGoogleLoggedIn = false
 					this.userName = null
@@ -74,6 +80,15 @@ export class GoogleApiService {
 				})
 			}
 		})
+	}
+
+	/** Освободить загрузчики и OAuth-ожидания без отзыва выданного разрешения. */
+	dispose = () => {
+		if (this.lifetime.signal.aborted) return
+		this.lifetime.abort()
+		this.rejectGapiReady?.(new Error('Google API service disposed'))
+		this.resolveGapiReady = null
+		this.rejectGapiReady = null
 	}
 
 	/** Дождаться завершения инициализации GAPI */
@@ -89,9 +104,11 @@ export class GoogleApiService {
 	 * @returns Promise<void>
 	 */
 	logIn = async () => {
+		if (this.lifetime.signal.aborted) throw new Error('Google API service disposed')
 		if (!this.isGapiInitStarted) this.initGapi()
 		await this.waitForGapiReady()
 		await GAPI.logIn()
+		if (this.lifetime.signal.aborted) return
 		runInAction(() => {
 			this.isGoogleLoggedIn = GAPI.isLoggedIn()
 		})
@@ -116,6 +133,7 @@ export class GoogleApiService {
 		if (!this.isGoogleLoggedIn) return
 		try {
 			const info = await GAPI.getUserInfo()
+			if (this.lifetime.signal.aborted) return
 			runInAction(() => {
 				this.userName = info.name ?? null
 				this.userAvatarUrl = info.picture ?? null

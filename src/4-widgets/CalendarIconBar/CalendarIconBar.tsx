@@ -1,7 +1,7 @@
 import { downloadJson } from 'src/7-shared/libs/downloadJson'
 import { serializeDocumentData } from 'src/6-entities/Document/model/DocumentFormat'
 import { storageSizeLabel } from 'src/6-entities/Document/model/DocumentStorageDiagnostic'
-import React, { useContext, useState } from 'react'
+import React, { useState } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import IconBar, { IconItem } from 'src/7-shared/ui/IconBar/IconBar'
@@ -20,7 +20,7 @@ import {
 	Sync
 } from 'src/7-shared/ui/Icons/Icons'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import DriveFilePicker from 'src/4-widgets/DriveFilePicker/DriveFilePicker'
 import { getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 import type { SyncResult } from 'src/6-entities/Document/model/DocumentTabsStore.types'
@@ -37,7 +37,7 @@ function fullScreen() {
 const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({
 	onCloseDocument
 }) {
-	const { uiStore, googleApiService, weatherStore, saveToDriveStore, documentTabsStore } = useContext(StoreContext)
+	const { uiStore, googleApiService, weatherStore, saveToDriveStore, documentTabsStore } = useStores()
 
 	const [isPickerOpen, setIsPickerOpen] = useState(false)
 	const [conflictDialogData, setConflictDialogData] = useState<ConflictDialogProps | null>(null)

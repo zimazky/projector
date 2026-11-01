@@ -78,6 +78,8 @@ export class WeatherStore {
 	/** Сообщение без URL запроса и ключа API. */
 	errorMessage: string | null = null
 	private requestId = 0
+	private disposed = false
+	private requestController: AbortController | null = null
 
 	constructor() {
 		makeAutoObservable<this, 'requestId'>(this, { requestId: false })
@@ -86,6 +88,7 @@ export class WeatherStore {
 	/** Установка локации */
 	setLocation(lat: number, lon: number, name: string) {
 		this.requestId++
+		this.requestController?.abort()
 		this.errorMessage = null
 		this.lat = lat
 		this.lon = lon
@@ -97,13 +100,17 @@ export class WeatherStore {
 
 	/** Загрузка данных прогноза погоды */
 	loadForecast = async (): Promise<void> => {
+		if (this.disposed) return
 		const requestId = ++this.requestId
+		this.requestController?.abort()
+		const controller = new AbortController()
+		this.requestController = controller
 		const { lat, lon } = this
 		this.state = 'pending'
 		this.errorMessage = null
 		const isCurrent = () => requestId === this.requestId && lat === this.lat && lon === this.lon
 		try {
-			const forecast = await OpenWeatherMap.getForecast(lat, lon)
+			const forecast = await OpenWeatherMap.getForecast(lat, lon, 'metric', controller.signal)
 			if (!isCurrent()) return
 			const { data1d, data3h } = buildSnapshot(forecast)
 			runInAction(() => {
@@ -117,7 +124,17 @@ export class WeatherStore {
 				this.state = 'error'
 				this.errorMessage = 'Не удалось загрузить погоду. Повторите запрос.'
 			})
+		} finally {
+			if (this.requestController === controller) this.requestController = null
 		}
+	}
+
+	dispose(): void {
+		this.disposed = true
+		this.requestId++
+		this.requestController?.abort()
+		this.requestController = null
+		if (this.state === 'pending') this.state = 'undefined'
 	}
 }
 

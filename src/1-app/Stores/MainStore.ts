@@ -7,7 +7,6 @@ import { PathSegment } from 'src/5-features/DriveFileList/model/DriveFileListSto
 import { Observable } from 'src/7-shared/libs/Observable/Observable'
 import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import type { DocumentStores } from 'src/6-entities/Document/model/DocumentStoreManager.types'
-import { DriveSyncCoordinator } from 'src/6-entities/Document/model/DriveSyncCoordinator'
 
 /** Главный orchestrator-стор приложения */
 export class MainStore {
@@ -16,7 +15,8 @@ export class MainStore {
 
 	private googleApiService: GoogleApiService
 	private documentTabsStore: DocumentTabsStore
-	private syncCoordinator: DriveSyncCoordinator | null = null
+	private started = false
+	private disposed = false
 
 	/**
 	 * Сохраненное состояние проводника Google Drive по пространствам
@@ -45,7 +45,9 @@ export class MainStore {
 	}
 
 	/** Инициализация приложения и зависимых сервисов */
-	init() {
+	start() {
+		if (this.started || this.disposed) return
+		this.started = true
 		// Настраиваем колбэки на изменения в пер-документных сторах
 		this.documentTabsStore.setOnStoresChanged({
 			// onEventsChanged
@@ -70,22 +72,15 @@ export class MainStore {
 		this.googleApiService.initGapi()
 		// Обработчик ошибки подключается сразу, даже если никто не запрашивает вход.
 		void this.googleApiService.waitForGapiReady().catch(() => {
-			console.error('Google API недоступен; локальные документы доступны.')
+			if (!this.disposed) console.error('Google API недоступен; локальные документы доступны.')
 		})
 	}
 
-	startSyncCoordinator(): void {
-		this.syncCoordinator ??= new DriveSyncCoordinator(this.documentTabsStore, this.googleApiService)
-		this.syncCoordinator.start()
-	}
-
-	stopSyncCoordinator(): void {
-		this.syncCoordinator?.dispose()
-		this.syncCoordinator = null
-	}
-
 	dispose(): void {
-		this.stopSyncCoordinator()
+		if (this.disposed) return
+		this.disposed = true
+		this.documentTabsStore.setOnStoresChanged({})
+		this.documentTabsStore.setOnActiveDocumentChanged(undefined)
 	}
 
 	/** Обновить сохраненное состояние проводника Drive */

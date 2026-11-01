@@ -165,17 +165,43 @@ export default class GAPI {
 	static tokenClient: google.accounts.oauth2.TokenClient
 
 	/** Инициализация GIS + GAPI. */
-	static async init({ onSuccess = () => {}, onFailure = () => {}, onSignIn = () => {}, onExpiredToken = () => {} }) {
+	static async init({
+		onSuccess = () => {},
+		onFailure = () => {},
+		onSignIn = () => {},
+		onExpiredToken = () => {},
+		signal
+	}: {
+		onSuccess?: () => void
+		onFailure?: () => void
+		onSignIn?: () => void
+		onExpiredToken?: () => void
+		signal?: AbortSignal
+	}) {
+		if (signal?.aborted) return
 		expiredTokenHandle = onExpiredToken
 		const controller = new AbortController()
+		let ownedRefresh: (() => void) | null = null
+		const abort = () => {
+			controller.abort()
+			if (ownedRefresh && refreshTokenClient === ownedRefresh) {
+				++loginGeneration
+				rejectLoginWaiters(new GoogleLoginCancelledError())
+				refreshTokenClient = null
+				GAPI.tokenClient = undefined as unknown as google.accounts.oauth2.TokenClient
+			}
+			if (expiredTokenHandle === onExpiredToken) expiredTokenHandle = () => {}
+		}
+		signal?.addEventListener('abort', abort, { once: true })
 		try {
 			await Promise.all([
 				loadScriptPromise('https://accounts.google.com/gsi/client', controller.signal),
 				loadScriptPromise('https://apis.google.com/js/api.js', controller.signal)
 			])
+			if (controller.signal.aborted) return
 			refreshTokenClient = () => {
 				const generation = loginGeneration
-				const current = () => pendingLoginPromise !== null && generation === loginGeneration
+				const current = () => !signal?.aborted && pendingLoginPromise !== null && generation === loginGeneration
 				const tokenConfig: google.accounts.oauth2.TokenClientConfig & {
 					error_callback: (error: { type: string }) => void
 				} = {
@@ -215,11 +241,18 @@ export default class GAPI {
 				}
 				GAPI.tokenClient = google.accounts.oauth2.initTokenClient(tokenConfig)
 			}
+			ownedRefresh = refreshTokenClient
 			refreshTokenClient()
 			let initTimer: ReturnType<typeof setTimeout> | undefined
 			let active = true
+			let cancelInit: () => void = () => {}
 			try {
 				await new Promise<void>((resolve, reject) => {
+					cancelInit = () => {
+						active = false
+						reject(new Error('Google API initialization cancelled'))
+					}
+					controller.signal.addEventListener('abort', cancelInit, { once: true })
 					initTimer = setTimeout(() => {
 						active = false
 						reject(new Error('Истекло время инициализации Google API.'))
@@ -227,18 +260,22 @@ export default class GAPI {
 					gapi.load('client', () => {
 						if (!active) return
 						Promise.resolve()
-							.then(() => gapi.client.init({ apiKey: getKey(), discoveryDocs: [DISCOVERY_DOC] }))
+							.then(() => {
+								if (active) return gapi.client.init({ apiKey: getKey(), discoveryDocs: [DISCOVERY_DOC] })
+							})
 							.then(() => resolve(), reject)
 					})
 				})
 			} finally {
 				active = false
 				clearTimeout(initTimer)
+				controller.signal.removeEventListener('abort', cancelInit)
 			}
-			onSuccess()
+			if (!signal?.aborted) onSuccess()
 		} catch (_) {
-			console.log('error gapi or gis load')
-			onFailure()
+			signal?.removeEventListener('abort', abort)
+			abort()
+			if (!signal?.aborted) onFailure()
 		} finally {
 			controller.abort()
 		}

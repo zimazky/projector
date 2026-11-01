@@ -1,4 +1,4 @@
-import React, { useContext, useRef } from 'react'
+import React, { useRef } from 'react'
 import { observer } from 'mobx-react-lite'
 
 import { max, min } from 'src/7-shared/helpers/utils'
@@ -7,7 +7,7 @@ import useUpdate from 'src/7-shared/hooks/useUpdate'
 
 import Modal from 'src/7-shared/ui/Modal/Modal'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 
 import EventForm from 'src/4-widgets/EventForm/EventForm'
 
@@ -19,7 +19,7 @@ import { useCalendarScroll } from './useCalendarScroll'
 
 const Calendar: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
-	const { calendarStore, eventFormStore, documentTabsStore, uiStore } = useContext(StoreContext)
+	const { calendarStore, eventFormStore, documentTabsStore, uiStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const bodyRef = useRef<HTMLDivElement | null>(null)
 

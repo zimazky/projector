@@ -77,8 +77,16 @@ function parseForecast(value: unknown): OpenWeatherMapResponse {
 
 export default class OpenWeatherMap {
 	/** Прогноз на пять дней с шагом три часа; таймаут покрывает и чтение тела. */
-	static async getForecast(lat: number, lon: number, units: Units = 'metric'): Promise<OpenWeatherMapResponse> {
+	static async getForecast(
+		lat: number,
+		lon: number,
+		units: Units = 'metric',
+		signal?: AbortSignal
+	): Promise<OpenWeatherMapResponse> {
 		const controller = new AbortController()
+		const abort = () => controller.abort()
+		if (signal?.aborted) controller.abort()
+		else signal?.addEventListener('abort', abort, { once: true })
 		const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 		try {
 			const response = await fetch(
@@ -89,6 +97,7 @@ export default class OpenWeatherMap {
 			return parseForecast(await response.json())
 		} finally {
 			clearTimeout(timeout)
+			signal?.removeEventListener('abort', abort)
 		}
 	}
 }

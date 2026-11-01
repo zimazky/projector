@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
@@ -11,7 +11,7 @@ import TabPanel from 'src/7-shared/ui/Tabs/TabPanel'
 import TextButton from 'src/7-shared/ui/Button/TextButton'
 import DatePicker from 'src/7-shared/ui/DatePicker/DatePicker'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { DEFAULT_PROJECT_ID } from 'src/6-entities/Projects/ProjectId'
 import { EventDto } from 'src/6-entities/Events/EventDto'
 
@@ -35,7 +35,7 @@ interface Fields {
 type DeleteState = 'Delete' | 'DeleteCurrentRepeatable' | null
 
 const EventForm: React.FC = () => {
-	const { eventFormStore, eventsCache, documentTabsStore } = useContext(StoreContext)
+	const { eventFormStore, eventsCache, documentTabsStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const projectsStore = documentTabsStore.activeProjectsStore
 

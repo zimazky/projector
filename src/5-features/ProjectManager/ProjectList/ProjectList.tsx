@@ -1,4 +1,4 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { observer } from 'mobx-react-lite'
 import { Icon } from '@iconify/react'
 
@@ -8,7 +8,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import IconButton from 'src/7-shared/ui/IconButton/IconButton'
 import YesCancelConfirmation from 'src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 
 import styles from './ProjectList.module.css'
 
@@ -16,7 +16,7 @@ import styles from './ProjectList.module.css'
  * Список проектов с возможностью редактирования и удаления
  */
 const ProjectList: React.FC = observer(() => {
-	const { documentTabsStore, projectEditorStore } = useContext(StoreContext)
+	const { documentTabsStore, projectEditorStore } = useStores()
 	const projectsStore = documentTabsStore.activeProjectsStore
 	const [deletingProject, setDeletingProject] = React.useState<{
 		id: string

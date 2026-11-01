@@ -1,6 +1,6 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import styles from './CalendarEventItem.module.css'
 
@@ -14,7 +14,7 @@ type CalendarEventItemProps = {
 }
 
 const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
-	const { eventFormStore, documentTabsStore, eventSearchStore } = useContext(StoreContext)
+	const { eventFormStore, documentTabsStore, eventSearchStore } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
 	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days } = props.event

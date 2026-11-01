@@ -64,6 +64,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private pendingLocalSave: Promise<void> | null = null
 	isCleaningLegacyStorage = false
 	private pendingLegacyCleanup: Promise<LegacyStorageCleanupResult> | null = null
+	private disposed = false
 
 	constructor(
 		private readonly googleApiService: GoogleApiService,
@@ -150,6 +151,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		operation: Exclude<SyncOperation, 'idle'>,
 		snapshot = this.captureDocumentSnapshot(documentId)
 	): DocumentOperationContext | null {
+		if (this.disposed) return null
 		const session = this.state.documents.get(documentId)
 		if (!snapshot || session !== snapshot.session || session.operation === 'saving' || session.operation === 'opening')
 			return null
@@ -164,6 +166,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** Проверяется после каждого await, в том числе в catch/finally. */
 	isDocumentOperationCurrent(context: DocumentOperationContext): boolean {
 		return (
+			!this.disposed &&
 			this.state.documents.get(context.documentId) === context.session &&
 			context.session.operationToken === context.token
 		)
@@ -212,7 +215,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private onActiveDocumentChanged?: (documentId: DocumentId) => void
 
 	/** Установить колбэк при смене активного документа (вызывается из MainStore) */
-	setOnActiveDocumentChanged(callback: (documentId: DocumentId) => void): void {
+	setOnActiveDocumentChanged(callback?: (documentId: DocumentId) => void): void {
 		this.onActiveDocumentChanged = callback
 	}
 
@@ -832,7 +835,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	}
 
 	private persistToLocalStorage(): void {
-		if (this.recoveryBlocked) return
+		if (this.disposed || this.recoveryBlocked) return
 		const sequence = ++this.localSaveSequence
 		const success = () => {
 			if (sequence !== this.localSaveSequence) return
@@ -934,7 +937,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 
 	/** Полная проверка и подготовка сторов предшествуют атомарной замене сессии в памяти. */
 	async restoreFromLocalStorage(): Promise<boolean> {
-		if (this.documents.length) return false
+		if (this.disposed || this.documents.length) return false
 		const restoreSequence = ++this.localRestoreSequence
 		this.isRestoringLocalSession = true
 		this.recoveryBlocked = true
@@ -1039,6 +1042,18 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** ID активного документа */
 	get activeDocumentId(): DocumentId | null {
 		return this.state.activeDocumentId
+	}
+
+	/** Остановить продолжения и подписки; сохранённая сессия и очередь записи остаются. */
+	dispose(): void {
+		if (this.disposed) return
+		this.disposed = true
+		++this.localRestoreSequence
+		this.isRestoringLocalSession = false
+		this.onActiveDocumentChanged = undefined
+		this.storeCallbacks = {}
+		this.documentStoreManager.setCallbacks({})
+		this.documentStoreManager.dispose()
 	}
 
 	/** Очистить состояние стора (для тестов) */

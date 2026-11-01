@@ -34,4 +34,10 @@ export interface IRootStore {
 	eventSearchStore: EventSearchStore
 }
 
-export const StoreContext = React.createContext<IRootStore>({} as IRootStore)
+export const StoreContext = React.createContext<IRootStore | null>(null)
+
+export function useStores(): IRootStore {
+	const stores = React.useContext(StoreContext)
+	if (!stores) throw new Error('useStores должен вызываться внутри StoreProvider')
+	return stores
+}

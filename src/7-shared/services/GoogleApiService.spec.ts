@@ -10,6 +10,28 @@ const file = (id = 'source', version = '1') => ({
 	parents: ['root']
 })
 
+describe('Жизненный цикл Google API', () => {
+	afterEach(() => jest.restoreAllMocks())
+	it('dispose завершает ожидание готовности, подавляет старые callbacks и повторный init', async () => {
+		const init = jest.spyOn(GAPI, 'init').mockResolvedValue(undefined)
+		const api = new GoogleApiService()
+		api.initGapi()
+		const options = init.mock.calls[0][0]
+		const ready = expect(api.waitForGapiReady()).rejects.toThrow('disposed')
+		api.dispose()
+		api.dispose()
+		await ready
+		expect(options.signal?.aborted).toBe(true)
+		options.onSuccess?.()
+		options.onSignIn?.()
+		options.onFailure?.()
+		api.initGapi()
+		expect(init).toHaveBeenCalledTimes(1)
+		expect(api.isGoogleLoggedIn).toBe(false)
+		await expect(api.logIn()).rejects.toThrow('disposed')
+	})
+})
+
 describe('Сохранить как создаёт отдельные файлы', () => {
 	afterEach(() => jest.restoreAllMocks())
 	function setup() {

@@ -25,12 +25,38 @@ function setup() {
 	documents.openNewDocument('Demo')
 	const document = documents.activeDocument!
 	const fire = jest.fn()
-	const store = new SaveToDriveStore(api as any, { fileSavedNotifier: { fire } } as any, documents)
+	const store = new SaveToDriveStore(api as any, fire, documents)
 	return { store, api, documents, document, fire }
 }
 
 describe('Сохранить как и конфликт имени', () => {
 	beforeEach(() => localStorage.clear())
+
+	it('dispose завершает ожидающий диалог отменой и запрещает повторное открытие', async () => {
+		const { store, document, api } = setup()
+		const completion = store.openForDocument(document.id)
+		store.dispose()
+		store.dispose()
+		expect(await completion).toEqual({ status: 'cancelled' })
+		expect(await store.openForDocument(document.id)).toEqual({ status: 'cancelled' })
+		expect(api.saveFile).not.toHaveBeenCalled()
+	})
+
+	test.each(['success', 'error'])('dispose игнорирует поздний %s записи без документа', async outcome => {
+		const { store, api, fire } = setup()
+		const response = deferred<any>()
+		api.saveFile.mockReturnValue(response.promise)
+		const completion = store.open('export.json', '{}')
+		const saving = store.saveFile('folder', 'drive')
+		store.dispose()
+		expect(await completion).toEqual({ status: 'cancelled' })
+		if (outcome === 'success') response.resolve(success)
+		else response.reject(new Error('Late failure'))
+		expect(await saving).toEqual({ status: 'cancelled' })
+		expect(fire).not.toHaveBeenCalled()
+		expect(store.isOpen).toBe(false)
+		expect(store.error).toBeNull()
+	})
 
 	it('старый снимок диалога не подтверждает более новые правки исходной вкладки', async () => {
 		const { store, api, documents, document } = setup()

@@ -73,7 +73,7 @@ describe('Формат документов и восстановление', ()
 			initGapi: jest.fn(() => expect(tabs.documents).toHaveLength(2)),
 			waitForGapiReady: () => new Promise(() => {})
 		}
-		new MainStore({ init: jest.fn() } as any, api as any, tabs).init()
+		new MainStore({ init: jest.fn() } as any, api as any, tabs).start()
 		expect(tabs.activeDocumentId).toBe('fixture-b')
 		expect(getIsDirty(tabs.documents[0])).toBe(true)
 		expect(getDocumentUiState(tabs.documents[0]).status).not.toBe('synced')
@@ -87,7 +87,7 @@ describe('Формат документов и восстановление', ()
 			{ init: jest.fn() } as any,
 			{ initGapi: jest.fn(), waitForGapiReady: () => Promise.reject(null) } as any,
 			tabs
-		).init()
+		).start()
 		await Promise.resolve()
 		expect(tabs.documents).toHaveLength(2)
 		expect(await tabs.restoreFromLocalStorage()).toBe(false)

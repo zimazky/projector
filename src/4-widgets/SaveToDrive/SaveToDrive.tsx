@@ -9,7 +9,7 @@ import TextButton from 'src/7-shared/ui/Button/TextButton'
 import Spinner from 'src/7-shared/ui/Spinner/Spinner'
 import DriveContentExplorer from 'src/4-widgets/DriveContentExplorer/DriveContentExplorer'
 
-import { StoreContext, IRootStore } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 import FileConflictResolver from 'src/5-features/FileConflictResolver/FileConflictResolver'
 
 interface SaveToDriveProps {
@@ -18,7 +18,7 @@ interface SaveToDriveProps {
 }
 
 const SaveToDrive: React.FC<SaveToDriveProps> = observer(() => {
-	const { saveToDriveStore } = React.useContext(StoreContext) as IRootStore
+	const { saveToDriveStore } = useStores()
 	const [activeTab, setActiveTab] = useState(0) // 0 for My Drive, 1 for App Data Folder
 	const [currentOpenedFolderId, setCurrentOpenedFolderId] = useState<string | null>(null)
 	const handleCurrentFolderChange = (folderId: string) => {

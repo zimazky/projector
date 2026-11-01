@@ -15,21 +15,7 @@ jest.mock('src/4-widgets/DriveContentExplorer/DriveContentExplorer', () => ({
 	default: () => null
 }))
 
-// Импорты сторов
-import {
-	projectEditorStore,
-	eventsCache,
-	weatherStore,
-	calendarStore,
-	dayListStore,
-	eventFormStore,
-	uiStore,
-	googleApiService,
-	mainStore,
-	documentTabsStore,
-	saveToDriveStore,
-	eventSearchStore
-} from 'src/1-app/root'
+import { createApplication } from 'src/1-app/root'
 
 // Мокирование внешних зависимостей
 jest.mock('src/7-shared/services/GoogleApiService', () => ({
@@ -46,6 +32,7 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 			userEmail: null,
 			userAvatarUrl: null,
 			initGapi: jest.fn(),
+			dispose: jest.fn(),
 			waitForGapiReady: jest.fn().mockResolvedValue(undefined),
 			logIn: jest.fn().mockResolvedValue(undefined),
 			logOut: jest.fn(),
@@ -60,7 +47,9 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 	})
 }))
 
-const stores = {
+const application = createApplication()
+const stores = application.stores
+const {
 	projectEditorStore,
 	eventsCache,
 	weatherStore,
@@ -72,9 +61,11 @@ const stores = {
 	mainStore,
 	documentTabsStore,
 	saveToDriveStore,
-	eventSearchStore,
-	fileSavedNotifier: mainStore.fileSavedNotifier
-}
+	eventSearchStore
+} = stores
+
+beforeAll(() => application.start())
+afterAll(() => application.dispose())
 
 describe('App Integration Tests', () => {
 	beforeEach(() => {
@@ -339,8 +330,8 @@ describe('App Integration Tests', () => {
 		localStorage.setItem('documentTabs', JSON.stringify(tabsSnapshot))
 		localStorage.setItem(`document_${docId}`, JSON.stringify(dataSnapshot))
 
-		// Вызываем mainStore.init() для восстановления сессии
-		mainStore.init()
+		// Вызываем documentTabsStore.restoreFromLocalStorage() для восстановления сессии
+		documentTabsStore.restoreFromLocalStorage()
 
 		// Рендерить приложение
 		render(

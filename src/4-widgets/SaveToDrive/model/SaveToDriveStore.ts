@@ -3,7 +3,6 @@ import { makeAutoObservable, runInAction } from 'mobx'
 
 import { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { DriveFileMetadata } from 'src/7-shared/services/gapi'
-import { MainStore } from 'src/1-app/Stores/MainStore'
 import { DocumentTabsStore } from 'src/6-entities/Document/model'
 import type { DocumentSnapshot, DocumentSaveResult } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import { GoogleLoginCancelledError } from 'src/7-shared/services/GoogleAuthError'
@@ -33,10 +32,11 @@ export class SaveToDriveStore {
 	private sourceSnapshot: DocumentSnapshot | null = null
 	private conflictRequest: SaveRequest | null = null
 	private completion: ((result: DocumentSaveResult) => void) | null = null
+	private disposed = false
 
 	constructor(
 		private googleApiService: GoogleApiService,
-		private mainStore: MainStore,
+		private onFileSaved: () => void,
 		private documentTabsStore: DocumentTabsStore
 	) {
 		makeAutoObservable(this)
@@ -60,6 +60,7 @@ export class SaveToDriveStore {
 		mime = 'text/plain',
 		documentId: string | null = null
 	): Promise<DocumentSaveResult> => {
+		if (this.disposed) return Promise.resolve({ status: 'cancelled' })
 		if (this.isOpen) return Promise.resolve({ status: 'failed', message: 'Завершите открытое сохранение.' })
 		const snapshot = documentId ? this.documentTabsStore.captureDocumentSnapshot(documentId) : null
 		if (documentId && !snapshot) return Promise.resolve({ status: 'cancelled' })
@@ -123,6 +124,7 @@ export class SaveToDriveStore {
 		overwriteId: string | null = null,
 		expectedVersion?: string
 	): Promise<DocumentSaveResult> => {
+		if (this.disposed) return { status: 'cancelled' }
 		const context = request.snapshot
 			? this.documentTabsStore.beginDocumentOperation(request.snapshot.documentId, 'saving', request.snapshot)
 			: null
@@ -134,6 +136,7 @@ export class SaveToDriveStore {
 		this.error = null
 		try {
 			if (!this.googleApiService.isGoogleLoggedIn) await this.googleApiService.logIn()
+			if (this.disposed) return { status: 'cancelled' }
 			if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
 				this.complete({ status: 'cancelled' })
 				return { status: 'cancelled' }
@@ -152,6 +155,7 @@ export class SaveToDriveStore {
 				expectedVersion
 			)
 			return runInAction(() => {
+				if (this.disposed) return { status: 'cancelled' }
 				if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
 					this.complete({ status: 'cancelled' })
 					return { status: 'cancelled' }
@@ -167,7 +171,7 @@ export class SaveToDriveStore {
 					this.complete({ status: 'saved' })
 					this.isSaving = false
 					this.close()
-					this.mainStore.fileSavedNotifier.fire()
+					this.onFileSaved()
 					return { status: 'saved' }
 				}
 				if (result.status === 'conflict') {
@@ -182,6 +186,7 @@ export class SaveToDriveStore {
 				return this.fail(result.message)
 			})
 		} catch (error: unknown) {
+			if (this.disposed) return { status: 'cancelled' }
 			if (context && !this.documentTabsStore.isDocumentOperationCurrent(context)) {
 				this.complete({ status: 'cancelled' })
 				return { status: 'cancelled' }
@@ -202,6 +207,13 @@ export class SaveToDriveStore {
 				this.isSaving = false
 			})
 		}
+	}
+
+	/** Завершить ожидающий диалог, не подтверждая незавершённую сетевую запись. */
+	dispose = () => {
+		this.disposed = true
+		this.isSaving = false
+		this.close()
 	}
 
 	resolveConflict = async (resolution: 'overwrite' | 'rename' | 'cancel'): Promise<DocumentSaveResult> => {

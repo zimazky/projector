@@ -80,6 +80,58 @@ describe('Отмена авторизации и безопасные логи',
 		await retry
 	})
 
+	it('отмена lifetime завершает загрузчики скриптов без таймеров и onFailure', async () => {
+		jest.useFakeTimers()
+		const lifetime = new AbortController()
+		const onFailure = jest.fn()
+		const onSuccess = jest.fn()
+		const pending = GAPI.init({ signal: lifetime.signal, onFailure, onSuccess })
+		const scripts = [...document.querySelectorAll('script')].slice(-2)
+		lifetime.abort()
+		await pending
+		expect(scripts.every(script => !script.isConnected && script.onload === null)).toBe(true)
+		expect(jest.getTimerCount()).toBe(0)
+		expect(onFailure).not.toHaveBeenCalled()
+		expect(onSuccess).not.toHaveBeenCalled()
+	})
+
+	it('отмена lifetime во время gapi.load освобождает таймер и игнорирует callback', async () => {
+		jest.useFakeTimers()
+		let callback: () => void = () => {}
+		;(gapi.load as jest.Mock).mockImplementation((_name, loaded) => {
+			callback = loaded
+		})
+		const lifetime = new AbortController()
+		const onSuccess = jest.fn()
+		const pending = GAPI.init({ signal: lifetime.signal, onSuccess })
+		for (const script of [...document.querySelectorAll('script')].slice(-2)) script.dispatchEvent(new Event('load'))
+		await Promise.resolve()
+		await Promise.resolve()
+		lifetime.abort()
+		await pending
+		const calls = (gapi.client.init as jest.Mock).mock.calls.length
+		callback()
+		await Promise.resolve()
+		expect(gapi.client.init).toHaveBeenCalledTimes(calls)
+		expect(onSuccess).not.toHaveBeenCalled()
+		expect(jest.getTimerCount()).toBe(0)
+	})
+
+	it('отмена lifetime завершает OAuth и игнорирует поздний токен', async () => {
+		jest.useFakeTimers()
+		const lifetime = new AbortController()
+		const pending = GAPI.init({ signal: lifetime.signal })
+		for (const script of [...document.querySelectorAll('script')].slice(-2)) script.dispatchEvent(new Event('load'))
+		await pending
+		const login = GAPI.logIn()
+		const rejected = expect(login).rejects.toBeInstanceOf(GoogleLoginCancelledError)
+		lifetime.abort()
+		await rejected
+		config.callback({ access_token: 'LATE' } as any)
+		expect(gapi.client.setToken).not.toHaveBeenCalled()
+		expect(jest.getTimerCount()).toBe(0)
+	})
+
 	it('экранирует имя и ID папки как литералы q, сохраняет пагинацию', async () => {
 		const folder = "folder'\\ or trashed = true"
 		const name = "D'Angelo\\notes.json"

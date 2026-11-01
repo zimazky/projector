@@ -1,8 +1,8 @@
-import React, { useContext } from 'react'
+import React from 'react'
 import { observer } from 'mobx-react-lite'
 import useUpdate from 'src/7-shared/hooks/useUpdate'
 
-import { StoreContext } from 'src/1-app/Providers/StoreContext'
+import { useStores } from 'src/1-app/Providers/StoreContext'
 
 import Header from 'src/4-widgets/Header/Header'
 import Calendar from 'src/3-pages/Calendar/Calendar'
@@ -25,12 +25,8 @@ import {
 
 const App: React.FC = observer(function () {
 	const forceUpdate = useUpdate()
-	const { uiStore, documentTabsStore, saveToDriveStore, mainStore } = useContext(StoreContext)
+	const { uiStore, documentTabsStore, saveToDriveStore } = useStores()
 	const storageFailure = documentTabsStore.persistenceDiagnostic
-	React.useEffect(() => {
-		mainStore.startSyncCoordinator()
-		return () => mainStore.stopSyncCoordinator()
-	}, [mainStore])
 
 	React.useEffect(forceUpdate, [uiStore.mustForceUpdate])
 	React.useEffect(() => {
