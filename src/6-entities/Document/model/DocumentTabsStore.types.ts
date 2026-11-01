@@ -13,9 +13,6 @@ export type DocumentSaveResult =
 export type DocumentCloseDecision = 'save' | 'discard' | 'cancel'
 export type DocumentCloseResult = { status: 'closed' } | Exclude<DocumentSaveResult, { status: 'saved' }>
 
-/** Статус синхронизации документа с Google Drive (legacy) */
-export type SyncStatus = 'offline' | 'syncing' | 'synced' | 'needs-sync' | 'update-available' | 'error'
-
 /** Текущая операция синхронизации */
 export type SyncOperation = 'idle' | 'opening' | 'checking' | 'saving' | 'pulling'
 
@@ -100,19 +97,6 @@ export type DocumentData = {
 	plannedList: EventDto[]
 }
 
-/** Состояние документа */
-export type DocumentState = {
-	isDirty: boolean
-	isLoading: boolean
-	isSaving: boolean
-	lastLoadedAt: number | null
-	lastSavedAt: number | null
-	error: string | null
-	syncStatus: SyncStatus
-	lastSyncedAt: number | null
-	hasUnsyncedChanges: boolean
-}
-
 /** Метаданные документа */
 export type DocumentRef = {
 	fileId: string | null
@@ -128,8 +112,7 @@ export type DocumentSession = {
 	id: DocumentId
 	ref: DocumentRef | null
 	data: DocumentData
-	state: DocumentState
-	/** Новая модель синхронизации (этап 2+) */
+	/** Единственный источник состояния синхронизации */
 	sync: DocumentSyncSnapshot
 	/** Текущая операция */
 	operation: SyncOperation
@@ -141,56 +124,19 @@ export type DocumentSession = {
 	lastAccessedAt: number
 }
 
-/** Снимок состояния вкладки для localStorage */
+/** Формат сессии независим от формата документов Drive. Старые версии читает миграция. */
 export type DocumentTabsSnapshot = {
-	schemaVersion?: 1
+	schemaVersion: 2
 	activeDocumentId: DocumentId | null
 	documentOrder: DocumentId[]
 	documents: Array<{
-		data?: DocumentData
+		data: DocumentData
 		id: DocumentId
 		ref: DocumentRef
-		state: {
-			isDirty: boolean
-			isLoading: boolean
-			isSaving: boolean
-			lastLoadedAt: number | null
-			lastSavedAt: number | null
-			error: string | null
-			syncStatus: SyncStatus
-			lastSyncedAt: number | null
-			hasUnsyncedChanges: boolean
-		}
-		/** Новая модель синхронизации (сериализуется для миграции) */
-		sync?: DocumentSyncSnapshot
-		operation?: SyncOperation
+		sync: DocumentSyncSnapshot
 		lastAccessedAt: number
 	}>
 	savedAt: number
-}
-
-/** Снимок данных документа для localStorage */
-export type DocumentDataSnapshot = {
-	data: DocumentData
-	savedAt: number
-}
-
-/** Снимок восстановленного документа */
-export type RestoredDocumentSnapshot = {
-	id: DocumentId
-	ref: DocumentRef
-	state: {
-		isDirty: boolean
-		isLoading: boolean
-		isSaving: boolean
-		lastLoadedAt: number | null
-		lastSavedAt: number | null
-		error: string | null
-		syncStatus: SyncStatus
-		lastSyncedAt: number | null
-		hasUnsyncedChanges: boolean
-	}
-	lastAccessedAt: number
 }
 
 /** Состояние хранилища вкладок документов */
@@ -216,21 +162,6 @@ export function createEmptyDocumentData(): DocumentData {
 /** Сгенерировать уникальный ID документа */
 export function generateDocumentId(): DocumentId {
 	return `doc_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
-}
-
-/** Создать начальное состояние документа */
-export function createInitialDocumentState(): DocumentState {
-	return {
-		isDirty: false,
-		isLoading: false,
-		isSaving: false,
-		lastLoadedAt: null,
-		lastSavedAt: null,
-		error: null,
-		syncStatus: 'offline',
-		lastSyncedAt: null,
-		hasUnsyncedChanges: false
-	}
 }
 
 /** Создать новый DocumentSyncSnapshot для локального документа */

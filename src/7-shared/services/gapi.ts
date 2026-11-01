@@ -12,6 +12,58 @@ export function driveQueryLiteral(value: string): string {
 export const DRIVE_DOCUMENT_FIELDS =
 	'id,name,mimeType,parents,iconLink,webViewLink,modifiedTime,version,headRevisionId,md5Checksum,trashed'
 
+export const DRIVE_WRITE_FIELDS =
+	'id,title,mimeType,parents(id),alternateLink,modifiedDate,version,headRevisionId,md5Checksum,labels(trashed),etag'
+
+export type DriveWriteCondition = Readonly<{ file: DriveFileMetadata; etag: string }>
+
+export function isStrongDriveEtag(value: unknown): value is string {
+	return typeof value === 'string' && /^"[\x21\x23-\x7e]+"$/.test(value)
+}
+
+/** v2 используется только для условной записи; доменная модель продолжает читать v3. */
+function parseWriteMetadata(value: unknown, fileId: string): DriveWriteCondition {
+	const raw = value as {
+		id?: string
+		title?: string
+		mimeType?: string
+		version?: string
+		etag?: string
+		parents?: { id?: string }[]
+		alternateLink?: string
+		modifiedDate?: string
+		headRevisionId?: string
+		md5Checksum?: string
+		labels?: { trashed?: boolean }
+	} | null
+	if (
+		!raw ||
+		raw.id !== fileId ||
+		!raw.title ||
+		!raw.mimeType ||
+		raw.labels?.trashed ||
+		typeof raw.version !== 'string' ||
+		!/^\d+$/.test(raw.version) ||
+		!isStrongDriveEtag(raw.etag)
+	)
+		throw new Error('Drive не подтвердил версию и ETag файла. Сохранение не подтверждено.')
+	return Object.freeze({
+		etag: raw.etag,
+		file: {
+			id: raw.id,
+			name: raw.title,
+			mimeType: raw.mimeType,
+			version: raw.version,
+			parents: raw.parents?.map(parent => parent.id!).filter(Boolean),
+			webViewLink: raw.alternateLink,
+			modifiedTime: raw.modifiedDate,
+			headRevisionId: raw.headRevisionId,
+			md5Checksum: raw.md5Checksum,
+			trashed: raw.labels?.trashed
+		}
+	})
+}
+
 const CLIENT_ID: string = process.env.CLIENT_ID ?? ''
 
 const SCOPES = [
@@ -324,14 +376,39 @@ export default class GAPI {
 		return response.result as DriveFileMetadata
 	}
 
-	/** Запись контента в файл по его fileId. */
-	static async upload(fileId: string, content: string | object) {
-		return prom(gapi.client.request, {
-			path: `/upload/drive/v3/files/${fileId}`,
-			method: 'PATCH',
-			params: { uploadType: 'media' },
-			body: typeof content === 'string' ? content : JSON.stringify(content)
+	/** Версия и условие получены одним ответом, не из разных ревизий. */
+	static async getFileWriteCondition(fileId: string): Promise<DriveWriteCondition> {
+		const response = await prom(gapi.client.request, {
+			path: `/drive/v2/files/${encodeURIComponent(fileId)}`,
+			method: 'GET',
+			params: { fields: DRIVE_WRITE_FIELDS, supportsAllDrives: true, updateViewedDate: false }
 		})
+		return parseWriteMetadata(response.result, fileId)
+	}
+
+	/** Без сильного ETag обновление не отправляется. Безусловного пути и повторов нет. */
+	static async updateDocument(
+		fileId: string,
+		content: string,
+		mimeType: string,
+		condition: DriveWriteCondition
+	): Promise<DriveFileMetadata> {
+		if (condition.file.id !== fileId || !isStrongDriveEtag(condition.etag))
+			throw new Error('Нет действующего условия записи Drive.')
+		const response = await prom(gapi.client.request, {
+			path: `/upload/drive/v2/files/${encodeURIComponent(fileId)}`,
+			method: 'PUT',
+			params: {
+				uploadType: 'media',
+				fields: DRIVE_WRITE_FIELDS,
+				supportsAllDrives: true,
+				newRevision: true,
+				updateViewedDate: false
+			},
+			headers: { 'Content-Type': mimeType, 'If-Match': condition.etag },
+			body: content
+		})
+		return parseWriteMetadata(response.result, fileId).file
 	}
 
 	/** Чтение содержимого файла по fileId. */

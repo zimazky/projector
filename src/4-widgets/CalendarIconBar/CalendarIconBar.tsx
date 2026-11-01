@@ -111,7 +111,7 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 			: await saveToDriveStore.openForDocument(activeDoc.id)
 		if (result.status === 'conflict' && result.conflict) presentConflict(result.conflict)
 		else if (result.status === 'failed' || result.status === 'conflict') window.alert(result.message)
-		else if (result.status === 'saved') setSaveNotice('Сохранение завершено. Исходные файлы Drive сохранены.')
+		else if (result.status === 'saved') setSaveNotice('Документ сохранён в Google Drive.')
 	}
 
 	const handleSyncWithDrive = async () => {
@@ -134,7 +134,7 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 			else {
 				closeThisConflict()
 				if (resolved.status === 'failed' || resolved.status === 'conflict') alert(resolved.message)
-				else if (resolved.status === 'saved') setSaveNotice('Создана отдельная версия Drive. Исходный файл сохранён.')
+				else if (resolved.status === 'saved') setSaveNotice('Локальная версия сохранена в текущий файл Drive.')
 			}
 		}
 		const closeThisConflict = () => setConflictDialogData(current => (current === dialog ? null : current))
@@ -184,12 +184,12 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		menu.push({ name: 'Выйти', fn: googleApiService.logOut })
 		menu.push({ name: 'Новый документ', fn: handleCreateNewDocument })
 		menu.push({ name: 'Закрыть документ', fn: handleCloseDocument })
-		menu.push({ name: 'Сохранить новую версию', fn: handleSaveCurrentDocument })
+		menu.push({ name: 'Сохранить', fn: handleSaveCurrentDocument })
 		menu.push({ name: 'Сохранить как...', fn: handleSaveAsToDrive })
 		menu.push({ name: 'Открыть из Google Drive', fn: handleOpenDriveFilePicker })
 
 		icons.push({
-			name: 'Сохранить новую версию',
+			name: 'Сохранить',
 			jsx: (
 				<SwgIcon>
 					<Google />

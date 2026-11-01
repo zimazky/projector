@@ -1,3 +1,4 @@
+import { legacySessionV1 } from 'src/test-utils/legacySession'
 import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { deferred } from 'src/test-utils/deferred'
@@ -18,7 +19,7 @@ function setup() {
 	const api = {
 		isGoogleLoggedIn: true,
 		logIn: jest.fn(),
-		saveFile: jest.fn(),
+		updateFileContent: jest.fn(),
 		getFileMetadata: jest.fn().mockImplementation(async (id: string) => metadata(id)),
 		downloadFileContent: jest.fn()
 	}
@@ -43,7 +44,7 @@ describe('Адресация асинхронных команд и версии
 		const { store, api, a } = setup()
 		edit(store, a, 'Aa')
 		const response = deferred<any>()
-		api.saveFile.mockReturnValue(response.promise)
+		api.updateFileContent.mockReturnValue(response.promise)
 		const saving = store.saveDocument(a.id)
 		await Promise.resolve()
 		const sentVersion = a.sync.localVersion
@@ -51,7 +52,7 @@ describe('Адресация асинхронных команд и версии
 		const b = store.activeDocument!
 		edit(store, a, 'BB')
 		expect(storedDocument(a.id)!.data).toEqual(data('BB'))
-		expect(JSON.parse(api.saveFile.mock.calls[0][1])).toEqual({ schemaVersion: 1, ...data('Aa') })
+		expect(JSON.parse(api.updateFileContent.mock.calls[0][1])).toEqual({ schemaVersion: 1, ...data('Aa') })
 		response.resolve(success())
 		expect(await saving).toEqual({ status: 'saved' })
 		expect(a.sync.baseLocalVersion).toBe(sentVersion)
@@ -65,25 +66,25 @@ describe('Адресация асинхронных команд и версии
 		expect(restoredA.data).toEqual(data('BB'))
 		expect(getIsDirty(restoredA)).toBe(true)
 		expect(restoredA.operation).toBe('idle')
-		expect(restoredA.state.isSaving).toBe(false)
+		expect(restoredA.operationToken).toBeNull()
 	})
 
 	it('дедуплицирует сохранения одной сессии; следующая запись отправляет новые данные', async () => {
 		const { store, api, a } = setup()
 		edit(store, a, 'Aa')
 		const response = deferred<any>()
-		api.saveFile.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success())
+		api.updateFileContent.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success())
 		const first = store.saveDocument(a.id)
 		await Promise.resolve()
 		edit(store, a, 'BB')
 		const second = store.saveDocument(a.id)
 		expect(second).toBe(first)
-		expect(api.saveFile).toHaveBeenCalledTimes(1)
+		expect(api.updateFileContent).toHaveBeenCalledTimes(1)
 		response.resolve(success())
 		await Promise.all([first, second])
 		expect(getIsDirty(a)).toBe(true)
 		await store.saveDocument(a.id)
-		expect(JSON.parse(api.saveFile.mock.calls[1][1])).toEqual({ schemaVersion: 1, ...data('BB') })
+		expect(JSON.parse(api.updateFileContent.mock.calls[1][1])).toEqual({ schemaVersion: 1, ...data('BB') })
 		expect(getIsDirty(a)).toBe(false)
 	})
 
@@ -91,7 +92,7 @@ describe('Адресация асинхронных команд и версии
 		const { store, api, a } = setup()
 		const first = deferred<any>(),
 			second = deferred<any>()
-		api.saveFile.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+		api.updateFileContent.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
 		edit(store, a, 'A edit')
 		const savingA = store.saveDocument(a.id)
 		await Promise.resolve()
@@ -115,7 +116,7 @@ describe('Адресация асинхронных команд и версии
 	test.each(['success', 'error'])('ответ %s закрытой сессии не меняет новую с тем же ID', async outcome => {
 		const { store, api, a } = setup()
 		const response = deferred<any>()
-		api.saveFile.mockReturnValue(response.promise)
+		api.updateFileContent.mockReturnValue(response.promise)
 		edit(store, a, 'Before close')
 		const saving = store.saveDocument(a.id)
 		await Promise.resolve()
@@ -123,7 +124,7 @@ describe('Адресация асинхронных команд и версии
 		localStorage.setItem(
 			'documentTabs',
 			JSON.stringify({
-				schemaVersion: 1,
+				schemaVersion: 2,
 				activeDocumentId: a.id,
 				documentOrder: [a.id],
 				savedAt: Date.now(),
@@ -131,7 +132,7 @@ describe('Адресация асинхронных команд и версии
 					{
 						id: a.id,
 						ref: { ...a.ref!, name: 'Replacement' },
-						state: { ...a.state },
+						sync: { ...a.sync },
 						data: a.data,
 						lastAccessedAt: Date.now()
 					}
@@ -200,6 +201,25 @@ describe('Адресация асинхронных команд и версии
 		expect(storedDocument(id)).toBeNull()
 	})
 
+	it('открытие не перезаписывает правки, сделанные до ответа Drive', async () => {
+		const { store, api } = setup()
+		const response = deferred<any>()
+		api.getFileMetadata.mockResolvedValue(metadata('loading'))
+		api.downloadFileContent.mockReturnValue(response.promise)
+		const opening = store.openFromDrive('loading')
+		const document = store.activeDocument!
+		// Повторная активация создаёт доменные сторы до завершения сети.
+		store.activateDocument(document.id)
+		store.activeProjectsStore!.add('Local while opening', 'black', 'white')
+		response.resolve(data('Remote'))
+		expect((await opening).status).toBe('conflict')
+		expect(document.ref!.name).toBe('loading')
+		expect(document.data).toEqual(data('Local while opening'))
+		expect(getIsDirty(document)).toBe(true)
+		expect(document.operation).toBe('idle')
+		expect(storedDocument(document.id)!.data).toEqual(data('Local while opening'))
+	})
+
 	it('пакетное сохранение не переключает вкладку и не отменяет выбор пользователя', async () => {
 		const { store, api, a } = setup()
 		edit(store, a, 'Aa')
@@ -208,7 +228,7 @@ describe('Адресация асинхронных команд и версии
 		confirmedDocument(b, 'file-b')
 		edit(store, b, 'B edit')
 		const response = deferred<any>()
-		api.saveFile.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success('file-b'))
+		api.updateFileContent.mockReturnValueOnce(response.promise).mockResolvedValueOnce(success('file-b'))
 		const all = store.saveAllDirtyDocuments()
 		await Promise.resolve()
 		expect(store.activeDocumentId).toBe(b.id)
@@ -271,7 +291,7 @@ describe('Адресация асинхронных команд и версии
 		expect((await store.resolveDocumentConflict(result.context, 'remote')).status).toBe('conflict')
 		expect((await store.resolveDocumentConflict(result.context, 'local')).status).toBe('conflict')
 		expect(api.downloadFileContent).not.toHaveBeenCalled()
-		expect(api.saveFile).not.toHaveBeenCalled()
+		expect(api.updateFileContent).not.toHaveBeenCalled()
 	})
 
 	it('решение удалённого конфликта хранит ID исходной вкладки', async () => {
@@ -293,7 +313,7 @@ describe('Адресация асинхронных команд и версии
 		edit(store, a, 'Aa')
 		const snapshot = store.captureDocumentSnapshot(a.id)!
 		expect(Object.isFrozen(snapshot.data.projectsList[0])).toBe(true)
-		api.saveFile.mockResolvedValue(success())
+		api.updateFileContent.mockResolvedValue(success())
 		await store.saveDocument(a.id)
 		edit(store, a, 'BB')
 		expect(snapshot.data).toEqual(data('Aa'))
@@ -315,9 +335,9 @@ describe('Адресация асинхронных команд и версии
 	it('прерывание между записью данных и метаданных не восстанавливает ложный clean', async () => {
 		const { store, api, a } = setup()
 		edit(store, a, 'Aa')
-		api.saveFile.mockResolvedValue(success())
+		api.updateFileContent.mockResolvedValue(success())
 		await store.saveDocument(a.id)
-		const legacy = JSON.parse(localStorage.getItem('documentTabs')!)
+		const legacy: any = legacySessionV1(JSON.parse(localStorage.getItem('documentTabs')!))
 		delete legacy.schemaVersion
 		localStorage.setItem('documentTabs', JSON.stringify(legacy))
 		localStorage.setItem('document_' + a.id, JSON.stringify({ data: data('BB'), savedAt: Date.now() }))
@@ -330,7 +350,7 @@ describe('Адресация асинхронных команд и версии
 	it('старые dirty-флаги мигрируют в неизвестную базу без потери предупреждения', async () => {
 		const { store, api, a } = setup()
 		edit(store, a, 'Aa')
-		const tabs = JSON.parse(localStorage.getItem('documentTabs')!)
+		const tabs: any = legacySessionV1(JSON.parse(localStorage.getItem('documentTabs')!))
 		delete tabs.documents[0].sync
 		localStorage.setItem('documentTabs', JSON.stringify(tabs))
 		const restored = new DocumentTabsStore(api as any)

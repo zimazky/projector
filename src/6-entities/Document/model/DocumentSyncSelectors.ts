@@ -147,23 +147,3 @@ export function shouldCheckRemote(
 		(session.sync.needsRemoteCheck || !isRemoteCheckFresh(session, now, ttl))
 	)
 }
-
-/** Единственный адаптер из модели в legacy; потребители UI используют селектор выше. */
-export function syncLegacyStateFromNewModel(session: DocumentSession): void {
-	const ui = getDocumentUiState(session)
-	session.state.isDirty = ui.isDirty
-	session.state.isSaving = session.operation === 'saving'
-	session.state.error = session.error?.message ?? null
-	const mapping = {
-		new: 'offline',
-		dirty: 'needs-sync',
-		unknown: 'offline',
-		synced: 'synced',
-		'remote-ahead': 'update-available',
-		conflict: 'needs-sync',
-		syncing: 'syncing',
-		error: 'error'
-	} as const
-	session.state.syncStatus = mapping[ui.status]
-	session.state.hasUnsyncedChanges = ui.hasRemoteAhead || ui.remoteUnknown
-}

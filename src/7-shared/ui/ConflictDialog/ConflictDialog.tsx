@@ -45,8 +45,8 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 				<>
 					<p>Обнаружены изменения и локально, и на Google Drive.</p>
 					<p className={styles.warning}>
-						<strong>Важно:</strong> Локальная версия сохраняется отдельным файлом. Загрузка Drive заменит локальное
-						содержимое.
+						<strong>Важно:</strong> Сохранение локальной версии заменит содержимое этого файла Drive. Загрузка Drive
+						заменит локальное содержимое.
 					</p>
 				</>
 			)
@@ -108,7 +108,7 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 				<div className={styles.actions}>
 					{hasLocalChanges && (
 						<Button onClick={onChooseLocal} className={styles.primaryButton}>
-							💾 Сохранить локальную версию отдельным файлом
+							💾 Сохранить локальную версию в этот файл
 						</Button>
 					)}
 

@@ -24,7 +24,7 @@ const meta = (version = '1', id = 'source') => ({
 function drive() {
 	const auth = observable({ loggedIn: true })
 	const files = new Map([['source', { metadata: meta(), data: data('Base') }]])
-	let sequence = 0
+
 	const api = {
 		get isGoogleLoggedIn() {
 			return auth.loggedIn
@@ -34,23 +34,14 @@ function drive() {
 		}),
 		getFileMetadata: jest.fn(async (id: string) => ({ ...files.get(id)!.metadata })),
 		downloadFileContent: jest.fn(async (id: string) => JSON.parse(JSON.stringify(files.get(id)!.data))),
-		saveFile: jest.fn(
-			async (
-				_name: string,
-				content: string,
-				_mime: string,
-				_folder: string,
-				_space: string,
-				source: string,
-				expected: string
-			): Promise<any> => {
+		updateFileContent: jest.fn(
+			async (source: string, content: string, _mime: string, expected: string): Promise<any> => {
 				const current = files.get(source)!
 				if (current.metadata.version !== expected)
 					return { status: 'conflict', existingFiles: [{ ...current.metadata }] }
-				const id = 'copy-' + ++sequence
-				const entry = { metadata: meta('1', id), data: JSON.parse(content) }
-				files.set(id, entry)
-				return { status: 'success', file: { ...entry.metadata } }
+				current.metadata.version = (BigInt(expected) + 1n).toString()
+				current.data = JSON.parse(content)
+				return { status: 'success', file: { ...current.metadata } }
 			}
 		)
 	}
@@ -107,24 +98,84 @@ describe('Серверная база и безопасные версии Drive
 		const result = await store.saveDocument(doc.id)
 		expect(result.status).toBe('conflict')
 		expect(server.api.getFileMetadata).toHaveBeenCalledWith('source')
-		expect(server.api.saveFile).not.toHaveBeenCalled()
+		expect(server.api.updateFileContent).not.toHaveBeenCalled()
 		expect(server.files.get('source')!.data).toEqual(data('Remote'))
 		expect(doc.data).toEqual(data('Local'))
 	})
 
-	it('локальные изменения сохраняются отдельным файлом; оригинал и данные второго клиента остаются', async () => {
+	it('обновление того же файла обнаруживается вторым клиентом и требует решения конфликта', async () => {
 		const server = drive(),
 			a = await client(server),
 			b = await client(server)
 		a.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local A' })
 		b.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local B' })
 		expect((await a.saveDocument(a.activeDocumentId!)).status).toBe('saved')
-		expect((await b.saveDocument(b.activeDocumentId!)).status).toBe('saved')
-		expect(server.files.get('source')!.data).toEqual(data('Base'))
-		expect(server.files.get(a.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local A') })
-		expect(server.files.get(b.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local B') })
-		expect(a.activeDocument!.ref!.fileId).not.toBe(b.activeDocument!.ref!.fileId)
+		expect((await b.saveDocument(b.activeDocumentId!)).status).toBe('conflict')
+		expect(server.files.size).toBe(1)
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Local A') })
+		expect(a.activeDocument!.ref!.fileId).toBe('source')
+		expect(b.activeDocument!.ref!.fileId).toBe('source')
+		expect(b.activeDocument!.data).toEqual(data('Local B'))
 		expect(getDocumentUiState(a.activeDocument!).status).toBe('synced')
+		expect(getDocumentUiState(b.activeDocument!).status).toBe('conflict')
+	})
+
+	it('гонка после проверки до условного обновления возвращает конфликт, не теряя ни одну сторону', async () => {
+		const server = drive(),
+			store = await client(server)
+		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
+		const update = server.api.updateFileContent.getMockImplementation()!
+		server.api.updateFileContent.mockImplementationOnce(async (...args) => {
+			server.update('Concurrent')
+			return update(...args)
+		})
+		const result = await store.saveDocument(store.activeDocumentId!)
+		expect(result.status).toBe('conflict')
+		expect(server.files.size).toBe(1)
+		expect(server.files.get('source')!.data).toEqual(data('Concurrent'))
+		expect(store.activeDocument!.data).toEqual(data('Local'))
+		expect(getDocumentUiState(store.activeDocument!).status).toBe('conflict')
+	})
+
+	it('служебная version с тем же содержимым не создаёт ложный конфликт при повторном сохранении', async () => {
+		const server = drive(),
+			store = await client(server)
+		const doc = store.activeDocument!
+		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'First' })
+		expect((await store.saveDocument(doc.id)).status).toBe('saved')
+		server.files.get('source')!.metadata.version = '3'
+		store.getActiveDocumentStores()!.projectsStore.update('First', { name: 'Second' })
+		expect((await store.saveDocument(doc.id)).status).toBe('saved')
+		expect(server.files.get('source')!.metadata.version).toBe('4')
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Second') })
+		expect(doc.data).toEqual(data('Second'))
+		expect(server.files.size).toBe(1)
+	})
+
+	it('служебная версия не подтверждает неизвестную базу даже при совпадении данных', async () => {
+		const server = drive(),
+			store = await client(server)
+		store.activeDocument!.sync.baseLocalVersion = null
+		store.activeDocument!.sync.baseRevisionId = null
+		server.files.get('source')!.metadata.version = '2'
+		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('conflict')
+		expect(server.api.updateFileContent).not.toHaveBeenCalled()
+		expect(store.activeDocument!.sync.baseLocalVersion).toBeNull()
+	})
+
+	it('повторное сохранение обновляет связанный файл версии, сохраняя ID, имя и ссылку', async () => {
+		const server = drive()
+		server.files.get('source')!.metadata.name = 'Demo (версия previous).json'
+		const store = await client(server)
+		const ref = { ...store.activeDocument!.ref! }
+		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'First' })
+		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('saved')
+		store.getActiveDocumentStores()!.projectsStore.update('First', { name: 'Second' })
+		expect((await store.saveDocument(store.activeDocumentId!)).status).toBe('saved')
+		expect(server.files.size).toBe(1)
+		expect(store.activeDocument!.ref).toEqual({ ...ref, space: 'drive' })
+		expect(server.files.get('source')!.metadata.version).toBe('3')
+		expect(store.activeDocument!.sync.baseRevisionId).toBe(driveVersion(meta('3')))
 	})
 
 	test.each(['local', 'remote'] as const)('решение %s проверяет конкретную версию повторно', async choice => {
@@ -142,7 +193,7 @@ describe('Серверная база и безопасные версии Drive
 		expect(server.files.get('source')!.data).toEqual(data('Remote 2'))
 	})
 
-	it('явный выбор локальной версии сохраняет обе стороны конфликта', async () => {
+	it('явный выбор локальной версии обновляет проверенный исходный файл', async () => {
 		const server = drive(),
 			store = await client(server)
 		store.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
@@ -150,8 +201,9 @@ describe('Серверная база и безопасные версии Drive
 		const check = await store.checkDocument(store.activeDocumentId!)
 		if (check.status !== 'conflict') throw new Error('Expected conflict')
 		expect((await store.resolveDocumentConflict(check.context, 'local')).status).toBe('saved')
-		expect(server.files.get('source')!.data).toEqual(data('Remote'))
-		expect(server.files.get(store.activeDocument!.ref!.fileId!)!.data).toEqual({ schemaVersion: 1, ...data('Local') })
+		expect(server.files.size).toBe(1)
+		expect(store.activeDocument!.ref!.fileId).toBe('source')
+		expect(server.files.get('source')!.data).toEqual({ schemaVersion: 1, ...data('Local') })
 	})
 
 	it('чтение повторяется при смене версии между metadata и content', async () => {
@@ -199,7 +251,7 @@ describe('Серверная база и безопасные версии Drive
 		original.getActiveDocumentStores()!.projectsStore.update('Base', { name: 'Local' })
 		const restored = new DocumentTabsStore(server.api as any)
 		await restored.restoreFromLocalStorage()
-		expect(restored.activeDocument!.state.syncStatus).toBe('needs-sync')
+		expect(getDocumentUiState(restored.activeDocument!).status).toBe('dirty')
 		expect((await restored.syncAllDocumentsWithDrive()).size).toBe(1)
 	})
 

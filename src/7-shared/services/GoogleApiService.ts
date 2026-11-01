@@ -1,5 +1,5 @@
 import GAPI, { DriveFileMetadata, DRIVE_DOCUMENT_FIELDS, driveQueryLiteral } from './gapi'
-import { driveErrorMessage } from './DriveApiError'
+import { driveErrorCode, driveErrorMessage } from './DriveApiError'
 import { makeAutoObservable, runInAction } from 'mobx'
 
 export type SaveFileResult =
@@ -204,7 +204,56 @@ export class GoogleApiService {
 		return GAPI.deleteFile(itemId)
 	}
 
-	/** Все записи документов создают отдельный файл. Существующие ID никогда не PATCH-ятся. */
+	/** Обычное сохранение обновляет текущий fileId только по проверенной версии и ETag. */
+	async updateFileContent(
+		fileId: string,
+		content: string,
+		mimeType: string,
+		expectedVersion: string,
+		isCurrent: () => boolean = () => true
+	): Promise<SaveFileResult> {
+		if (!this.isGoogleLoggedIn) await this.logIn()
+		if (!this.isGoogleLoggedIn) return { status: 'error', message: 'Войдите в Google для сохранения.' }
+		let writing = false
+		try {
+			if (!isCurrent()) return { status: 'error', message: 'Операция сохранения отменена.' }
+			if (!fileId || !/^\d+$/.test(expectedVersion)) throw new Error('Нет проверенной версии для сохранения.')
+			const condition = await GAPI.getFileWriteCondition(fileId)
+			if (!isCurrent()) return { status: 'error', message: 'Операция сохранения отменена.' }
+			if (condition.file.version !== expectedVersion) return { status: 'conflict', existingFiles: [condition.file] }
+			writing = true
+			const updated = await GAPI.updateDocument(fileId, content, mimeType, condition)
+			if (
+				updated.id !== fileId ||
+				!updated.version ||
+				!/^\d+$/.test(updated.version) ||
+				BigInt(updated.version) <= BigInt(expectedVersion) ||
+				updated.trashed
+			)
+				throw new Error('Drive не подтвердил новую версию исходного файла.')
+			return { status: 'success', file: updated }
+		} catch (error: unknown) {
+			if (driveErrorCode(error) === 412) {
+				try {
+					return { status: 'conflict', existingFiles: [await this.getFileMetadata(fileId)] }
+				} catch {
+					return {
+						status: 'error',
+						message: 'Файл Drive изменился во время сохранения. Обновление отклонено; повторите проверку.'
+					}
+				}
+			}
+			return {
+				status: 'error',
+				message: writing
+					? 'Результат сохранения не подтверждён. Локальные данные сохранены; проверьте Drive перед повтором. ' +
+						driveErrorMessage(error)
+					: driveErrorMessage(error)
+			}
+		}
+	}
+
+	/** «Сохранить как» создаёт отдельный файл, включая явный выбор версии при конфликте имени. */
 	async saveFile(
 		name: string,
 		content: string | Blob,

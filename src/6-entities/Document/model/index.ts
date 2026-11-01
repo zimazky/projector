@@ -19,7 +19,6 @@ export {
 	getDocumentUiState,
 	isRemoteCheckFresh,
 	shouldCheckRemote,
-	syncLegacyStateFromNewModel,
 	REMOTE_CHECK_TTL_MS
 } from './DocumentSyncSelectors'
 export type { UiSyncStatus, DocumentUiState } from './DocumentSyncSelectors'

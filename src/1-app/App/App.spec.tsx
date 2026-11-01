@@ -1,3 +1,4 @@
+import { getIsDirty } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 import { storedDocument } from 'src/test-utils/storedDocument'
 import { confirmedDocument } from 'src/test-utils/confirmedDocument'
 import { render, screen, fireEvent, act } from '@testing-library/react'
@@ -53,6 +54,7 @@ jest.mock('src/7-shared/services/GoogleApiService', () => ({
 				.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' })),
 			downloadFileContent: jest.fn(),
 			saveFile: jest.fn(),
+			updateFileContent: jest.fn(),
 			showPicker: jest.fn()
 		}
 	})
@@ -82,6 +84,7 @@ describe('App Integration Tests', () => {
 		googleApiService.isGoogleLoggedIn = false
 		saveToDriveStore.close()
 		;(googleApiService.saveFile as jest.Mock).mockReset()
+		;(googleApiService.updateFileContent as jest.Mock).mockReset()
 		;(googleApiService.getFileMetadata as jest.Mock)
 			.mockReset()
 			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' }))
@@ -199,7 +202,7 @@ describe('App Integration Tests', () => {
 		// Проверить, что первый документ всё ещё открыт с isDirty=true
 		const firstDoc = documentTabsStore.documents.find(d => d.id === firstDocId)
 		expect(firstDoc).toBeTruthy()
-		expect(firstDoc!.state.isDirty).toBe(true)
+		expect(getIsDirty(firstDoc!)).toBe(true)
 	})
 
 	test('индикатор isDirty отображается в табе', async () => {
@@ -390,7 +393,7 @@ describe('App Integration Tests', () => {
 
 	test.each(['tab', 'menu'])('закрытие из %s сохраняет вкладку при отказе записи', async source => {
 		googleApiService.isGoogleLoggedIn = true
-		;(googleApiService.saveFile as jest.Mock).mockResolvedValue({ status: 'error', message: 'Offline' })
+		;(googleApiService.updateFileContent as jest.Mock).mockResolvedValue({ status: 'error', message: 'Offline' })
 		documentTabsStore.openNewDocument('Demo')
 		const document = documentTabsStore.activeDocument!
 		confirmedDocument(document, 'fake')
@@ -481,7 +484,7 @@ describe('App Integration Tests', () => {
 		})
 		await waitFor(() => expect(window.alert).toHaveBeenCalled())
 		expect(documentTabsStore.documents.length).toBe(1)
-		expect(document.state.isDirty).toBe(true)
+		expect(getIsDirty(document)).toBe(true)
 		expect(document.data.plannedList[0].name).toBe('New local edit')
 		expect(storedDocument(document.id)!.data.plannedList[0].name).toBe('New local edit')
 		expect(JSON.parse((googleApiService.saveFile as jest.Mock).mock.calls[0][1]).plannedList).toEqual([])
@@ -506,7 +509,7 @@ describe('App Integration Tests', () => {
 				version: '2'
 			})
 			const response = deferred<any>()
-			;(googleApiService.saveFile as jest.Mock).mockReturnValue(response.promise)
+			;(googleApiService.updateFileContent as jest.Mock).mockReturnValue(response.promise)
 			;(googleApiService.downloadFileContent as jest.Mock).mockReturnValue(response.promise)
 			render(
 				<StoreProvider {...stores}>
@@ -538,7 +541,7 @@ describe('App Integration Tests', () => {
 			expect(b.ref!.fileId).toBeNull()
 			expect(b.data.projectsList).toEqual([])
 			expect(a.data.projectsList[0].name).toBe(choice === 'local' ? 'Local A' : 'Remote A')
-			if (choice === 'local') expect((googleApiService.saveFile as jest.Mock).mock.calls[0][5]).toBe('file-a')
+			if (choice === 'local') expect((googleApiService.updateFileContent as jest.Mock).mock.calls[0][0]).toBe('file-a')
 			else expect(googleApiService.downloadFileContent).toHaveBeenCalledWith('file-a')
 		}
 	)

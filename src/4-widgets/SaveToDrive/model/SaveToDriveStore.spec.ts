@@ -1,3 +1,4 @@
+import { getIsDirty } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 import { storedDocument } from 'src/test-utils/storedDocument'
 import { expect } from '@jest/globals'
 import { SaveToDriveStore } from './SaveToDriveStore'
@@ -46,7 +47,7 @@ describe('Сохранить как и конфликт имени', () => {
 		expect(JSON.parse(api.saveFile.mock.calls[0][1]).projectsList[0].name).toBe('Aa')
 		expect(document.sync.baseLocalVersion).toBe(sentVersion)
 		expect(document.data.projectsList[0].name).toBe('BB')
-		expect(document.state.isDirty).toBe(true)
+		expect(getIsDirty(document)).toBe(true)
 		expect(storedDocument(document.id)!.data.projectsList[0].name).toBe('BB')
 		expect(b.ref!.fileId).toBeNull()
 		expect(documents.activeDocumentId).toBe(b.id)

@@ -4,11 +4,11 @@ import { expect } from '@jest/globals'
 import { DocumentTabsStore } from './DocumentTabsStore'
 import type { DocumentSaveResult } from './DocumentTabsStore.types'
 import { deferred } from 'src/test-utils/deferred'
-import { syncLegacyStateFromNewModel } from './DocumentSyncSelectors'
+import { getIsDirty } from './DocumentSyncSelectors'
 
 function setup() {
 	const api = {
-		saveFile: jest.fn(),
+		updateFileContent: jest.fn(),
 		getFileMetadata: jest
 			.fn()
 			.mockImplementation(async (id: string) => ({ id, name: id, mimeType: 'application/json', version: '1' }))
@@ -68,7 +68,6 @@ describe('Общая команда закрытия документа', () => 
 		confirmedDocument(document, 'fake')
 		document.sync.baseLocalVersion = document.sync.localVersion
 		document.sync.needsRemoteCheck = true
-		syncLegacyStateFromNewModel(document)
 		const decide = jest.fn().mockResolvedValue('cancel')
 		await store.requestCloseDocument(document.id, decide, jest.fn())
 		expect(decide).toHaveBeenCalledWith(expect.objectContaining({ remoteUnknown: true }))
@@ -100,15 +99,15 @@ describe('Общая команда закрытия документа', () => 
 		const { store, document, api } = setup()
 		confirmedDocument(document, 'fake-a')
 		const response = deferred<never>()
-		api.saveFile.mockReturnValue(response.promise)
+		api.updateFileContent.mockReturnValue(response.promise)
 		const saving = store.saveDocument(document.id)
 		await Promise.resolve()
 		store.openNewDocument('B')
 		const other = store.activeDocument!
 		response.reject(new Error('Offline'))
 		expect((await saving).status).toBe('failed')
-		expect(document.state.error).toBe('Offline')
-		expect(other.state.error).toBeNull()
+		expect(document.error?.message).toBe('Offline')
+		expect(other.error).toBeNull()
 	})
 
 	it('сохраняет новые данные во время записи и оставляет dirty при коллизии Aa/BB', async () => {
@@ -122,7 +121,7 @@ describe('Общая команда закрытия документа', () => 
 		store.updateActiveDocumentData(data('Aa'))
 		store.getDocumentStores(document.id)!.eventsStore.init(data('Aa'))
 		const response = deferred<any>()
-		api.saveFile.mockReturnValue(response.promise)
+		api.updateFileContent.mockReturnValue(response.promise)
 		const saving = store.saveDocument(document.id)
 		await Promise.resolve()
 		store.updateActiveDocumentData(data('BB'))
@@ -132,7 +131,7 @@ describe('Общая команда закрытия документа', () => 
 			file: { id: 'fake-a', name: 'Demo', mimeType: 'application/json', version: '1' }
 		})
 		expect((await saving).status).toBe('saved')
-		expect(document.state.isDirty).toBe(true)
+		expect(getIsDirty(document)).toBe(true)
 		expect(document.data).toEqual(data('BB'))
 		expect(storedDocument(document.id)!.data).toEqual(data('BB'))
 	})

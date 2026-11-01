@@ -1,5 +1,5 @@
 import { expect } from '@jest/globals'
-import GAPI, { DRIVE_DOCUMENT_FIELDS, GOOGLE_LOGIN_TIMEOUT_MS, driveQueryLiteral } from './gapi'
+import GAPI, { DRIVE_DOCUMENT_FIELDS, DRIVE_WRITE_FIELDS, GOOGLE_LOGIN_TIMEOUT_MS, driveQueryLiteral } from './gapi'
 import { GoogleLoginCancelledError } from './GoogleAuthError'
 
 type TokenConfig = google.accounts.oauth2.TokenClientConfig & { error_callback: (error: { type: string }) => void }
@@ -186,5 +186,84 @@ describe('Отмена авторизации и безопасные логи',
 		expect(args.params).toEqual({ uploadType: 'multipart', fields: DRIVE_DOCUMENT_FIELDS })
 		expect(args.body).toContain('"local":true')
 		expect(args.body).toContain('"projectorSourceVersion":"9007199254740993"')
+	})
+
+	it('читает version и etag одним v2 GET и отправляет If-Match в v2 media PUT', async () => {
+		const raw = {
+			id: 'file/a',
+			title: 'Demo.json',
+			mimeType: 'application/json',
+			version: '1',
+			etag: '"opaque/1"',
+			parents: [{ id: 'folder' }],
+			alternateLink: 'https://drive.google.com/file/d/file-a/view'
+		}
+		const request = jest
+			.fn()
+			.mockResolvedValueOnce({ result: raw })
+			.mockResolvedValueOnce({ result: { ...raw, version: '2', etag: '"opaque/2"' } })
+		;(gapi.client as any).request = request
+		const condition = await GAPI.getFileWriteCondition('file/a')
+		expect(condition.file.name).toBe('Demo.json')
+		expect(condition.file.parents).toEqual(['folder'])
+		expect(condition.file.webViewLink).toBe(raw.alternateLink)
+		expect((await GAPI.updateDocument('file/a', '{"value":"Привет"}', 'application/json', condition)).version).toBe('2')
+		expect(request.mock.calls[0][0]).toEqual({
+			path: '/drive/v2/files/file%2Fa',
+			method: 'GET',
+			params: { fields: DRIVE_WRITE_FIELDS, supportsAllDrives: true, updateViewedDate: false }
+		})
+		expect(request.mock.calls[1][0]).toEqual({
+			path: '/upload/drive/v2/files/file%2Fa',
+			method: 'PUT',
+			params: {
+				uploadType: 'media',
+				fields: DRIVE_WRITE_FIELDS,
+				supportsAllDrives: true,
+				newRevision: true,
+				updateViewedDate: false
+			},
+			headers: { 'Content-Type': 'application/json', 'If-Match': '"opaque/1"' },
+			body: '{"value":"Привет"}'
+		})
+	})
+
+	test.each([undefined, '*', 'W/"weak"', 'bare', '"two", "tags"', '"bad\r\nheader"'])(
+		'не отправляет обновление без сильного ETag: %s',
+		async etag => {
+			const request = jest.fn()
+			;(gapi.client as any).request = request
+			await expect(
+				GAPI.updateDocument('source', '{}', 'application/json', {
+					file: { id: 'source', name: 'Demo', mimeType: 'application/json' },
+					etag
+				} as any)
+			).rejects.toThrow('условия записи')
+			expect(request).not.toHaveBeenCalled()
+		}
+	)
+
+	it('сохраняет HTTP 412 и не делает безусловный повтор', async () => {
+		const request = jest.fn().mockRejectedValue({ result: { error: { code: 412, message: 'Precondition failed' } } })
+		;(gapi.client as any).request = request
+		await expect(
+			GAPI.updateDocument('source', '{}', 'application/json', {
+				file: { id: 'source', name: 'Demo', mimeType: 'application/json' },
+				etag: '"old"'
+			})
+		).rejects.toMatchObject({ status: 412 })
+		expect(request).toHaveBeenCalledTimes(1)
+	})
+
+	it('отсутствующий ETag или неверный ID в metadata запрещает запись', async () => {
+		const request = jest
+			.fn()
+			.mockResolvedValue({ result: { id: 'source', title: 'Demo', mimeType: 'application/json', version: '1' } })
+		;(gapi.client as any).request = request
+		await expect(GAPI.getFileWriteCondition('source')).rejects.toThrow('ETag')
+		request.mockResolvedValue({
+			result: { id: 'other', title: 'Demo', mimeType: 'application/json', version: '1', etag: '"1"' }
+		})
+		await expect(GAPI.getFileWriteCondition('source')).rejects.toThrow('ETag')
 	})
 })

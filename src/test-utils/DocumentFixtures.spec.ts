@@ -53,9 +53,9 @@ describe('Обезличенные документы исходного фор�
 
 	it('отказ отложенной записи сохраняет вкладку и локальные данные', async () => {
 		const response = deferred<never>()
-		const saveFile = jest.fn().mockReturnValue(response.promise)
+		const updateFileContent = jest.fn().mockReturnValue(response.promise)
 		const store = new DocumentTabsStore({
-			saveFile,
+			updateFileContent,
 			getFileMetadata: jest
 				.fn()
 				.mockResolvedValue({ id: 'fake-drive-id', name: 'Demo', mimeType: 'application/json', version: '1' })
@@ -70,8 +70,8 @@ describe('Обезличенные документы исходного фор�
 		store.updateActiveDocumentData(data)
 		const saving = store.saveActiveDocument()
 		await Promise.resolve()
-		expect(saveFile).toHaveBeenCalledTimes(1)
-		expect(document.state.isSaving).toBe(true)
+		expect(updateFileContent).toHaveBeenCalledTimes(1)
+		expect(document.operation).toBe('saving')
 		response.reject(new Error('Synthetic network failure'))
 		expect(await saving).toBe(false)
 		expect(store.activeDocument?.id).toBe(document.id)

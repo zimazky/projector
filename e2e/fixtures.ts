@@ -27,7 +27,7 @@ export const test = base.extend<{ isolatedGoogle: void; driveMode: boolean }>({
 						contentType: 'application/javascript',
 						body: driveMode
 							? `
-						const call = (method, args) => fetch('/__e2e__/drive/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args) }).then(r => r.json());
+							const call = (method, args) => fetch('/__e2e__/drive/' + method, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(args) }).then(async r => { const data = await r.json(); if (!r.ok) throw { ...data, status: r.status }; return data; });
 						window.gapi = { load: (_name, done) => done(), client: {
 							init: async () => {}, getToken: () => ({ access_token: 'playwright-placeholder' }), setToken: () => {},
 							request: args => call('request', args),

@@ -10,13 +10,10 @@ import {
 	DocumentTabsState,
 	DocumentData,
 	SyncResult,
-	RestoredDocumentSnapshot,
 	DocumentTabsSnapshot,
 	createEmptyDocumentData,
 	generateDocumentId,
-	createInitialDocumentState,
 	createInitialSyncSnapshot,
-	DocumentSyncSnapshot,
 	DocumentOrigin
 } from './DocumentTabsStore.types'
 import type {
@@ -37,12 +34,7 @@ import type { DocumentStoreCallbacks } from './DocumentStoreManager'
 import { normalizeMainStoreData } from './DocumentTabsStore.utils'
 import { computeFingerprint, cloneDocumentData, freezeSnapshot } from './DocumentSyncFingerprint'
 import type { DocumentUiState } from './DocumentSyncSelectors'
-import {
-	getIsDirty,
-	getShouldWarnOnClose,
-	getDocumentUiState,
-	syncLegacyStateFromNewModel
-} from './DocumentSyncSelectors'
+import { getIsDirty, getShouldWarnOnClose, getDocumentUiState } from './DocumentSyncSelectors'
 
 import { LocalDocumentPersistence, type DocumentPersistence } from './DocumentPersistence'
 import { serializeDocumentData } from './DocumentFormat'
@@ -58,6 +50,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	private state: DocumentTabsState
 	private documentStoreManager: DocumentStoreManager
 	private operationSequence = 0
+	/** Только синхронное применение данных, не состояние сетевой операции. */
+	private applyingContent = new Set<DocumentId>()
 	private pendingSaves = new Map<DocumentSession, Promise<DocumentSaveResult>>()
 	private storeCallbacks: DocumentStoreCallbacks = {}
 	private recoveryBlocked = false
@@ -93,6 +87,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.setOnStoresChanged({})
 		makeAutoObservable<
 			this,
+			| 'applyingContent'
 			| 'pendingSaves'
 			| 'operationSequence'
 			| 'persistence'
@@ -101,6 +96,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			| 'localRestoreSequence'
 			| 'pendingLegacyCleanup'
 		>(this, {
+			applyingContent: false,
 			pendingSaves: false,
 			persistence: false,
 			pendingLocalSave: false,
@@ -161,7 +157,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.operation = operation
 		session.operationToken = context.token
 		session.error = null
-		syncLegacyStateFromNewModel(session)
 		this.persistToLocalStorage()
 		return context
 	}
@@ -177,7 +172,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	finishDocumentOperation(context: DocumentOperationContext): void {
 		if (!this.isDocumentOperationCurrent(context)) return
 		context.session.operation = 'idle'
-		syncLegacyStateFromNewModel(context.session)
 		this.persistToLocalStorage()
 	}
 
@@ -186,7 +180,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		const session = this.state.documents.get(documentId)
 		if (!session?.ref?.fileId || session.sync.needsRemoteCheck) return
 		session.sync.needsRemoteCheck = true
-		syncLegacyStateFromNewModel(session)
 		this.persistToLocalStorage()
 	}
 
@@ -197,7 +190,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.operationToken = ++this.operationSequence
 		session.operation = 'idle'
 		session.sync.needsRemoteCheck = true
-		syncLegacyStateFromNewModel(session)
 		this.persistToLocalStorage()
 	}
 
@@ -212,7 +204,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		if (error instanceof DriveReadChangedError) return { status: 'conflict', message: error.message }
 		const message = driveErrorMessage(error)
 		context.session.error = { code: 'operation-failed', message, at: Date.now() }
-		syncLegacyStateFromNewModel(context.session)
 		this.persistToLocalStorage()
 		return { status: 'failed', message }
 	}
@@ -271,10 +262,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 				parentFolderId: null
 			},
 			data,
-			state: {
-				...createInitialDocumentState(),
-				syncStatus: 'offline'
-			},
 			sync,
 			operation: 'idle',
 			error: null,
@@ -286,11 +273,8 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.documentOrder.push(id)
 		this.state.activeDocumentId = id
 
-		// Создаём сторы через DocumentStoreManager
-		// Блокируем onChangeList на время загрузки
-		session.state.isLoading = true
+		// Новые сторы подключают callbacks только после инициализации.
 		this.documentStoreManager.createStores(id)
-		session.state.isLoading = false
 
 		this.persistToLocalStorage()
 
@@ -318,11 +302,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 				parentFolderId: null
 			},
 			data: createEmptyDocumentData(),
-			state: {
-				...createInitialDocumentState(),
-				isLoading: true,
-				syncStatus: 'syncing'
-			},
 			sync: createInitialSyncSnapshot('drive'),
 			operation: 'idle',
 			error: null,
@@ -351,62 +330,37 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 					parentFolderId: metadata.parents?.[0] ?? null,
 					webViewLink: metadata.webViewLink
 				}
-				this.applyContentToDocument(id, content, metadata)
 			})
+			if (context.session.sync.localVersion !== context.localVersion) {
+				this.observeRemote(context, metadata)
+				return {
+					status: 'conflict',
+					message: 'Во время открытия появились локальные изменения. Данные с Drive не применены.'
+				}
+			}
+			this.applyContentToDocument(id, content, metadata)
 			return { status: 'opened', documentId: id }
 		} catch (error: unknown) {
 			return this.failDocumentOperation(context, error)
 		} finally {
-			if (this.isDocumentOperationCurrent(context)) {
-				runInAction(() => {
-					context.session.state.isLoading = false
-				})
-				this.finishDocumentOperation(context)
-			}
+			this.finishDocumentOperation(context)
 		}
 	}
 
-	/**
-	 * Открыть документ из localStorage без синхронизации с Google Drive.
-	 * Документ помечается как 'offline' и требует явной синхронизации пользователем.
-	 */
-	private createRestoredSession(
-		docSnapshot: RestoredDocumentSnapshot,
-		syncSnapshot?: DocumentSyncSnapshot
-	): DocumentSession {
-		const id = docSnapshot.id
-		const origin: DocumentOrigin = docSnapshot.ref?.fileId ? 'restored-local' : 'new-local'
-		const sync = { ...createInitialSyncSnapshot(origin), ...syncSnapshot }
-		// Миграция старого снимка: 32-битный хэш не подтверждает базу и не снимает предупреждение.
-		if (!Number.isSafeInteger(syncSnapshot?.localVersion)) {
-			sync.localVersion = docSnapshot.state.isDirty || docSnapshot.state.hasUnsyncedChanges ? 1 : 0
-			sync.baseLocalVersion = null
-			sync.baseFingerprint = null
-		}
-		if (docSnapshot.ref?.fileId) {
+	/** Миграция формата уже завершена до создания рабочей сессии. */
+	private createRestoredSession(docSnapshot: DocumentTabsSnapshot['documents'][number]): DocumentSession {
+		const origin: DocumentOrigin = docSnapshot.ref.fileId ? 'restored-local' : 'new-local'
+		const sync = { ...docSnapshot.sync, origin }
+		if (docSnapshot.ref.fileId) {
 			sync.needsRemoteCheck = true
 			sync.lastRemoteCheckAt = null
 		}
-
-		sync.origin = origin
 		if (!isDriveVersion(sync.baseRevisionId)) sync.baseRevisionId = null
 		if (!isDriveVersion(sync.remoteRevisionId)) sync.remoteRevisionId = null
-
-		const session: DocumentSession = {
-			id,
-			ref: docSnapshot.ref,
-			data: createEmptyDocumentData(), // Данные загрузятся отдельно
-			state: {
-				isDirty: false, // Сбрасываем — новая сессия
-				isLoading: false,
-				isSaving: false,
-				lastLoadedAt: docSnapshot.lastAccessedAt,
-				lastSavedAt: docSnapshot.state.lastSavedAt,
-				error: null,
-				syncStatus: docSnapshot.ref?.fileId ? 'offline' : 'offline',
-				lastSyncedAt: null,
-				hasUnsyncedChanges: docSnapshot.state.hasUnsyncedChanges
-			},
+		return {
+			id: docSnapshot.id,
+			ref: { ...docSnapshot.ref },
+			data: cloneDocumentData(docSnapshot.data),
 			sync,
 			operation: 'idle',
 			error: null,
@@ -414,7 +368,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			createdAt: docSnapshot.lastAccessedAt,
 			lastAccessedAt: docSnapshot.lastAccessedAt
 		}
-		return session
 	}
 
 	/** Общий сценарий закрытия для вкладки и меню. */
@@ -481,15 +434,9 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		this.state.activeDocumentId = documentId
 		session.lastAccessedAt = Date.now()
 
-		// Убеждаемся что сторы существуют (данные уже в памяти!)
-		// Блокируем onChangeList чтобы не было ложного isDirty
-		const previousLoadingState = session.state.isLoading
-		session.state.isLoading = true
 		if (!this.documentStoreManager.hasStores(documentId)) {
 			this.documentStoreManager.createStores(documentId)
 		}
-
-		session.state.isLoading = previousLoadingState
 
 		// Уведомляем об изменении активного документа (инвалидация кэша и т.п.)
 		this.onActiveDocumentChanged?.(documentId)
@@ -507,7 +454,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** Фиксирует правки любого документа, включая неактивный и сохраняемый. */
 	updateDocumentData(documentId: DocumentId, data: DocumentData): void {
 		const session = this.state.documents.get(documentId)
-		if (!session || session.state.isLoading) return
+		if (!session || this.applyingContent.has(documentId)) return
 		const copy = cloneDocumentData(data)
 		session.data = copy
 		session.sync.localVersion++
@@ -517,7 +464,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			session.sync.baseLocalVersion = session.sync.localVersion
 		}
 		session.lastAccessedAt = Date.now()
-		syncLegacyStateFromNewModel(session)
 		this.persistToLocalStorage()
 	}
 
@@ -545,17 +491,14 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.sync.needsRemoteCheck = false
 		session.sync.origin = 'drive'
 		session.error = null
-		session.state.lastSavedAt = Date.now()
-		session.state.lastSyncedAt = Date.now()
 		session.ref = {
 			fileId: metadata.id,
 			name: metadata.name,
 			mimeType: metadata.mimeType || session.ref?.mimeType || 'application/json',
 			space,
 			parentFolderId: metadata.parents?.[0] ?? context.ref?.parentFolderId ?? null,
-			webViewLink: metadata.webViewLink
+			webViewLink: metadata.webViewLink ?? (metadata.id === context.ref?.fileId ? context.ref.webViewLink : undefined)
 		}
-		syncLegacyStateFromNewModel(session)
 		this.persistToLocalStorage()
 		return true
 	}
@@ -606,7 +549,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			hasLocalChanges: getIsDirty(context.session) || unknownBase,
 			hasRemoteChanges: unknownBase || version !== context.session.sync.baseRevisionId,
 			message: unknownBase
-				? 'Базовая версия неизвестна. Сохраните отдельную версию или загрузите Drive.'
+				? 'Базовая версия неизвестна. Выберите локальные данные для записи в этот файл или загрузите Drive.'
 				: 'Локальная версия или версия Drive изменились. Выберите действие.'
 		}
 	}
@@ -617,23 +560,50 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	): Promise<DocumentSaveResult> {
 		const ref = context.ref!
 		try {
-			const remote = await this.googleApiService.getFileMetadata(ref.fileId!)
+			let remote = await this.googleApiService.getFileMetadata(ref.fileId!)
 			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
 			this.observeRemote(context, remote)
 			const expected = decision?.checkedVersion ?? context.session.sync.baseRevisionId
-			if (!isDriveVersion(expected ?? null) || driveVersion(remote, ref.fileId!) !== expected) {
+			if (
+				!decision &&
+				isDriveVersion(expected ?? null) &&
+				driveVersion(remote, ref.fileId!) !== expected &&
+				context.session.sync.baseLocalVersion !== null &&
+				context.session.sync.baseFingerprint !== null
+			) {
+				// Drive может менять служебную version после чтения/записи без изменения данных.
+				// Принимаем новую базу только после согласованного чтения и точного сравнения.
+				const checked = await readDriveDocument(this.googleApiService, ref.fileId!, () =>
+					this.isDocumentOperationCurrent(context)
+				)
+				if (!checked) return { status: 'cancelled' }
+				remote = checked.metadata
+				this.observeRemote(context, remote)
+				const manager = new DocumentStoreManager({
+					getDocumentData: () => checked.data,
+					activeDocumentId: context.documentId
+				})
+				let fingerprint: string
+				try {
+					manager.createStores(context.documentId)
+					fingerprint = computeFingerprint(manager.getDocumentDataForSave(context.documentId)!)
+				} finally {
+					manager.dispose()
+				}
+				if (fingerprint === context.session.sync.baseFingerprint) context.session.sync.baseRevisionId = checked.version
+			}
+			const verifiedBase = decision?.checkedVersion ?? context.session.sync.baseRevisionId
+			if (!isDriveVersion(verifiedBase ?? null) || driveVersion(remote, ref.fileId!) !== verifiedBase) {
 				const conflict = this.conflictFor(context, remote)
 				return { status: 'conflict', message: conflict.message, conflict }
 			}
 			if (!decision && !getIsDirty(context.session)) return { status: 'saved' }
-			const result = await this.googleApiService.saveFile(
-				ref.name,
+			const result = await this.googleApiService.updateFileContent(
+				ref.fileId!,
 				serializeDocumentData(context.data),
 				ref.mimeType,
-				ref.parentFolderId || 'root',
-				ref.space || 'drive',
-				ref.fileId,
-				remote.version
+				remote.version!,
+				() => this.isDocumentOperationCurrent(context)
 			)
 			if (!this.isDocumentOperationCurrent(context)) return { status: 'cancelled' }
 			if (result.status === 'success') {
@@ -809,14 +779,15 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.sync.lastRemoteCheckAt = metadata ? Date.now() : null
 		session.sync.needsRemoteCheck = !metadata
 
-		// Обновляем сторы (с блокировкой onChangeList)
-		session.state.isLoading = true
+		// Подавляем callbacks только при синхронном применении снимка.
+		const wasApplying = this.applyingContent.has(documentId)
+		this.applyingContent.add(documentId)
 		try {
 			if (this.documentStoreManager.hasStores(documentId))
 				this.documentStoreManager.updateStoresData(documentId, normalized)
 			else this.documentStoreManager.createStores(documentId)
 		} finally {
-			session.state.isLoading = false
+			if (!wasApplying) this.applyingContent.delete(documentId)
 		}
 		// База использует ту же сериализацию, что и доменные сторы. Check не превращает
 		// нормализацию нулевых/необязательных полей DTO в новую локальную правку.
@@ -824,12 +795,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		session.sync.localFingerprint = computeFingerprint(session.data)
 		session.sync.baseFingerprint = metadata ? session.sync.localFingerprint : null
 
-		session.state.lastSyncedAt = Date.now()
-		session.state.lastLoadedAt = Date.now()
 		session.sync.lastSyncAt = Date.now()
-
-		// Синхронизируем legacy-поля с новой моделью
-		syncLegacyStateFromNewModel(session)
 
 		this.persistToLocalStorage()
 		if (this.activeDocumentId === documentId) this.onActiveDocumentChanged?.(documentId)
@@ -847,7 +813,7 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** Полный атомарный снимок метаданных и содержимого всех вкладок. */
 	private createLocalSnapshot(): DocumentTabsSnapshot {
 		return {
-			schemaVersion: 1,
+			schemaVersion: 2,
 			activeDocumentId: this.state.activeDocumentId,
 			documentOrder: this.state.documentOrder,
 			documents: this.state.documentOrder.map(id => {
@@ -856,19 +822,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 					id: session.id,
 					data: session.data,
 					ref: session.ref!,
-					state: {
-						isDirty: session.state.isDirty,
-						isLoading: session.state.isLoading,
-						isSaving: session.state.isSaving,
-						lastLoadedAt: session.state.lastLoadedAt,
-						lastSavedAt: session.state.lastSavedAt,
-						error: session.state.error,
-						syncStatus: session.state.syncStatus,
-						lastSyncedAt: session.state.lastSyncedAt,
-						// Сохраняем реальное значение hasUnsyncedChanges, а не копию isDirty
-						hasUnsyncedChanges: session.state.hasUnsyncedChanges
-					},
-					// Новая модель синхронизации (для миграции)
 					sync: session.sync,
 					// Операция не сохраняется — всегда сбрасывается в idle при перезапуске
 					lastAccessedAt: session.lastAccessedAt
@@ -1029,15 +982,14 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 			activeDocumentId: snapshot.activeDocumentId
 		}
 		for (const item of snapshot.documents) {
-			const session = this.createRestoredSession(item, item.sync)
-			session.data = cloneDocumentData(item.data!)
+			const session = this.createRestoredSession(item)
 			const fingerprint = computeFingerprint(session.data)
 			if (session.sync.localFingerprint !== fingerprint && session.sync.baseLocalVersion !== null) {
 				session.sync.localVersion = Math.max(session.sync.localVersion, session.sync.baseLocalVersion) + 1
 			}
 			session.sync.localFingerprint = fingerprint
-			if (session.sync.baseFingerprint === fingerprint) session.sync.baseLocalVersion = session.sync.localVersion
-			syncLegacyStateFromNewModel(session)
+			if (session.sync.baseLocalVersion !== null && session.sync.baseFingerprint === fingerprint)
+				session.sync.baseLocalVersion = session.sync.localVersion
 			nextState.documents.set(item.id, session)
 		}
 		let installed = false
@@ -1082,16 +1034,6 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 	/** Все документы в порядке вкладок */
 	get documents(): DocumentSession[] {
 		return this.state.documentOrder.map(id => this.state.documents.get(id)!).filter(Boolean)
-	}
-
-	/** Количество изменённых документов */
-	get dirtyDocumentsCount(): number {
-		return this.documents.filter(d => d.state.isDirty).length
-	}
-
-	/** Количество офлайн-документов с fileId */
-	get offlineDocumentsCount(): number {
-		return this.documents.filter(d => d.ref?.fileId && d.state.syncStatus === 'offline').length
 	}
 
 	/** ID активного документа */

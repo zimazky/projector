@@ -49,6 +49,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "verify:baseline": "node scripts/verify-baseline.mjs",
+    "verify:drive": "node scripts/verify-drive-write.mjs",
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
     "build:pages": "webpack --mode production --output-path artifacts/pages-build && node scripts/package-pages.mjs",

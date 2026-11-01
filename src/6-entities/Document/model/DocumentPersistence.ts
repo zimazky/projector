@@ -30,7 +30,10 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 				const current = await new IndexedDocumentStorage(factory).read()
 				if (current !== undefined) {
 					try {
-						return parseSessionSnapshot(current, () => null)
+						const snapshot = parseSessionSnapshot(current, () => null)
+						if (JSON.parse(current).schemaVersion !== 2)
+							this.migrationSource = JSON.stringify({ indexedDB: { current } })
+						return snapshot
 					} catch (error: unknown) {
 						this.migrationSource = JSON.stringify({ indexedDB: { current } })
 						throw error
@@ -64,7 +67,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 			sources['document_' + id] = value
 			return value
 		})
-		if (JSON.parse(json).schemaVersion === undefined)
+		if (JSON.parse(json).schemaVersion !== 2)
 			this.legacySource = JSON.stringify({ documentTabs: json, documents: sources })
 		return snapshot
 	}
@@ -165,7 +168,7 @@ export class LocalDocumentPersistence implements DocumentPersistence {
 			return this.enqueue(() =>
 				new IndexedDocumentStorage(factory).write(
 					JSON.stringify({
-						schemaVersion: 1,
+						schemaVersion: 2,
 						documents: [],
 						documentOrder: [],
 						activeDocumentId: null,

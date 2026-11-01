@@ -1,5 +1,6 @@
 import GAPI, { DRIVE_DOCUMENT_FIELDS } from './gapi'
 import { GoogleApiService } from './GoogleApiService'
+import { deferred } from 'src/test-utils/deferred'
 
 const file = (id = 'source', version = '1') => ({
 	id,
@@ -9,7 +10,7 @@ const file = (id = 'source', version = '1') => ({
 	parents: ['root']
 })
 
-describe('Запись Drive создаёт отдельные версии', () => {
+describe('Сохранить как создаёт отдельные файлы', () => {
 	afterEach(() => jest.restoreAllMocks())
 	function setup() {
 		const api = new GoogleApiService()
@@ -17,7 +18,7 @@ describe('Запись Drive создаёт отдельные версии', ()
 		const find = jest.spyOn(GAPI, 'find').mockResolvedValue([])
 		const metadata = jest.spyOn(GAPI, 'getFileMetadata').mockResolvedValue(file())
 		const create = jest.spyOn(GAPI, 'createDocument').mockResolvedValue(file('copy'))
-		const upload = jest.spyOn(GAPI, 'upload')
+		const upload = jest.spyOn(GAPI, 'updateDocument')
 		return { api, find, metadata, create, upload }
 	}
 
@@ -100,4 +101,100 @@ describe('Запись Drive создаёт отдельные версии', ()
 			expect((await api.saveFile('Demo.json', '{}', 'application/json', 'root')).status).toBe('error')
 		}
 	)
+})
+
+describe('Условное сохранение в текущий файл Drive', () => {
+	afterEach(() => jest.restoreAllMocks())
+	function setup() {
+		const api = new GoogleApiService()
+		api.isGoogleLoggedIn = true
+		const condition = { file: file(), etag: '"etag-1"' }
+		const read = jest.spyOn(GAPI, 'getFileWriteCondition').mockResolvedValue(condition)
+		const update = jest.spyOn(GAPI, 'updateDocument').mockResolvedValue(file('source', '2'))
+		const metadata = jest.spyOn(GAPI, 'getFileMetadata').mockResolvedValue(file('source', '3'))
+		const create = jest.spyOn(GAPI, 'createDocument')
+		return { api, condition, read, update, metadata, create }
+	}
+
+	it('отправляет условие того же снимка и подтверждает версию ответа записи без дополнительного GET', async () => {
+		const { api, condition, update, metadata, create } = setup()
+		expect(await api.updateFileContent('source', 'Local snapshot', 'application/json', '1')).toEqual({
+			status: 'success',
+			file: file('source', '2')
+		})
+		expect(update).toHaveBeenCalledWith('source', 'Local snapshot', 'application/json', condition)
+		expect(metadata).not.toHaveBeenCalled()
+		expect(create).not.toHaveBeenCalled()
+	})
+
+	it('изменившаяся версия до PUT возвращает конфликт без записи', async () => {
+		const { api, read, update } = setup()
+		read.mockResolvedValue({ file: file('source', '2'), etag: '"etag-2"' })
+		expect(await api.updateFileContent('source', '{}', 'application/json', '1')).toEqual({
+			status: 'conflict',
+			existingFiles: [file('source', '2')]
+		})
+		expect(update).not.toHaveBeenCalled()
+	})
+
+	it('гонка между GET и PUT: 412 становится новым конфликтом без автоматического повтора', async () => {
+		const { api, update, create } = setup()
+		update.mockRejectedValue({ status: 412 })
+		expect(await api.updateFileContent('source', 'Local', 'application/json', '1')).toEqual({
+			status: 'conflict',
+			existingFiles: [file('source', '3')]
+		})
+		expect(update).toHaveBeenCalledTimes(1)
+		expect(create).not.toHaveBeenCalled()
+	})
+
+	it('412 с отказом повторного чтения не считается успешной записью', async () => {
+		const { api, update, metadata } = setup()
+		update.mockRejectedValue({ status: 412 })
+		metadata.mockRejectedValue(new Error('Offline'))
+		expect((await api.updateFileContent('source', '{}', 'application/json', '1')).status).toBe('error')
+		expect(update).toHaveBeenCalledTimes(1)
+	})
+
+	test.each([
+		{ ...file('source', '2'), id: 'different' },
+		file('source', '1'),
+		file('source', '0'),
+		{ ...file('source', '2'), version: undefined },
+		{ ...file('source', '2'), trashed: true }
+	])('не подтверждает неверный ответ %j', async response => {
+		const { api, update } = setup()
+		update.mockResolvedValue(response)
+		const result = await api.updateFileContent('source', '{}', 'application/json', '1')
+		expect(result.status).toBe('error')
+		if (result.status === 'error') expect(result.message).toContain('не подтверждён')
+	})
+
+	it('потерянный ответ не повторяется и не объявляется успехом', async () => {
+		const { api, update } = setup()
+		update.mockRejectedValue(new TypeError('Failed to fetch'))
+		const result = await api.updateFileContent('source', '{}', 'application/json', '1')
+		expect(result.status).toBe('error')
+		if (result.status === 'error') expect(result.message).toContain('проверьте Drive')
+		expect(update).toHaveBeenCalledTimes(1)
+	})
+
+	it('int64-версия проверяется без округления', async () => {
+		const { api, read, update } = setup()
+		read.mockResolvedValue({ file: file('source', '9007199254740993'), etag: '"large"' })
+		update.mockResolvedValue(file('source', '9007199254740994'))
+		expect((await api.updateFileContent('source', '{}', 'application/json', '9007199254740993')).status).toBe('success')
+	})
+
+	it('закрытая сессия после чтения условия не начинает PUT', async () => {
+		const { api, condition, read, update } = setup()
+		const response = deferred<typeof condition>()
+		read.mockReturnValue(response.promise)
+		let current = true
+		const saving = api.updateFileContent('source', '{}', 'application/json', '1', () => current)
+		current = false
+		response.resolve(condition)
+		expect((await saving).status).toBe('error')
+		expect(update).not.toHaveBeenCalled()
+	})
 })

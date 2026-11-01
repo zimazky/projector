@@ -1,5 +1,9 @@
-import { checkSchema, parseDocumentData, record } from './DocumentFormat'
-import type { DocumentTabsSnapshot, DocumentSyncSnapshot } from './DocumentTabsStore.types'
+import { parseDocumentData, record } from './DocumentFormat'
+import {
+	createInitialSyncSnapshot,
+	type DocumentTabsSnapshot,
+	type DocumentSyncSnapshot
+} from './DocumentTabsStore.types'
 
 export class SessionFormatError extends Error {}
 function invalid(): never {
@@ -14,7 +18,9 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 	try {
 		const raw: unknown = JSON.parse(json)
 		if (!record(raw)) return invalid()
-		const legacy = checkSchema(raw)
+		if (raw.schemaVersion !== undefined && raw.schemaVersion !== 1 && raw.schemaVersion !== 2) return invalid()
+		const legacy = raw.schemaVersion === undefined
+		const oldState = raw.schemaVersion !== 2
 		if (!Array.isArray(raw.documents) || !Array.isArray(raw.documentOrder) || !time(raw.savedAt)) return invalid()
 		const ids = new Set<string>()
 		const documents = raw.documents.map(value => {
@@ -38,18 +44,21 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				(ref.webViewLink !== undefined && typeof ref.webViewLink !== 'string')
 			)
 				return invalid()
-			const state = record(value.state) ? { ...value.state } : null
+			// Старые флаги существуют только на входе односторонней миграции.
+			const state = oldState && record(value.state) ? { ...value.state } : null
 			if (legacy && state && state.hasUnsyncedChanges === undefined) state.hasUnsyncedChanges = state.isDirty
 			if (
-				!record(state) ||
-				['isDirty', 'isLoading', 'isSaving', 'hasUnsyncedChanges'].some(key => typeof state[key] !== 'boolean') ||
-				['lastLoadedAt', 'lastSavedAt', 'lastSyncedAt'].some(key => !nullableTime(state[key])) ||
-				!nullableString(state.error) ||
-				!['offline', 'syncing', 'synced', 'needs-sync', 'update-available', 'error'].includes(
-					state.syncStatus as string
-				)
+				oldState &&
+				(!record(state) ||
+					['isDirty', 'isLoading', 'isSaving', 'hasUnsyncedChanges'].some(key => typeof state[key] !== 'boolean') ||
+					['lastLoadedAt', 'lastSavedAt', 'lastSyncedAt'].some(key => !nullableTime(state[key])) ||
+					!nullableString(state.error) ||
+					!['offline', 'syncing', 'synced', 'needs-sync', 'update-available', 'error'].includes(
+						state.syncStatus as string
+					))
 			)
 				return invalid()
+			if (!oldState && value.sync === undefined) return invalid()
 			if (value.sync !== undefined) {
 				if (!record(value.sync)) return invalid()
 				const sync = value.sync
@@ -89,12 +98,36 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 				data = old.data
 			}
 			const parsed = parseDocumentData(!legacy && record(data) ? { schemaVersion: 1, ...data } : data)
+			const source = value.sync as Partial<DocumentSyncSnapshot> | undefined
+			const sync = createInitialSyncSnapshot(ref.fileId ? 'restored-local' : 'new-local')
+			// Только известные поля: state/operation/error не переносятся в новый снимок.
+			for (const key of Object.keys(sync) as Array<keyof DocumentSyncSnapshot>) {
+				if (source?.[key] !== undefined) Object.assign(sync, { [key]: source[key] })
+			}
+			if (source?.serverModifiedAt !== undefined) sync.serverModifiedAt = source.serverModifiedAt
+			if (!Number.isSafeInteger(source?.localVersion)) {
+				sync.localVersion = state?.isDirty || state?.hasUnsyncedChanges ? 1 : 0
+				sync.baseLocalVersion = null
+				sync.baseFingerprint = null
+			} else if (state?.isDirty && sync.baseLocalVersion === sync.localVersion) {
+				// Противоречивый старый снимок не должен терять предупреждение.
+				sync.baseLocalVersion = null
+				sync.baseFingerprint = null
+			}
+			if (sync.baseLocalVersion === null) sync.baseFingerprint = null
 			return {
-				...value,
-				ref: { ...ref },
-				state: { ...state },
-				sync: value.sync as DocumentSyncSnapshot | undefined,
-				data: parsed
+				id: value.id,
+				ref: {
+					fileId: ref.fileId as string | null,
+					name: ref.name,
+					mimeType: ref.mimeType,
+					parentFolderId: ref.parentFolderId as string | null,
+					space: ref.space,
+					...(ref.webViewLink === undefined ? {} : { webViewLink: ref.webViewLink as string })
+				},
+				sync,
+				data: parsed,
+				lastAccessedAt: value.lastAccessedAt
 			}
 		})
 		const order = raw.documentOrder
@@ -107,7 +140,7 @@ export function parseSessionSnapshot(json: string, readLegacy: (id: string) => s
 		)
 			return invalid()
 		return {
-			schemaVersion: 1,
+			schemaVersion: 2,
 			documents,
 			documentOrder: [...order],
 			activeDocumentId: raw.activeDocumentId,
