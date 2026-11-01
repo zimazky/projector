@@ -23,4 +23,7 @@ export class BoundedCache<K, V> {
 	clear(): void {
 		this.values.clear()
 	}
+	delete(key: K): void {
+		this.values.delete(key)
+	}
 }

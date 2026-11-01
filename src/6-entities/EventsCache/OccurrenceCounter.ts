@@ -2,6 +2,7 @@ import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron, { type ParsedSchedule } from 'src/7-shared/libs/ZCron/ZCron'
 import type { AbsoluteSchedule } from 'src/7-shared/libs/ZCron/types'
 import { BoundedCache } from './BoundedCache'
+import { documentDate } from '../Document/model/DocumentFormat'
 
 const DAY = 86400
 const mod = (value: number, base: number) => ((value % base) + base) % base
@@ -17,7 +18,18 @@ export class OccurrenceCounter {
 		this.compiled.clear()
 	}
 
-	count(repeat: string, start: timestamp, begin: timestamp, end: timestamp): number {
+	/** Календарные даты документа не зависят от глобального смещения DateTime. */
+	countDates(repeat: string, start: string, begin: string, end: string): number {
+		return this.count(
+			repeat,
+			DateTime.YYYYMMDDToTimestampUTC(documentDate(start)),
+			DateTime.YYYYMMDDToTimestampUTC(documentDate(begin)),
+			DateTime.YYYYMMDDToTimestampUTC(documentDate(end)),
+			0
+		)
+	}
+
+	count(repeat: string, start: timestamp, begin: timestamp, end: timestamp, timezone = DateTime.timezone): number {
 		begin = Math.max(begin, start)
 		if (begin >= end) return 0
 		let entry = this.compiled.get(repeat)
@@ -34,7 +46,7 @@ export class OccurrenceCounter {
 		if (schedule.days.length === 31 && schedule.months.length === 12) {
 			// Ежедневные/еженедельные операции: полные недели и остаток до семи дней.
 			const days = Math.round((end - begin) / DAY)
-			const weekday = mod(Math.floor((begin + DateTime.timezone * 3600) / DAY) + 4, 7)
+			const weekday = mod(Math.floor((begin + timezone * 3600) / DAY) + 4, 7)
 			return schedule.weekdays.reduce((n, w) => n + Math.floor(days / 7) + (mod(w - weekday, 7) < days % 7 ? 1 : 0), 0)
 		}
 		if (!entry.years) {
@@ -44,7 +56,7 @@ export class OccurrenceCounter {
 			for (let i = 0; i < 400; i++) entry.years[i + 1] = entry.years[i] + this.inYear(schedule, 2000 + i, 12, 1)
 		}
 		const before = (date: timestamp) => {
-			const { year, month, day } = DateTime.getYearMonthDay(date)
+			const { year, month, day } = DateTime.getUTCYearMonthDay(date + timezone * 3600)
 			const cycles = Math.floor((year - 2000) / 400)
 			return (
 				cycles * entry!.years![400] + entry!.years![mod(year - 2000, 400)] + this.inYear(schedule, year, month, day)

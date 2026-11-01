@@ -1,7 +1,6 @@
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import ZCron from 'src/7-shared/libs/ZCron/ZCron'
 
-import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { ProjectsStore } from 'src/6-entities/Projects/ProjectsStore'
 
 import type { IEventsStoreProvider } from 'src/6-entities/Document/model/DocumentStoreManager.types'
@@ -10,11 +9,17 @@ import { BoundedCache } from './BoundedCache'
 import { BalanceIndex } from './BalanceIndex'
 import { OccurrenceCounter } from './OccurrenceCounter'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
+import { ResourceBalanceCache } from './ResourceBalanceCache'
 
 export const CALENDAR_CACHE_CAPACITY = 512
+export class ResourceBalanceUnavailableError extends Error {}
+export type AggregatedBalanceResult =
+	| { available: true; lastActualBalance: number; lastActualBalanceDate: number; firstActualBalanceDate: number }
+	| { available: false; reason: string; documentIds: string[] }
 
 /** Класс списка событий, кэширующий данные и представляющий данные для быстрого рендеринга */
 export class EventsCache {
+	readonly resourceBalances: ResourceBalanceCache
 	/** Провайдер сторов документов (для доступа к активным и всем сторам) */
 	private provider: IEventsStoreProvider
 	private cachedEvents = new BoundedCache<timestamp, EventCacheStructure[]>(CALENDAR_CACHE_CAPACITY)
@@ -25,20 +30,46 @@ export class EventsCache {
 
 	/** Границы вычисляются по данным, а не по порядку массивов. */
 	get lastActualBalance(): number {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.totalActual
 	}
 	get lastActualBalanceDate(): timestamp {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.lastActual ?? 0
 	}
 	get firstActualBalanceDate(): timestamp {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.firstActual ?? 0
 	}
 
 	constructor(provider: IEventsStoreProvider) {
 		this.provider = provider
+		this.resourceBalances = new ResourceBalanceCache(provider)
+	}
+	start(): void {
+		this.resourceBalances.start()
+	}
+	dispose(): void {
+		this.resourceBalances.dispose()
+		this.init()
+	}
+	private isResourceDocument(): boolean {
+		const data = this.provider.activeDocument?.data
+		return (
+			!!(data && 'schemaVersion' in data) ||
+			(this.provider.getAllDocumentStores?.() ?? []).some(
+				stores => stores.eventsStore === this.provider.activeEventsStore && !!stores.resourceStores
+			)
+		)
+	}
+	private requireLegacyBalance(): void {
+		if (this.isResourceDocument())
+			throw new ResourceBalanceUnavailableError(
+				'Ресурсный документ требует расчёта количеств и оценки: используйте resourceBalances, числовой баланс credit/debit недоступен.'
+			)
 	}
 
 	/** Принудительная инвалидизация для существующих потребителей. Индекс строится лениво. */
@@ -60,7 +91,7 @@ export class EventsCache {
 		if (this.context && next.every((value, index) => value === this.context![index])) return
 		this.init()
 		this.context = next
-		this.balance = new BalanceIndex(events)
+		this.balance = new BalanceIndex(this.isResourceDocument() ? null : events)
 	}
 
 	/** Число записей для диагностики границ памяти; исходные события сюда не входят. */
@@ -125,6 +156,12 @@ export class EventsCache {
 			return (a.time === null ? 0 : a.time) - (b.time === null ? 0 : b.time)
 		})
 		this.cachedEvents.set(date, events)
+		if (this.isResourceDocument()) {
+			const documentId =
+				this.provider.activeDocument?.id ??
+				this.provider.getAllDocumentStores().find(stores => stores.eventsStore === eventsStore)?.documentId
+			for (const event of events) event.sourceDocumentId = documentId
+		}
 		return events
 	}
 
@@ -217,18 +254,21 @@ export class EventsCache {
 
 	/** Вычисление фактического баланса на момент последнего выполненного события */
 	calculateActualBalance(): number {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.totalActual
 	}
 
 	/** Фактический баланс строго на начало местного дня, O(log N). */
 	getActualBalance(date: timestamp): number {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.actualBefore(DateTime.getBeginDayTimestamp(date))
 	}
 
 	/** Прогноз от последнего дня фактической истории или начала планируемых данных. */
 	getPlannedBalance(date: timestamp): number {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		date = DateTime.getBeginDayTimestamp(date)
 		const cached = this.cachedPlannedBalance.get(date)
@@ -244,11 +284,13 @@ export class EventsCache {
 	 * @returns
 	 */
 	getPlannedBalanceChange(date: timestamp): number {
+		this.requireLegacyBalance()
 		return this.getEvents(date).reduce((a, e) => a + e.credit - e.debit, 0)
 	}
 
 	/** Получить дату первого запланированного события */
 	getFirstPlannedEventDate(): timestamp {
+		this.requireLegacyBalance()
 		this.ensureCurrent()
 		return this.balance.firstPlanned ?? 0
 	}
@@ -304,6 +346,24 @@ export class EventsCache {
 
 	/** Получить агрегированный баланс из всех документов */
 	getAggregatedBalance(): { lastActualBalance: number; lastActualBalanceDate: number; firstActualBalanceDate: number } {
+		const result = this.getAggregatedBalanceResult()
+		if (!result.available) throw new ResourceBalanceUnavailableError(result.reason)
+		return {
+			lastActualBalance: result.lastActualBalance,
+			lastActualBalanceDate: result.lastActualBalanceDate,
+			firstActualBalanceDate: result.firstActualBalanceDate
+		}
+	}
+
+	getAggregatedBalanceResult(): AggregatedBalanceResult {
+		const resourceDocuments = this.provider.getAllDocumentStores().filter(stores => stores.resourceStores)
+		if (resourceDocuments.length)
+			return {
+				available: false,
+				reason:
+					'Общий денежный итог разных документов пока недоступен. Счета и основные валюты документов учитываются отдельно.',
+				documentIds: resourceDocuments.map(stores => stores.documentId)
+			}
 		let totalActual = 0
 		let maxDate = -Infinity
 		let minDate = Infinity
@@ -318,6 +378,7 @@ export class EventsCache {
 		}
 
 		return {
+			available: true,
 			lastActualBalance: totalActual,
 			lastActualBalanceDate: maxDate === -Infinity ? 0 : maxDate,
 			firstActualBalanceDate: minDate === Infinity ? 0 : minDate

@@ -69,6 +69,7 @@ export function createApplication(
 			if (started || disposed) return
 			started = true
 			mainStore.start()
+			if (options.documentRuntime?.resourceAccounting) eventsCache.start()
 			coordinator.start()
 		},
 		dispose() {
@@ -81,7 +82,7 @@ export function createApplication(
 			mainStore.dispose()
 			documentTabsStore.dispose()
 			googleApiService.dispose()
-			eventsCache.init()
+			eventsCache.dispose()
 		}
 	}
 }

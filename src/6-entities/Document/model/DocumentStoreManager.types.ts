@@ -24,4 +24,6 @@ export interface IEventsStoreProvider {
 	readonly activeEventsStore: EventsStore | null
 	readonly activeProjectsStore: ProjectsStore | null
 	getAllDocumentStores(): DocumentStores[]
+	getDocumentStores?(documentId: DocumentId): DocumentStores | null
+	getDocumentData?(documentId: DocumentId): DocumentData | null
 }

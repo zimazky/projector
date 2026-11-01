@@ -246,6 +246,11 @@ export class DocumentTabsStore implements IEventsStoreProvider {
 		return this.documentStoreManager.getStores(documentId)
 	}
 
+	/** Опубликованный граф для расчётов; чтение не пересериализует даты моделей. */
+	getDocumentData(documentId: DocumentId): DocumentData | null {
+		return this.state.documents.get(documentId)?.data ?? null
+	}
+
 	// === IEventsStoreProvider ===
 
 	get activeEventsStore() {

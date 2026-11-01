@@ -5,6 +5,8 @@ import { LocalDocumentPersistence, type DocumentPersistence } from 'src/6-entiti
 import type { DocumentTabsSnapshot } from 'src/6-entities/Document/model/DocumentTabsStore.types'
 import { deferred } from 'src/test-utils/deferred'
 import OpenWeatherMap from 'src/7-shared/services/openweathermap'
+import { createResourceDocumentRuntime } from 'src/6-entities/Document/model/ResourceDocumentRuntime'
+import type { DocumentRuntime } from 'src/6-entities/Document/model/DocumentRuntime'
 
 describe('Явный жизненный цикл приложения', () => {
 	beforeEach(() => {
@@ -16,13 +18,13 @@ describe('Явный жизненный цикл приложения', () => {
 		jest.restoreAllMocks()
 	})
 
-	function setup(persistence?: DocumentPersistence) {
+	function setup(persistence?: DocumentPersistence, documentRuntime?: DocumentRuntime) {
 		const api = new GoogleApiService()
 		const init = jest.spyOn(GAPI, 'init').mockImplementation(async ({ onSuccess }) => {
 			onSuccess?.()
 		})
 		jest.spyOn(GAPI, 'isLoggedIn').mockReturnValue(false)
-		const app = createApplication({ googleApiService: api, persistence })
+		const app = createApplication({ googleApiService: api, persistence, documentRuntime })
 		return { app, api, init }
 	}
 
@@ -57,6 +59,25 @@ describe('Явный жизненный цикл приложения', () => {
 		expect(jest.getTimerCount()).toBe(0)
 		expect(persistence.clear).not.toHaveBeenCalled()
 		other.dispose()
+	})
+
+	it('часы прогноза запускаются только во внутреннем ресурсном режиме и освобождаются вместе с приложением', () => {
+		const documentRuntime = createResourceDocumentRuntime({
+			id: 'clock-test',
+			currency: { code: 'RUB', scale: 2 },
+			currencyConfirmed: true,
+			asOf: '2026.11.01',
+			timezone: 'Europe/Moscow'
+		})
+		const { app } = setup(undefined, documentRuntime)
+		expect(jest.getTimerCount()).toBe(0)
+		app.start()
+		app.start()
+		expect(jest.getTimerCount()).toBe(2)
+		jest.advanceTimersByTime(30000)
+		expect(app.stores.eventsCache.resourceBalances.clock.now).toBe(Date.now())
+		app.dispose()
+		expect(jest.getTimerCount()).toBe(0)
 	})
 
 	it('dispose снимает online/offline и reaction, сохраняя последнюю локальную сессию', async () => {

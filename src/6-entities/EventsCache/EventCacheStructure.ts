@@ -3,6 +3,9 @@ import { OccurrenceIdentity, occurrenceEventUid } from '../Events/EventIdentity'
 
 import { RepeatableEventModel, SingleEventModel } from 'src/6-entities/Events/EventModel'
 import type { DocumentId } from 'src/6-entities/Document/model/DocumentTabsStore.types'
+import type { ActualOperation, PlannedOperation } from '../Operations/OperationContracts'
+import type { ReadonlyJson } from '../Resources/DocumentCatalogStore'
+import { freezeSnapshot } from '../Document/model/DocumentSyncFingerprint'
 
 /** Компактная структура события, предназначенная для кэширования и быстрого рендеринга */
 export type EventCacheStructure = {
@@ -36,6 +39,7 @@ export type EventCacheStructure = {
 	repeatable: boolean
 	/** ID документа-источника (для общего календаря) */
 	sourceDocumentId?: DocumentId
+	financial?: ReadonlyJson<{ kind: 'resource'; plannedOperation?: PlannedOperation; actualOperation?: ActualOperation }>
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -53,6 +57,7 @@ export function singleEventToEventCache(
 	background: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
+		...financialFields(e),
 		...(e.eventUid ? { eventUid: e.eventUid } : {}),
 		...(e.occurrence ? { occurrence: { ...e.occurrence }, occurrenceKey: occurrenceEventUid(e.occurrence) } : {}),
 		id: e.id,
@@ -83,6 +88,7 @@ export function repeatableEventToEventCache(
 	background: string
 ): EventCacheStructure {
 	const c: EventCacheStructure = {
+		...financialFields(e),
 		...(e.seriesUid
 			? {
 					eventUid: e.eventUid,
@@ -108,4 +114,21 @@ export function repeatableEventToEventCache(
 		repeatable: true
 	}
 	return c
+}
+
+function financialFields(
+	event: Pick<SingleEventModel, 'plannedOperation' | 'actualOperation'>
+): Pick<EventCacheStructure, 'financial'> {
+	if (!event.plannedOperation && !event.actualOperation) return {}
+	return {
+		financial: freezeSnapshot(
+			JSON.parse(
+				JSON.stringify({
+					kind: 'resource',
+					...(event.plannedOperation ? { plannedOperation: event.plannedOperation } : {}),
+					...(event.actualOperation ? { actualOperation: event.actualOperation } : {})
+				})
+			)
+		)
+	}
 }

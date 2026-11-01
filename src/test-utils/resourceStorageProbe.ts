@@ -14,9 +14,17 @@ import { DocumentTabsStore } from 'src/6-entities/Document/model/DocumentTabsSto
 import { createResourceDocumentRuntime } from 'src/6-entities/Document/model/ResourceDocumentRuntime'
 import type { GoogleApiService } from 'src/7-shared/services/GoogleApiService'
 import { ResourceOperationCommands } from 'src/6-entities/Operations/ResourceOperationCommands'
+import { ResourceBalanceCache } from 'src/6-entities/EventsCache/ResourceBalanceCache'
+import { ResourceBalanceClock } from 'src/6-entities/EventsCache/ResourceBalanceClock'
+import { resourceBalanceDocument, balanceActual, balancePlan } from './resourceBalanceDocument'
 
 /** Подключается только отдельным entry из start-e2e-server, без запуска приложения. */
 const probe = {
+	balanceCache: (tabs: DocumentTabsStore) =>
+		new ResourceBalanceCache(tabs, new ResourceBalanceClock(() => Date.parse('2026-11-03T09:00:00Z'))),
+	balanceDocument: resourceBalanceDocument,
+	balanceActual,
+	balancePlan,
 	commands: (tabs: DocumentTabsStore) => new ResourceOperationCommands(tabs, () => '2026.11.10'),
 	tabs: () =>
 		new DocumentTabsStore(
