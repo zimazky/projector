@@ -9,12 +9,15 @@
 Окружение: Node.js **24.12.0**, npm **11.12.1**; установка — `npm ci`.
 Запуск — `npm start`, затем открыть `http://127.0.0.1:8080/index.html`.
 Для другого порта в PowerShell: `$env:PROJECTOR_DEV_PORT = '8081'` перед запуском.
+Для Google/погоды создайте `.env` из [.env.example](.env.example) и заполните `CLIENT_ID` и `OPEN_WEATHER_KEY`; пример не содержит значений.
 
 Проверки: `npm run typecheck`, `npm run lint-check`, `npm test -- --runInBand`, `npm run build`.
+Инструменты CI: `npm run test:ci`; оба режима аудита с политикой high/critical: `npm run audit:ci`. Отчёты — `artifacts/audit`.
+CI проверяет PR и push в ветки; публикация из `master` зависит от успешных `build` и `audit`. [Порядок проверок, статусы и адресные исключения](docs/ci_security_ru.md).
 
 Сборка зависимостей находится в `src/1-app/root.ts`: `createApplication()` создаёт сторы без загрузки Google API и чтения локальной сессии. Точка входа `src/1-app/index.tsx` явно вызывает `start()` и передаёт `application.stores` в `StoreProvider`; компоненты получают их через `useStores()`. При освобождении экземпляра вызывается `dispose()` (также в обработчике HMR): снимаются подписки и таймеры, отменяются загрузчики Google/OAuth и погода, поздние ответы Drive и восстановления игнорируются. Уже начатые локальные записи завершаются, сохранённая сессия не удаляется. Оба метода идемпотентны; после dispose создаётся новый экземпляр. Переданный фабрике GoogleApiService принадлежит этому экземпляру и освобождается вместе с ним. Браузерный транспорт Google использует глобальные GIS/GAPI; одновременная работа нескольких активных приложений в одном окне не предусмотрена. Подробности — в [отчёте PR 16](docs/remediation_pr16_2026-11-01_ru.md).
 
-Полный прогон с JSON-отчётами: `npm run verify:baseline`.
+Диагностический базовый прогон с JSON-отчётами: `npm run verify:baseline`. Он сохраняет ненулевой результат npm audit и при moderate/low; политику допуска CI применяет отдельная команда `npm run audit:ci`.
 Проверки в настоящем браузере: `npm run browser:install`, затем `npm run test:e2e`.
 Интерактивный запуск: `npm run test:e2e:ui`; отчёт: `npm run test:e2e:report`.
 Сценарии и изоляция Google API описаны в [инструкции Playwright](docs/browser_testing_ru.md).

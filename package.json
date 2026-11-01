@@ -48,6 +48,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "audit:ci": "node scripts/audit-dependencies.mjs",
+    "test:ci": "node --test scripts/audit-policy.test.mjs scripts/audit-dependencies.test.mjs scripts/package-pages.test.mjs",
     "verify:baseline": "node scripts/verify-baseline.mjs",
     "verify:drive": "node scripts/verify-drive-write.mjs",
     "dev": "webpack --mode development",
