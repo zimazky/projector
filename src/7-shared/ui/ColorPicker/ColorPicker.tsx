@@ -1,5 +1,6 @@
 import React from 'react'
-import ReactDOM from 'react-dom'
+import Dialog from '../Dialog/Dialog'
+import TextButton from '../Button/TextButton'
 import { HexColorPicker } from 'react-colorful'
 import styles from './ColorPicker.module.css'
 
@@ -90,6 +91,7 @@ type ColorPickerProps = {
 
 const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error }) => {
 	const [isOpen, setIsOpen] = React.useState(false)
+	const inputId = React.useId()
 
 	const handlePresetClick = (color: string) => {
 		onChange(color.toUpperCase())
@@ -103,9 +105,16 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error
 
 	return (
 		<div className={styles.root}>
-			{label && <label className={styles.label + (error ? ' ' + styles.error : '')}>{label}</label>}
-			<div className={styles.control + (error ? ' ' + styles.controlError : '')} onClick={() => setIsOpen(!isOpen)}>
-				<div
+			{label && (
+				<label htmlFor={inputId} className={styles.label + (error ? ' ' + styles.error : '')}>
+					{label}
+				</label>
+			)}
+			<div className={styles.control + (error ? ' ' + styles.controlError : '')}>
+				<button
+					type="button"
+					aria-label={`Палитра: ${label ?? 'Цвет'}`}
+					onClick={() => setIsOpen(true)}
 					className={styles.preview}
 					style={{
 						backgroundColor: toHex(value),
@@ -113,6 +122,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error
 					}}
 				/>
 				<input
+					id={inputId}
 					type="text"
 					className={styles.input}
 					value={value}
@@ -122,31 +132,27 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange, label, error
 				/>
 			</div>
 
-			{isOpen &&
-				ReactDOM.createPortal(
-					<>
-						<div className={styles.backdrop} onClick={() => setIsOpen(false)} />
-						<div className={styles.popover}>
-							<HexColorPicker color={toHex(value)} onChange={color => onChange(color.toUpperCase())} />
-							<div className={styles.presets}>
-								{COLOR_PRESETS.map(color => (
-									<button
-										key={color}
-										className={styles.swatch}
-										style={{
-											backgroundColor: color,
-											border: color === value ? '2px solid #000' : '1px solid rgba(0, 0, 0, 0.12)',
-											transform: color === value ? 'scale(1.2)' : 'scale(1)'
-										}}
-										onClick={() => handlePresetClick(color)}
-										aria-label={`Выбрать цвет ${color}`}
-									/>
-								))}
-							</div>
-						</div>
-					</>,
-					document.body
-				)}
+			<Dialog open={isOpen} onClose={() => setIsOpen(false)} title={`Палитра: ${label ?? 'Цвет'}`}>
+				<div className={styles.popover}>
+					<HexColorPicker color={toHex(value)} onChange={color => onChange(color.toUpperCase())} />
+					<div className={styles.presets}>
+						{COLOR_PRESETS.map(color => (
+							<button
+								key={color}
+								className={styles.swatch}
+								style={{
+									backgroundColor: color,
+									border: color === value ? '2px solid #000' : '1px solid rgba(0, 0, 0, 0.12)',
+									transform: color === value ? 'scale(1.2)' : 'scale(1)'
+								}}
+								onClick={() => handlePresetClick(color)}
+								aria-label={`Выбрать цвет ${color}`}
+							/>
+						))}
+					</div>
+				</div>
+				<TextButton onClick={() => setIsOpen(false)}>Закрыть палитру</TextButton>
+			</Dialog>
 		</div>
 	)
 }

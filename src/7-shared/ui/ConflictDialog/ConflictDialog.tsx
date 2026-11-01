@@ -118,7 +118,9 @@ const ConflictDialog: React.FC<ConflictDialogProps> = ({
 						</Button>
 					)}
 
-					<Button onClick={onCancel}>Отменить</Button>
+					<Button onClick={onCancel} data-dialog-initial-focus>
+						Отменить
+					</Button>
 				</div>
 			</div>
 		</Dialog>

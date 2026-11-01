@@ -126,7 +126,7 @@ async function setup(page: Page, race = false) {
 	}, data('Base'))
 	await page.goto('/index.html')
 	await expect(page.getByTestId('document-tab')).toHaveAttribute('data-sync-status', 'synced')
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	await page.getByText('Projects', { exact: true }).click()
 	return {
 		files,

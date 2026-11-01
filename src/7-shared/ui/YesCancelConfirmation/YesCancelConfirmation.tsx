@@ -17,12 +17,17 @@ type YesCancelConfirmationProps = {
 }
 
 const YesCancelConfirmation: React.FC<YesCancelConfirmationProps> = ({ open, onClose, onConfirm, children }) => {
+	const descriptionId = React.useId()
 	return (
-		<Dialog open={open} onClose={onClose}>
-			<DialogContent>{children}</DialogContent>
+		<Dialog open={open} onClose={onClose} aria-label="Подтверждение действия" aria-describedby={descriptionId}>
+			<DialogContent>
+				<div id={descriptionId}>{children}</div>
+			</DialogContent>
 			<DialogActions>
 				<TextButton onClick={onConfirm}>Yes</TextButton>
-				<TextButton onClick={onClose}>Cancel</TextButton>
+				<TextButton onClick={onClose} data-dialog-initial-focus>
+					Cancel
+				</TextButton>
 			</DialogActions>
 		</Dialog>
 	)

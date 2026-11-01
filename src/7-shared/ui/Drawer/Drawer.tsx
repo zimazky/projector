@@ -1,29 +1,17 @@
 import React from 'react'
+import NativeDialog from '../Dialog/NativeDialog'
+import TextButton from '../Button/TextButton'
 import styles from './Drawer.module.css'
 
-type DrawerProps = {
-	/** Признак открытого сайдбара */
-	open?: boolean
-	/** Функция, вызываемая при закрытии сайдбара */
-	onClose?: () => void
-	children?: React.ReactNode
-}
+type DrawerProps = { open?: boolean; onClose?: () => void; children?: React.ReactNode }
 
-const Drawer: React.FC<DrawerProps> = ({ open = false, onClose = () => {}, children = null }) => {
-	return (
-		<div
-			className={styles.overlay + (open ? ' ' + styles.open : '')}
-			onClick={e => {
-				const el = e.currentTarget as HTMLElement
-				el.classList.replace(styles.open, styles.closing)
-				setTimeout(onClose, 225)
-			}}
-		>
-			<div className={styles.window} onClick={e => e.stopPropagation()}>
-				{children}
-			</div>
+const Drawer: React.FC<DrawerProps> = ({ open = false, onClose, children }) => (
+	<NativeDialog open={open} onClose={onClose} aria-label="Меню" className={styles.overlay + ' ' + styles.open}>
+		<div className={styles.window}>
+			{children}
+			<TextButton onClick={onClose}>Закрыть меню</TextButton>
 		</div>
-	)
-}
+	</NativeDialog>
+)
 
 export default Drawer

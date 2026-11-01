@@ -21,7 +21,7 @@ const originals: Record<string, string> = {
 }
 
 async function clean(page: Page) {
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	await page.getByText('Очистить старые локальные записи', { exact: true }).click()
 }
 async function legacyValues(page: Page) {
@@ -60,7 +60,7 @@ test('очистка архивирует поколения хранения, �
 	await clean(page)
 	await expect(page.getByRole('status')).toContainText('Старых локальных записей для очистки нет')
 	expect((await readRecoveryArchives(page)).length).toBe(archives.length)
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	const downloading = page.waitForEvent('download')
 	await page.getByText('Экспортировать резервные снимки', { exact: true }).click()
 	const downloaded = JSON.parse(readFileSync((await (await downloading).path())!, 'utf8'))

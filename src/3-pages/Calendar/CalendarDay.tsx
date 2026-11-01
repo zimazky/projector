@@ -128,6 +128,8 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 				ref={inputElementRef}
 				className={styles.input}
 				contentEditable="true"
+				role="textbox"
+				aria-label={`Новое событие: ${DateTime.getYYYYMMDD(timestamp)}`}
 				suppressContentEditableWarning={true}
 				onBlur={onBlurHandle}
 				onKeyDown={onKeyDownHandle}

@@ -80,7 +80,7 @@ const Calendar: React.FC = observer(function () {
 					</div>
 				))}
 			</div>
-			<Modal open={eventFormStore.isShow} onClose={eventFormStore.hideForm}>
+			<Modal open={eventFormStore.isShow} onClose={eventFormStore.hideForm} aria-label="Редактор события">
 				<EventForm />
 			</Modal>
 		</div>

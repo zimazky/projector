@@ -22,7 +22,7 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 	// Проверяем, подсвечено ли это событие поиском
 	const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
 
-	const openEventForm = (e: React.MouseEvent<HTMLElement>) => {
+	const openEventForm = (e: React.SyntheticEvent<HTMLElement>) => {
 		e.stopPropagation()
 		if (!eventsStore) return
 		const s = eventsStore.getEventDto(id)
@@ -39,6 +39,8 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 		<div className={styles.placeholder}></div>
 	) : (
 		<div
+			role="button"
+			tabIndex={0}
 			className={`${completed ? styles.completed : repeatable ? styles.repeatable : styles.item} ${isHighlighted ? styles.highlighted : ''}`}
 			draggable={true}
 			onDragStart={onDragStart}
@@ -51,6 +53,12 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = props => {
 				color: color
 			}}
 			onClick={openEventForm}
+			onKeyDown={event => {
+				if (event.key === 'Enter' || event.key === ' ') {
+					event.preventDefault()
+					openEventForm(event)
+				}
+			}}
 			title={
 				name +
 				(time !== null ? '\ntime: ' + DateTime.secondsToHMM(time) : '') +

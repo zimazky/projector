@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 import { readFileSync } from 'node:fs'
 
 async function openProjects(page: Page) {
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	await page.getByText('Projects', { exact: true }).click()
 	await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible()
 }
@@ -40,7 +40,7 @@ for (const source of ['tab', 'menu'] as const) {
 		await createDirtyDocument(page)
 		if (source === 'tab') await page.getByTitle('Закрыть вкладку', { exact: true }).click()
 		else {
-			await page.locator('button[title=""]').click()
+			await page.getByRole('button', { name: 'Меню', exact: true }).click()
 			await page.getByText('Закрыть документ', { exact: true }).click()
 		}
 		await expect(page.getByText('Есть несохранённые изменения.')).toBeVisible()

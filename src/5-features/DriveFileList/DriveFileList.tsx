@@ -98,7 +98,11 @@ const DriveFileList: React.FC<DriveFileListFeatureProps> = observer(
 					renderContent()
 				)}
 
-				<Modal open={driveFileListStore.isConfirmingDelete} onClose={driveFileListStore.cancelDeletingItem}>
+				<Modal
+					open={driveFileListStore.isConfirmingDelete}
+					onClose={driveFileListStore.cancelDeletingItem}
+					aria-label="Удаление файла"
+				>
 					<div className={styles.deleteConfirmationContainer}>
 						<p>Вы действительно хотите удалить {driveFileListStore.itemToDelete?.name}?</p>
 						<DialogActions>

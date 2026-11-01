@@ -57,7 +57,7 @@ test('большая старая сессия мигрирует без зап�
 			Object.keys(original)
 		)
 	).toEqual(original)
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	await page.getByText('Projects', { exact: true }).click()
 	await page.getByRole('button', { name: 'Add Project', exact: true }).click()
 	await page.getByLabel('Project Name', { exact: true }).fill('After migration')

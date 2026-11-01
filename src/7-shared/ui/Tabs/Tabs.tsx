@@ -1,107 +1,61 @@
 import React from 'react'
+import RippleButton from '../Button/RippleButton'
 import styles from './Tabs.module.css'
 
 interface TabsProps {
-	/** Выбранный таб */
 	value?: number
-	/** Массив ярлыков */
 	labels: Array<string | null>
-	/** Колбэк-функция изменения таба */
 	onChange?: (event: React.SyntheticEvent, newValue: number) => void
 }
 
-const Tabs: React.FC<TabsProps> = props => {
-	const { value = 0, labels, onChange = () => {} } = props
-	const selectedTabRef = React.useRef<HTMLDivElement | null>(null)
-	const [state, setState] = React.useState<TabPosition>({ left: 0, width: 0 })
-	const [clicked, setClicked] = React.useState<number | null>(null)
-	React.useEffect(() => {
-		setState({ left: selectedTabRef.current?.offsetLeft ?? 0, width: selectedTabRef.current?.clientWidth ?? 0 })
-	}, [])
-
-	const changeTabHandler = (event: React.MouseEvent, tab: number) => {
-		const node = event.currentTarget as HTMLDivElement
-		if (clicked === tab) {
-			const ripple = node.getElementsByClassName(styles.clicked)[0]
-			ripple?.classList.add(styles.selected)
-			setState({ left: node.offsetLeft, width: node.clientWidth })
-			onChange(event, tab)
-		}
-		setClicked(null)
-		removeRipple(event)
-	}
-
+const Tabs: React.FC<TabsProps> = ({ value = 0, labels, onChange = () => {} }) => {
+	const selectedTabRef = React.useRef<HTMLButtonElement | null>(null)
+	const [position, setPosition] = React.useState({ left: 0, width: 0 })
+	React.useLayoutEffect(() => {
+		setPosition({ left: selectedTabRef.current?.offsetLeft ?? 0, width: selectedTabRef.current?.clientWidth ?? 0 })
+	}, [value])
+	const indexes = labels.flatMap((label, index) => (label === null ? [] : [index]))
 	return (
 		<div className={styles.wrapper}>
-			<div className={styles.container}>
-				{labels.map((l, i) =>
-					l === null ? null : (
-						<div
-							className={styles.tab + (value === i ? ' ' + styles.selected : '')}
-							ref={value === i ? selectedTabRef : undefined}
-							key={i}
-							onPointerDown={e => {
-								if (!e.isPrimary) return
-								createRipple(e, value === i)
-								setClicked(i)
-							}}
-							onPointerUp={e => {
-								if (e.isPrimary) changeTabHandler(e, i)
-							}}
-							onPointerLeave={e => {
-								if (e.isPrimary) removeRipple(e)
-							}}
-							onPointerCancel={e => {
-								if (e.isPrimary) removeRipple(e)
+			<div className={styles.container} role="tablist" aria-label="Разделы">
+				{labels.map((label, index) =>
+					label === null ? null : (
+						<RippleButton
+							key={index}
+							rippleStyles={styles}
+							className={styles.tab + (value === index ? ' ' + styles.selected : '')}
+							role="tab"
+							aria-selected={value === index}
+							tabIndex={value === index ? 0 : -1}
+							ref={value === index ? selectedTabRef : undefined}
+							onClick={event => onChange(event, index)}
+							onKeyDown={event => {
+								const current = indexes.indexOf(index)
+								const next =
+									event.key === 'ArrowRight'
+										? indexes[(current + 1) % indexes.length]
+										: event.key === 'ArrowLeft'
+											? indexes[(current + indexes.length - 1) % indexes.length]
+											: event.key === 'Home'
+												? indexes[0]
+												: event.key === 'End'
+													? indexes[indexes.length - 1]
+													: undefined
+								if (next === undefined) return
+								event.preventDefault()
+								const buttons = event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+								buttons[indexes.indexOf(next)].focus()
+								onChange(event, next)
 							}}
 						>
-							{l}
-						</div>
+							{label}
+						</RippleButton>
 					)
 				)}
 			</div>
-			<span className={styles.indicator} style={{ left: state.left + 'px', width: state.width + 'px' }}></span>
+			<span className={styles.indicator} style={{ left: position.left + 'px', width: position.width + 'px' }} />
 		</div>
 	)
 }
 
 export default Tabs
-
-type TabPosition = {
-	left: number
-	width: number
-}
-
-function createRipple(event: React.MouseEvent, isSelected: boolean) {
-	const tab = event.currentTarget as HTMLElement
-
-	let offsetLeft = tab.offsetLeft
-	let offsetTop = tab.offsetTop
-	let parent: HTMLElement | null = tab.offsetParent as HTMLElement
-	while (parent) {
-		offsetLeft += parent.offsetLeft
-		offsetTop += parent.offsetTop
-		parent = parent.offsetParent as HTMLElement
-	}
-	const circle = document.createElement('span')
-	const radius = Math.ceil(Math.hypot(tab.clientWidth, tab.clientHeight))
-
-	circle.style.width = circle.style.height = `${2 * radius}px`
-	circle.style.left = `${event.clientX - offsetLeft - radius}px`
-	circle.style.top = `${event.clientY - offsetTop - radius}px`
-	circle.classList.add(styles.ripple, styles.clicked)
-	if (isSelected) circle.classList.add(styles.selected)
-
-	tab.appendChild(circle)
-}
-
-function removeRipple(event: React.MouseEvent) {
-	const tab = event.currentTarget as HTMLElement
-	const ripple = tab.getElementsByClassName(styles.clicked)[0]
-	if (ripple) {
-		ripple.classList.remove(styles.clicked)
-		setTimeout(() => {
-			ripple?.remove()
-		}, 500)
-	}
-}

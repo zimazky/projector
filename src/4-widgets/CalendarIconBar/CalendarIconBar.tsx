@@ -169,7 +169,7 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 	let menu: MenuItem[] = []
 
 	icons.push({
-		name: '',
+		name: 'Меню',
 		jsx: (
 			<SwgIcon>
 				<Menu />

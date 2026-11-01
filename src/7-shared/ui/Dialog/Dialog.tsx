@@ -1,39 +1,27 @@
 import React from 'react'
+import NativeDialog, { type NativeDialogProps } from './NativeDialog'
 import styles from './Dialog.module.css'
 
-type DialogProps = {
-	/** Признак открытого окна */
-	open: boolean
-	/** Функция, вызываемая при закрытии сайдбара */
-	onClose?: () => void
-	/** Заголовок диалога */
-	title?: React.ReactNode
-	children?: React.ReactNode
-}
+type DialogProps = Omit<NativeDialogProps, 'className'> & { title?: React.ReactNode }
 
-type state = 'hidden' | 'open' | 'closing'
-
-const Dialog: React.FC<DialogProps> = ({ open = false, onClose = () => {}, title, children = null }) => {
-	const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
-	React.useEffect(() => {
-		if (open) {
-			setState('open')
-		} else {
-			setState(previous => (previous === 'hidden' ? 'hidden' : 'closing'))
-			const timer = setTimeout(() => {
-				setState('hidden')
-			}, 300)
-			return () => clearTimeout(timer)
-		}
-	}, [open])
-
-	return state === 'hidden' ? null : (
-		<div className={styles.overlay + ' ' + styles[state]} onClick={onClose}>
-			<div className={styles.window} onClick={e => e.stopPropagation()}>
-				{title && <div className={styles.title}>{title}</div>}
+const Dialog: React.FC<DialogProps> = ({ title, children, ...props }) => {
+	const titleId = React.useId()
+	return (
+		<NativeDialog
+			{...props}
+			aria-labelledby={title ? titleId : props['aria-labelledby']}
+			aria-label={title || props['aria-labelledby'] ? undefined : (props['aria-label'] ?? 'Диалог')}
+			className={styles.overlay}
+		>
+			<div className={styles.window}>
+				{title && (
+					<div className={styles.title} id={titleId}>
+						{title}
+					</div>
+				)}
 				<div className={styles.content}>{children}</div>
 			</div>
-		</div>
+		</NativeDialog>
 	)
 }
 

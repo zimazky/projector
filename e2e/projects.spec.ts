@@ -75,7 +75,7 @@ async function seed(page: Page, original: string) {
 }
 
 async function view(page: Page, name: 'Projects' | 'Calendar') {
-	await page.locator('button[title=""]').click()
+	await page.getByRole('button', { name: 'Меню', exact: true }).click()
 	await page.getByText(name, { exact: true }).click()
 }
 

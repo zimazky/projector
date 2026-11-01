@@ -1,0 +1,198 @@
+{
+  "date": "2026-11-01",
+  "timezone": "Europe/Moscow",
+  "scope": "PR 15 / stage 7 / F15 accessibility and timer cleanup",
+  "baseCommit": "d16f6f35bd4df2b0a87f34c76e11b67b1c9b6594",
+  "node": "v24.12.0",
+  "initialWorkingTreeClean": true,
+  "implementedLocally": true,
+  "stage7CompletedLocally": true,
+  "committedByAgent": false,
+  "deployed": false,
+  "checks": {
+    "typecheck": {
+      "name": "typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "startedAt": "2026-11-01T07:26:31.653Z",
+      "durationMs": 21200,
+      "exitCode": 0
+    },
+    "e2eTypecheck": {
+      "name": "e2e-typecheck",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.e2e.json"
+      ],
+      "startedAt": "2026-11-01T07:26:52.912Z",
+      "durationMs": 1656,
+      "exitCode": 0
+    },
+    "lint": {
+      "name": "lint",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "src/**/*.{js,jsx,ts,tsx}",
+        "e2e/**/*.ts",
+        "playwright.config.ts",
+        "--format",
+        "json",
+        "--output-file",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr15\\lint.json"
+      ],
+      "startedAt": "2026-11-01T07:26:54.619Z",
+      "durationMs": 60564,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 6,
+      "artifact": "artifacts/remediation-pr15/lint.json"
+    },
+    "jest": {
+      "name": "jest",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/jest/bin/jest.js",
+        "--runInBand",
+        "--json",
+        "--outputFile",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr15\\jest.json"
+      ],
+      "startedAt": "2026-11-01T07:26:31.651Z",
+      "durationMs": 83495,
+      "exitCode": 0,
+      "passed": 3817,
+      "failed": 0,
+      "suites": 30,
+      "artifact": "artifacts/remediation-pr15/jest.json"
+    },
+    "productionBuild": {
+      "name": "build",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/webpack/bin/webpack.js",
+        "--mode",
+        "production",
+        "--output-path",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr15\\build",
+        "--json",
+        "E:\\@projects\\projector\\artifacts\\remediation-pr15\\webpack.json"
+      ],
+      "startedAt": "2026-11-01T07:26:31.654Z",
+      "durationMs": 51443,
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 0,
+      "artifact": "artifacts/remediation-pr15/webpack.json"
+    },
+    "chromium": {
+      "name": "chromium",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/@playwright/test/cli.js",
+        "test"
+      ],
+      "startedAt": "2026-11-01T07:26:31.651Z",
+      "durationMs": 130318,
+      "exitCode": 0,
+      "startTime": "2026-11-01T07:26:35.159Z",
+      "duration": 126702.458,
+      "expected": 42,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0,
+      "artifact": "artifacts/remediation-pr15/playwright.json"
+    }
+  },
+  "regressionsAdded": {
+    "unit": 32,
+    "chromium": 6
+  },
+  "uiContract": {
+    "nativeDisabled": true,
+    "modalPrimitive": "HTML dialog.showModal with explicit Tab wrapping and opener restoration",
+    "nestedEscapeClosesTopOnly": true,
+    "confirmationInitialFocus": "cancel",
+    "confirmationTextLinkedAsDescription": true,
+    "closingTimersRemoved": true,
+    "timeTimersAfterUnmount": 0,
+    "rippleTimersAfterUnmount": 0
+  },
+  "formats": {
+    "document": 2,
+    "session": 3,
+    "indexedDatabase": 1,
+    "changed": false
+  },
+  "dependenciesChanged": false,
+  "npmAuditRerun": false,
+  "realDriveVerificationRerun": false,
+  "screenReaderVerified": false,
+  "browsersVerified": [
+    "Chromium"
+  ],
+  "screenshots": [
+    "artifacts/remediation-pr15/nested-palette.png"
+  ],
+  "nextStep": "Stage 8 / service factory and start-dispose lifecycle, narrow save notification contract, remaining CI and documentation",
+  "hashes": {
+    "docs/remediation_plan_2026-10-31_ru.md": "46a4e05ea1154140e3ea6031731fe5a2134f161e35f9b1e472838af9609402cd",
+    "e2e/documents.spec.ts": "1ea3f51d3b1ff3886a2b629c6050efb67a3b27f10d7e6eaadbc50452751f7df7",
+    "e2e/drive-sync.spec.ts": "84f7061507a28e37a84bb0c40c6d753ae33723a3df5c952121c11f83ab6bc355",
+    "e2e/indexed-storage.spec.ts": "5dd4878b80a1fae7867947ab12a05c029a7961a41c140ed6bc9cc8fb7a782a6c",
+    "e2e/projects.spec.ts": "a4d71fd6b3c9662bdb1aa387e6b02d0e36302753005760735ee875ee56c8b93b",
+    "e2e/storage-cleanup.spec.ts": "5f1a6fde8eac9ca088db48581a6afdf21ea4321df5aebea19ca22ab95ff5133c",
+    "jest.setup.js": "eace824c7dab9f7fcff1fbc26b57f054cf1130b0b324df8620fedb54fd52dec6",
+    "src/1-app/App/App.spec.tsx": "38d1ad9c314bc39b88d9ff908387918bdb4838c3f8605a8b2fa7e9620979f024",
+    "src/3-pages/Calendar/Calendar.tsx": "f4863a73d48f9f7c9cc21254399d5fcc0b6883dc47514c46f9e2cbacc02ec57e",
+    "src/3-pages/Calendar/CalendarDay.tsx": "77e70b9e72e167cb637d0d046ac2ec51f96640a0f84b3ed9c8e10dff57221441",
+    "src/3-pages/Calendar/CalendarEventItem.module.css": "56040d983bdad4e5d270aaea5035e06f0f502b59a1d2735562cbd744f4b4832c",
+    "src/3-pages/Calendar/CalendarEventItem.tsx": "b332fcdb7c12e60859fc1510f4a4a687de2255122db658cbfd6a66586d421fc1",
+    "src/4-widgets/CalendarIconBar/CalendarIconBar.tsx": "104fef440fd75bfdcb6df574924e1f30705f2d2cc306350299ad6f2282d7cbfe",
+    "src/4-widgets/DriveFilePicker/DriveFilePicker.tsx": "fdd0ac1925f9fd3093679782f43e0e4491a684f0e8c5904862e8c3b5cf041bc9",
+    "src/4-widgets/SaveToDrive/SaveToDrive.tsx": "48665fc2fdf490b8cdb0eebc0c78f4b01ffca19e469f052576dd7182e9f97933",
+    "src/5-features/DriveFileList/DriveFileList.tsx": "dd8a55bd4dddb322d93ea7876797d1c8a3df7d2c9e0f2b73993918a805df46a6",
+    "src/5-features/FileConflictResolver/FileConflictResolver.tsx": "4f25289195f0356034083253b2cef1ed06c793163e0002f6510d833b7a7150f0",
+    "src/5-features/ProjectManager/ProjectEditor/ProjectForm.tsx": "4bf6df119336d2c5d68665442fc16828274da8cf598d681aa3873cce136cc71b",
+    "src/7-shared/ui/Button/Button.module.css": "e45915f973c2e747884dbd189c6dfc5de28cdb08fdef6474590fc2399afc3108",
+    "src/7-shared/ui/Button/Button.tsx": "418d5abe5c85f5c4de5730df7d649fbdfedb8ffeb5dd1b89e691d9d195c182e3",
+    "src/7-shared/ui/Button/TextButton.module.css": "b73de13d027ccb610658f2e18208cc4d23d66c4afe9a88c3c2da6d22ce100eb5",
+    "src/7-shared/ui/Button/TextButton.tsx": "40d656dc8900977e314f10d748134454808f6fea6d63e081f206757b3e592948",
+    "src/7-shared/ui/ColorPicker/ColorPicker.module.css": "8490f64dad2d336902e5027f719738ccc2e386dcb4a0412b18ed1a1403e06541",
+    "src/7-shared/ui/ColorPicker/ColorPicker.tsx": "bfa5c3a279e40711ee3a665c21681cd2b3f086205793a4a50eb937f929759149",
+    "src/7-shared/ui/ConflictDialog/ConflictDialog.tsx": "999456e85400f365c07ba691aa4dbfed5b6d29da1dcb31261f4ba791bfe984a8",
+    "src/7-shared/ui/DatePicker/DatePicker.tsx": "5d7487294027e4e12e9ef2aaa45d1ace7bf5b7356e953fadd5857f0f08dbbabe",
+    "src/7-shared/ui/DatePicker/DayButton.tsx": "4a9d7066226cb283df98ff1fa6da74f4984fad05e08db11c41e112287628df4c",
+    "src/7-shared/ui/Dialog/Dialog.module.css": "a0454b86915ead445d95ec33ac492b3a4835fca9fe81a9ea957dfea060b43661",
+    "src/7-shared/ui/Dialog/Dialog.tsx": "f4abbea93f710b99f79681de848549963f99e09a1c0b9a94dc29936dda14a33c",
+    "src/7-shared/ui/Drawer/Drawer.module.css": "3bb4c7a8af228fc99f1c8922fbbe3c859eed1a0d4e0c9c0f07a90c42048180a1",
+    "src/7-shared/ui/Drawer/Drawer.tsx": "8f30c07a4d783bfca86fe2cf786d99adb8c80405045ba5fe305d8be67413b84a",
+    "src/7-shared/ui/FileList/FileList.tsx": "e9db5e331d80af96c3bd2022c94fedb782ced963f356e4128a28b5e26a92fc98",
+    "src/7-shared/ui/IconButton/IconButton.module.css": "f55b2860e06f6e02145683cc157bc8c5ac967c680c08f14d2d108cb152a7c396",
+    "src/7-shared/ui/IconButton/IconButton.tsx": "3def8fa0bb163874b0e705ff40147cfe148de707888a5a794f71e3066d71c2cb",
+    "src/7-shared/ui/List/ListItem.module.css": "470a9ce7dafa9b71dca0421021856ec67e5723a8cc34b415898b084342d3ae22",
+    "src/7-shared/ui/List/ListItem.tsx": "f97cc11fa59082d05e95101d2add02b2e18b0c531c37639ffb31da888fa9297f",
+    "src/7-shared/ui/Modal/Modal.module.css": "7df8693c4e2a8080c32edaf41ddc5e71bef540e4e794937e4d89c0909be60830",
+    "src/7-shared/ui/Modal/Modal.tsx": "2f2d24ad89f82d30d268c72c85616497fa319ecc29aeb8ba51ee3197950b5590",
+    "src/7-shared/ui/Tabs/Tabs.module.css": "7ccd2f663dcd79ee4614999b93be22d1c43bf6cb617ed11eb0eb4f7ca336022c",
+    "src/7-shared/ui/Tabs/Tabs.tsx": "817f6e9ea3ea7053c8689dbc5abd45ef8920b2841c19f4ed2c76be1a7fb52cbf",
+    "src/7-shared/ui/Time/Time.module.css": "10baaa83315ddcd7972ef03fe311b4cc059d2f1396061d8633876eaacb5af3e7",
+    "src/7-shared/ui/Time/Time.tsx": "4625a8649bb7620c7e14fd2dc4cc630deea5cd77469ae105e19449d1582815a9",
+    "src/7-shared/ui/YesCancelConfirmation/YesCancelConfirmation.tsx": "cd8e20ab5274445c1c87912fae0fdf77018e74c826ac681261379128721e8dd3",
+    "src/7-shared/ui/YesNoCancelConfirmation/YesNoCancelConfirmation.tsx": "cb50088876f4d4015d23648152ab66afcf92608bf14a6b1c4fe4f47805c0995d",
+    "docs/remediation_pr15_2026-11-01_ru.md": "45ea3fcf95ff38925bd832d74e8d30e4ca784266f386bcc468c82e3c33c7bdb4",
+    "e2e/accessibility.spec.ts": "e09f0f3ebf71cfeb63f6563f59ee5bdfea3d10660e80db7ec870583c00e11eca",
+    "src/7-shared/hooks/useRipple.ts": "eb1089d8de6f54ab1e70045ef7a50d02c3da03da9423ba73622e734716b877f6",
+    "src/7-shared/ui/Button/Controls.spec.tsx": "b2bbf4f1f3a38b44c464d07d0ee178f2306399b684df4173dce8f2a3db0f4b7b",
+    "src/7-shared/ui/Button/RippleButton.tsx": "5bfa2426303310e96f0c96337966346c6cb7bbcfe67801d6240c7ef1f8bb5d68",
+    "src/7-shared/ui/Dialog/NativeDialog.module.css": "c75e891c8805593bf62455a6b74cced5b04e9f987875e0496307a1109fd45414",
+    "src/7-shared/ui/Dialog/NativeDialog.spec.tsx": "f59ef2ee1bb7da89df2f7b52d01b69e45631f85853a3689fabe6ec195e20cb6b",
+    "src/7-shared/ui/Dialog/NativeDialog.tsx": "12f531f7a67a06854c960b3d721434b8126c22476fcb4e653750b0310ed65ffa",
+    "src/7-shared/ui/Time/Time.spec.tsx": "a7488e67f0f0dcf72fa83b5c359a8ee87a19dbd5c1d0d08ef856a38d77a4316a"
+  }
+}

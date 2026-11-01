@@ -56,7 +56,7 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 		}
 
 		return (
-			<Dialog open={isOpen} onClose={handleCancel}>
+			<Dialog open={isOpen} onClose={handleCancel} aria-label="Конфликт имени файла" dismissible={!isSaving}>
 				<h3 className={styles.dialogTitle}>Конфликт имени файла</h3>
 				<DialogContent>
 					<p>Файл "{conflictingFileName}" уже существует в этой папке. Что вы хотите сделать?</p>
@@ -102,7 +102,7 @@ const FileConflictResolver: React.FC<FileConflictResolverProps> = observer(
 					>
 						Подтвердить переименование
 					</TextButton>
-					<TextButton onClick={handleCancel} disabled={isSaving}>
+					<TextButton onClick={handleCancel} disabled={isSaving} data-dialog-initial-focus>
 						Отмена
 					</TextButton>
 				</DialogActions>

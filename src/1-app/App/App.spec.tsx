@@ -81,6 +81,7 @@ describe('App Integration Tests', () => {
 		// Очистка localStorage и сброс сторов
 		localStorage.clear()
 		documentTabsStore.clear()
+		uiStore.toggleMenu(false)
 		googleApiService.isGoogleLoggedIn = false
 		saveToDriveStore.close()
 		;(googleApiService.saveFile as jest.Mock).mockReset()
@@ -283,7 +284,7 @@ describe('App Integration Tests', () => {
 		expect(uiStore.viewMode).toBe('Calendar')
 
 		// Переключиться на Projects через меню
-		const menuButton = screen.getByTitle('')
+		const menuButton = screen.getByRole('button', { name: 'Меню' })
 		fireEvent.click(menuButton)
 
 		const projectsMenuItem = await screen.findByText('Projects')
@@ -377,7 +378,7 @@ describe('App Integration Tests', () => {
 		)
 		if (source === 'tab') fireEvent.click(screen.getByTitle('Закрыть вкладку'))
 		else {
-			fireEvent.click(screen.getByTitle(''))
+			fireEvent.click(screen.getByRole('button', { name: 'Меню' }))
 			fireEvent.click(screen.getByText('Закрыть документ'))
 			expect(uiStore.isMenuOpen).toBe(false)
 		}
@@ -404,7 +405,10 @@ describe('App Integration Tests', () => {
 			</StoreProvider>
 		)
 		if (source === 'tab') fireEvent.click(screen.getByTitle('Закрыть вкладку'))
-		else fireEvent.click(screen.getByText('Закрыть документ'))
+		else {
+			fireEvent.click(screen.getByRole('button', { name: 'Меню' }))
+			fireEvent.click(screen.getByText('Закрыть документ'))
+		}
 		fireEvent.click(await screen.findByText('Сохранить', { selector: 'button' }))
 		await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Offline'))
 		expect(documentTabsStore.documents.length).toBe(1)

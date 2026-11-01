@@ -16,11 +16,6 @@
 	opacity: 1;
 }
 
-.overlay.closing {
-	visibility: visible;
-	opacity: 0;
-}
-
 .window {
 	display: flex;
 	flex-direction: column;
@@ -28,7 +23,7 @@
 	position: fixed;
 	left: 0px;
 	top: 0px;
-	width: 300px;
+	width: min(300px, 100vw);
 	background-color: var(--color-background-surface);
 	padding: 10px 10px;
 	box-shadow:

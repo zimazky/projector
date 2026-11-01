@@ -100,6 +100,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
 				ref={onChangeRef}
 			>
 				<IconButton
+					title={`Выбрать дату: ${label}`}
 					disabled={disabled}
 					onClick={() => {
 						setOpen(true)
@@ -110,7 +111,7 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
 					</SwgIcon>
 				</IconButton>
 			</TextField>
-			<Dialog open={open} onClose={closeHandle}>
+			<Dialog open={open} onClose={closeHandle} aria-label={`Выбор даты: ${label}`}>
 				<div className={styles.title}>
 					<span>Select date</span>
 					<h4>{DateTime.getWeekdayMonthDayString(state.selectedTS)}</h4>
@@ -118,12 +119,18 @@ const DatePicker = React.forwardRef<HTMLInputElement, DatePickerProps>((props, r
 				<div className={styles.header}>
 					<div className={styles.label}>{DateTime.getMonthNamesArray()[state.month] + ' ' + state.year}</div>
 					<div className={styles.buttons}>
-						<IconButton onClick={() => setState(s => ({ ...s, ...prevMonth(s.year, s.month) }))}>
+						<IconButton
+							title="Предыдущий месяц"
+							onClick={() => setState(s => ({ ...s, ...prevMonth(s.year, s.month) }))}
+						>
 							<SwgIcon>
 								<ArrowBackIos />
 							</SwgIcon>
 						</IconButton>
-						<IconButton onClick={() => setState(s => ({ ...s, ...nextMonth(s.year, s.month) }))}>
+						<IconButton
+							title="Следующий месяц"
+							onClick={() => setState(s => ({ ...s, ...nextMonth(s.year, s.month) }))}
+						>
 							<SwgIcon>
 								<ArrowForwardIos />
 							</SwgIcon>

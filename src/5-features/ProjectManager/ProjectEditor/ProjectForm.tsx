@@ -58,7 +58,11 @@ const ProjectForm: React.FC = observer(() => {
 	}
 
 	return (
-		<Dialog open={projectEditorStore.isOpen} onClose={handleClose}>
+		<Dialog
+			open={projectEditorStore.isOpen}
+			onClose={handleClose}
+			aria-label={projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}
+		>
 			<DialogContent>
 				<h2 className={styles.title}>{projectEditorStore.mode === 'add' ? 'Add Project' : 'Edit Project'}</h2>
 

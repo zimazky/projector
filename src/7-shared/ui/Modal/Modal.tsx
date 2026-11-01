@@ -1,37 +1,17 @@
 import React from 'react'
+import NativeDialog, { type NativeDialogProps } from '../Dialog/NativeDialog'
 import styles from './Modal.module.css'
 
-type ModalProps = {
-	/** Признак открытого окна */
-	open: boolean
-	/** Функция, вызываемая при закрытии сайдбара */
-	onClose?: () => void
-	children?: React.ReactNode
-}
+type ModalProps = Omit<NativeDialogProps, 'className'>
 
-type state = 'hidden' | 'open' | 'closing'
-
-const Modal: React.FC<ModalProps> = ({ open = false, onClose = () => {}, children = null }) => {
-	const [state, setState] = React.useState<state>(open ? 'open' : 'hidden')
-	React.useEffect(() => {
-		if (open) {
-			setState('open')
-		} else {
-			setState(previous => (previous === 'hidden' ? 'hidden' : 'closing'))
-			const timer = setTimeout(() => {
-				setState('hidden')
-			}, 300)
-			return () => clearTimeout(timer)
-		}
-	}, [open])
-
-	return state === 'hidden' ? null : (
-		<div className={styles.overlay + ' ' + styles[state]} onClick={onClose}>
-			<div className={styles.window} onClick={e => e.stopPropagation()}>
-				{children}
-			</div>
-		</div>
-	)
-}
+const Modal: React.FC<ModalProps> = ({ children, ...props }) => (
+	<NativeDialog
+		{...props}
+		aria-label={props['aria-label'] ?? (props['aria-labelledby'] ? undefined : 'Диалог')}
+		className={styles.overlay}
+	>
+		<div className={styles.window}>{children}</div>
+	</NativeDialog>
+)
 
 export default Modal
