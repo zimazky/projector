@@ -7,6 +7,7 @@ import Header from 'src/4-widgets/Header/Header'
 import Calendar from 'src/3-pages/Calendar/Calendar'
 import DayList from 'src/3-pages/DayList/DayList'
 import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
+import ResourceCatalogPage from 'src/3-pages/ResourceCatalog/ResourceCatalogPage'
 import DocumentTabs from 'src/7-shared/ui/DocumentTabs'
 import EmptyState from 'src/7-shared/ui/EmptyState'
 import YesNoCancelConfirmation, {
@@ -121,6 +122,11 @@ const App: React.FC = observer(function () {
 				return <DayList />
 			case 'Projects':
 				return <ProjectsForm />
+			case 'Accounts':
+			case 'Resources':
+			case 'Categories':
+			case 'Balances':
+				return <ResourceCatalogPage section={uiStore.viewMode} />
 			default:
 				return <Calendar />
 		}

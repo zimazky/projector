@@ -298,6 +298,17 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		})
 	}
 
+	if (documentTabsStore.getActiveDocumentStores()?.resourceStores) {
+		for (const [mode, name] of [
+			['Accounts', 'Счета'],
+			['Resources', 'Ресурсы'],
+			['Categories', 'Категории'],
+			['Balances', 'Остатки']
+		] as const) {
+			menu.push({ name, fn: () => uiStore.changeViewMode({ mode }) })
+		}
+	}
+
 	const handleFileSelect = async (file: IDriveItem) => {
 		console.log('Selected file:', file)
 		if (file.isFolder()) return

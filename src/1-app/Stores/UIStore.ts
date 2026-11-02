@@ -1,6 +1,6 @@
 import { makeAutoObservable } from 'mobx'
 
-type ViewMode = 'Calendar' | 'Day' | 'Projects'
+type ViewMode = 'Calendar' | 'Day' | 'Projects' | 'Accounts' | 'Resources' | 'Categories' | 'Balances'
 
 /** Класс хранилища для состояния пользовательского интерфейса */
 export class UIStore {

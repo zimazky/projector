@@ -1,0 +1,113 @@
+.page {
+	height: 100%;
+	overflow: auto;
+	padding: 24px;
+	color: var(--color-text-default);
+	background: var(--color-background-page);
+	user-select: text;
+}
+.page h1,
+.page h2 {
+	margin-bottom: 16px;
+}
+.page h2 {
+	margin-top: 24px;
+}
+.page h3 {
+	margin-bottom: 8px;
+}
+.page h3 + ul {
+	margin-bottom: 16px;
+}
+.page p {
+	margin: 12px 0;
+	line-height: 1.5;
+}
+.page button,
+.page input,
+.page select {
+	font: inherit;
+}
+.page table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 16px 0;
+}
+.page th,
+.page td {
+	padding: 12px;
+	text-align: left;
+	border-bottom: 1px solid #aaa5;
+	vertical-align: top;
+}
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 16px 0;
+	align-items: center;
+}
+.actions label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.actions input,
+.actions select {
+	padding: 8px;
+	border: 1px solid var(--color-border-default);
+	border-radius: 4px;
+	background: var(--color-background-surface);
+	color: inherit;
+}
+.editor {
+	padding: 20px;
+	margin: 20px 0;
+	border: 1px solid #8888;
+	border-radius: 8px;
+}
+.fields {
+	display: grid;
+	gap: 16px;
+	max-width: 620px;
+}
+.field {
+	display: grid;
+	gap: 8px;
+}
+.field select {
+	padding: 10px;
+	border: 1px solid #8888;
+	border-radius: 4px;
+	background: transparent;
+	color: inherit;
+}
+.check {
+	display: block;
+	margin: 10px 0;
+}
+.page input[type='checkbox'] {
+	accent-color: var(--color-primary);
+}
+.page fieldset {
+	padding: 12px;
+	border: 1px solid #8888;
+}
+.page ul {
+	padding-left: 24px;
+}
+.page [role='alert'] {
+	color: #b3261e;
+}
+.table {
+	overflow-x: auto;
+}
+@media (max-width: 640px) {
+	.page {
+		padding: 12px;
+	}
+	.page th,
+	.page td {
+		padding: 8px;
+	}
+}

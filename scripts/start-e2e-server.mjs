@@ -35,10 +35,18 @@ tsconfig.config.compilerOptions.typeRoots = (
 ).map(path => resolve(workspace, path))
 writeFileSync(join(sandbox, 'tsconfig.json'), JSON.stringify(tsconfig.config, null, 2) + '\n')
 const { devServer, ...buildConfig } = require(join(sandbox, 'webpack.config.cjs'))
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const compiler = webpack({
 	...buildConfig,
 	// Отдельный стенд codec/IndexedDB; в production entry остаётся только приложение.
-	entry: { main: buildConfig.entry, 'resource-codec': './src/test-utils/resourceStorageProbe.ts' },
+	entry: {
+		main: buildConfig.entry,
+		'resource-codec': './src/test-utils/resourceStorageProbe.ts',
+		'resource-catalog': './src/test-utils/resourceCatalogProbe.tsx'
+	},
+	plugins: buildConfig.plugins.map(plugin =>
+		plugin instanceof MiniCssExtractPlugin ? new MiniCssExtractPlugin({ filename: '[name].css' }) : plugin
+	),
 	output: { ...buildConfig.output, filename: '[name].js' },
 	context: sandbox,
 	stats: { preset: 'errors-warnings', errorsSpace: 12 },
