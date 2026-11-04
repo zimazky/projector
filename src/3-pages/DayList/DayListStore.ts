@@ -5,6 +5,7 @@ import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { ForecastData3h, WeatherStore } from 'src/5-features/Weather/WeatherStore'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import { EventsCache } from 'src/6-entities/EventsCache/EventsCache'
+import type { DayBalances } from 'src/6-entities/EventsCache/EventsCache'
 import { CalendarStore } from 'src/3-pages/Calendar/CalendarStore'
 
 export class DayListStore {
@@ -42,19 +43,14 @@ export class DayListStore {
 			timestamp: this.date,
 			weather,
 			events: this.eventsCache.getEvents(this.date),
-			actualBalance: this.eventsCache.getActualBalance(this.date),
-			plannedBalance: this.eventsCache.getPlannedBalance(this.date),
-			plannedBalanceChange: this.eventsCache.getPlannedBalanceChange(this.date)
+			...this.eventsCache.getDayBalances(this.date)
 		}
 	}
 }
 
 /** Структура данных для отображения компонента DayList */
-export type DayListStructure = {
+export type DayListStructure = DayBalances & {
 	timestamp: timestamp
 	weather?: ForecastData3h[]
 	events: EventCacheStructure[]
-	actualBalance: number
-	plannedBalance: number
-	plannedBalanceChange: number
 }

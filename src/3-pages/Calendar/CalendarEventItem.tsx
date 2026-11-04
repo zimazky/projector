@@ -4,6 +4,7 @@ import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { useStores } from 'src/1-app/Providers/StoreContext'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 import styles from './CalendarEventItem.module.css'
+import { describeMovements } from 'src/6-entities/Resources/ResourcePresentation'
 
 type CalendarEventItemProps = {
 	/** Данные события из кэша */
@@ -16,24 +17,30 @@ type CalendarEventItemProps = {
 
 const CalendarEventItem: React.FC<CalendarEventItemProps> = observer(props => {
 	const { eventFormStore, documentTabsStore, eventSearchStore } = useStores()
-	const eventsStore = documentTabsStore.activeEventsStore
 	const { timestamp, daysInCurrentWeek: daysInCurrentWeek } = props
 	const { id, name, completed, background, color, repeatable, start, time, end, credit, debit, days } = props.event
 
 	// Проверяем, подсвечено ли это событие поиском
 	const isHighlighted = eventSearchStore.isHighlighted(id, timestamp)
+	const catalogs = documentTabsStore.getDocumentStores(
+		props.event.sourceDocumentId ?? documentTabsStore.activeDocumentId ?? ''
+	)?.resourceStores
+	const movements = describeMovements(
+		props.event.financial?.actualOperation ?? props.event.financial?.plannedOperation,
+		catalogs
+	)
+	const financialDate = props.event.financial?.actualOperation?.effectiveDate ?? DateTime.getYYYYMMDD(start)
 
 	const openEventForm = (e: React.SyntheticEvent<HTMLElement>) => {
 		e.stopPropagation()
-		if (!eventsStore) return
-		const s = eventsStore.getEventDto(id)
-		if (s === undefined) return
-		eventFormStore.setEventDto({ ...s, id, completed, timestamp: start })
-		eventFormStore.showForm()
+		eventFormStore.openEvent(props.event)
 	}
 
 	const onDragStart = (e: React.DragEvent<HTMLElement>) => {
-		e.dataTransfer.setData('event_item', JSON.stringify(props.event))
+		e.dataTransfer.setData(
+			'event_item',
+			JSON.stringify(catalogs ? { resourceDragToken: eventFormStore.beginDrag(props.event) } : props.event)
+		)
 	}
 
 	return id === -1 ? (
@@ -41,6 +48,7 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = observer(props => {
 	) : (
 		<div
 			role="button"
+			aria-label={name}
 			tabIndex={0}
 			className={`${completed ? styles.completed : repeatable ? styles.repeatable : styles.item} ${isHighlighted ? styles.highlighted : ''}`}
 			draggable={true}
@@ -62,20 +70,27 @@ const CalendarEventItem: React.FC<CalendarEventItemProps> = observer(props => {
 			}}
 			title={
 				name +
+				(movements.length
+					? '\n' + movements.join('\n') + `\n${completed ? 'Дата учёта' : 'Дата плана'}: ${financialDate}`
+					: '') +
 				(time !== null ? '\ntime: ' + DateTime.secondsToHMM(time) : '') +
 				(credit ? '\ncredit: ' + credit : '') +
 				(debit ? '\ndebit: ' + debit : '')
 			}
 		>
 			<div className={styles.name}>
-				{timestamp - start === 0 ? name : `${(timestamp - start) / 86400 + 1}/${(end - start) / 86400} ${name}`}
+				{timestamp - start === 0 || props.event.accountingOnly
+					? name
+					: `${(timestamp - start) / 86400 + 1}/${(end - start) / 86400} ${name}`}
 			</div>{' '}
 			<div className={styles.time}>
-				{time === null
-					? days - daysInCurrentWeek > 0
-						? ` ${(timestamp - start) / 86400 + props.daysInCurrentWeek}/${(end - start) / 86400}`
-						: ''
-					: DateTime.secondsToHMM(time)}
+				{movements.length
+					? movements.map(row => row.split(' · ')[0]).join(' / ')
+					: time === null
+						? days - daysInCurrentWeek > 0
+							? ` ${(timestamp - start) / 86400 + props.daysInCurrentWeek}/${(end - start) / 86400}`
+							: ''
+						: DateTime.secondsToHMM(time)}
 			</div>
 		</div>
 	)

@@ -8,6 +8,8 @@ import Calendar from 'src/3-pages/Calendar/Calendar'
 import DayList from 'src/3-pages/DayList/DayList'
 import ProjectsForm from 'src/3-pages/Projects/ProjectsForm'
 import ResourceCatalogPage from 'src/3-pages/ResourceCatalog/ResourceCatalogPage'
+import EventForm from 'src/4-widgets/EventForm/EventForm'
+import Modal from 'src/7-shared/ui/Modal/Modal'
 import DocumentTabs from 'src/7-shared/ui/DocumentTabs'
 import EmptyState from 'src/7-shared/ui/EmptyState'
 import YesNoCancelConfirmation, {
@@ -24,7 +26,7 @@ import {
 } from 'src/6-entities/Document/model/DocumentStorageDiagnostic'
 
 const App: React.FC = observer(function () {
-	const { uiStore, documentTabsStore, saveToDriveStore } = useStores()
+	const { uiStore, documentTabsStore, saveToDriveStore, eventFormStore } = useStores()
 	const storageFailure = documentTabsStore.persistenceDiagnostic
 
 	React.useEffect(() => {
@@ -200,6 +202,9 @@ const App: React.FC = observer(function () {
 					renderPage()
 				)}
 			</main>
+			<Modal open={eventFormStore.isShow} onClose={eventFormStore.hideForm} aria-label="Редактор события">
+				<EventForm />
+			</Modal>
 			<YesNoCancelConfirmation
 				open={unsavedDialogOpen}
 				onDecision={resolveUnsavedDecision}

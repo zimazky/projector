@@ -7,6 +7,7 @@ import { useStores } from 'src/1-app/Providers/StoreContext'
 import { CalendarDayStructure } from 'src/3-pages/Calendar/CalendarStore'
 
 import styles from './CalendarDay.module.css'
+import ResourceDaySummary from 'src/5-features/ResourceSummary/ResourceDaySummary'
 
 type CalendarDayProps = {
 	/** Отображаемые данные календарного дня */
@@ -20,7 +21,7 @@ type CalendarDayProps = {
 const CalendarDay: React.FC<CalendarDayProps> = props => {
 	const { dayListStore, eventFormStore, uiStore } = useStores()
 	const { data, isToday, onDragDrop, children = null } = props
-	const { timestamp, weather, actualBalance, plannedBalance, plannedBalanceChange, style } = data
+	const { timestamp, weather, style } = data
 	const inputElementRef = React.useRef<HTMLDivElement>(null)
 	const { day, month } = DateTime.getDayMonthWeekday(timestamp)
 
@@ -108,21 +109,27 @@ const CalendarDay: React.FC<CalendarDayProps> = props => {
 					</div>
 				) : null}
 			</div>
-			<div
-				className={styles.balance}
-				title={
-					'planned: ' +
-					plannedBalance.toFixed(2) +
-					plus(plannedBalanceChange, 2) +
-					'\nactual: ' +
-					actualBalance.toFixed(2)
-				}
-			>
-				{kilo(plannedBalance, 1) +
-					(plannedBalanceChange == 0 ? 'k' : plus(plannedBalanceChange / 1000, 1) + 'k') +
-					' ' +
-					kilo(actualBalance, 1)}
-			</div>
+			{data.resourceBalance ? (
+				<div className={styles.balance}>
+					<ResourceDaySummary report={data.resourceBalance} compact />
+				</div>
+			) : (
+				<div
+					className={styles.balance}
+					title={
+						'planned: ' +
+						data.plannedBalance.toFixed(2) +
+						plus(data.plannedBalanceChange, 2) +
+						'\nactual: ' +
+						data.actualBalance.toFixed(2)
+					}
+				>
+					{kilo(data.plannedBalance, 1) +
+						(data.plannedBalanceChange == 0 ? 'k' : plus(data.plannedBalanceChange / 1000, 1) + 'k') +
+						' ' +
+						kilo(data.actualBalance, 1)}
+				</div>
+			)}
 			{children}
 			<div
 				ref={inputElementRef}

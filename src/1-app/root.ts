@@ -40,7 +40,7 @@ export function createApplication(
 	const weatherStore = new WeatherStore()
 	const calendarStore = new CalendarStore(eventsCache, weatherStore)
 	const dayListStore = new DayListStore(eventsCache, weatherStore, calendarStore)
-	const eventFormStore = new EventFormStore()
+	const eventFormStore = new EventFormStore(documentTabsStore)
 	const eventSearchStore = new EventSearchStore(documentTabsStore)
 	const projectEditorStore = new ProjectEditorStore(documentTabsStore)
 	const mainStore = new MainStore(googleApiService, documentTabsStore)

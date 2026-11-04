@@ -15,7 +15,7 @@ import styles from './Header.module.css'
 import { getDocumentUiState } from 'src/6-entities/Document/model/DocumentSyncSelectors'
 
 const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = observer(function ({ onCloseDocument }) {
-	const { calendarStore, documentTabsStore, googleApiService } = useStores()
+	const { calendarStore, dayListStore, uiStore, documentTabsStore, googleApiService } = useStores()
 	const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
 	const activeDoc = documentTabsStore.activeDocument
 	const documentUi = activeDoc ? getDocumentUiState(activeDoc) : null
@@ -44,11 +44,14 @@ const Header: React.FC<{ onCloseDocument: (id: string) => Promise<void> }> = obs
 			>
 				{documentTitle}
 			</span>
-			<span className={styles.caption}>{calendarStore.caption}</span>
+			<span className={styles.caption}>
+				{uiStore.viewMode === 'Day' ? dayListStore.caption : calendarStore.caption}
+			</span>
 			<span className={styles.rightSection}>
 				<Time
 					onClick={() => {
-						calendarStore.setWeek(Date.now() / 1000)
+						if (uiStore.viewMode === 'Day') dayListStore.setDate(Date.now() / 1000)
+						else calendarStore.setWeek(Date.now() / 1000)
 					}}
 				/>
 				<span className={styles.userMenu}>

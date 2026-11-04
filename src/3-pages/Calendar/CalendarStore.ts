@@ -4,6 +4,7 @@ import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 import { max } from 'src/7-shared/helpers/utils'
 
 import { EventsCache, EventsCacheSkipStructure } from 'src/6-entities/EventsCache/EventsCache'
+import type { DayBalances } from 'src/6-entities/EventsCache/EventsCache'
 import { ForecastData1d, WeatherStore } from 'src/5-features/Weather/WeatherStore'
 import { EventCacheStructure } from 'src/6-entities/EventsCache/EventCacheStructure'
 
@@ -92,8 +93,9 @@ export class CalendarStore {
 	getCalendarDataStructure(weekTimestamp: timestamp): CalendarWeekStructure[] {
 		let currentTimestamp = weekTimestamp - this.shift * 7 * 86400
 		console.log(weekTimestamp, currentTimestamp)
-		const lastActualBalanceDate = this.eventsCache.lastActualBalanceDate
-		const firstPlannedEventDate = this.eventsCache.getFirstPlannedEventDate()
+		const resourceMode = !!this.eventsCache.resourceDocumentId
+		const lastActualBalanceDate = resourceMode ? 0 : this.eventsCache.lastActualBalanceDate
+		const firstPlannedEventDate = resourceMode ? 0 : this.eventsCache.getFirstPlannedEventDate()
 		const weeks: CalendarWeekStructure[] = []
 		for (let i = 0; i <= renderingSize; i++) {
 			const list: CalendarDayStructure[] = []
@@ -108,9 +110,7 @@ export class CalendarStore {
 					timestamp: currentTimestamp,
 					weather,
 					events: this.eventsCache.getEventsWithPlaceholders(currentTimestamp, stack),
-					actualBalance: this.eventsCache.getActualBalance(currentTimestamp),
-					plannedBalance: this.eventsCache.getPlannedBalance(currentTimestamp),
-					plannedBalanceChange: this.eventsCache.getPlannedBalanceChange(currentTimestamp),
+					...this.eventsCache.getDayBalances(currentTimestamp),
 					style:
 						currentTimestamp >= lastActualBalanceDate
 							? 'normal'
@@ -128,13 +128,10 @@ export class CalendarStore {
 }
 
 /** Структура данных для отображения компонента CalendarDay*/
-export type CalendarDayStructure = {
+export type CalendarDayStructure = DayBalances & {
 	timestamp: timestamp
 	weather?: ForecastData1d
 	events: EventCacheStructure[]
-	actualBalance: number
-	plannedBalance: number
-	plannedBalanceChange: number
 	style: 'normal' | 'uncompleted' | 'completed'
 }
 

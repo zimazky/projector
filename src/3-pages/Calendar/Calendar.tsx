@@ -4,11 +4,7 @@ import { observer } from 'mobx-react-lite'
 import { max, min } from 'src/7-shared/helpers/utils'
 import DateTime, { timestamp } from 'src/7-shared/libs/DateTime/DateTime'
 
-import Modal from 'src/7-shared/ui/Modal/Modal'
-
 import { useStores } from 'src/1-app/Providers/StoreContext'
-
-import EventForm from 'src/4-widgets/EventForm/EventForm'
 
 import CalendarDay from './CalendarDay'
 import CalendarEventItem from './CalendarEventItem'
@@ -17,9 +13,10 @@ import styles from './Calendar.module.css'
 import { useCalendarScroll } from './useCalendarScroll'
 
 const Calendar: React.FC = observer(function () {
-	const { calendarStore, eventFormStore, documentTabsStore } = useStores()
+	const { calendarStore, eventFormStore, documentTabsStore, eventsCache } = useStores()
 	const eventsStore = documentTabsStore.activeEventsStore
 	const bodyRef = useRef<HTMLDivElement | null>(null)
+	const [dragError, setDragError] = React.useState('')
 
 	const today = DateTime.getBeginDayTimestamp(Date.now() / 1000)
 	const zeroPoint = calendarStore.week
@@ -40,7 +37,27 @@ const Calendar: React.FC = observer(function () {
 		e.preventDefault()
 		if (!eventsStore) return
 		console.log(e.dataTransfer)
-		const c = JSON.parse(e.dataTransfer.getData('event_item'))
+		const payload = e.dataTransfer.getData('event_item')
+		if (!payload) return
+		let c: { resourceDragToken?: string; id: number; start: number }
+		try {
+			c = JSON.parse(payload)
+		} catch {
+			return
+		}
+		if (c.resourceDragToken) {
+			try {
+				eventFormStore.dropResource(c.resourceDragToken, timestamp, e.ctrlKey)
+				setDragError('')
+			} catch (cause) {
+				setDragError(cause instanceof Error ? cause.message : 'Не удалось перенести событие.')
+			}
+			return
+		}
+		if (eventsCache.resourceDocumentId) {
+			setDragError('Перенос устарел. Перетащите событие заново.')
+			return
+		}
 		if (e.ctrlKey) eventsStore.copyToDate(c.id, timestamp)
 		else eventsStore.shiftToDate(c.id, timestamp, c.start)
 	}
@@ -49,6 +66,7 @@ const Calendar: React.FC = observer(function () {
 
 	return (
 		<div className={styles.wrapper}>
+			{dragError && <p role="alert">{dragError}</p>}
 			<div className={styles.dayOfWeekLabels}>
 				{DateTime.getWeekdaysArray().map(d => (
 					<div key={d}>{d}</div>
@@ -71,16 +89,18 @@ const Calendar: React.FC = observer(function () {
 								onDragDrop={e => dragDrop(e, d.timestamp)}
 							>
 								{d.events.map((t, i) => (
-									<CalendarEventItem key={i} event={t} daysInCurrentWeek={min(t.days, 7 - j)} timestamp={d.timestamp} />
+									<CalendarEventItem
+										key={i}
+										event={t}
+										daysInCurrentWeek={t.financial ? 1 : min(t.days, 7 - j)}
+										timestamp={d.timestamp}
+									/>
 								))}
 							</CalendarDay>
 						))}
 					</div>
 				))}
 			</div>
-			<Modal open={eventFormStore.isShow} onClose={eventFormStore.hideForm} aria-label="Редактор события">
-				<EventForm />
-			</Modal>
 		</div>
 	)
 })

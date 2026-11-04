@@ -5,6 +5,8 @@ import { EventsStore } from 'src/6-entities/Events/EventsStore'
 import { RepeatableEventModel } from 'src/6-entities/Events/RepeatableEventModel'
 import { SingleEventModel } from 'src/6-entities/Events/SingleEventModel'
 import type { DocumentTabsStore } from 'src/6-entities/Document/model'
+import type { EventMetadata } from 'src/6-entities/Events/EventIdentity'
+import { describeMovements } from 'src/6-entities/Resources/ResourcePresentation'
 
 export interface SearchResult {
 	documentId: string | null
@@ -251,8 +253,11 @@ export class EventSearchStore {
 	}
 
 	/** Проверить соответствие события запросу */
-	private matchesEvent(event: { name: string; comment?: string }): boolean {
-		return this.matchesQuery(event.name) || this.matchesQuery(event.comment)
+	private matchesEvent(event: { name: string; comment?: string } & EventMetadata): boolean {
+		if (this.matchesQuery(event.name) || this.matchesQuery(event.comment)) return true
+		if (!event.actualOperation && !event.plannedOperation) return false
+		const catalogs = this.documentTabsStore.getActiveDocumentStores()?.resourceStores
+		return this.matchesQuery(describeMovements(event.actualOperation ?? event.plannedOperation, catalogs).join(' '))
 	}
 
 	/** Проверить соответствие текста запросу */

@@ -289,6 +289,7 @@ const CalendarIconBar: React.FC<{ onCloseDocument: (id: string) => Promise<void>
 		})
 	}
 
+	if (uiStore.viewMode !== 'Day') menu.push({ name: 'Список дня', fn: () => uiStore.changeViewMode({ mode: 'Day' }) })
 	if (uiStore.viewMode !== 'Projects') {
 		menu.push({
 			name: 'Projects',

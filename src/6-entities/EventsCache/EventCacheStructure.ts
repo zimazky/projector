@@ -40,6 +40,7 @@ export type EventCacheStructure = {
 	/** ID документа-источника (для общего календаря) */
 	sourceDocumentId?: DocumentId
 	financial?: ReadonlyJson<{ kind: 'resource'; plannedOperation?: PlannedOperation; actualOperation?: ActualOperation }>
+	accountingOnly?: boolean
 }
 
 ///////////////////////////////////////////////////////////////////////////////

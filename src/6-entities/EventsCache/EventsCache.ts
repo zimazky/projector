@@ -10,6 +10,17 @@ import { BalanceIndex } from './BalanceIndex'
 import { OccurrenceCounter } from './OccurrenceCounter'
 import { EventCacheStructure, repeatableEventToEventCache, singleEventToEventCache } from './EventCacheStructure'
 import { ResourceBalanceCache } from './ResourceBalanceCache'
+import type { ResourceBalanceReport } from './ResourceBalance.types'
+import type { ReadonlyJson } from '../Resources/DocumentCatalogStore'
+
+export type DayBalances =
+	| {
+			resourceBalance: ReadonlyJson<ResourceBalanceReport>
+			actualBalance?: never
+			plannedBalance?: never
+			plannedBalanceChange?: never
+	  }
+	| { resourceBalance?: undefined; actualBalance: number; plannedBalance: number; plannedBalanceChange: number }
 
 export const CALENDAR_CACHE_CAPACITY = 512
 export class ResourceBalanceUnavailableError extends Error {}
@@ -64,6 +75,23 @@ export class EventsCache {
 				stores => stores.eventsStore === this.provider.activeEventsStore && !!stores.resourceStores
 			)
 		)
+	}
+	get resourceDocumentId(): string | undefined {
+		if (!this.isResourceDocument()) return undefined
+		return (
+			this.provider.activeDocument?.id ??
+			this.provider.getAllDocumentStores().find(row => row.eventsStore === this.provider.activeEventsStore)?.documentId
+		)
+	}
+	getDayBalances(date: timestamp): DayBalances {
+		const id = this.resourceDocumentId
+		return id
+			? { resourceBalance: this.resourceBalances.get(id, DateTime.getYYYYMMDD(date)) }
+			: {
+					actualBalance: this.getActualBalance(date),
+					plannedBalance: this.getPlannedBalance(date),
+					plannedBalanceChange: this.getPlannedBalanceChange(date)
+				}
 	}
 	private requireLegacyBalance(): void {
 		if (this.isResourceDocument())
@@ -138,10 +166,15 @@ export class EventsCache {
 			return a
 		}, events)
 		eventsStore.completed.reduce((a, e) => {
-			if (date >= e.start && date < e.end) {
+			const onCard = date >= e.start && date < e.end
+			const onAccountingDate = e.actualOperation?.effectiveDate === DateTime.getYYYYMMDD(date)
+			if (onCard || onAccountingDate) {
 				const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
 				const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
-				a.push(singleEventToEventCache(e, date, true, color, background))
+				a.push({
+					...singleEventToEventCache(e, date, true, color, background),
+					...(!onCard ? { accountingOnly: true, days: 1 } : {})
+				})
 			}
 			return a
 		}, events)
@@ -207,7 +240,7 @@ export class EventsCache {
 
 		this.getEvents(date).reduce((a, e) => {
 			if (skip.some(s => e.id === s.id)) return a
-			if (e.end - e.start > 86400) skip.push({ id: e.id, end: e.end })
+			if (!e.financial && e.end - e.start > 86400) skip.push({ id: e.id, end: e.end })
 			return (a.push(e), a)
 		}, events)
 		return events
@@ -329,11 +362,13 @@ export class EventsCache {
 			})
 
 			eventsStore.completed.forEach(e => {
-				if (date >= e.start && date < e.end) {
+				const onCard = date >= e.start && date < e.end
+				if (onCard || e.actualOperation?.effectiveDate === DateTime.getYYYYMMDD(date)) {
 					const color = projectsStore.getById(e.projectId)?.color ?? ProjectsStore.defaultProject.color
 					const background = projectsStore.getById(e.projectId)?.background ?? ProjectsStore.defaultProject.background
 					allEvents.push({
 						...singleEventToEventCache(e, date, true, color, background),
+						...(!onCard ? { accountingOnly: true, days: 1 } : {}),
 						sourceDocumentId: docStores.documentId
 					})
 				}
